@@ -78,7 +78,7 @@ class MlpNet(BaseFeatureNet):
                     cs.add_condition(CS.AndConjunction(dropout_condition_1, dropout_condition_2))
                 else:
                     cs.add_condition(dropout_condition_1)
-        
+
         add_hyperparameter(cs, CSH.CategoricalHyperparameter,'activation', activation)
         assert len(kwargs) == 0, "Invalid hyperparameter updates for mlpnet: %s" % str(kwargs)
         return(cs)

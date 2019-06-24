@@ -1,0 +1,26 @@
+language: python
+
+python: 3.6
+
+sudo: false
+
+install:
+  - pip install --upgrade pip
+  - pip install codecov
+  - pip install --progress-bar off torch
+  - cat requirements.txt | xargs -n 1 -L 1 pip install
+  - python setup.py install
+
+script:
+  - coverage run test/test_base/test_base_net.py
+  - coverage run test/test_base/test_preprocessor_base.py
+  - coverage run test/test_tabular/test_embeddings/test_embeddings.py
+  - coverage run test/test_tabular/test_networks/test_mlpnet.py
+  - coverage run test/test_tabular/test_networks/test_resnet.py
+  - coverage run test/test_tabular/test_networks/test_shapedmlpnet.py
+  - coverage run test/test_tabular/test_networks/test_shapedresnet.py
+  - coverage run test/test_tabular/test_regularization/test_shake.py
+
+
+after_success:
+  - codecov

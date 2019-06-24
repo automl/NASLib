@@ -28,15 +28,15 @@ class ShapedResNet(ResNet):
                                                  config['num_groups']+2)[:-1]
         augmented_config.update(
                 {"num_units_%d" % (i) : num for i, num in enumerate(neuron_counts)})
-        
+
 
         if (config['use_dropout']):
             dropout_shape = get_shaped_neuron_counts(config['dropout_shape'], 0, 0, 1000, config['num_groups'])
-            
+
             dropout_shape = [dropout / 1000 * config["max_dropout"] for dropout in dropout_shape]
-        
+
             augmented_config.update(
-                    {"dropout_%d" % (i+1) : dropout for i, dropout in enumerate(dropout_shape)})    
+                    {"dropout_%d" % (i+1) : dropout for i, dropout in enumerate(dropout_shape)})
 
         super(ShapedResNet, self).__init__(augmented_config, in_features, out_features, *args, **kwargs)
 
@@ -56,7 +56,7 @@ class ShapedResNet(ResNet):
         use_shake_drop=(True, False)
     ):
         cs = CS.ConfigurationSpace()
-        
+
         num_groups_hp = get_hyperparameter(CS.UniformIntegerHyperparameter, "num_groups", num_groups)
         cs.add_hyperparameter(num_groups_hp)
         blocks_per_group_hp = get_hyperparameter(CS.UniformIntegerHyperparameter, "blocks_per_group", blocks_per_group)
@@ -64,13 +64,13 @@ class ShapedResNet(ResNet):
         add_hyperparameter(cs, CS.CategoricalHyperparameter, "activation", activation)
         use_dropout_hp = add_hyperparameter(cs, CS.CategoricalHyperparameter, "use_dropout", use_dropout)
         add_hyperparameter(cs, CS.CategoricalHyperparameter, "use_shake_shake", use_shake_shake)
-        
+
         shake_drop_hp = add_hyperparameter(cs, CS.CategoricalHyperparameter, "use_shake_drop", use_shake_drop)
         if True in use_shake_drop:
             shake_drop_prob_hp = add_hyperparameter(cs, CS.UniformFloatHyperparameter, "max_shake_drop_probability",
                 max_shake_drop_probability)
             cs.add_condition(CS.EqualsCondition(shake_drop_prob_hp, shake_drop_hp, True))
-        
+
         add_hyperparameter(cs, CSH.CategoricalHyperparameter, 'resnet_shape', resnet_shape)
         add_hyperparameter(cs, CSH.UniformIntegerHyperparameter, "max_units", max_units)
 

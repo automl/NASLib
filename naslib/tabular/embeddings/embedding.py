@@ -11,12 +11,13 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from autoPyTorch.utils.config_space_hyperparameter import get_hyperparameter, add_hyperparameter
-from autoPyTorch.components.preprocessing.preprocessor_base import PreprocessorBase
+from naslib.base.base_net import BaseFeatureNet
+from naslib.utils.config_space_hyperparameter import add_hyperparameter, get_hyperparameter
 
 __author__ = "Max Dippel, Michael Burkart and Matthias Urban"
 __version__ = "0.0.1"
 __license__ = "BSD"
+
 
 class LearnedEntityEmbedding(nn.Module):
     """ Parent class for MlpNet, ResNet, ... Can use entity embedding for cagtegorical features"""

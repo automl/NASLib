@@ -58,7 +58,7 @@ class ShapedMlpNet(MlpNet):
         use_dropout=(True, False)
     ):
         cs = CS.ConfigurationSpace()
-        
+
         mlp_shape_hp = get_hyperparameter(CSH.CategoricalHyperparameter, 'mlp_shape', mlp_shape)
         cs.add_hyperparameter(mlp_shape_hp)
 
@@ -72,14 +72,14 @@ class ShapedMlpNet(MlpNet):
         if True in use_dropout:
             dropout_shape_hp = add_hyperparameter(cs, CSH.CategoricalHyperparameter, 'dropout_shape', dropout_shape)
             max_dropout_hp = add_hyperparameter(cs, CSH.UniformFloatHyperparameter, "max_dropout", max_dropout)
-        
+
             cs.add_condition(CS.EqualsCondition(dropout_shape_hp, use_dropout_hp, True))
             cs.add_condition(CS.EqualsCondition(max_dropout_hp, use_dropout_hp, True))
 
         add_hyperparameter(cs, CSH.CategoricalHyperparameter, 'activation', activation)
         return cs
-        
-        
+
+
 def get_shaped_neuron_counts(shape, in_feat, out_feat, max_neurons, layer_count):
     counts = []
 
@@ -157,10 +157,10 @@ def get_shaped_neuron_counts(shape, in_feat, out_feat, max_neurons, layer_count)
         funnel_layer = layer_count - brick_layer
         counts.extend(get_shaped_neuron_counts('brick', in_feat, max_neurons, max_neurons, brick_layer))
         counts.extend(get_shaped_neuron_counts('funnel', in_feat, out_feat, max_neurons, funnel_layer))
-        
+
         if (len(counts) != layer_count):
             print("\nWarning: long funnel layer count does not match " + str(layer_count) + " != " + str(len(counts)) + "\n")
-    
+
     if shape == 'diamond':
         #
         #     /  \
@@ -223,7 +223,7 @@ def get_shaped_neuron_counts(shape, in_feat, out_feat, max_neurons, layer_count)
             counts.append(previous)
 
         counts.append(out_feat)
-        
+
         if (len(counts) != layer_count):
             print("\nWarning: stairs layer count does not match " + str(layer_count) + " != " + str(len(counts)) + "\n")
 

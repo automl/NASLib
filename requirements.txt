@@ -1,0 +1,13 @@
+setuptools
+Cython
+netifaces
+numpy
+pandas
+scipy
+statsmodels
+scikit-learn>=0.20.0
+imblearn
+ConfigSpace
+pynisher
+hpbandster
+torch

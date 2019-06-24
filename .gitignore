@@ -1,0 +1,41 @@
+# Visual Studio
+*.vs/*
+
+# Visual Studio Code
+*.vscode/*
+
+# Python
+*__pycache__/
+*.pyc
+
+# Zipped
+*.tar.gz
+
+# Temp
+*tmp_models/
+
+#Results
+benchmark_results/
+benchmark_results_cluster/
+ns_credentials*/
+configs.json
+results.json
+outputs/
+jobs.txt
+.pylintrc
+
+# Build
+*build/
+*autonet.egg-info
+*.simg
+
+
+# Datasets
+/datasets/
+
+# Meta GPU
+*meta_logs/
+
+# ensemble data
+predictions_for_ensemble.npy
+test_predictions_for_ensemble.npy

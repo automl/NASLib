@@ -7,7 +7,7 @@ class PreprocessorBase():
 
     def fit(self, X, Y):
         """Fit preprocessor with X and Y.
-        
+
         Arguments:
             X {tensor} -- feature matrix
             Y {tensor} -- labels
@@ -16,10 +16,10 @@ class PreprocessorBase():
 
     def transform(self, X, **kwargs):
         """Preprocess X
-        
+
         Arguments:
             X {tensor} -- feature matrix
-        
+
         Returns:
             X -- preprocessed X
         """

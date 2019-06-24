@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Translate a hyperparameter configuration as returned by the Auto-PyTorch .fit() method to a pytorch Sequential model. 
 """
@@ -48,6 +46,6 @@ net = BaseNet(config=None,
 net.set_net_from_hyperpar_config(hyperpar_config=example_hyperparameter_config,
                                  in_features=1,
                                  out_features=1)
-                                  
+
 
 print(net.layers)

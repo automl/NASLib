@@ -24,21 +24,21 @@ class ResNet(BaseFeatureNet):
         'sigmoid': nn.Sigmoid,
         'tanh': nn.Tanh
     }
-    
+
     def __init__(self, config, in_features, out_features, embedding, final_activation=None):
         super(ResNet, self).__init__(config, in_features, out_features, embedding, final_activation)
         self.activation = self.activations[config['activation']]
         self.layers = self._build_net(self.n_feats, self.n_classes)
-        
+
     def _build_net(self, in_features, out_features):
-        
+
         layers = list()
         layers.append(nn.Linear(in_features, self.config["num_units_0"]))
 
         # build num_groups-1 groups each consisting of blocks_per_group ResBlocks
         # the output features of each group is defined by num_units_i
         for i in range(1, self.config["num_groups"] + 1):
-            layers.append(self._add_group(  in_features=self.config["num_units_%d" % (i-1)], 
+            layers.append(self._add_group(  in_features=self.config["num_units_%d" % (i-1)],
                                             out_features=self.config["num_units_%d" % i], 
                                             last_block_index=(i-1) * self.config["blocks_per_group"], 
                                             dropout=self.config["use_dropout"] and self.config["dropout_%d" % i]))
@@ -48,7 +48,7 @@ class ResNet(BaseFeatureNet):
 
         layers.append(nn.Linear(self.config["num_units_%i" % self.config["num_groups"]], out_features))
         return nn.Sequential(*layers)
-        
+
     # Stacking Residual Blocks on the same stage
     def _add_group(self, in_features, out_features, last_block_index, dropout):
         blocks = list()
@@ -77,17 +77,17 @@ class ResNet(BaseFeatureNet):
         blocks_per_group_hp = get_hyperparameter(ConfigSpace.UniformIntegerHyperparameter, "blocks_per_group", blocks_per_group)
         cs.add_hyperparameter(blocks_per_group_hp)
         add_hyperparameter(cs, ConfigSpace.CategoricalHyperparameter, "activation", activation)
-        
+
         use_dropout_hp = get_hyperparameter(ConfigSpace.CategoricalHyperparameter, "use_dropout", use_dropout)
         cs.add_hyperparameter(use_dropout_hp)
         add_hyperparameter(cs, ConfigSpace.CategoricalHyperparameter, "use_shake_shake", use_shake_shake)
-        
+
         use_shake_drop_hp = add_hyperparameter(cs, ConfigSpace.CategoricalHyperparameter, "use_shake_drop", use_shake_drop)
         if True in use_shake_drop:
             shake_drop_prob_hp = add_hyperparameter(cs, ConfigSpace.UniformFloatHyperparameter, "max_shake_drop_probability",
                 max_shake_drop_probability)
             cs.add_condition(ConfigSpace.EqualsCondition(shake_drop_prob_hp, use_shake_drop_hp, True))
-        
+
 
         # it is the upper bound of the nr of groups, since the configuration will actually be sampled.
         for i in range(0, num_groups[0][1] + 1):
@@ -104,7 +104,7 @@ class ResNet(BaseFeatureNet):
                 dropout_condition_1 = ConfigSpace.EqualsCondition(dropout_hp, use_dropout_hp, True)
 
                 if i > 1:
-                
+
                     dropout_condition_2 = ConfigSpace.GreaterThanCondition(dropout_hp, num_groups_hp, i - 1)
 
                     cs.add_condition(ConfigSpace.AndConjunction(dropout_condition_1, dropout_condition_2))
@@ -115,7 +115,7 @@ class ResNet(BaseFeatureNet):
 
 
 class ResBlock(nn.Module):
-    
+
     def __init__(self, config, in_features, out_features, block_index, dropout, activation):
         super(ResBlock, self).__init__()
         self.config = config
@@ -137,12 +137,12 @@ class ResBlock(nn.Module):
 
         if config["use_shake_shake"]:
             self.shake_shake_layers = self._build_block(in_features, out_features)
-        
+
 
     # each bloack consists of two linear layers with batch norm and activation
     def _build_block(self, in_features, out_features):
         layers = list()
-        
+
         if self.start_norm == None:
             layers.append(nn.BatchNorm1d(in_features))
             layers.append(self.activation())
@@ -150,7 +150,7 @@ class ResBlock(nn.Module):
 
         layers.append(nn.BatchNorm1d(out_features))
         layers.append(self.activation())
-        
+
         if (self.config["use_dropout"]):
             layers.append(nn.Dropout(self.dropout))
         layers.append(nn.Linear(out_features, out_features))
@@ -168,7 +168,7 @@ class ResBlock(nn.Module):
             # if in_features != out_features -> result = W_shortcut(A(BN(x))) + W_2(~D(A(BN(W_1(A(BN(x))))))
             x = self.start_norm(x)
             residual = self.shortcut(x)
-        
+
         if self.config["use_shake_shake"]:
             x1 = self.layers(x)
             x2 = self.shake_shake_layers(x)
@@ -176,7 +176,7 @@ class ResBlock(nn.Module):
             x = shake_shake(x1, x2, alpha, beta)
         else:
             x = self.layers(x)
-        
+
         if self.config["use_shake_drop"]:
             alpha, beta = shake_get_alpha_beta(self.training, x.is_cuda)
             bl = shake_drop_get_bl(self.block_index, 1 - self.config["max_shake_drop_probability"], self.num_blocks, self.training, x.is_cuda)
