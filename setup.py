@@ -43,13 +43,14 @@ requires = [
     "pyyaml",
     "cave",
     "hpbandster",
-    "numpy>=1.16",
+    "numpy==1.16.4",
     "pyrfr==0.8.0",
     "Pyro4==4.76",
     "RoBO==0.3.1",
     "torch==1.2.0",
     "torchvision==0.4.0",
-    "tensorflow==1.12.0",
+    "tensorflow-gpu==1.14.0",
+    "tensorflow-probability==0.7.0",
 ]
 
 import subprocess
