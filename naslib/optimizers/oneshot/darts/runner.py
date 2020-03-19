@@ -1,16 +1,23 @@
 import os
 import json
 import logging
+import pickle
+import torch
 
-from nasbench1shot1.optimizers.oneshot.darts.searcher import DARTSWrapper
-from nasbench1shot1.optimizers.oneshot.base.architect import Architect
+from naslib.optimizers.oneshot.darts.searcher import DARTSWrapper
+from naslib.optimizers.oneshot.darts.architect import Architect
+from naslib.utils import utils
 
 
 class DARTS(object):
     def __init__(self, args, search_space):
         self.args = args
         self.model = DARTSWrapper(args, search_space)
-        self.architect = Architect(self.model.model, args)
+        self.architect = Architect(self.model.model,
+                                   args.momentum,
+                                   args.weight_decay,
+                                   args.arch_learning_rate,
+                                   args.arch_weight_decay)
 
     def run(self):
 
@@ -36,7 +43,7 @@ class DARTS(object):
                                     'one_shot_model_{}.obj'.format(epoch))
             torch.save(self.model.model.state_dict(), filepath)
 
-            logging.info('architecture', numpy_tensor_list)
+            #logging.info('architecture', str(numpy_tensor_list))
 
             # training
             train_acc, train_obj = self.model.train(epoch, lr, architect=self.architect)

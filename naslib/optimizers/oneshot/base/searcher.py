@@ -44,6 +44,8 @@ class OneShotModelWrapper(object):
         torch.cuda.manual_seed_all(args.seed)
 
         train_transform, valid_transform = utils._data_transforms_cifar10(args)
+        self.train_transform = train_transform
+        self.valid_transform = valid_transform
         train_data = dset.CIFAR10(root=args.data, train=True, download=True, transform=train_transform)
 
         num_train = len(train_data)
@@ -133,7 +135,13 @@ class OneShotModelWrapper(object):
             # Allow for warm starting of the one-shot model for more reliable architecture updates.
             if architect is not None:
                 if epoch >= self.args.warm_start_epochs:
-                    architect.step(input, target, input_search, target_search, lr, self.optimizer, unrolled=args.unrolled)
+                    architect.step(input_train=input,
+                                   target_train=target,
+                                   input_valid=input_search,
+                                   target_valid=target_search,
+                                   eta=lr,
+                                   network_optimizer=self.optimizer,
+                                   unrolled=self.args.unrolled)
 
             self.optimizer.zero_grad()
             logits = self.model(input)

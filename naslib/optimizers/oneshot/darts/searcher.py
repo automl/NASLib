@@ -1,1 +1,1 @@
-from naslib.optimizers.oneshot.base import OneShotModelWrapper as DARTS
+from naslib.optimizers.oneshot.base import OneShotModelWrapper as DARTSWrapper

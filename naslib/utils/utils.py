@@ -4,11 +4,18 @@ import numpy as np
 import os
 import os.path
 import sys
+import yaml
 import shutil
 import torch
 import torchvision.transforms as transforms
 
 from torch.autograd import Variable
+
+
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
 
 class AvgrageMeter(object):
@@ -125,4 +132,14 @@ def create_exp_dir(path):
     if not os.path.exists(path):
         os.makedirs(path)
     print('Experiment dir : {}'.format(path))
+
+
+def config_parser(config_file='../configs/default.yaml'):
+    with open(config_file, 'r') as f:
+        try:
+            config = yaml.safe_load(f)
+        except yaml.YAMLError as exc:
+            raise(exc)
+        else:
+            return AttrDict(config)
 
