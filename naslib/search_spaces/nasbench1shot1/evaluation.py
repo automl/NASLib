@@ -6,13 +6,15 @@ import pickle
 import numpy as np
 from nasbench import api
 
-from naslib.search_spaces.nasbench1shot1.search_spaces import SearchSpace1, SearchSpace2, SearchSpace3
-from naslib.search_spaces.nasbench1shot1.utils import get_top_k, INPUT, OUTPUT, CONV1X1, natural_keys, softmax
+from naslib.search_spaces.nasbench1shot1.search_spaces import SearchSpace1, \
+SearchSpace2, SearchSpace3
+from naslib.search_spaces.nasbench1shot1.utils import get_top_k, INPUT, \
+OUTPUT, CONV1X1, natural_keys, softmax, PRIMITIVES
 from naslib.search_spaces.nasbench1shot1.wrappers import NasbenchWrapper
-from naslib.search_spaces.core.operations import PRIMITIVES
 
 
-def eval_directory(path, nasbench, optimizer, basename='one_shot_architecture_*.obj'):
+def eval_directory(path, nasbench, optimizer,
+                   basename='one_shot_architecture_*.obj'):
     """Evaluates all one-shot architecture methods in the directory."""
     # Read in config
     with open(os.path.join(path, 'config.json')) as fp:

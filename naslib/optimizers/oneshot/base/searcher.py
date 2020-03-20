@@ -12,8 +12,6 @@ import torchvision.datasets as dset
 from torch.autograd import Variable
 
 from naslib.utils import utils
-#TODO: move PRIMITIVES to search space objects later
-from naslib.search_spaces.core.operations import PRIMITIVES
 from naslib.optimizers.oneshot.base.model_search import Network
 
 
@@ -203,13 +201,13 @@ class OneShotModelWrapper(object):
 
     def get_weights_from_arch(self, arch):
         adjacency_matrix, node_list = arch
-        num_ops = len(PRIMITIVES)
+        num_ops = len(self.search_space._PRIMITIVES)
 
         # Assign the sampled ops to the mixed op weights.
         # These are not optimized
         alphas_mixed_op = Variable(torch.zeros(self.model._steps, num_ops).cuda(), requires_grad=False)
         for idx, op in enumerate(node_list):
-            alphas_mixed_op[idx][PRIMITIVES.index(op)] = 1
+            alphas_mixed_op[idx][self.search_space._PRIMITIVES.index(op)] = 1
 
         # Set the output weights
         alphas_output = Variable(torch.zeros(1, self.model._steps + 1).cuda(), requires_grad=False)

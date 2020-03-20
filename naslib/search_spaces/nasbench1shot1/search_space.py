@@ -7,9 +7,9 @@ import ConfigSpace
 import numpy as np
 from nasbench import api
 
-from naslib.search_spaces.nasbench1shot1.utils import CONV1X1, CONV3X3, MAXPOOL3X3, INPUT, OUTPUT, upscale_to_nasbench_format
+from naslib.search_spaces.nasbench1shot1.utils import CONV1X1, CONV3X3, \
+MAXPOOL3X3, INPUT, OUTPUT, upscale_to_nasbench_format, PRIMITIVES, OPS
 from naslib.search_spaces.nasbench1shot1.utils import parent_combinations as parent_combinations_old
-from naslib.search_spaces.core.operations import PRIMITIVES
 
 
 def parent_combinations(node, num_parents):
@@ -24,6 +24,8 @@ class SearchSpace(object):
         self.search_space_number = search_space_number
         self.num_intermediate_nodes = num_intermediate_nodes
         self.num_parents_per_node = {}
+        self._PRIMITIVES = PRIMITIVES
+        self._OPS = OPS
 
         self.run_history = []
 
@@ -41,13 +43,15 @@ class SearchSpace(object):
             adjacency_matrix_sample = self._sample_adjacency_matrix_with_loose_ends()
         else:
             adjacency_matrix_sample = self._sample_adjacency_matrix_without_loose_ends(
-                adjacency_matrix=np.zeros([self.num_intermediate_nodes + 2, self.num_intermediate_nodes + 2]),
+                adjacency_matrix=np.zeros([self.num_intermediate_nodes + 2,
+                                           self.num_intermediate_nodes + 2]),
                 node=self.num_intermediate_nodes + 1)
             assert self._check_validity_of_adjacency_matrix(adjacency_matrix_sample), 'Incorrect graph'
 
         if upscale and self.search_space_number in [1, 2]:
             adjacency_matrix_sample = upscale_to_nasbench_format(adjacency_matrix_sample)
-        return adjacency_matrix_sample, random.choices(PRIMITIVES, k=self.num_intermediate_nodes)
+        return adjacency_matrix_sample, random.choices(self._PRIMITIVES,
+                                                       k=self.num_intermediate_nodes)
 
     def _sample_adjacency_matrix_with_loose_ends(self):
         parents_per_node = [random.sample(list(itertools.combinations(list(range(int(node))), num_parents)), 1) for

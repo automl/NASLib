@@ -5,19 +5,6 @@ from collections import namedtuple
 
 Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
 
-PRIMITIVES = [
-    'maxpool3x3',
-    'conv3x3-bn-relu',
-    'conv1x1-bn-relu'
-]
-
-OPS = {
-    # For nasbench
-    'maxpool3x3': lambda C, stride, affine: nn.MaxPool2d(3, stride=stride,
-                                                         padding=1),
-    'conv3x3-bn-relu': lambda C, stride, affine: Conv3x3BnRelu(C, stride),
-    'conv1x1-bn-relu': lambda C, stride, affine: Conv1x1BnRelu(C, stride),
-}
 
 # Batch Normalization from nasbench
 BN_MOMENTUM = 0.997

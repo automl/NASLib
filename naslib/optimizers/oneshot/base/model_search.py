@@ -3,16 +3,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from naslib.search_spaces.core.operations import PRIMITIVES, OPS, ConvBnRelu, ReLUConvBN
+from naslib.search_spaces.core.operations import ConvBnRelu, ReLUConvBN
 
 
 class MixedOp(nn.Module):
 
-    def __init__(self, C, stride):
+    def __init__(self, C, stride, primitives, ops):
         super(MixedOp, self).__init__()
         self._ops = nn.ModuleList()
-        for primitive in PRIMITIVES:
-            op = OPS[primitive](C, stride, False)
+        for primitive in primitives:
+            op = ops[primitive](C, stride, False)
             '''
             Not used in NASBench
             if 'pool' in primitive:
@@ -32,10 +32,10 @@ class ChoiceBlock(nn.Module):
     International Conference on Machine Learning. 2018.
     """
 
-    def __init__(self, C_in):
+    def __init__(self, C_in, primitives, ops):
         super(ChoiceBlock, self).__init__()
         # Pre-processing 1x1 convolution at the beginning of each choice block.
-        self.mixed_op = MixedOp(C_in, stride=1)
+        self.mixed_op = MixedOp(C_in, stride=1, primitives=primitives, ops=ops)
 
     def forward(self, inputs, input_weights, weights):
         if input_weights is not None:
@@ -72,7 +72,8 @@ class Cell(nn.Module):
 
         # Create the choice block and the input
         for i in range(self._steps):
-            choice_block = ChoiceBlock(C_in=C)
+            choice_block = ChoiceBlock(C_in=C, search_space._PRIMITIVES,
+                                       search_space._OPS)
             self._choice_blocks.append(choice_block)
             self._input_projections.append(ConvBnRelu(C_in=C_in, C_out=C,
                                                       kernel_size=1, stride=1,
@@ -233,7 +234,7 @@ class Network(nn.Module):
 
     def _initialize_alphas(self):
         # Initializes the weights for the mixed ops.
-        num_ops = len(PRIMITIVES)
+        num_ops = len(self.search_space._PRIMITIVES)
         self.alphas_mixed_op = Variable(1e-3 * torch.randn(self._steps,
                                                            num_ops).cuda(),
                                         requires_grad=True)
