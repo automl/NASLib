@@ -10,6 +10,7 @@ import networkx as nx
 import numpy as np
 import scipy.stats as stats
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
 from naslib.search_spaces.core.operations import Conv1x1BnRelu, Conv3x3BnRelu

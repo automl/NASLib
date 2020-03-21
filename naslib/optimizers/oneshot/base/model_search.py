@@ -72,8 +72,8 @@ class Cell(nn.Module):
 
         # Create the choice block and the input
         for i in range(self._steps):
-            choice_block = ChoiceBlock(C_in=C, search_space._PRIMITIVES,
-                                       search_space._OPS)
+            choice_block = ChoiceBlock(C_in=C, primitive=search_space._PRIMITIVES,
+                                       ops=search_space._OPS)
             self._choice_blocks.append(choice_block)
             self._input_projections.append(ConvBnRelu(C_in=C_in, C_out=C,
                                                       kernel_size=1, stride=1,
