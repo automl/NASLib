@@ -1,5 +1,8 @@
 from abc import ABCMeta, abstractmethod
-from collections import Set, Mapping, MutableSet, MutableMapping
+from collections import Set, Mapping, MutableSet, MutableMapping, namedtuple
+from functools import partial
+
+Node = partial(namedtuple('Node', 'value label'), label=None)
 
 
 class Graph(metaclass=ABCMeta):
@@ -96,12 +99,12 @@ class DirectedGraph(MutableGraph):
      - nodes {0, 1, 2, 3, 4, 5}
      - edges {(0, 1), (0, 2), (1, 2), (1, 3), (2, 3), (3, 2), (4, 5)}
     and all edge labels equal to 1 is represented as
-    {0: {1: 1, 2: 1},
-     1: {2: 1, 3: 1},
-     2: {3: 1},
-     3: {2: 1},
-     4: {5: 1},
-     5: {}}
+    {Node(0): {Node(1): 1, Node(2): 1},
+     Node(1): {Node(2): 1, Node(3): 1},
+     Node(2): {Node(3): 1},
+     Node(3): {Node(2): 1},
+     Node(4): {Node(5): 1},
+     Node(5): {}}
 
     This representation can be accessed via the `data' attribute.
 
@@ -115,31 +118,66 @@ class DirectedGraph(MutableGraph):
         self.data = data
         super(DirectedGraph, self).__init__()
 
+        self.add_missing_nodes()
+
     def __call__(self):
         return self.data
 
-    def neighbors(self, node):
-        return self.data[node]
+    def get_nodes(self):
+        return list(self.nodes)
 
-    def incoming(self, node):
+    def get_edges(self):
+        return list(self.edges)
+
+    def get_node(self, node_id):
+        node = list(filter(lambda x: x.value==node_id, self.get_nodes()))
+        return node if len(node) == 0 else node[0]
+
+    def get_node_ids(self):
+        return [x.value for x in self.get_nodes()]
+
+    def get_node_label(self, node_id):
+        node = self.get_node(node_id)
+        return None if node == [] else node.label
+
+    def get_edge_label(self, edge):
+        n1, n2 = edge
+        if edge not in self.get_edges():
+            raise IndexError('Edge {} not in Graph'.format(edge))
+        _n1 = list(filter(lambda x: x.value==n1, self.data.keys()))[0]
+        _n2 = list(filter(lambda x: x.value==n2, self.data[_n1]))[0]
+        return self.data[_n1][_n2]
+
+    def neighbors(self, node_id):
+        return self.data[self.get_node(node_id)]
+
+    def incoming(self, node_id):
+        node = self.get_node(node_id)
         return {n: adj[node] for n, adj in self.data.items() if node in adj}
 
-    def outgoing(self, node):
+    def outgoing(self, node_id):
+        node = self.get_node(node_id)
         return {n2: v for (n1, n2), v in self.edges.items() if n1 == node}
+
+    def add_missing_nodes(self):
+        existing_nodes = set(self.get_node_ids())
+        union = existing_nodes.union(set(x[1] for x in self.get_edges()))
+        for node_id in union.difference(existing_nodes):
+            self.nodes.add(node_id, 'out')
 
     class Nodes(MutableGraph.Nodes):
 
         def __init__(self, data):
             self.data = data
 
-        def add(self, node):
-            self.data.setdefault(node, {})
+        def add(self, node_id, label: str):
+            self[node_id] = label
 
-        def discard(self, node):
-            data = self.data
-            if node in data:
-                del data[node]
-                for neighbordict in data.values():
+        def discard(self, node_id):
+            node = self[node_id]
+            if node in self.data:
+                del self.data[node]
+                for neighbordict in self.data.values():
                     if node in neighbordict:
                         del neighbordict[node]
 
@@ -149,8 +187,25 @@ class DirectedGraph(MutableGraph):
         def __iter__(self):
             return iter(self.data)
 
-        def __contains__(self, node):
-                return node in self.data
+        def __contains__(self, node_id):
+            return self[node_id] in self.data
+
+        def __getitem__(self, node_id):
+            node = list(filter(lambda x: x.value==node_id, list(self)))
+            return node if len(node) == 0 else node[0]
+
+        def __setitem__(self, node_id, label: str):
+            node = self[node_id]
+            if node == []:
+                self.data.setdefault(Node(node_id, label=label), {})
+            elif node in list(self):
+                existing_node = list(filter(lambda x: x.value==node_id,
+                                            list(self)))[0]
+                if node.label == existing_node.label:
+                    print('Node {} already exists'.format(node))
+                else:
+                    raise('Attempting to set Node {} label to '
+                          '{}'.format(existing_node, node.label))
 
         @classmethod
         def _from_iterable(cls, it):
@@ -164,7 +219,7 @@ class DirectedGraph(MutableGraph):
             return super().__le__(other)
 
         def __iand__(self, c):
-            for node in  self - c:
+            for node in self - c:
                 self.discard(node)
             return self
 
@@ -175,26 +230,35 @@ class DirectedGraph(MutableGraph):
 
         def __contains__(self, edge):
             n1, n2 = edge
-            return n1 in self.data and n2 in self.data[n1]
+            if isinstance(n1, tuple) and isinstance(n2, tuple):
+                return n1 in self.data and n2 in self.data[n1]
+            else:
+                return edge in list(self)
 
-        def __getitem__(self, edge):
-            n1, n2 = edge
-            return self.data[n1][n2]
+        def __iter__(self):
+            return ((n1.value, n2.value) for n1, ndict in self.data.items() for n2 in ndict)
 
         def __len__(self):
             return sum(map(len, self.data.values()))
 
+        def __getitem__(self, edge):
+            n1, n2 = edge
+            _n1 = list(filter(lambda x: x.value==n1, self.data.keys()))[0]
+            _n2 = list(filter(lambda x: x.value==n2, self.data[_n1]))[0]
+            return self.data[_n1][_n2]
+
         def __setitem__(self, edge, value):
             n1, n2 = edge
-            data = self.data
-            data.setdefault(n2, {})
-            data.setdefault(n1, {})[n2] = value
+            _n1 = list(filter(lambda x: x.value==n1, self.data.keys()))[0]
+            _n2 = list(filter(lambda x: x.value==n2, self.data[_n1]))
+            _n2 = Node(n2) if len(_n2) == 0 else _n2[0]
+            self.data.setdefault(_n2, {})
+            self.data.setdefault(_n1, {})[_n2] = value
 
         def __delitem__(self, edge):
             n1, n2 = edge
+            _n1 = list(filter(lambda x: x.value==n1, self.data.keys()))[0]
+            _n2 = list(filter(lambda x: x.value==n2, self.data[_n1]))[0]
             del self.data[n1][n2]
-
-        def __iter__(self):
-            return ((n1, n2) for n1, ndict in self.data.items() for n2 in ndict)
 
 
