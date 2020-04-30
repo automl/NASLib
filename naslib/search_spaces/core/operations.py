@@ -1,152 +1,61 @@
-import torch
 import torch.nn as nn
 from collections import namedtuple
+from .metaclasses import MetaOp
+from .primitives import *
 
 
 Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
 
-
-# Batch Normalization from nasbench
-BN_MOMENTUM = 0.997
-BN_EPSILON = 1e-5
-
-"""NASBench OPS"""
-
-class ConvBnRelu(nn.Module):
-    """
-    Equivalent to conv_bn_relu
-    https://github.com/google-research/nasbench/blob/master/nasbench/lib/base_ops.py#L32
-    """
-
-    def __init__(self, C_in, C_out, kernel_size, stride, padding=1):
-        super(ConvBnRelu, self).__init__()
-        self.op = nn.Sequential(
-            # Padding = 1 is for a 3x3 kernel equivalent to tensorflow padding
-            # = same
-            nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=padding,
-                      bias=False),
-            # affine is equivalent to scale in original tensorflow code
-            nn.BatchNorm2d(C_out, affine=True, momentum=BN_MOMENTUM,
-                           eps=BN_EPSILON),
-            nn.ReLU(inplace=False)
-        )
-
-    def forward(self, x):
-        return self.op(x)
+OPS = {
+    'noise': lambda C, stride, affine: NoiseOp(stride, 0., 1.),
+    'none' : lambda C, stride, affine: Zero(stride),
+    'avg_pool_3x3' : lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
+    'max_pool_3x3' : lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1),
+    'skip_connect' : lambda C, stride, affine: Identity() if stride == 1 else FactorizedReduce(C, C, affine=affine),
+    'conv_bn_relu_1x1': lambda C, stride, affine: Conv1x1BnRelu(C, C, 1, stride, 0, affine=affine),
+    'conv_bn_relu_3x3': lambda C, stride, affine: Conv3x3BnRelu(C, C, 3, stride, 1, affine=affine),
+    'sep_conv_3x3' : lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
+    'sep_conv_5x5' : lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
+    'sep_conv_7x7' : lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
+    'dil_conv_3x3' : lambda C, stride, affine: DilConv(C, C, 3, stride, 2, 2, affine=affine),
+    'dil_conv_5x5' : lambda C, stride, affine: DilConv(C, C, 5, stride, 4, 2, affine=affine),
+    'conv_7x1_1x7' : lambda C, stride, affine: nn.Sequential(
+        nn.ReLU(inplace=False),
+        nn.Conv2d(C, C, (1,7), stride=(1, stride), padding=(0, 3), bias=False),
+        nn.Conv2d(C, C, (7,1), stride=(stride, 1), padding=(3, 0), bias=False),
+        nn.BatchNorm2d(C, affine=affine)
+    ),
+}
 
 
-class Conv3x3BnRelu(nn.Module):
-    """
-    Equivalent to Conv3x3BnRelu
-    https://github.com/google-research/nasbench/blob/master/nasbench/lib/base_ops.py#L96
-    """
 
-    def __init__(self, channels, stride):
-        super(Conv3x3BnRelu, self).__init__()
-        self.op = ConvBnRelu(C_in=channels, C_out=channels, kernel_size=3,
-                             stride=stride)
+class MixedOp(MetaOp):
+    def __init__(self, primitives):
+        super(MixedOp, self).__init__(primitives)
 
-    def forward(self, x):
-        return self.op(x)
+    def _build(self, C, stride, out_node_op=sum, ops_dict=OPS):
+        self.out_node_op = out_node_op
+        for primitive in self.primitives:
+            op = ops_dict[primitive](C, stride, False)
+            if 'pool' in primitive:
+                op = nn.Sequential(op, nn.BatchNorm2d(C, affine=False))
+            self._ops.append(op)
 
-
-class Conv1x1BnRelu(nn.Module):
-    """
-    Equivalent to Conv1x1BnRelu
-    https://github.com/google-research/nasbench/blob/master/nasbench/lib/base_ops.py#L107
-    """
-
-    def __init__(self, channels, stride):
-        super(Conv1x1BnRelu, self).__init__()
-        self.op = ConvBnRelu(C_in=channels, C_out=channels, kernel_size=1,
-                             stride=stride, padding=0)
-
-    def forward(self, x):
-        return self.op(x)
+    def forward(self, x, weights):
+        return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
 
 
-class ReLUConvBN(nn.Module):
+class CategoricalOp(MetaOp):
+    def __init__(self, primitives):
+        super(CategoricalOp, self).__init__()
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
-        super(ReLUConvBN, self).__init__()
-        self.op = nn.Sequential(
-            nn.ReLU(inplace=False),
-            nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=padding,
-                      bias=False),
-            nn.BatchNorm2d(C_out, affine=affine)
-        )
+    def _build(self, C, stride, out_node_op=sum, ops_dict=OPS):
+        self.out_node_op = out_node_op
+        for primitive in self.primitives:
+            op = ops_dict[primitive](C, stride, False)
+            self._ops.append(op)
 
-    def forward(self, x):
-        return self.op(x)
-
-
-class DilConv(nn.Module):
-
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
-    super(DilConv, self).__init__()
-    self.op = nn.Sequential(
-      nn.ReLU(inplace=False),
-      nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation, groups=C_in, bias=False),
-      nn.Conv2d(C_in, C_out, kernel_size=1, padding=0, bias=False),
-      nn.BatchNorm2d(C_out, affine=affine),
-      )
-
-  def forward(self, x):
-    return self.op(x)
+    def forward(self, x, weights=None):
+        return self.out_node_op(op(x) for op in self._ops)
 
 
-class SepConv(nn.Module):
-
-  def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
-    super(SepConv, self).__init__()
-    self.op = nn.Sequential(
-      nn.ReLU(inplace=False),
-      nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, groups=C_in, bias=False),
-      nn.Conv2d(C_in, C_in, kernel_size=1, padding=0, bias=False),
-      nn.BatchNorm2d(C_in, affine=affine),
-      nn.ReLU(inplace=False),
-      nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=1, padding=padding, groups=C_in, bias=False),
-      nn.Conv2d(C_in, C_out, kernel_size=1, padding=0, bias=False),
-      nn.BatchNorm2d(C_out, affine=affine),
-      )
-
-  def forward(self, x):
-    return self.op(x)
-
-
-class Identity(nn.Module):
-
-  def __init__(self):
-    super(Identity, self).__init__()
-
-  def forward(self, x):
-    return x
-
-
-class Zero(nn.Module):
-
-  def __init__(self, stride):
-    super(Zero, self).__init__()
-    self.stride = stride
-
-  def forward(self, x):
-    if self.stride == 1:
-      return x.mul(0.)
-    return x[:,:,::self.stride,::self.stride].mul(0.)
-
-
-class FactorizedReduce(nn.Module):
-
-  def __init__(self, C_in, C_out, affine=True):
-    super(FactorizedReduce, self).__init__()
-    assert C_out % 2 == 0
-    self.relu = nn.ReLU(inplace=False)
-    self.conv_1 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
-    self.conv_2 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
-    self.bn = nn.BatchNorm2d(C_out, affine=affine)
-
-  def forward(self, x):
-    x = self.relu(x)
-    out = torch.cat([self.conv_1(x), self.conv_2(x[:,:,1:,1:])], dim=1)
-    out = self.bn(out)
-    return out

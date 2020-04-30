@@ -1,0 +1,69 @@
+<?xml version='1.0' encoding='utf-8'?>
+<gexf version="1.2" xmlns="http://www.gexf.net/1.2draft" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/XMLSchema-instance">
+  <graph defaultedgetype="directed" mode="static" name="">
+    <attributes class="node" mode="static">
+      <attribute id="0" title="op" type="string" />
+    </attributes>
+    <meta>
+      <creator>NetworkX 2.2</creator>
+      <lastmodified>17/04/2020</lastmodified>
+    </meta>
+    <nodes>
+      <node id="0" label="IN">
+        <attvalues>
+          <attvalue for="0" value="None" />
+        </attvalues>
+      </node>
+      <node id="2" label="INT">
+        <attvalues>
+          <attvalue for="0" value="add" />
+        </attvalues>
+      </node>
+      <node id="3" label="INT">
+        <attvalues>
+          <attvalue for="0" value="add" />
+        </attvalues>
+      </node>
+      <node id="4" label="INT">
+        <attvalues>
+          <attvalue for="0" value="add" />
+        </attvalues>
+      </node>
+      <node id="5" label="INT">
+        <attvalues>
+          <attvalue for="0" value="add" />
+        </attvalues>
+      </node>
+      <node id="1" label="IN">
+        <attvalues>
+          <attvalue for="0" value="None" />
+        </attvalues>
+      </node>
+      <node id="6" label="OUT">
+        <attvalues>
+          <attvalue for="0" value="concat" />
+        </attvalues>
+      </node>
+    </nodes>
+    <edges>
+      <edge id="0" source="0" target="2" type="MixedOP" />
+      <edge id="1" source="0" target="3" type="MixedOP" />
+      <edge id="2" source="0" target="4" type="MixedOP" />
+      <edge id="3" source="0" target="5" type="MixedOP" />
+      <edge id="4" source="2" target="3" type="MixedOP" />
+      <edge id="5" source="2" target="4" type="MixedOP" />
+      <edge id="6" source="2" target="5" type="MixedOP" />
+      <edge id="7" source="2" target="6" type="None" />
+      <edge id="8" source="3" target="4" type="MixedOP" />
+      <edge id="9" source="3" target="5" type="MixedOP" />
+      <edge id="10" source="3" target="6" type="None" />
+      <edge id="11" source="4" target="5" type="MixedOP" />
+      <edge id="12" source="4" target="6" type="None" />
+      <edge id="13" source="5" target="6" type="None" />
+      <edge id="14" source="1" target="2" type="MixedOP" />
+      <edge id="15" source="1" target="3" type="MixedOP" />
+      <edge id="16" source="1" target="4" type="MixedOP" />
+      <edge id="17" source="1" target="5" type="MixedOP" />
+    </edges>
+  </graph>
+</gexf>

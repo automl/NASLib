@@ -1,0 +1,101 @@
+!!python/object:networkx.classes.digraph.DiGraph
+_adj:
+  0:
+    2: &id001
+      type: MixedOP
+    3: &id003
+      type: MixedOP
+    4: &id006
+      type: MixedOP
+    5: &id010
+      type: MixedOP
+  1:
+    2: &id002
+      type: MixedOP
+    3: &id004
+      type: MixedOP
+    4: &id007
+      type: MixedOP
+    5: &id011
+      type: MixedOP
+  2:
+    3: &id005
+      type: MixedOP
+    4: &id008
+      type: MixedOP
+    5: &id012
+      type: MixedOP
+    6: &id015
+      type: None
+  3:
+    4: &id009
+      type: MixedOP
+    5: &id013
+      type: MixedOP
+    6: &id016
+      type: None
+  4:
+    5: &id014
+      type: MixedOP
+    6: &id017
+      type: None
+  5:
+    6: &id018
+      type: None
+  6: {}
+_node: &id021
+  0:
+    label: IN
+    op: None
+  1:
+    label: IN
+    op: None
+  2:
+    label: INT
+    op: add
+  3:
+    label: INT
+    op: add
+  4:
+    label: INT
+    op: add
+  5:
+    label: INT
+    op: add
+  6:
+    label: OUT
+    op: concat
+_pred:
+  0: {}
+  1: {}
+  2:
+    0: *id001
+    1: *id002
+  3:
+    0: *id003
+    1: *id004
+    2: *id005
+  4:
+    0: *id006
+    1: *id007
+    2: *id008
+    3: *id009
+  5:
+    0: *id010
+    1: *id011
+    2: *id012
+    3: *id013
+    4: *id014
+  6:
+    2: *id015
+    3: *id016
+    4: *id017
+    5: *id018
+_succ: *id019
+adjlist_inner_dict_factory: &id020 !!python/name:builtins.dict ''
+adjlist_outer_dict_factory: *id020
+edge_attr_dict_factory: *id020
+graph: {}
+node_dict_factory: *id020
+nodes: !!python/object:networkx.classes.reportviews.NodeView
+  _nodes: *id021

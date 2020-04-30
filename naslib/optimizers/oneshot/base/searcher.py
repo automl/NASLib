@@ -12,7 +12,11 @@ import torchvision.datasets as dset
 from torch.autograd import Variable
 
 from naslib.utils import utils
-from naslib.optimizers.oneshot.base.model_search import Network
+#from naslib.optimizers.oneshot.base.model_search import Network
+from naslib.search_spaces.core.search_model import Network
+
+
+#TODO: change the code below to a more generic version
 
 
 class OneShotModelWrapper(object):
