@@ -1,10 +1,11 @@
 import networkx as nx
+import torch
 
 from naslib.search_spaces.core.operations import MixedOp
 from naslib.search_spaces.nasbench1shot1.utils import PRIMITIVES
 
 
-class Graph(nx.DiGraph):
+class Graph(nx.DiGraph, torch.nn.Module):
     def __init__(self, *args, **kwargs):
         super(Graph, self).__init__(*args, **kwargs)
 
@@ -70,17 +71,28 @@ class Graph(nx.DiGraph):
     def forward(self, input_tensor):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
+
+        # Todo: Find better way to specify the input nodes
+        self.nodes[1]['output'] = input_tensor
         for node in topo_order:
-            node_desc = graph.nodes[node]
+            node_info = self.nodes[node]
             # Run the edges which are connected to the predecessors.
             preds = list(self.predecessors(node))
             if len(preds) == 0:
                 pass
             else:
-                evaled_ops = []
+                op_outputs = []
                 for pred in preds:
+                    pred_info = self.nodes[pred]
+                    assert 'output' in pred_info, 'Predecessor of current node has no output.'
+
+                    pred_output = pred_info['output']
                     op = self.get_edge_data(pred, node)['op']
-                    evaled_ops.append(op)
+
+                    op_outputs.append(op(pred_output))
+
+                comb_op = node_info['comb_op']
+                self.nodes[node]['output'] = comb_op(torch.tensor(op_outputs))
 
 
 if __name__ == '__main__':

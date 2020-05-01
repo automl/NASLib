@@ -1,7 +1,4 @@
 from collections import namedtuple
-from .metaclasses import MetaOp
-from .primitives import *
-from collections import namedtuple
 
 from .metaclasses import MetaOp
 from .primitives import *
@@ -28,6 +25,15 @@ OPS = {
         nn.BatchNorm2d(C, affine=affine)
     ),
 }
+
+
+class TestOp(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.var = torch.zeros(size=[1], requires_grad=True)
+
+    def forward(self, x):
+        return x + self.var + 1
 
 
 class MixedOp(MetaOp):
