@@ -1,6 +1,7 @@
+import numpy as np
 import torch
 
-from naslib.search_spaces.core.graphs import Graph
+from naslib.search_spaces.core.graphs import CellGraph, MacroGraph
 from naslib.search_spaces.core.operations import TestOp
 
 
@@ -12,7 +13,7 @@ def identity(x):
     return x
 
 
-class DARTSCell(Graph):
+class DARTSCell(CellGraph):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -42,7 +43,43 @@ class DARTSCell(Graph):
         self.add_edge(5, 6, op=identity)
 
 
+class DARTSMacroGraph(MacroGraph):
+    def __init__(self, num_cells=8, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        num_reduction = 2
+        num_normal = num_cells - num_reduction
+        self.add_node(0, type='input')
+        self.add_node(1, op=identity, type='stem')
+
+        # Normal and reduction cells
+        # Todo: Add channel count computation
+        for cell_num in range(2, num_cells + 2):
+            if cell_num == np.floor(num_cells / 3) or cell_num == np.floor(2 * num_cells / 3):
+                self.add_node(cell_num, op=DARTSCell(type='reduction'), type='reduction')
+            else:
+                self.add_node(cell_num, op=DARTSCell(type='normal'), type='normal')
+
+        self.add_node(num_cells + 2, op=identity, type='pooling')
+        self.add_node(num_cells + 3, op=identity, type='classification')
+
+        # Edges
+        self.add_edge(0, 1)
+
+        # Parallel edge that's why MultiDiGraph
+        self.add_edge(1, 2, type='input', desc='previous-previous')
+        self.add_edge(1, 2, type='input', desc='previous')
+
+        for i in range(3, num_cells + 2):
+            self.add_edge(i - 2, i, type='input', desc='previous-previous')
+            self.add_edge(i - 1, i, type='input', desc='previous')
+
+        # From output of normal-reduction cell to pooling layer
+        self.add_edge(num_cells + 1, num_cells + 2)
+        self.add_edge(num_cells + 2, num_cells + 3)
+
+
 if __name__ == '__main__':
-    graph = DARTSCell()
+    graph = DARTSMacroGraph()
     graph(input_tensor=torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
     pass
