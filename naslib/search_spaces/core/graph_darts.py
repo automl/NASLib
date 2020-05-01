@@ -18,8 +18,8 @@ class DARTSCell(Graph):
 
         # ToDo: Create parser from yaml file format
         # Input Nodes: Previous / Previous-Previous cell
-        self.add_node(0, type='input', preprocessing=preprocessing, desc='previous-previous')
-        self.add_node(1, type='input', preprocessing=preprocessing, desc='previous')
+        self.add_node(0, type='input', preprocessing=identity, desc='previous-previous')
+        self.add_node(1, type='input', preprocessing=identity, desc='previous')
 
         # 4 intermediate nodes
         self.add_node(2, type='inter', comb_op=sum)
@@ -44,5 +44,5 @@ class DARTSCell(Graph):
 
 if __name__ == '__main__':
     graph = DARTSCell()
-    graph.forward(input_tensor=torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
+    graph(input_tensor=torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
     pass

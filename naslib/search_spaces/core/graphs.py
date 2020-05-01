@@ -74,9 +74,13 @@ class Graph(nx.DiGraph, Module):
         # Todo: Find better way to specify the input nodes
         self.nodes[0]['output'] = input_tensor
         self.nodes[1]['output'] = input_tensor
+
         for node in topo_order:
             node_info = self.nodes[node]
-            # Run the edges which are connected to the predecessors.
+            if 'preprocessing' in node_info:
+                node_info['output'] = node_info['preprocessing'](node_info['output'])
+
+            # Run the edges which are connected to the current node.
             preds = list(self.predecessors(node))
             if len(preds) == 0:
                 pass
