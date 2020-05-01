@@ -1,16 +1,16 @@
 import networkx as nx
+from torch.nn import Module
 
 from naslib.search_spaces.core.operations import MixedOp
 from naslib.search_spaces.nasbench1shot1.utils import PRIMITIVES
 
 
-class Graph(nx.DiGraph):
+class Graph(nx.DiGraph, Module):
     def __init__(self, *args, **kwargs):
-        super(Graph, self).__init__(*args, **kwargs)
-
+        nx.DiGraph.__init__(self, *args, **kwargs)
+        Module.__init__(self)
         # if len(self) <= 2:
         #    raise('The graph needs at least 1 intermediate node')
-
         self._init_node_attributes()
         self.input_nodes = self.input_nodes()
         self.op_nodes = None
