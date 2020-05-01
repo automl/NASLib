@@ -1,11 +1,10 @@
 import networkx as nx
-import torch
 
 from naslib.search_spaces.core.operations import MixedOp
 from naslib.search_spaces.nasbench1shot1.utils import PRIMITIVES
 
 
-class Graph(nx.DiGraph, torch.nn.Module):
+class Graph(nx.DiGraph):
     def __init__(self, *args, **kwargs):
         super(Graph, self).__init__(*args, **kwargs)
 
@@ -73,6 +72,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         topo_order = nx.algorithms.dag.topological_sort(self)
 
         # Todo: Find better way to specify the input nodes
+        self.nodes[0]['output'] = input_tensor
         self.nodes[1]['output'] = input_tensor
         for node in topo_order:
             node_info = self.nodes[node]
@@ -92,7 +92,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     op_outputs.append(op(pred_output))
 
                 comb_op = node_info['comb_op']
-                self.nodes[node]['output'] = comb_op(torch.tensor(op_outputs))
+                self.nodes[node]['output'] = comb_op(op_outputs)
 
 
 if __name__ == '__main__':
