@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from naslib.search_spaces.core.graphs import CellGraph, MacroGraph
+from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.operations import TestOp
 
 
@@ -13,7 +13,7 @@ def identity(x):
     return x
 
 
-class DARTSCell(CellGraph):
+class DARTSCell(EdgeOpGraph):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -43,7 +43,7 @@ class DARTSCell(CellGraph):
         self.add_edge(5, 6, op=identity)
 
 
-class DARTSMacroGraph(MacroGraph):
+class DARTSMacroGraph(NodeOpGraph):
     def __init__(self, num_cells=8, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -80,6 +80,6 @@ class DARTSMacroGraph(MacroGraph):
 
 
 if __name__ == '__main__':
-    graph = DARTSMacroGraph()
-    graph(input_tensor=torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
+    graph = DARTSCell()
+    graph(inputs=[torch.zeros(size=[1], dtype=torch.float, requires_grad=False) for _ in range(2)])
     pass
