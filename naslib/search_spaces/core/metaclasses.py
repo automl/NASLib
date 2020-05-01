@@ -35,7 +35,7 @@ class MetaCell(nn.Module):
 
 
 @six.add_metaclass(ABCMeta)
-class MetaModel(nn.Module):
+class MetaMacro(nn.Module):
     def __init__(self, graph, config):
         super(MetaModel, self).__init__()
         self.graph = graph
