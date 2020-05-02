@@ -80,8 +80,8 @@ class DARTSMacroGraph(NodeOpGraph):
 
 
 if __name__ == '__main__':
-    graph = DARTSMacroGraph()
-    graph(*torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
+    # graph = DARTSMacroGraph()
+    # graph(*torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
     graph = DARTSCell()
-    graph(*[torch.zeros(size=[1], dtype=torch.float, requires_grad=False) for _ in range(2)])
+    graph([torch.zeros(size=[1], dtype=torch.float, requires_grad=False) for _ in range(2)])
     pass

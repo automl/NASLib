@@ -1,20 +1,16 @@
-import itertools
 import networkx as nx
 
+from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
 from naslib.search_spaces.core.operations import MixedOp
 from naslib.search_spaces.nasbench1shot1.utils import PRIMITIVES
-from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
 
 
 class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
     """A graph whose edges contain operations"""
+
     def __init__(self, *args, **kwargs):
         nx.DiGraph.__init__(self, *args, **kwargs)
         MetaEdgeOpGraph.__init__(self)
-
-        self.input_nodes = self.input_nodes()
-        self.inter_nodes = self.inter_nodes()
-        self.output_nodes = self.output_nodes()
 
     def is_input(self, node_idx):
         return self.nodes[node_idx]['type'] == 'input'
@@ -38,19 +34,19 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
         return output_nodes
 
     def num_input_nodes(self):
-        return len(self.input_nodes)
+        return len(self.input_nodes())
 
     def num_inter_nodes(self):
-        return len(self.inter_nodes)
+        return len(self.inter_nodes())
 
     def num_output_nodes(self):
-        return len(self.output_nodes)
+        return len(self.output_nodes())
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
 
-        input_nodes = self.get_inputs()
+        input_nodes = self.input_nodes()
         assert len(input_nodes) == len(inputs), "Number of inputs isn't the same as the number of inputs in the graph"
         for input_node, input in zip(input_nodes, inputs):
             input, = input
@@ -83,6 +79,7 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
 
 class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
     """A graph whose nodes contain operations"""
+
     def __init__(self, *args, **kwargs):
         nx.MultiDiGraph.__init__(self, *args, **kwargs)
         MetaNodeOpGraph.__init__(self)
