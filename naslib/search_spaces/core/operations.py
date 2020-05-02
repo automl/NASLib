@@ -53,14 +53,15 @@ class MixedOp(MetaOp):
 
 
 class CategoricalOp(MetaOp):
-    def __init__(self, primitives):
+    def __init__(self, primitives, C, stride, out_node_op, ops_dict=OPS):
         super(CategoricalOp, self).__init__()
+        self.build(C, stride, out_node_op, ops_dict)
 
-    def _build(self, C, stride, out_node_op=sum, ops_dict=OPS):
+    def build(cls, C, stride, out_node_op=sum, ops_dict=OPS):
         self.out_node_op = out_node_op
         for primitive in self.primitives:
             op = ops_dict[primitive](C, stride, False)
             self._ops.append(op)
 
-    def forward(self, x, weights=None):
+    def forward(self, x):
         return self.out_node_op(op(x) for op in self._ops)

@@ -18,7 +18,7 @@ class MetaOp(nn.Module):
         raise NotImplementedError
 
     @abstractmethod
-    def _build(self, C, stride, out_node_op, ops_dict):
+    def build(self, C, stride, out_node_op, ops_dict):
         pass
 
 
