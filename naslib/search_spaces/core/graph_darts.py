@@ -53,7 +53,7 @@ class DARTSCell(EdgeOpGraph):
                 self.add_edge(
                     from_node, to_node, op=CategoricalOp(
                         primitives=PRIMITIVES, C=self.C, stride=stride,
-                        out_node_op=to_node['comb_op']
+                        out_node_op=self.nodes[to_node]['comb_op']
                     )
                 )
 

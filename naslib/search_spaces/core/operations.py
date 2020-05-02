@@ -11,8 +11,8 @@ OPS = {
     'avg_pool_3x3': lambda C, stride, affine: nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
     'max_pool_3x3': lambda C, stride, affine: nn.MaxPool2d(3, stride=stride, padding=1),
     'skip_connect': lambda C, stride, affine: Identity() if stride == 1 else FactorizedReduce(C, C, affine=affine),
-    'conv_bn_relu_1x1': lambda C, stride, affine: Conv1x1BnRelu(C, C, 1, stride, 0, affine=affine),
-    'conv_bn_relu_3x3': lambda C, stride, affine: Conv3x3BnRelu(C, C, 3, stride, 1, affine=affine),
+    'conv_bn_relu_1x1': lambda C, stride, affine: ConvBnRelu(C, C, 1, stride, 0, affine=affine),
+    'conv_bn_relu_3x3': lambda C, stride, affine: ConvBnRelu(C, C, 3, stride, 1, affine=affine),
     'sep_conv_3x3': lambda C, stride, affine: SepConv(C, C, 3, stride, 1, affine=affine),
     'sep_conv_5x5': lambda C, stride, affine: SepConv(C, C, 5, stride, 2, affine=affine),
     'sep_conv_7x7': lambda C, stride, affine: SepConv(C, C, 7, stride, 3, affine=affine),
@@ -54,10 +54,10 @@ class MixedOp(MetaOp):
 
 class CategoricalOp(MetaOp):
     def __init__(self, primitives, C, stride, out_node_op, ops_dict=OPS):
-        super(CategoricalOp, self).__init__()
+        super(CategoricalOp, self).__init__(primitives)
         self.build(C, stride, out_node_op, ops_dict)
 
-    def build(cls, C, stride, out_node_op=sum, ops_dict=OPS):
+    def build(self, C, stride, out_node_op=sum, ops_dict=OPS):
         self.out_node_op = out_node_op
         for primitive in self.primitives:
             op = ops_dict[primitive](C, stride, False)
