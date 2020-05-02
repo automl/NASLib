@@ -56,7 +56,6 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
         input_nodes = self.input_nodes()
         assert len(input_nodes) == len(inputs), "Number of inputs isn't the same as the number of inputs in the graph"
         for input_node, input in zip(input_nodes, inputs):
-            input, = input
             self.nodes[input_node]['output'] = input
 
         for node in topo_order:
@@ -69,18 +68,21 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
             if len(preds) == 0:
                 pass
             else:
-                op_outputs = []
+                edge_outputs = []
                 for pred in preds:
                     pred_info = self.nodes[pred]
                     assert 'output' in pred_info, 'Predecessor of current node has no output.'
 
+                    # Evaluate the edge from the predecessor to the current node.
                     pred_output = pred_info['output']
                     op = self.get_edge_data(pred, node)['op']
+                    edge_output = op(pred_output)
 
-                    op_outputs.append(op(pred_output))
+                    edge_outputs.append(edge_output)
 
+                # Combine evaluated input edges to form output of the cell
                 comb_op = node_info['comb_op']
-                self.nodes[node]['output'] = comb_op(op_outputs)
+                self.nodes[node]['output'] = comb_op(edge_outputs)
         return [self.nodes[node]['output'] for node in self.output_nodes()]
 
 

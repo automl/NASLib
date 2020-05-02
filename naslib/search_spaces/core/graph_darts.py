@@ -123,6 +123,6 @@ class DARTSMacroGraph(NodeOpGraph):
 if __name__ == '__main__':
     # graph = DARTSMacroGraph()
     # graph(*torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
-    graph = DARTSCell()
-    graph([torch.zeros(size=[1], dtype=torch.float, requires_grad=False) for _ in range(2)])
+    graph = DARTSCell(C_prev_prev=4, C_prev=4, C=8, reduction_prev=False, type='reduction')
+    graph([torch.zeros(size=[1, 4, 28, 28], dtype=torch.float, requires_grad=False) for _ in range(2)])
     pass
