@@ -1,5 +1,3 @@
-import itertools
-
 import networkx as nx
 from torch.nn import Module
 
@@ -21,13 +19,35 @@ class EdgeOpGraph(nx.DiGraph, Module):
                 inputs.append(node)
         return inputs
 
-    def forward(self, inputs):
+    def is_input(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'input'
+
+    def is_inter(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'inter'
+
+    def is_output(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'output'
+
+    def input_nodes(self):
+        input_nodes = [n for n in self.nodes if self.is_input(n)]
+        return input_nodes
+
+    def inter_nodes(self):
+        inter_nodes = [n for n in self.nodes if self.is_inter(n)]
+        return inter_nodes
+
+    def output_nodes(self):
+        output_nodes = [n for n in self.nodes if self.is_output(n)]
+        return output_nodes
+
+    def forward(self, *inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
 
         input_nodes = self.get_inputs()
         assert len(input_nodes) == len(inputs), "Number of inputs isn't the same as the number of inputs in the graph"
         for input_node, input in zip(input_nodes, inputs):
+            input, = input
             self.nodes[input_node]['output'] = input
 
         for node in topo_order:
@@ -52,6 +72,7 @@ class EdgeOpGraph(nx.DiGraph, Module):
 
                 comb_op = node_info['comb_op']
                 self.nodes[node]['output'] = comb_op(op_outputs)
+        return [self.nodes[node]['output'] for node in self.output_nodes()]
 
 
 class NodeOpGraph(nx.MultiDiGraph, Module):
@@ -61,12 +82,12 @@ class NodeOpGraph(nx.MultiDiGraph, Module):
         nx.MultiDiGraph.__init__(self, *args, **kwargs)
         Module.__init__(self)
 
-    def forward(self, input_tensor):
+    def forward(self, *inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
 
         # Todo: Find better way to specify the input nodes
-        self.nodes[0]['output'] = input_tensor
+        self.nodes[0]['output'] = inputs
         for node in topo_order:
             node_info = self.nodes[node]
 
@@ -75,24 +96,8 @@ class NodeOpGraph(nx.MultiDiGraph, Module):
             if len(preds) == 0:
                 pass
             else:
-                edges = [self.get_edge_data(pred, node) for pred in preds]
-                edges_desc = list(itertools.chain.from_iterable(edges))
-
-                a = 2
-                # TODO: Correct implementation of the forward pass
-                '''
-                for pred in preds:
-                    pred_info = self.nodes[pred]
-                    assert 'output' in pred_info, 'Predecessor of current node has no output.'
-
-                    pred_output = pred_info['output']
-                    op = self.get_edge_data(pred, node)['op']
-
-                    op_outputs.append(op(pred_output))
-
-                comb_op = node_info['comb_op']
-                self.nodes[node]['output'] = comb_op(op_outputs)
-                '''
+                cell_input = [self.nodes[pred]['output'] for pred in preds]
+                node_info['output'] = node_info['op'](*cell_input)
 
 
 if __name__ == '__main__':

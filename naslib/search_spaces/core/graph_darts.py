@@ -47,10 +47,9 @@ class DARTSMacroGraph(NodeOpGraph):
     def __init__(self, num_cells=8, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        num_reduction = 2
-        num_normal = num_cells - num_reduction
         self.add_node(0, type='input')
         self.add_node(1, op=identity, type='stem')
+        self.add_node('1b', op=identity, type='stem')
 
         # Normal and reduction cells
         # Todo: Add channel count computation
@@ -65,10 +64,11 @@ class DARTSMacroGraph(NodeOpGraph):
 
         # Edges
         self.add_edge(0, 1)
+        self.add_edge(0, '1b')
 
         # Parallel edge that's why MultiDiGraph
         self.add_edge(1, 2, type='input', desc='previous-previous')
-        self.add_edge(1, 2, type='input', desc='previous')
+        self.add_edge('1b', 2, type='input', desc='previous')
 
         for i in range(3, num_cells + 2):
             self.add_edge(i - 2, i, type='input', desc='previous-previous')
@@ -80,6 +80,8 @@ class DARTSMacroGraph(NodeOpGraph):
 
 
 if __name__ == '__main__':
+    graph = DARTSMacroGraph()
+    graph(*torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
     graph = DARTSCell()
-    graph(inputs=[torch.zeros(size=[1], dtype=torch.float, requires_grad=False) for _ in range(2)])
+    graph(*[torch.zeros(size=[1], dtype=torch.float, requires_grad=False) for _ in range(2)])
     pass
