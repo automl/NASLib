@@ -10,7 +10,7 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
     """A graph whose edges contain operations"""
     def __init__(self, *args, **kwargs):
         nx.DiGraph.__init__(self, *args, **kwargs)
-        Module.__init__(self)
+        MetaEdgeOpGraph.__init__(self)
 
         self.input_nodes = self.input_nodes()
         self.inter_nodes = self.inter_nodes()
@@ -85,7 +85,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
     """A graph whose nodes contain operations"""
     def __init__(self, *args, **kwargs):
         nx.MultiDiGraph.__init__(self, *args, **kwargs)
-        Module.__init__(self)
+        MetaNodeOpGraph.__init__(self)
 
     def forward(self, *inputs):
         # Evaluate the graph in topological ordering
