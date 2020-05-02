@@ -20,11 +20,11 @@ PRIMITIVES = [
 
 class DARTSCell(EdgeOpGraph):
     def __init__(self, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.C_prev_prev = C_prev_prev
         self.C_prev = C_prev
         self.C = C
         self.reduction_prev = reduction_prev
+        super().__init__(*args, **kwargs)
 
     def _build_graph(self):
         # Input Nodes: Previous / Previous-Previous cell
