@@ -1,20 +1,16 @@
-import itertools
-
 import networkx as nx
 
-from naslib.search_spaces.core.metaclasses import MetaCell, MetaMacro
+from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
 from naslib.search_spaces.core.operations import MixedOp
 from naslib.search_spaces.nasbench1shot1.utils import PRIMITIVES
 
 
-class CellGraph(nx.DiGraph, MetaCell):
-    def __init__(self, graph, config, *args, **kwargs):
-        nx.DiGraph.__init__(self, *args, **kwargs)
-        MetaCell.__init__(self, graph, config)
+class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
+    """A graph whose edges contain operations"""
 
-        self.input_nodes = self.input_nodes()
-        self.inter_nodes = self.inter_nodes()
-        self.output_nodes = self.output_nodes()
+    def __init__(self, *args, **kwargs):
+        nx.DiGraph.__init__(self, *args, **kwargs)
+        MetaEdgeOpGraph.__init__(self)
 
     def is_input(self, node_idx):
         return self.nodes[node_idx]['type'] == 'input'
@@ -38,21 +34,23 @@ class CellGraph(nx.DiGraph, MetaCell):
         return output_nodes
 
     def num_input_nodes(self):
-        return len(self.input_nodes)
+        return len(self.input_nodes())
 
     def num_inter_nodes(self):
-        return len(self.inter_nodes)
+        return len(self.inter_nodes())
 
     def num_output_nodes(self):
-        return len(self.output_nodes)
+        return len(self.output_nodes())
 
-    def forward(self, input_tensor):
+    def forward(self, inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
 
-        # Todo: Find better way to specify the input nodes
-        self.nodes[0]['output'] = input_tensor
-        self.nodes[1]['output'] = input_tensor
+        input_nodes = self.input_nodes()
+        assert len(input_nodes) == len(inputs), "Number of inputs isn't the same as the number of inputs in the graph"
+        for input_node, input in zip(input_nodes, inputs):
+            input, = input
+            self.nodes[input_node]['output'] = input
 
         for node in topo_order:
             node_info = self.nodes[node]
@@ -76,19 +74,22 @@ class CellGraph(nx.DiGraph, MetaCell):
 
                 comb_op = node_info['comb_op']
                 self.nodes[node]['output'] = comb_op(op_outputs)
+        return [self.nodes[node]['output'] for node in self.output_nodes()]
 
 
-class MacroGraph(nx.MultiDiGraph, MetaMacro):
-    def __init__(self, graph, config, *args, **kwargs):
+class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
+    """A graph whose nodes contain operations"""
+
+    def __init__(self, *args, **kwargs):
         nx.MultiDiGraph.__init__(self, *args, **kwargs)
-        MetaMacro.__init__(self, graph, config)
+        MetaNodeOpGraph.__init__(self)
 
-    def forward(self, input_tensor):
+    def forward(self, *inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
 
         # Todo: Find better way to specify the input nodes
-        self.nodes[0]['output'] = input_tensor
+        self.nodes[0]['output'] = inputs
         for node in topo_order:
             node_info = self.nodes[node]
 
@@ -97,29 +98,15 @@ class MacroGraph(nx.MultiDiGraph, MetaMacro):
             if len(preds) == 0:
                 pass
             else:
-                edges = [self.get_edge_data(pred, node) for pred in preds]
-                edges_desc = list(itertools.chain.from_iterable(edges))
-                # TODO: Correct implementation of the forward pass
-                '''
-                for pred in preds:
-                    pred_info = self.nodes[pred]
-                    assert 'output' in pred_info, 'Predecessor of current node has no output.'
-
-                    pred_output = pred_info['output']
-                    op = self.get_edge_data(pred, node)['op']
-
-                    op_outputs.append(op(pred_output))
-
-                comb_op = node_info['comb_op']
-                self.nodes[node]['output'] = comb_op(op_outputs)
-                '''
+                cell_input = [self.nodes[pred]['output'] for pred in preds]
+                node_info['output'] = node_info['op'](*cell_input)
 
 
 if __name__ == '__main__':
-    graph = CellGraph({0: {1: {'op': MixedOp(PRIMITIVES)},
-                           2: {'op': MixedOp(PRIMITIVES)},
-                           3: {'op': MixedOp(PRIMITIVES)}},
-                       1: {2: {'op': MixedOp(PRIMITIVES)},
-                           3: {'op': MixedOp(PRIMITIVES)}},
-                       2: {3: {'op': MixedOp(PRIMITIVES)}}})
+    graph = EdgeOpGraph({0: {1: {'op': MixedOp(PRIMITIVES)},
+                             2: {'op': MixedOp(PRIMITIVES)},
+                             3: {'op': MixedOp(PRIMITIVES)}},
+                         1: {2: {'op': MixedOp(PRIMITIVES)},
+                             3: {'op': MixedOp(PRIMITIVES)}},
+                         2: {3: {'op': MixedOp(PRIMITIVES)}}})
     graph.forward(input_tensor=None)

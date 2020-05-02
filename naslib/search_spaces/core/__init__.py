@@ -1,1 +1,1 @@
-from .graphs import CellGraph
+from .graphs import EdgeOpGraph, NodeOpGraph
