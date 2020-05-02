@@ -9,17 +9,6 @@ from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, I
 PRIMITIVES = None
 
 
-def preprocessing(C_from, C_to, reduction_prev):
-    if reduction_prev:
-        return FactorizedReduce(C_from, C_to, affine=False)
-    else:
-        return ReLUConvBN(C_from, C_to, 1, 1, 0, affine=False)
-
-
-def identity(x):
-    return x
-
-
 class DARTSCell(EdgeOpGraph):
     def __init__(self, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,9 +19,13 @@ class DARTSCell(EdgeOpGraph):
 
     def _build_graph(self):
         # Input Nodes: Previous / Previous-Previous cell
-        self.add_node(0, type='input', preprocessing=preprocessing(self.C_prev_prev, self.C, self.reduction_prev),
-                      desc='previous-previous')
-        self.add_node(1, type='input', preprocessing=preprocessing(self.C_prev, self.C, False), desc='previous')
+        preprocessing0 = FactorizedReduce(
+            self.C_prev_prev, self.C, affine=False
+        ) if self.reduction_prev else ReLUConvBN(self.C_prev_prev, self.C, affine=False)
+        preprocessing1 = ReLUConvBN(self.C_prev, self.C, affine=False)
+
+        self.add_node(0, type='input', preprocessing=preprocessing0, desc='previous-previous')
+        self.add_node(1, type='input', preprocessing=preprocessing1, desc='previous')
 
         # 4 intermediate nodes
         self.add_node(2, type='inter', comb_op=sum)
