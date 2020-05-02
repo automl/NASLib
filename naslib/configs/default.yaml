@@ -4,7 +4,9 @@ seed: 2
 report_freq: 50
 
 init_channels: 16
-layers: 9
+channel_multiplier: 4
+stem_multiplier: 3
+layers: 8
 model_path: "nashbench1shot1.saved_models"
 
 batch_size: 96

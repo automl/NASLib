@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 import networkx as nx
 
 from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
@@ -11,6 +13,10 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
     def __init__(self, *args, **kwargs):
         nx.DiGraph.__init__(self, *args, **kwargs)
         MetaEdgeOpGraph.__init__(self)
+
+    @abstractmethod
+    def _build_graph(self):
+        pass
 
     def is_input(self, node_idx):
         return self.nodes[node_idx]['type'] == 'input'
@@ -83,6 +89,10 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
     def __init__(self, *args, **kwargs):
         nx.MultiDiGraph.__init__(self, *args, **kwargs)
         MetaNodeOpGraph.__init__(self)
+
+    @abstractmethod
+    def _build_graph(self):
+        pass
 
     def forward(self, *inputs):
         # Evaluate the graph in topological ordering
