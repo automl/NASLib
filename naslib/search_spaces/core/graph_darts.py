@@ -3,10 +3,10 @@ import torch
 import yaml
 from torch import nn
 
-from naslib.utils import AttrDict
 from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.operations import CategoricalOp
-from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity
+from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity, Stem
+from naslib.utils import AttrDict
 
 PRIMITIVES = [
     'none',
@@ -68,18 +68,15 @@ class DARTSCell(EdgeOpGraph):
 
 class DARTSMacroGraph(NodeOpGraph):
     def __init__(self, config, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.config = config
+        super().__init__(*args, **kwargs)
 
     def _build_graph(self):
         num_layers = self.config['layers']
         C = self.config['init_channels']
         C_curr = self.config['stem_multiplier'] * C
 
-        stem = nn.Sequential(
-            nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
-            nn.BatchNorm2d(C_curr)
-        )
+        stem = Stem(C_curr=C_curr)
         C_prev_prev, C_prev, C_curr = C_curr, C_curr, C
 
         self.add_node(0, type='input')
@@ -128,7 +125,7 @@ if __name__ == '__main__':
         config = AttrDict(config)
 
     graph = DARTSMacroGraph(config=config)
-    # graph(*torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
+    res = graph(torch.randn(size=[1, 3, 28, 28], dtype=torch.float, requires_grad=False))
     graph = DARTSCell(C_prev_prev=4, C_prev=4, C=8, reduction_prev=False, type='reduction')
-    graph([torch.zeros(size=[1, 4, 28, 28], dtype=torch.float, requires_grad=False) for _ in range(2)])
+    res = graph([torch.zeros(size=[1, 4, 28, 28], dtype=torch.float, requires_grad=False) for _ in range(2)])
     pass

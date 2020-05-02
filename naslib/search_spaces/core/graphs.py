@@ -98,7 +98,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
     def _build_graph(self):
         pass
 
-    def forward(self, *inputs):
+    def forward(self, inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
 
@@ -113,7 +113,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
                 pass
             else:
                 cell_input = [self.nodes[pred]['output'] for pred in preds]
-                node_info['output'] = node_info['op'](*cell_input)
+                node_info['output'] = node_info['op'](cell_input)
 
 
 if __name__ == '__main__':
