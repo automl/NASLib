@@ -1,7 +1,9 @@
 import numpy as np
 import torch
+import yaml
 from torch import nn
 
+from naslib.utils import AttrDict
 from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.operations import CategoricalOp
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity
@@ -121,7 +123,11 @@ class DARTSMacroGraph(NodeOpGraph):
 
 
 if __name__ == '__main__':
-    # graph = DARTSMacroGraph()
+    with open('../../configs/default.yaml') as f:
+        config = yaml.safe_load(f)
+        config = AttrDict(config)
+
+    graph = DARTSMacroGraph(config=config)
     # graph(*torch.zeros(size=[1], dtype=torch.float, requires_grad=False))
     graph = DARTSCell(C_prev_prev=4, C_prev=4, C=8, reduction_prev=False, type='reduction')
     graph([torch.zeros(size=[1, 4, 28, 28], dtype=torch.float, requires_grad=False) for _ in range(2)])
