@@ -28,6 +28,10 @@ class MetaEdgeOpGraph(nn.Module):
         super(MetaEdgeOpGraph, self).__init__()
 
     @abstractmethod
+    def _build_graph(self):
+        pass
+
+    @abstractmethod
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -36,6 +40,10 @@ class MetaEdgeOpGraph(nn.Module):
 class MetaNodeOpGraph(nn.Module):
     def __init__(self, *args, **kwargs):
         super(MetaNodeOpGraph, self).__init__()
+
+    @abstractmethod
+    def _build_graph(self):
+        pass
 
     @abstractmethod
     def forward(self, *args, **kwargs):

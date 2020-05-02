@@ -9,7 +9,7 @@ from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, I
 from naslib.utils import AttrDict
 
 PRIMITIVES = [
-    'none',
+    #'none',
     'max_pool_3x3',
     'avg_pool_3x3',
     'skip_connect',

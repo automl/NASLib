@@ -15,7 +15,6 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
         MetaEdgeOpGraph.__init__(self)
         self._build_graph()
 
-    @abstractmethod
     def _build_graph(self):
         pass
 
@@ -94,7 +93,6 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
         MetaNodeOpGraph.__init__(self)
         self._build_graph()
 
-    @abstractmethod
     def _build_graph(self):
         pass
 
