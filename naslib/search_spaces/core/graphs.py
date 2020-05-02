@@ -1,15 +1,16 @@
 import itertools
+
 import networkx as nx
 
+from naslib.search_spaces.core.metaclasses import MetaCell, MetaMacro
 from naslib.search_spaces.core.operations import MixedOp
 from naslib.search_spaces.nasbench1shot1.utils import PRIMITIVES
-from naslib.search_spaces.core.metaclasses import MetaCell, MetaMacro
 
 
 class CellGraph(nx.DiGraph, MetaCell):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, graph, config, *args, **kwargs):
         nx.DiGraph.__init__(self, *args, **kwargs)
-        Module.__init__(self)
+        MetaCell.__init__(self, graph, config)
 
         self.input_nodes = self.input_nodes()
         self.inter_nodes = self.inter_nodes()
@@ -78,9 +79,9 @@ class CellGraph(nx.DiGraph, MetaCell):
 
 
 class MacroGraph(nx.MultiDiGraph, MetaMacro):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, graph, config, *args, **kwargs):
         nx.MultiDiGraph.__init__(self, *args, **kwargs)
-        Module.__init__(self)
+        MetaMacro.__init__(self, graph, config)
 
     def forward(self, input_tensor):
         # Evaluate the graph in topological ordering
@@ -98,7 +99,7 @@ class MacroGraph(nx.MultiDiGraph, MetaMacro):
             else:
                 edges = [self.get_edge_data(pred, node) for pred in preds]
                 edges_desc = list(itertools.chain.from_iterable(edges))
-                #TODO: Correct implementation of the forward pass
+                # TODO: Correct implementation of the forward pass
                 '''
                 for pred in preds:
                     pred_info = self.nodes[pred]

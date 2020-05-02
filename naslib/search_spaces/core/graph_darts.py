@@ -14,8 +14,8 @@ def identity(x):
 
 
 class DARTSCell(CellGraph):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, graph, config, *args, **kwargs):
+        super().__init__(graph, config, *args, **kwargs)
 
         # ToDo: Create parser from yaml file format
         # Input Nodes: Previous / Previous-Previous cell
@@ -44,8 +44,8 @@ class DARTSCell(CellGraph):
 
 
 class DARTSMacroGraph(MacroGraph):
-    def __init__(self, num_cells=8, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, graph, config, num_cells=8, *args, **kwargs):
+        super().__init__(graph, config, *args, **kwargs)
 
         num_reduction = 2
         num_normal = num_cells - num_reduction
