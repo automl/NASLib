@@ -24,10 +24,8 @@ class MetaOp(nn.Module):
 
 @six.add_metaclass(ABCMeta)
 class MetaEdgeOpGraph(nn.Module):
-    def __init__(self, graph, config):
+    def __init__(self, *args, **kwargs):
         super(MetaEdgeOpGraph, self).__init__()
-        self.graph = graph
-        self.config = config
 
     @abstractmethod
     def forward(self, *args, **kwargs):
@@ -36,10 +34,8 @@ class MetaEdgeOpGraph(nn.Module):
 
 @six.add_metaclass(ABCMeta)
 class MetaNodeOpGraph(nn.Module):
-    def __init__(self, graph, config):
+    def __init__(self, *args, **kwargs):
         super(MetaNodeOpGraph, self).__init__()
-        self.graph = graph
-        self.config = config
 
     @abstractmethod
     def forward(self, *args, **kwargs):
