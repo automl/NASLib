@@ -23,9 +23,9 @@ class MetaOp(nn.Module):
 
 
 @six.add_metaclass(ABCMeta)
-class MetaCell(nn.Module):
+class MetaEdgeOpGraph(nn.Module):
     def __init__(self, graph, config):
-        super(MetaCell, self).__init__()
+        super(MetaEdgeOpGraph, self).__init__()
         self.graph = graph
         self.config = config
 
@@ -35,9 +35,9 @@ class MetaCell(nn.Module):
 
 
 @six.add_metaclass(ABCMeta)
-class MetaMacro(nn.Module):
+class MetaNodeOpGraph(nn.Module):
     def __init__(self, graph, config):
-        super(MetaModel, self).__init__()
+        super(MetaNodeOpGraph, self).__init__()
         self.graph = graph
         self.config = config
 
