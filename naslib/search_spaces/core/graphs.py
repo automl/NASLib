@@ -1,5 +1,3 @@
-from abc import abstractmethod
-
 import networkx as nx
 
 from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
@@ -82,7 +80,9 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
                 # Combine evaluated input edges to form output of the cell
                 comb_op = node_info['comb_op']
                 self.nodes[node]['output'] = comb_op(edge_outputs)
-        return [self.nodes[node]['output'] for node in self.output_nodes()]
+
+        # Todo: Deal with multiple output EdgeOpGraphs
+        return [self.nodes[node]['output'] for node in self.output_nodes()][0]
 
 
 class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):

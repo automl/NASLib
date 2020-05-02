@@ -1,4 +1,5 @@
-import numpy as np
+from functools import partial
+
 import torch
 import yaml
 from torch import nn
@@ -9,7 +10,7 @@ from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, I
 from naslib.utils import AttrDict
 
 PRIMITIVES = [
-    #'none',
+    # 'none',
     'max_pool_3x3',
     'avg_pool_3x3',
     'skip_connect',
@@ -30,10 +31,8 @@ class DARTSCell(EdgeOpGraph):
 
     def _build_graph(self):
         # Input Nodes: Previous / Previous-Previous cell
-        preprocessing0 = FactorizedReduce(
-            self.C_prev_prev, self.C, affine=False
-        ) if self.reduction_prev else ReLUConvBN(self.C_prev_prev, self.C, 1,
-                                                 1, 0, affine=False)
+        preprocessing0 = FactorizedReduce(self.C_prev_prev, self.C, affine=False) \
+            if self.reduction_prev else ReLUConvBN(self.C_prev_prev, self.C, 1, 1, 0, affine=False)
         preprocessing1 = ReLUConvBN(self.C_prev, self.C, 1, 1, 0, affine=False)
 
         self.add_node(0, type='input', preprocessing=preprocessing0, desc='previous-previous')
@@ -46,7 +45,7 @@ class DARTSCell(EdgeOpGraph):
         self.add_node(5, type='inter', comb_op=sum)
 
         # Output node
-        self.add_node(6, type='output', comb_op=torch.cat)
+        self.add_node(6, type='output', comb_op=partial(torch.cat, dim=1))
 
         # Edges: input-inter and inter-inter
         for to_node in self.inter_nodes():
@@ -85,18 +84,19 @@ class DARTSMacroGraph(NodeOpGraph):
 
         # Normal and reduction cells
         reduction_prev = False
-        for cell_num in range(2, num_layers + 2):
-
-            if cell_num == np.floor(num_layers / 3) or cell_num == np.floor(2 * num_layers / 3):
+        for cell_num in range(num_layers):
+            if cell_num in [num_layers // 3, 2 * num_layers // 3]:
                 C_curr *= 2
-                self.add_node(cell_num, op=DARTSCell(type='reduction', C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr,
-                                                     reduction=True, reduction_prev=reduction_prev), type='reduction')
-                reduction_prev = True
+                reduction = True
+                cell_type = 'normal'
             else:
-                self.add_node(cell_num, op=DARTSCell(type='normal', C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr,
-                                                     reduction=False, reduction_prev=reduction_prev), type='normal')
-                reduction_prev = False
+                reduction = False
+                cell_type = 'reduction'
 
+            self.add_node(cell_num + 2,
+                          op=DARTSCell(C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr, reduction_prev=reduction_prev,
+                                       type=cell_type))
+            reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
 
         self.add_node(num_layers + 2, op=nn.AdaptiveAvgPool2d(1), type='pooling')
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         config = AttrDict(config)
 
     graph = DARTSMacroGraph(config=config)
-    res = graph(torch.randn(size=[1, 3, 28, 28], dtype=torch.float, requires_grad=False))
+    res = graph(torch.randn(size=[1, 3, 32, 32], dtype=torch.float, requires_grad=False))
     graph = DARTSCell(C_prev_prev=4, C_prev=4, C=8, reduction_prev=False, type='reduction')
     res = graph([torch.zeros(size=[1, 4, 28, 28], dtype=torch.float, requires_grad=False) for _ in range(2)])
     pass
