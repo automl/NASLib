@@ -30,8 +30,9 @@ class DARTSCell(EdgeOpGraph):
         # Input Nodes: Previous / Previous-Previous cell
         preprocessing0 = FactorizedReduce(
             self.C_prev_prev, self.C, affine=False
-        ) if self.reduction_prev else ReLUConvBN(self.C_prev_prev, self.C, affine=False)
-        preprocessing1 = ReLUConvBN(self.C_prev, self.C, affine=False)
+        ) if self.reduction_prev else ReLUConvBN(self.C_prev_prev, self.C, 1,
+                                                 1, 0, affine=False)
+        preprocessing1 = ReLUConvBN(self.C_prev, self.C, 1, 1, 0, affine=False)
 
         self.add_node(0, type='input', preprocessing=preprocessing0, desc='previous-previous')
         self.add_node(1, type='input', preprocessing=preprocessing1, desc='previous')
