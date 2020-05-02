@@ -9,7 +9,7 @@ from naslib.search_spaces.core.operations import CategoricalOp
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity
 
 PRIMITIVES = [
-    'none',
+    #'none',
     'max_pool_3x3',
     'avg_pool_3x3',
     'skip_connect',
@@ -68,8 +68,8 @@ class DARTSCell(EdgeOpGraph):
 
 class DARTSMacroGraph(NodeOpGraph):
     def __init__(self, config, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.config = config
+        super().__init__(*args, **kwargs)
 
     def _build_graph(self):
         num_layers = self.config['layers']
