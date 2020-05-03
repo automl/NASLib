@@ -91,11 +91,9 @@ class DARTSMacroGraph(NodeOpGraph):
             else:
                 reduction = False
 
-            cell_type = 'reduction' if reduction else 'normal'
-
             self.add_node(cell_num + 2,
                           op=DARTSCell(C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr, reduction_prev=reduction_prev,
-                                       type=cell_type))
+                                       type='reduction' if reduction else 'normal'))
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
 
