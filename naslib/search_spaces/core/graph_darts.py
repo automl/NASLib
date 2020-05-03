@@ -99,8 +99,10 @@ class DARTSMacroGraph(NodeOpGraph):
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
 
-        self.add_node(num_layers + 2, op=nn.AdaptiveAvgPool2d(1), type='pooling')
-        self.add_node(num_layers + 3, op=nn.Linear(C_prev, self.config['num_classes']), type='classification')
+        self.add_node(num_layers + 2, op=lambda x: nn.AdaptiveAvgPool2d(1)(x[0]), type='pooling')
+        self.add_node(num_layers + 3,
+                      op=lambda x: nn.Linear(C_prev, self.config['num_classes'])(x[0].view(x[0].size(0), -1)),
+                      type='classification')
 
         # Edges
         self.add_edge(0, 1)

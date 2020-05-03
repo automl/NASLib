@@ -1,8 +1,6 @@
 import networkx as nx
 
 from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
-from naslib.search_spaces.core.operations import MixedOp
-from naslib.search_spaces.nasbench1shot1.utils import PRIMITIVES
 
 
 class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
@@ -115,10 +113,4 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
 
 
 if __name__ == '__main__':
-    graph = EdgeOpGraph({0: {1: {'op': MixedOp(PRIMITIVES)},
-                             2: {'op': MixedOp(PRIMITIVES)},
-                             3: {'op': MixedOp(PRIMITIVES)}},
-                         1: {2: {'op': MixedOp(PRIMITIVES)},
-                             3: {'op': MixedOp(PRIMITIVES)}},
-                         2: {3: {'op': MixedOp(PRIMITIVES)}}})
-    graph.forward(input_tensor=None)
+    pass
