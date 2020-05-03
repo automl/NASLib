@@ -48,6 +48,7 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
 
+        # Todo deal with multidigraph input.
         input_nodes = self.input_nodes()
         assert len(input_nodes) == len(inputs), "Number of inputs isn't the same as the number of inputs in the graph"
         for input_node, input in zip(input_nodes, inputs):
