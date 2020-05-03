@@ -88,10 +88,10 @@ class DARTSMacroGraph(NodeOpGraph):
             if cell_num in [num_layers // 3, 2 * num_layers // 3]:
                 C_curr *= 2
                 reduction = True
-                cell_type = 'normal'
             else:
                 reduction = False
-                cell_type = 'reduction'
+
+            cell_type = 'reduction' if reduction else 'normal'
 
             self.add_node(cell_num + 2,
                           op=DARTSCell(C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr, reduction_prev=reduction_prev,
