@@ -45,9 +45,19 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
         return len(self.output_nodes())
 
     def parse(self, optimizer):
-        # Go through edges and replace PRIMITIVE op sets with MixedOps
-        # Add assigned architectural weights to the optimizer.
-        pass
+        topo_order = nx.algorithms.dag.topological_sort(self)
+
+        for node in topo_order:
+            node_info = self.nodes[node]
+            # Run the edges which are connected to the current node.
+            preds = list(self.predecessors(node))
+            if len(preds) == 0:
+                pass
+            else:
+                for pred in preds:
+                    # Replace the operation in the edge with an optimizer compatible one.
+                    edge_data = self.get_edge_data(pred, node)
+                    edge_data = optimizer.replace_function(edge_data)
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
@@ -101,9 +111,20 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
         pass
 
     def parse(self, optimizer):
-        # Go through edges and replace PRIMITIVE op sets with MixedOps
-        # Add assigned architectural weights to the optimizer.
-        pass
+        topo_order = nx.algorithms.dag.topological_sort(self)
+
+        for node in topo_order:
+            node_info = self.nodes[node]
+
+            # Run the edges which are connected to the current node.
+            preds = list(self.predecessors(node))
+            if len(preds) == 0:
+                pass
+            else:
+                op = node_info['op']
+                # Recursively run through EdgeOp graph cells
+                if issubclass(type(op), EdgeOpGraph):
+                    op.parse(optimizer)
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
@@ -121,6 +142,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
             else:
                 cell_input = [self.nodes[pred]['output'] for pred in preds]
                 node_info['output'] = node_info['op'](cell_input)
+        return node_info['output']
 
 
 if __name__ == '__main__':
