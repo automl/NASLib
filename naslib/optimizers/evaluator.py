@@ -22,6 +22,88 @@ class Evaluator(object):
         except:
             raise('No configuration specified in graph or kwargs')
 
+        np.random.seed(config.seed)
+        random.seed(config.seed)
+        torch.manual_seed(config.seed)
+        torch.cuda.set_device(config.gpu)
+        cudnn.benchmark = False
+        cudnn.enabled = True
+        cudnn.deterministic = True
+        torch.cuda.manual_seed_all(config.seed)
+
+        #TODO: move all the data loading and preproces inside another method
+        train_transform, valid_transform = utils._data_transforms_cifar10(args)
+        self.train_transform = train_transform
+        self.valid_transform = valid_transform
+        train_data = dset.CIFAR10(root=config.data, train=True, download=True, transform=train_transform)
+        test_data = dset.CIFAR10(root=args.data, train=False, download=True, transform=valid_transform)
+
+        num_train = len(train_data)
+        indices = list(range(num_train))
+        split = int(np.floor(config.train_portion * num_train))
+
+        self.train_queue = torch.utils.data.DataLoader(
+            train_data, batch_size=config.batch_size,
+            sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
+            pin_memory=True, num_workers=0,
+            worker_init_fn=np.random.seed(config.seed))
+
+        self.valid_queue = torch.utils.data.DataLoader(
+            train_data, batch_size=config.batch_size,
+            sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
+            pin_memory=True, num_workers=0,
+            worker_init_fn=np.random.seed(config.seed))
+
+        self.test_queue = torch.utils.data.DataLoader(
+            test_data, batch_size=config.batch_size,
+            shuffle=False, pin_memory=True, num_workers=0)
+
+        criterion = eval('nn.'+config.criterion)()
+        self.criterion = criterion.cuda()
+
+        self.model = graph.cuda()
+
+        logging.info("param size = %fMB", utils.count_parameters_in_MB(self.model))
+
+        optimizer = torch.optim.SGD(
+            self.model.parameters(),
+            config.learning_rate,
+            momentum=config.momentum,
+            weight_decay=config.weight_decay)
+        self.optimizer = optimizer
+
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, float(config.epochs), eta_min=config.learning_rate_min)
+
+        logging.info('Args: {}'.format(config))
+
+
+    def run(self, *args, **kwargs):
+        if 'epochs' not in kwargs:
+            epochs = self.config.epochs
+        else:
+            raise('No number of epochs specified to run network')
+
+        for epoch in range(epochs):
+            logging.info('epoch %d lr %e', epoch, self.scheduler.get_lr()[0])
+            self.model.drop_path_prob = config.drop_path_prob * epoch / epochs
+
+            train_acc, train_obj = Evaluator.train(self.model, self.optimizer,
+                                                   self.criterion,
+                                                   self.train_queue)
+            logging.info('train_acc %f', train_acc)
+
+            if len(self.valid_queue) != 0:
+                valid_acc, valid_obj = infer(self.model, self.criterion,
+                                             self.valid_queue)
+                logging.info('valid_acc %f', valid_acc)
+
+            test_acc, test_obj = infer(self.model, self.criterion,
+                                       self.test_queue)
+            logging.info('test_acc %f', test_acc)
+
+            Evaluator.save(config.save, self.model, epoch)
+
 
     @staticmethod
     def train(graph, optimizer, criterion, train_queue, *args, **kwargs):
@@ -105,7 +187,8 @@ class Evaluator(object):
 
         return top1.avg, objs.avg
 
-
-    def save(self, epoch):
-        utils.save(self.model, os.path.join(self.args.save, 'one_shot_model_{}.pt'.format(epoch)))
+    @staticmethod
+    def save(save_path, model, epoch):
+        utils.save(model, os.path.join(save_path,
+                                       'one_shot_model_{}.pt'.format(epoch)))
 
