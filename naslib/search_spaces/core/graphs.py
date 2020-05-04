@@ -57,7 +57,7 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
                 for pred in preds:
                     # Replace the operation in the edge with an optimizer compatible one.
                     edge_data = self.get_edge_data(pred, node)
-                    edge_data = optimizer.replace_function(edge_data)
+                    edge_data = optimizer.replace_function(edge_data, self)
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
