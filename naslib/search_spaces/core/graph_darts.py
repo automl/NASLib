@@ -124,8 +124,8 @@ if __name__ == '__main__':
         config = AttrDict(config)
 
     one_shot_optimizer = Optimizer()
-    search_space = DARTSMacroGraph(config=config)
-    search_space.parse(one_shot_optimizer)
+    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer,
+                                                     config=config)
 
     # Attempt forward pass
     res = search_space(torch.randn(size=[1, 3, 32, 32], dtype=torch.float, requires_grad=False))

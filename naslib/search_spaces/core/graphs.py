@@ -59,6 +59,12 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
                     edge_data = self.get_edge_data(pred, node)
                     edge_data = optimizer.replace_function(edge_data)
 
+    @classmethod
+    def from_optimizer_op(cls, optimizer, *args, **kwargs):
+        graph = cls(*args, **kwargs)
+        graph.parse(optimizer)
+        return graph
+
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
@@ -146,6 +152,12 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
                 # Recursively run through EdgeOp graph cells
                 if issubclass(type(op), EdgeOpGraph):
                     op.parse(optimizer)
+
+    @classmethod
+    def from_optimizer_op(cls, optimizer, *args, **kwargs):
+        graph = cls(*args, **kwargs)
+        graph.parse(optimizer)
+        return graph
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
