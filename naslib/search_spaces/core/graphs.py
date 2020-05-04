@@ -110,6 +110,27 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
     def _build_graph(self):
         pass
 
+    def is_input(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'input'
+
+    def is_inter(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'inter'
+
+    def is_output(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'output'
+
+    def input_nodes(self):
+        input_nodes = [n for n in self.nodes if self.is_input(n)]
+        return input_nodes
+
+    def inter_nodes(self):
+        inter_nodes = [n for n in self.nodes if self.is_inter(n)]
+        return inter_nodes
+
+    def output_nodes(self):
+        output_nodes = [n for n in self.nodes if self.is_output(n)]
+        return output_nodes
+
     def parse(self, optimizer):
         topo_order = nx.algorithms.dag.topological_sort(self)
 
@@ -142,7 +163,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
             else:
                 cell_input = [self.nodes[pred]['output'] for pred in preds]
                 node_info['output'] = node_info['op'](cell_input)
-        return node_info['output']
+        return [self.nodes[node]['output'] for node in self.output_nodes()][0]
 
 
 if __name__ == '__main__':

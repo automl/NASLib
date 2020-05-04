@@ -90,7 +90,8 @@ class DARTSMacroGraph(NodeOpGraph):
 
             self.add_node(cell_num + 2,
                           op=DARTSCell(C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr, reduction_prev=reduction_prev,
-                                       type='reduction' if reduction else 'normal'))
+                                       type='reduction' if reduction else 'normal'),
+                          type='reduction' if reduction else 'normal')
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
 
@@ -128,7 +129,3 @@ if __name__ == '__main__':
 
     # Attempt forward pass
     res = search_space(torch.randn(size=[1, 3, 32, 32], dtype=torch.float, requires_grad=False))
-
-    graph = DARTSCell(C_prev_prev=4, C_prev=4, C=8, reduction_prev=False, type='reduction')
-    res = graph([torch.zeros(size=[1, 4, 28, 28], dtype=torch.float, requires_grad=False) for _ in range(2)])
-    pass
