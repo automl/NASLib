@@ -44,6 +44,11 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
     def num_output_nodes(self):
         return len(self.output_nodes())
 
+    def parse(self, optimizer):
+        # Go through edges and replace PRIMITIVE op sets with MixedOps
+        # Add assigned architectural weights to the optimizer.
+        pass
+
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)
@@ -93,6 +98,11 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
         self._build_graph()
 
     def _build_graph(self):
+        pass
+
+    def parse(self, optimizer):
+        # Go through edges and replace PRIMITIVE op sets with MixedOps
+        # Add assigned architectural weights to the optimizer.
         pass
 
     def forward(self, inputs):

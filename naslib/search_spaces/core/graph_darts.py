@@ -5,7 +5,6 @@ import yaml
 from torch import nn
 
 from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
-from naslib.search_spaces.core.operations import CategoricalOp
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity, Stem
 from naslib.utils import AttrDict
 
@@ -52,11 +51,7 @@ class DARTSCell(EdgeOpGraph):
             for from_node in range(to_node):
                 stride = 2 if self.graph['type'] == 'reduction' and from_node < 2 else 1
                 self.add_edge(
-                    from_node, to_node, op=CategoricalOp(
-                        primitives=PRIMITIVES, C=self.C, stride=stride,
-                        out_node_op=self.nodes[to_node]['comb_op']
-                    )
-                )
+                    from_node, to_node, op=None, op_choices=PRIMITIVES, op_kwargs={'C': self.C, 'stride': stride})
 
         # Edges: inter-output
         self.add_edge(2, 6, op=Identity())
@@ -120,7 +115,41 @@ class DARTSMacroGraph(NodeOpGraph):
         self.add_edge(num_layers + 2, num_layers + 3)
 
 
+'''
+class Optimizer:
+    def __init__(self):
+        self.architectural_weights = []
+
+    def replace_function(self, graph_obj):
+        if graph_obj == 'edge':
+            if graph_obj.contains('op_choices'):
+                # create Categorical op (PRIMITIVES, args)
+                return mixed_op
+            # Replace the op
+            self.architectural_weights.append(3)
+            modified_edge = None
+            return modified_edge
+        elif graph_obj == 'node':
+            pass
+        else:
+            raise NotImplementedError()
+
+
+class SearchSpace:
+    def __init__(self):
+        pass
+
+    def parse(self, optimizer):
+        for graph_obj in ['edge', 'node']:
+            graph_obj['op'] = optimizer.replace_function(graph_obj)
+'''
+
 if __name__ == '__main__':
+    # one_shot_optimizer = Optimizer()
+    # search_space = SearchSpace()
+    # search_space.parse(one_shot_optimizer)
+    # oneshot search space
+
     with open('../../configs/default.yaml') as f:
         config = yaml.safe_load(f)
         config = AttrDict(config)
