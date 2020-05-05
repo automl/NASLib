@@ -194,14 +194,14 @@ class Evaluator(object):
 if __name__ == '__main__':
     import yaml
     from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
-    from naslib.optimizers.optimizer import Optimizer
+    from naslib.optimizers.optimizer import OneShotOptimizer
     from naslib.utils import AttrDict
 
     with open('../configs/default.yaml') as f:
         config = yaml.safe_load(f)
         config = AttrDict(config)
 
-    one_shot_optimizer = Optimizer()
+    one_shot_optimizer = OneShotOptimizer()
     search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer,
                                                      config=config)
 
