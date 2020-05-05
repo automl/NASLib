@@ -39,7 +39,7 @@ class TestOp(torch.nn.Module):
 class MixedOp(MetaOp):
     def __init__(self, primitives, weights, C, stride, out_node_op, ops_dict=OPS):
         super(MixedOp, self).__init__(primitives)
-        self.weights = weights
+        self.weights = [weights]
         self.build(C, stride, out_node_op, ops_dict)
 
     def build(self, C, stride, out_node_op=sum, ops_dict=OPS):
@@ -51,7 +51,7 @@ class MixedOp(MetaOp):
             self._ops.append(op)
 
     def forward(self, x):
-        weights = torch.softmax(self.weights, dim=-1)
+        weights = torch.softmax(self.weights[0], dim=-1)
         return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
 
 

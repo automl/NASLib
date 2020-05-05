@@ -1,5 +1,4 @@
 import networkx as nx
-import torch.nn as nn
 
 from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
 
@@ -51,7 +50,7 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
         for node in topo_order:
             node_info = self.nodes[node]
             if 'preprocessing' in node_info:
-                self.add_module('node'+str(node), node_info['preprocessing'])
+                self.add_module('node' + str(node), node_info['preprocessing'])
 
             # Run the edges which are connected to the current node.
             preds = list(self.predecessors(node))
@@ -62,8 +61,7 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
                     # Replace the operation in the edge with an optimizer compatible one.
                     edge_data = self.get_edge_data(pred, node)
                     edge_data = optimizer.replace_function(edge_data, self)
-                    self.add_module('edge(%d,%d)'%(pred, node),
-                                    edge_data['op'])
+                    self.add_module('edge(%d,%d)' % (pred, node), edge_data['op'])
 
     @classmethod
     def from_optimizer_op(cls, optimizer, *args, **kwargs):
@@ -150,7 +148,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
         for node in topo_order:
             node_info = self.nodes[node]
             if 'op' in node_info:
-                self.add_module('node'+str(node), node_info['op'])
+                self.add_module('node' + str(node), node_info['op'])
 
             # Run the edges which are connected to the current node.
             preds = list(self.predecessors(node))
@@ -160,7 +158,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
                 op = node_info['op']
                 # Recursively run through EdgeOp graph cells
                 if issubclass(type(op), EdgeOpGraph):
-                    self.add_module('node'+str(node), op)
+                    self.add_module('node' + str(node), op)
                     op.parse(optimizer)
 
     @classmethod
