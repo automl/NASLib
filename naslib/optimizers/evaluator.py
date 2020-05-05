@@ -71,7 +71,7 @@ class Evaluator(object):
         self.criterion = criterion.cuda()
 
         self.model = self.graph.to(self.device)
-        self.arch_optimizer = self.arch_optimizer.to(self.device)
+        self.arch_optimizer.architectural_weights.to(self.device)
 
         logging.info("param size = %fMB", utils.count_parameters_in_MB(self.model))
 

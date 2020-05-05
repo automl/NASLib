@@ -160,7 +160,6 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
                 if issubclass(type(op), EdgeOpGraph):
                     self.add_module('node' + str(node), op)
                     op.parse(optimizer)
-                    #op.architectural_weights = optimizer.architectural_weights['node'+str(node)]
 
     @classmethod
     def from_optimizer_op(cls, optimizer, *args, **kwargs):
