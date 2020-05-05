@@ -23,7 +23,7 @@ class OneShotOptimizer(MetaOptimizer):
 
     def replace_function(self, edge, graph):
         if 'op_choices' in edge:
-            edge['op'] = CategoricalOp(primitives=edge['op_choices'], **edge['op_kwargs'])
+            edge['op'] = CategoricalOp(primitives=edge['op_choices'], out_node_op=sum, **edge['op_kwargs'])
         return edge
 
 
@@ -41,7 +41,7 @@ class DARTSOptimizer(MetaOptimizer):
                 torch.nn.Parameter(torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
 
             self.architectural_weights[edge_key] = weights
-            edge['op'] = MixedOp(primitives=edge['op_choices'], weights=weights, **edge['op_kwargs'])
+            edge['op'] = MixedOp(primitives=edge['op_choices'], weights=weights, out_node_op=sum, **edge['op_kwargs'])
         return edge
 
     def create_optimizer(self, momentum, weight_decay, arch_learning_rate,

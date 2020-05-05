@@ -4,7 +4,7 @@ import torch
 import yaml
 from torch import nn
 
-from naslib.optimizers.optimizer import DARTSOptimizer
+from naslib.optimizers.optimizer import OneShotOptimizer
 from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity, Stem
 from naslib.utils import AttrDict
@@ -53,8 +53,7 @@ class DARTSCell(EdgeOpGraph):
             for from_node in range(to_node):
                 stride = 2 if self.cell_type == 'reduction' and from_node < 2 else 1
                 self.add_edge(
-                    from_node, to_node, op=None, op_choices=PRIMITIVES,
-                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op': self.nodes[to_node]['comb_op']},
+                    from_node, to_node, op=None, op_choices=PRIMITIVES, op_kwargs={'C': self.C, 'stride': stride},
                     to_node=to_node, from_node=from_node)
 
         # Edges: inter-output
@@ -102,9 +101,10 @@ class DARTSMacroGraph(NodeOpGraph):
         pooling = nn.AdaptiveAvgPool2d(1)
         classifier = nn.Linear(C_prev, self.config['num_classes'])
 
-        self.add_node(num_layers + 2, op=lambda x: pooling(x[0]), type='pooling')
-        self.add_node(num_layers + 3, op=lambda x:
-                      classifier(x[0].view(x[0].size(0), -1)), type='output')
+        self.add_node(num_layers + 2, op=pooling,
+                      transform=lambda x: x[0], type='pooling')
+        self.add_node(num_layers + 3, op=classifier,
+                      transform=lambda x: x[0].view(x[0].size(0), -1), type='output')
 
         # Edges
         self.add_edge(0, 1)
@@ -128,7 +128,7 @@ if __name__ == '__main__':
         config = yaml.safe_load(f)
         config = AttrDict(config)
 
-    one_shot_optimizer = DARTSOptimizer()
+    one_shot_optimizer = OneShotOptimizer()
     search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer, config=config)
 
     # Attempt forward pass
