@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import sys
 
 import numpy as np
 import torch
@@ -10,10 +11,18 @@ import torchvision.datasets as dset
 
 from naslib.utils import utils
 
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
+log_format = '%(asctime)s %(message)s'
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format=log_format, datefmt='%m/%d %I:%M:%S %p')
+
 
 class Evaluator(object):
     def __init__(self, graph, arch_optimizer, *args, **kwargs):
         self.graph = graph
+        self.arch_optimizer = arch_optimizer
         try:
             self.config = kwargs.get('config', graph.config)
         except:
@@ -61,7 +70,8 @@ class Evaluator(object):
         criterion = eval('nn.' + self.config.criterion)()
         self.criterion = criterion.cuda()
 
-        self.model = graph.cuda() if torch.cuda.is_available() else graph
+        self.model = self.graph.to(self.device)
+        self.arch_optimizer = self.arch_optimizer.to(self.device)
 
         logging.info("param size = %fMB", utils.count_parameters_in_MB(self.model))
 
@@ -84,24 +94,26 @@ class Evaluator(object):
             raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
-            logging.info('epoch %d lr %e', epoch, self.scheduler.get_lr()[0])
+            logging.info('epoch %d lr %e', epoch, self.scheduler.get_last_lr()[0])
             self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
 
             train_acc, train_obj = Evaluator.train(self.model, self.optimizer, self.criterion, self.train_queue,
-                                                   device=self.device)
+                                                   self.valid_queue, self.arch_optimizer, device=self.device)
             logging.info('train_acc %f', train_acc)
 
             if len(self.valid_queue) != 0:
-                valid_acc, valid_obj = Evaluator.infer(self.model, self.criterion, self.valid_queue, device=self.device)
+                valid_acc, valid_obj = Evaluator.infer(self.model, self.criterion, self.valid_queue,
+                                                       self.arch_optimizer, device=self.device)
                 logging.info('valid_acc %f', valid_acc)
 
-            test_acc, test_obj = Evaluator.infer(self.model, self.criterion, self.test_queue, device=self.device)
+            test_acc, test_obj = Evaluator.infer(self.model, self.criterion, self.test_queue, self.arch_optimizer,
+                                                 device=self.device)
             logging.info('test_acc %f', test_acc)
 
             Evaluator.save(self.config.save, self.model, epoch)
 
     @staticmethod
-    def train(graph, optimizer, criterion, train_queue, *args, **kwargs):
+    def train(graph, optimizer, criterion, train_queue, valid_queue, arch_optimizer, *args, **kwargs):
         try:
             config = kwargs.get('config', graph.config)
             device = kwargs['device']
@@ -119,9 +131,16 @@ class Evaluator(object):
             input = input.to(device)
             target = target.to(device)
 
+            input_valid, target_valid = next(iter(valid_queue))
+            input_valid = input_valid.to(device)
+            target_valid = target_valid.to(device)
+
+            logits_valid = graph(input_valid)
+            loss = criterion(logits_valid, target_valid)
+            arch_optimizer.step(loss)
+
             # if architect in kwargs:
             # get a minibatch from the search queue with replacement
-            #    input_search, target_search = next(iter(valid_queue))
 
             #    input_search = input_search.cuda()
             #    target_search = target_search.cuda(non_blocking=True)
@@ -155,6 +174,7 @@ class Evaluator(object):
 
             if step % config.report_freq == 0:
                 logging.info('train %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
+                logging.info(torch.softmax(arch_optimizer.architectural_weights['cell_normal_from_0_to_3'], dim=-1))
 
         return top1.avg, objs.avg
 

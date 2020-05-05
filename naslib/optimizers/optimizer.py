@@ -42,15 +42,15 @@ class DARTSOptimizer(MetaOptimizer):
 
             self.architectural_weights[edge_key] = weights
             edge['op'] = MixedOp(primitives=edge['op_choices'], weights=weights, out_node_op=sum, **edge['op_kwargs'])
+            edge['arch_weights'] = weights
         return edge
 
     def create_optimizer(self, momentum, weight_decay, arch_learning_rate,
                          arch_weight_decay, grad_clip=None, *args, **kwargs):
         self.optimizer = torch.optim.Adam(self.architectural_weights.parameters(), lr=arch_learning_rate,
-                                          betas=(0.5, 0.999),
-                                          weight_decay=arch_weight_decay)
+                                          betas=(0.5, 0.999), weight_decay=arch_weight_decay)
 
-    def step(self, input_valid, target_valid, model_output):
-        loss = self._val_loss(self.model, input_valid, target_valid)
+    def step(self, loss):
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
