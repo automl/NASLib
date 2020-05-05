@@ -23,7 +23,7 @@ class OneShotOptimizer(MetaOptimizer):
 
     def replace_function(self, edge, graph):
         if 'op_choices' in edge:
-            edge['op'] = CategoricalOp(primitives=edge['op_choices'], **edge['op_kwargs'])
+            edge['op'] = CategoricalOp(primitives=edge['op_choices'], out_node_op=sum, **edge['op_kwargs'])
         return edge
 
 
