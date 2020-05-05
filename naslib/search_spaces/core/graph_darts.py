@@ -102,9 +102,10 @@ class DARTSMacroGraph(NodeOpGraph):
         pooling = nn.AdaptiveAvgPool2d(1)
         classifier = nn.Linear(C_prev, self.config['num_classes'])
 
-        self.add_node(num_layers + 2, op=lambda x: pooling(x[0]), type='pooling')
-        self.add_node(num_layers + 3, op=lambda x:
-                      classifier(x[0].view(x[0].size(0), -1)), type='output')
+        self.add_node(num_layers + 2, op=pooling,
+                      transform=lambda x: x[0], type='pooling')
+        self.add_node(num_layers + 3, op=classifier,
+                      transform=lambda x: x[0].view(x[0].size(0), -1), type='output')
 
         # Edges
         self.add_edge(0, 1)
