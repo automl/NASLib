@@ -27,7 +27,7 @@ class DARTSCell(EdgeOpGraph):
         self.C_prev = C_prev
         self.C = C
         self.reduction_prev = reduction_prev
-        super().__init__(*args, **kwargs)
+        super(DARTSCell, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
         # Input Nodes: Previous / Previous-Previous cell
@@ -65,7 +65,7 @@ class DARTSCell(EdgeOpGraph):
 class DARTSMacroGraph(NodeOpGraph):
     def __init__(self, config, *args, **kwargs):
         self.config = config
-        super().__init__(*args, **kwargs)
+        super(DARTSMacroGraph, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
         num_layers = self.config['layers']
@@ -88,9 +88,11 @@ class DARTSMacroGraph(NodeOpGraph):
             else:
                 reduction = False
 
-            self.add_node(cell_num + 2,
-                          op=DARTSCell(C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr, reduction_prev=reduction_prev,
-                                       type='reduction' if reduction else 'normal'),
+            self.add_node(cell_num + 2, op=DARTSCell(C_prev_prev=C_prev_prev,
+                                                     C_prev=C_prev, C=C_curr,
+                                                     reduction_prev=reduction_prev,
+                                                     type='reduction' if
+                                                     reduction else 'normal'),
                           type='reduction' if reduction else 'normal')
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
@@ -99,7 +101,8 @@ class DARTSMacroGraph(NodeOpGraph):
         classifier = nn.Linear(C_prev, self.config['num_classes'])
 
         self.add_node(num_layers + 2, op=lambda x: pooling(x[0]), type='pooling')
-        self.add_node(num_layers + 3, op=lambda x: classifier(x[0].view(x[0].size(0), -1)), type='output')
+        self.add_node(num_layers + 3, op=lambda x:
+                      classifier(x[0].view(x[0].size(0), -1)), type='output')
 
         # Edges
         self.add_edge(0, 1)

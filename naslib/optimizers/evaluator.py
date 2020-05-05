@@ -32,11 +32,11 @@ class Evaluator(object):
         torch.cuda.manual_seed_all(config.seed)
 
         #TODO: move all the data loading and preproces inside another method
-        train_transform, valid_transform = utils._data_transforms_cifar10(args)
+        train_transform, valid_transform = utils._data_transforms_cifar10(config)
         self.train_transform = train_transform
         self.valid_transform = valid_transform
         train_data = dset.CIFAR10(root=config.data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR10(root=args.data, train=False, download=True, transform=valid_transform)
+        test_data = dset.CIFAR10(root=config.data, train=False, download=True, transform=valid_transform)
 
         num_train = len(train_data)
         indices = list(range(num_train))
@@ -108,7 +108,7 @@ class Evaluator(object):
     @staticmethod
     def train(graph, optimizer, criterion, train_queue, *args, **kwargs):
         try:
-            config = graph.config if 'config' not in kwargs
+            config = config if 'config' in kwargs else graph.config
         except:
             raise('No configuration specified in graph or kwargs')
 
@@ -192,3 +192,20 @@ class Evaluator(object):
         utils.save(model, os.path.join(save_path,
                                        'one_shot_model_{}.pt'.format(epoch)))
 
+
+if __name__ == '__main__':
+    import yaml
+    from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
+    from naslib.optimizers.optimizer import Optimizer
+    from naslib.utils import AttrDict
+
+    with open('../configs/default.yaml') as f:
+        config = yaml.safe_load(f)
+        config = AttrDict(config)
+
+    one_shot_optimizer = Optimizer()
+    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer,
+                                                     config=config)
+
+    evaluator = Evaluator(search_space)
+    evaluator.run()
