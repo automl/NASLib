@@ -1,15 +1,12 @@
-import json
 import logging
 import os
 import random
-import time
 
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torchvision.datasets as dset
-from torch.autograd import Variable
 
 from naslib.utils import utils
 
@@ -18,18 +15,18 @@ class Evaluator(object):
     def __init__(self, graph, *args, **kwargs):
         self.graph = graph
         try:
-            self.config = config if 'config' in kwargs else graph.config
+            self.config = kwargs.get('config', graph.config)
         except:
-            raise('No configuration specified in graph or kwargs')
+            raise ('No configuration specified in graph or kwargs')
 
-        np.random.seed(config.seed)
-        random.seed(config.seed)
-        torch.manual_seed(config.seed)
-        torch.cuda.set_device(config.gpu)
+        np.random.seed(self.config.seed)
+        random.seed(self.config.seed)
+        torch.manual_seed(self.config.seed)
+        torch.cuda.set_device(self.config.gpu)
         cudnn.benchmark = False
         cudnn.enabled = True
         cudnn.deterministic = True
-        torch.cuda.manual_seed_all(config.seed)
+        torch.cuda.manual_seed_all(self.config.seed)
 
         #TODO: move all the data loading and preproces inside another method
         train_transform, valid_transform = utils._data_transforms_cifar10(config)
@@ -40,25 +37,25 @@ class Evaluator(object):
 
         num_train = len(train_data)
         indices = list(range(num_train))
-        split = int(np.floor(config.train_portion * num_train))
+        split = int(np.floor(self.config.train_portion * num_train))
 
         self.train_queue = torch.utils.data.DataLoader(
-            train_data, batch_size=config.batch_size,
+            train_data, batch_size=self.config.batch_size,
             sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
             pin_memory=True, num_workers=0,
-            worker_init_fn=np.random.seed(config.seed))
+            worker_init_fn=np.random.seed(self.config.seed))
 
         self.valid_queue = torch.utils.data.DataLoader(
-            train_data, batch_size=config.batch_size,
+            train_data, batch_size=self.config.batch_size,
             sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
             pin_memory=True, num_workers=0,
-            worker_init_fn=np.random.seed(config.seed))
+            worker_init_fn=np.random.seed(self.config.seed))
 
         self.test_queue = torch.utils.data.DataLoader(
-            test_data, batch_size=config.batch_size,
+            test_data, batch_size=self.config.batch_size,
             shuffle=False, pin_memory=True, num_workers=0)
 
-        criterion = eval('nn.'+config.criterion)()
+        criterion = eval('nn.' + self.config.criterion)()
         self.criterion = criterion.cuda()
 
         self.model = graph.cuda()
@@ -67,50 +64,44 @@ class Evaluator(object):
 
         optimizer = torch.optim.SGD(
             self.model.parameters(),
-            config.learning_rate,
-            momentum=config.momentum,
-            weight_decay=config.weight_decay)
+            self.config.learning_rate,
+            momentum=self.config.momentum,
+            weight_decay=self.config.weight_decay)
         self.optimizer = optimizer
 
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, float(config.epochs), eta_min=config.learning_rate_min)
+            optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
 
-        logging.info('Args: {}'.format(config))
-
+        logging.info('Args: {}'.format(self.config))
 
     def run(self, *args, **kwargs):
         if 'epochs' not in kwargs:
             epochs = self.config.epochs
         else:
-            raise('No number of epochs specified to run network')
+            raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
             logging.info('epoch %d lr %e', epoch, self.scheduler.get_lr()[0])
-            self.model.drop_path_prob = config.drop_path_prob * epoch / epochs
+            self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
 
-            train_acc, train_obj = Evaluator.train(self.model, self.optimizer,
-                                                   self.criterion,
-                                                   self.train_queue)
+            train_acc, train_obj = Evaluator.train(self.model, self.optimizer, self.criterion, self.train_queue)
             logging.info('train_acc %f', train_acc)
 
             if len(self.valid_queue) != 0:
-                valid_acc, valid_obj = infer(self.model, self.criterion,
-                                             self.valid_queue)
+                valid_acc, valid_obj = Evaluator.infer(self.model, self.criterion, self.valid_queue)
                 logging.info('valid_acc %f', valid_acc)
 
-            test_acc, test_obj = infer(self.model, self.criterion,
-                                       self.test_queue)
+            test_acc, test_obj = Evaluator.infer(self.model, self.criterion, self.test_queue)
             logging.info('test_acc %f', test_acc)
 
-            Evaluator.save(config.save, self.model, epoch)
-
+            Evaluator.save(self.config.save, self.model, epoch)
 
     @staticmethod
     def train(graph, optimizer, criterion, train_queue, *args, **kwargs):
         try:
             config = config if 'config' in kwargs else graph.config
         except:
-            raise('No configuration specified in graph or kwargs')
+            raise ('No configuration specified in graph or kwargs')
 
         objs = utils.AvgrageMeter()
         top1 = utils.AvgrageMeter()
@@ -123,8 +114,8 @@ class Evaluator(object):
             input = input.cuda()
             target = target.cuda(non_blocking=True)
 
-            #if architect in kwargs:
-                # get a minibatch from the search queue with replacement
+            # if architect in kwargs:
+            # get a minibatch from the search queue with replacement
             #    input_search, target_search = next(iter(valid_queue))
 
             #    input_search = input_search.cuda()
@@ -145,7 +136,7 @@ class Evaluator(object):
             loss = criterion(logits, target)
             if config.auxiliary:
                 loss_aux = criterion(logits_aux, target)
-                loss += config.auxiliary_weight*loss_aux
+                loss += config.auxiliary_weight * loss_aux
             loss.backward()
             nn.utils.clip_grad_norm_(graph.parameters(), config.grad_clip)
             optimizer.step()
@@ -160,9 +151,13 @@ class Evaluator(object):
 
         return top1.avg, objs.avg
 
-
     @staticmethod
-    def infer(self, graph, criterion, valid_queue):
+    def infer(graph, criterion, valid_queue, *args, **kwargs):
+        try:
+            config = kwargs.get('config', graph.config)
+        except:
+            raise ('No configuration specified in graph or kwargs')
+
         objs = utils.AvgrageMeter()
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
@@ -191,7 +186,6 @@ class Evaluator(object):
     def save(save_path, model, epoch):
         utils.save(model, os.path.join(save_path,
                                        'one_shot_model_{}.pt'.format(epoch)))
-
 
 if __name__ == '__main__':
     import yaml

@@ -4,7 +4,7 @@ import torch
 import yaml
 from torch import nn
 
-from naslib.optimizers.optimizer import Optimizer
+from naslib.optimizers.optimizer import DARTSOptimizer
 from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity, Stem
 from naslib.utils import AttrDict
@@ -22,7 +22,8 @@ PRIMITIVES = [
 
 
 class DARTSCell(EdgeOpGraph):
-    def __init__(self, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
+    def __init__(self, cell_type, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
+        self.cell_type = cell_type
         self.C_prev_prev = C_prev_prev
         self.C_prev = C_prev
         self.C = C
@@ -50,10 +51,11 @@ class DARTSCell(EdgeOpGraph):
         # Edges: input-inter and inter-inter
         for to_node in self.inter_nodes():
             for from_node in range(to_node):
-                stride = 2 if self.graph['type'] == 'reduction' and from_node < 2 else 1
+                stride = 2 if self.cell_type == 'reduction' and from_node < 2 else 1
                 self.add_edge(
                     from_node, to_node, op=None, op_choices=PRIMITIVES,
-                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op': self.nodes[to_node]['comb_op']})
+                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op': self.nodes[to_node]['comb_op']},
+                    to_node=to_node, from_node=from_node)
 
         # Edges: inter-output
         self.add_edge(2, 6, op=Identity())
@@ -91,7 +93,7 @@ class DARTSMacroGraph(NodeOpGraph):
             self.add_node(cell_num + 2, op=DARTSCell(C_prev_prev=C_prev_prev,
                                                      C_prev=C_prev, C=C_curr,
                                                      reduction_prev=reduction_prev,
-                                                     type='reduction' if
+                                                     cell_type='reduction' if
                                                      reduction else 'normal'),
                           type='reduction' if reduction else 'normal')
             reduction_prev = reduction
@@ -126,9 +128,8 @@ if __name__ == '__main__':
         config = yaml.safe_load(f)
         config = AttrDict(config)
 
-    one_shot_optimizer = Optimizer()
-    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer,
-                                                     config=config)
+    one_shot_optimizer = DARTSOptimizer()
+    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer, config=config)
 
     # Attempt forward pass
     res = search_space(torch.randn(size=[1, 3, 32, 32], dtype=torch.float, requires_grad=False))

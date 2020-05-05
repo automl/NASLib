@@ -57,7 +57,7 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
                 for pred in preds:
                     # Replace the operation in the edge with an optimizer compatible one.
                     edge_data = self.get_edge_data(pred, node)
-                    edge_data = optimizer.replace_function(edge_data)
+                    edge_data = optimizer.replace_function(edge_data, self)
 
     @classmethod
     def from_optimizer_op(cls, optimizer, *args, **kwargs):
