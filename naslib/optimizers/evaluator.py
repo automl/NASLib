@@ -7,7 +7,11 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torchvision.datasets as dset
+import yaml
 
+from naslib.optimizers.optimizer import DARTSOptimizer
+from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
+from naslib.utils import AttrDict
 from naslib.utils import utils
 
 
@@ -186,3 +190,13 @@ class Evaluator(object):
     def save(save_path, model, epoch):
         utils.save(model, os.path.join(save_path,
                                        'one_shot_model_{}.pt'.format(epoch)))
+
+
+if __name__ == '__main__':
+    with open('../../configs/default.yaml') as f:
+        config = yaml.safe_load(f)
+        config = AttrDict(config)
+
+    one_shot_optimizer = DARTSOptimizer()
+    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer, config=config)
+    Evaluator(config)
