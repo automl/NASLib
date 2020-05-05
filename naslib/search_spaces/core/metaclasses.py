@@ -1,6 +1,7 @@
 import six
 import torch.nn as nn
 from abc import ABCMeta, abstractmethod
+from naslib.utils import exception
 
 
 @six.add_metaclass(ABCMeta)
@@ -69,41 +70,29 @@ class MetaGraph(nn.Module):
         output_nodes = [n for n in self.nodes if self.is_output(n)]
         return output_nodes
 
+    @exception(KeyError)
     def get_node_op(self, node_idx):
-        try:
-            return self.nodes[node_idx]['op']
-        except KeyError:
-            return None
+        return self.nodes[node_idx]['op']
 
+    @exception(KeyError)
     def get_node_type(self, node_idx):
-        try:
-            return self.nodes[node_idx]['type']
-        except KeyError:
-            return None
+        return self.nodes[node_idx]['type']
 
+    @exception(KeyError)
     def get_edge_op(self, from_node, to_node):
-        try:
-            return self[from_node][to_node]['op']
-        except KeyError:
-            return None
+        return self[from_node][to_node]['op']
 
+    @exception(KeyError)
     def get_edge_op_choices(self, from_node, to_node):
-        try:
-            return self[from_node][to_node]['op_choices']
-        except KeyError:
-            return None
+        return self[from_node][to_node]['op_choices']
 
+    @exception(KeyError)
     def get_edge_op_kwargs(self, from_node, to_node):
-        try:
-            return self[from_node][to_node]['op_kwargs']
-        except KeyError:
-            return None
+        return self[from_node][to_node]['op_kwargs']
 
+    @exception(KeyError)
     def get_edge_arch_weights(self, from_node, to_node):
-        try:
-            return self[from_node][to_node]['arch_weight']
-        except KeyError:
-            return None
+        return self[from_node][to_node]['arch_weight']
 
     @classmethod
     def from_optimizer_op(cls, optimizer, *args, **kwargs):
