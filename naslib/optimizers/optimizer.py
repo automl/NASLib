@@ -43,7 +43,5 @@ class DARTSOptimizer(MetaOptimizer):
 
             self.architectural_weights[edge_key] = weights
             edge['arch_weight'] = self.architectural_weights[edge_key]
-            edge['op'] = MixedOp(primitives=edge['op_choices'],
-                                 weights=edge['arch_weight'], **edge['op_kwargs'])
+            edge['op'] = MixedOp(primitives=edge['op_choices'], **edge['op_kwargs'])
         return edge
-

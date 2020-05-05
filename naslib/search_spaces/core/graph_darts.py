@@ -6,7 +6,8 @@ from torch import nn
 
 from naslib.optimizers.optimizer import OneShotOptimizer
 from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
-from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Identity, Stem
+from naslib.search_spaces.core.operations import Identity
+from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem
 from naslib.utils import AttrDict
 
 PRIMITIVES = [
