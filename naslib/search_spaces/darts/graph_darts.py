@@ -81,12 +81,12 @@ class MacroGraph(NodeOpGraph):
                 reduction = False
 
             self.add_node(cell_num + 2,
-                          op=DARTSCell(primitives=self.primitives,
-                                       C_prev_prev=C_prev_prev,
-                                       C_prev=C_prev, C=C_curr,
-                                       reduction_prev=reduction_prev,
-                                       cell_type='reduction' if
-                                       reduction else 'normal'),
+                          op=Cell(primitives=self.primitives,
+                                  C_prev_prev=C_prev_prev,
+                                  C_prev=C_prev, C=C_curr,
+                                  reduction_prev=reduction_prev,
+                                  cell_type='reduction' if
+                                  reduction else 'normal'),
                           type='reduction' if reduction else 'normal')
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
