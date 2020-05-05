@@ -17,7 +17,7 @@ class ReLUConvBN(nn.Module):
             nn.BatchNorm2d(C_out, affine=affine)
         )
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.op(x)
 
 
@@ -40,7 +40,7 @@ class ConvBnRelu(nn.Module):
             nn.ReLU(inplace=False)
         )
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.op(x)
 
 
@@ -51,7 +51,7 @@ class ConvBnRelu(nn.Module):
         self.op = ConvBnRelu(C_in=C_in, C_out=C_out, kernel_size=kernel_size,
                              stride=stride, padding=padding, affine=affine)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.op(x)
 
 
@@ -67,7 +67,7 @@ class DilConv(nn.Module):
             nn.BatchNorm2d(C_out, affine=affine),
         )
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.op(x)
 
 
@@ -86,7 +86,7 @@ class SepConv(nn.Module):
             nn.BatchNorm2d(C_out, affine=affine),
         )
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.op(x)
 
 
@@ -95,7 +95,7 @@ class Identity(nn.Module):
     def __init__(self):
         super(Identity, self).__init__()
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return x
 
 
@@ -108,7 +108,7 @@ class Stem(nn.Module):
             nn.BatchNorm2d(C_curr)
         )
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.seq(x[0])
 
 
@@ -118,7 +118,7 @@ class Zero(nn.Module):
         super(Zero, self).__init__()
         self.stride = stride
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         if self.stride == 1:
             return x.mul(0.)
         return x[:, :, ::self.stride, ::self.stride].mul(0.)
@@ -134,7 +134,7 @@ class FactorizedReduce(nn.Module):
         self.conv_2 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
         self.bn = nn.BatchNorm2d(C_out, affine=affine)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         x = self.relu(x)
         out = torch.cat([self.conv_1(x), self.conv_2(x[:, :, 1:, 1:])], dim=1)
         out = self.bn(out)
@@ -148,10 +148,11 @@ class NoiseOp(nn.Module):
         self.mean = mean
         self.std = std
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         if self.stride != 1:
             x_new = x[:, :, ::self.stride, ::self.stride]
         else:
             x_new = x
         noise = Variable(x_new.data.new(x_new.size()).normal_(self.mean, self.std))
         return noise
+

@@ -1,17 +1,12 @@
 import logging
 import os
 import random
-
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torchvision.datasets as dset
-import yaml
 
-from naslib.optimizers.optimizer import DARTSOptimizer
-from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
-from naslib.utils import AttrDict
 from naslib.utils import utils
 
 
@@ -118,23 +113,6 @@ class Evaluator(object):
             input = input.cuda()
             target = target.cuda(non_blocking=True)
 
-            # if architect in kwargs:
-            # get a minibatch from the search queue with replacement
-            #    input_search, target_search = next(iter(valid_queue))
-
-            #    input_search = input_search.cuda()
-            #    target_search = target_search.cuda(non_blocking=True)
-
-            # Allow for warm starting of the one-shot model for more reliable architecture updates.
-            #    if epoch >= self.args.warm_start_epochs:
-            #        architect.step(input_train=input,
-            #                       target_train=target,
-            #                       input_valid=input_search,
-            #                       target_valid=target_search,
-            #                       eta=lr,
-            #                       network_optimizer=self.optimizer,
-            #                       unrolled=self.args.unrolled)
-
             optimizer.zero_grad()
             logits, logits_aux = graph(input)
             loss = criterion(logits, target)
@@ -192,18 +170,16 @@ class Evaluator(object):
                                        'one_shot_model_{}.pt'.format(epoch)))
 
 if __name__ == '__main__':
-    import yaml
-    from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
-    from naslib.optimizers.optimizer import OneShotOptimizer
-    from naslib.utils import AttrDict
+    from naslib.search_spaces.darts import MacroGraph, PRIMITIVES
+    from naslib.optimizers.optimizer import OneShotOptimizer, DARTSOptimizer
+    from naslib.utils import config_parser
 
-    with open('../configs/default.yaml') as f:
-        config = yaml.safe_load(f)
-        config = AttrDict(config)
-
-    one_shot_optimizer = OneShotOptimizer()
-    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer,
-                                                     config=config)
+    one_shot_optimizer = DARTSOptimizer()
+    search_space = MacroGraph.from_optimizer_op(
+        one_shot_optimizer,
+        config=config_parser('../../configs/default.yaml'),
+        primitives=PRIMITIVES
+    )
 
     evaluator = Evaluator(search_space)
     evaluator.run()

@@ -1,5 +1,4 @@
 from abc import abstractmethod
-
 import torch
 
 from naslib.search_spaces.core.operations import CategoricalOp, MixedOp

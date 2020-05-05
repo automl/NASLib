@@ -33,6 +33,7 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
                     edge_data = optimizer.replace_function(edge_data, self)
                     self.add_module('edge(%d,%d)' % (pred, node), edge_data['op'])
 
+
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
         topo_order = nx.algorithms.dag.topological_sort(self)

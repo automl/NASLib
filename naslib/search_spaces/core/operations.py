@@ -55,17 +55,6 @@ class MixedOp(MetaOp):
         return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
 
 
-class Identity(MetaOp):
-    def __init__(self):
-        super(Identity, self).__init__(['identity'])
-
-    def build(self, C, stride, out_node_op=sum, ops_dict=OPS):
-        pass
-
-    def forward(self, x, *args, **kwargs):
-        return x
-
-
 class CategoricalOp(MetaOp):
     def __init__(self, primitives, C, stride, out_node_op, ops_dict=OPS):
         super(CategoricalOp, self).__init__(primitives)
