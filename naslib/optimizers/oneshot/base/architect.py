@@ -1,8 +1,9 @@
-import numpy as np
-import torch
 from abc import abstractmethod
 
+import numpy as np
+import torch
 from torch.autograd import Variable
+
 from naslib.utils import _concat
 
 
@@ -17,19 +18,15 @@ class BaseArchitect(object):
                                           lr=arch_learning_rate, betas=(0.5, 0.999),
                                           weight_decay=arch_weight_decay)
 
-
     def _train_loss(self, model, input, target):
         return model._loss(input, target)
-
 
     def _val_loss(self, model, input, target):
         return model._loss(input, target)
 
-
     @abstractmethod
     def step(self, **kwargs):
         pass
-
 
     def _step(self, input_train, target_train, input_valid, target_valid, eta,
               network_optimizer, unrolled):
@@ -46,12 +43,10 @@ class BaseArchitect(object):
                                           self.grad_clip)
         self.optimizer.step()
 
-
     def _backward_step(self, input_valid, target_valid):
         """Compute 1st order approximation"""
         loss = self._val_loss(self.model, input_valid, target_valid)
         loss.backward()
-
 
     def _backward_step_unrolled(self, input_train, target_train, input_valid,
                                 target_valid, eta, network_optimizer):
@@ -81,7 +76,6 @@ class BaseArchitect(object):
             else:
                 v.grad.data.copy_(g.data)
 
-
     def _compute_unrolled_model(self, input, target, eta, network_optimizer):
         loss = self._train_loss(model=self.model, input=input, target=target)
         theta = _concat(self.model.parameters()).data
@@ -103,7 +97,6 @@ class BaseArchitect(object):
         )
         return unrolled_model
 
-
     def _construct_model_from_theta(self, theta):
         model_new = self.model.new()
         model_dict = self.model.state_dict()
@@ -118,7 +111,6 @@ class BaseArchitect(object):
         model_dict.update(params)
         model_new.load_state_dict(model_dict)
         return model_new.cuda()
-
 
     def _hessian_vector_product(self, vector, input, target, r=1e-2):
         R = r / _concat(vector).norm()

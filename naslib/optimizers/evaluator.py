@@ -7,16 +7,12 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torchvision.datasets as dset
-import yaml
 
-from naslib.optimizers.optimizer import DARTSOptimizer
-from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
-from naslib.utils import AttrDict
 from naslib.utils import utils
 
 
 class Evaluator(object):
-    def __init__(self, graph, *args, **kwargs):
+    def __init__(self, graph, arch_optimizer, *args, **kwargs):
         self.graph = graph
         try:
             self.config = kwargs.get('config', graph.config)
@@ -25,14 +21,17 @@ class Evaluator(object):
 
         np.random.seed(self.config.seed)
         random.seed(self.config.seed)
-        torch.manual_seed(self.config.seed)
-        torch.cuda.set_device(self.config.gpu)
-        cudnn.benchmark = False
-        cudnn.enabled = True
-        cudnn.deterministic = True
-        torch.cuda.manual_seed_all(self.config.seed)
+        if torch.cuda.is_available():
+            torch.manual_seed(self.config.seed)
+            torch.cuda.set_device(self.config.gpu)
+            cudnn.benchmark = False
+            cudnn.enabled = True
+            cudnn.deterministic = True
+            torch.cuda.manual_seed_all(self.config.seed)
 
-        #TODO: move all the data loading and preproces inside another method
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        # TODO: move all the data loading and preproces inside another method
         train_transform, valid_transform = utils._data_transforms_cifar10(config)
         self.train_transform = train_transform
         self.valid_transform = valid_transform
@@ -62,7 +61,7 @@ class Evaluator(object):
         criterion = eval('nn.' + self.config.criterion)()
         self.criterion = criterion.cuda()
 
-        self.model = graph.cuda()
+        self.model = graph.cuda() if torch.cuda.is_available() else graph
 
         logging.info("param size = %fMB", utils.count_parameters_in_MB(self.model))
 
@@ -88,14 +87,15 @@ class Evaluator(object):
             logging.info('epoch %d lr %e', epoch, self.scheduler.get_lr()[0])
             self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
 
-            train_acc, train_obj = Evaluator.train(self.model, self.optimizer, self.criterion, self.train_queue)
+            train_acc, train_obj = Evaluator.train(self.model, self.optimizer, self.criterion, self.train_queue,
+                                                   device=self.device)
             logging.info('train_acc %f', train_acc)
 
             if len(self.valid_queue) != 0:
-                valid_acc, valid_obj = Evaluator.infer(self.model, self.criterion, self.valid_queue)
+                valid_acc, valid_obj = Evaluator.infer(self.model, self.criterion, self.valid_queue, device=self.device)
                 logging.info('valid_acc %f', valid_acc)
 
-            test_acc, test_obj = Evaluator.infer(self.model, self.criterion, self.test_queue)
+            test_acc, test_obj = Evaluator.infer(self.model, self.criterion, self.test_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
 
             Evaluator.save(self.config.save, self.model, epoch)
@@ -103,7 +103,8 @@ class Evaluator(object):
     @staticmethod
     def train(graph, optimizer, criterion, train_queue, *args, **kwargs):
         try:
-            config = config if 'config' in kwargs else graph.config
+            config = kwargs.get('config', graph.config)
+            device = kwargs['device']
         except:
             raise ('No configuration specified in graph or kwargs')
 
@@ -115,8 +116,8 @@ class Evaluator(object):
             graph.train()
             n = input.size(0)
 
-            input = input.cuda()
-            target = target.cuda(non_blocking=True)
+            input = input.to(device)
+            target = target.to(device)
 
             # if architect in kwargs:
             # get a minibatch from the search queue with replacement
@@ -136,11 +137,13 @@ class Evaluator(object):
             #                       unrolled=self.args.unrolled)
 
             optimizer.zero_grad()
-            logits, logits_aux = graph(input)
+            logits = graph(input)
             loss = criterion(logits, target)
+            '''
             if config.auxiliary:
                 loss_aux = criterion(logits_aux, target)
                 loss += config.auxiliary_weight * loss_aux
+            '''
             loss.backward()
             nn.utils.clip_grad_norm_(graph.parameters(), config.grad_clip)
             optimizer.step()
@@ -159,6 +162,7 @@ class Evaluator(object):
     def infer(graph, criterion, valid_queue, *args, **kwargs):
         try:
             config = kwargs.get('config', graph.config)
+            device = kwargs['device']
         except:
             raise ('No configuration specified in graph or kwargs')
 
@@ -169,10 +173,10 @@ class Evaluator(object):
 
         with torch.no_grad():
             for step, (input, target) in enumerate(valid_queue):
-                input = input.cuda()
-                target = target.cuda(non_blocking=True)
+                input = input.to(device)
+                target = target.to(device)
 
-                logits, _ = graph(input)
+                logits = graph(input)
                 loss = criterion(logits, target)
 
                 prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
@@ -191,19 +195,19 @@ class Evaluator(object):
         utils.save(model, os.path.join(save_path,
                                        'one_shot_model_{}.pt'.format(epoch)))
 
+
 if __name__ == '__main__':
     import yaml
     from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
-    from naslib.optimizers.optimizer import Optimizer
+    from naslib.optimizers.optimizer import DARTSOptimizer
     from naslib.utils import AttrDict
 
     with open('../configs/default.yaml') as f:
         config = yaml.safe_load(f)
         config = AttrDict(config)
 
-    one_shot_optimizer = Optimizer()
-    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer,
-                                                     config=config)
-
-    evaluator = Evaluator(search_space)
+    one_shot_optimizer = DARTSOptimizer()
+    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer, config=config)
+    one_shot_optimizer.create_optimizer(**config)
+    evaluator = Evaluator(search_space, arch_optimizer=one_shot_optimizer)
     evaluator.run()
