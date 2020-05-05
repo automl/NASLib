@@ -37,9 +37,8 @@ class TestOp(torch.nn.Module):
 
 
 class MixedOp(MetaOp):
-    def __init__(self, primitives, weights, C, stride, out_node_op, ops_dict=OPS):
+    def __init__(self, primitives, C, stride, out_node_op, ops_dict=OPS):
         super(MixedOp, self).__init__(primitives)
-        self.weights = [weights]
         self.build(C, stride, out_node_op, ops_dict)
 
     def build(self, C, stride, out_node_op=sum, ops_dict=OPS):
@@ -50,9 +49,21 @@ class MixedOp(MetaOp):
                 op = nn.Sequential(op, nn.BatchNorm2d(C, affine=False))
             self._ops.append(op)
 
-    def forward(self, x):
-        weights = torch.softmax(self.weights[0], dim=-1)
+    def forward(self, x, *args, **kwargs):
+        arch_weight = kwargs['arch_weight']
+        weights = torch.softmax(arch_weight, dim=-1)
         return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
+
+
+class Identity(MetaOp):
+    def __init__(self):
+        super(Identity, self).__init__(['identity'])
+
+    def build(self, C, stride, out_node_op=sum, ops_dict=OPS):
+        pass
+
+    def forward(self, x, *args, **kwargs):
+        return x
 
 
 class CategoricalOp(MetaOp):
@@ -66,5 +77,5 @@ class CategoricalOp(MetaOp):
             op = ops_dict[primitive](C, stride, False)
             self._ops.append(op)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.out_node_op(op(x) for op in self._ops)

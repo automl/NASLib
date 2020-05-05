@@ -1,7 +1,7 @@
 data: "data"
 gpu: 0
 seed: 2
-report_freq: 50
+report_freq: 10
 
 init_channels: 16
 channel_multiplier: 4
@@ -9,7 +9,7 @@ stem_multiplier: 3
 layers: 8
 model_path: "saved_models"
 
-batch_size: 96
+batch_size: 64
 learning_rate: 0.025
 learning_rate_min: 0.001
 momentum: 0.9

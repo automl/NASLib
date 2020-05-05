@@ -5,7 +5,7 @@ import torch
 from naslib.search_spaces.core.operations import CategoricalOp, MixedOp
 
 
-class MetaOptimizer(torch.nn.Module):
+class MetaOptimizer(object):
     def __init__(self):
         super(MetaOptimizer, self).__init__()
 
@@ -28,12 +28,13 @@ class OneShotOptimizer(MetaOptimizer):
 
 
 class DARTSOptimizer(MetaOptimizer):
-    def __init__(self, ):
+    def __init__(self):
         super(DARTSOptimizer, self).__init__()
         self.architectural_weights = torch.nn.ParameterDict()
-        self.optimizer = None
 
     def replace_function(self, edge, graph):
+        graph.architectural_weights = self.architectural_weights
+
         if 'op_choices' in edge:
             edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
 
@@ -41,8 +42,8 @@ class DARTSOptimizer(MetaOptimizer):
                 torch.nn.Parameter(torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
 
             self.architectural_weights[edge_key] = weights
-            edge['op'] = MixedOp(primitives=edge['op_choices'], weights=weights, out_node_op=sum, **edge['op_kwargs'])
-            edge['arch_weights'] = weights
+            edge['arch_weight'] = self.architectural_weights[edge_key]
+            edge['op'] = MixedOp(primitives=edge['op_choices'], **edge['op_kwargs'])
         return edge
 
     def create_optimizer(self, momentum, weight_decay, arch_learning_rate,

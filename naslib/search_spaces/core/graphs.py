@@ -97,8 +97,8 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
 
                     # Evaluate the edge from the predecessor to the current node.
                     pred_output = pred_info['output']
-                    op = self.get_edge_data(pred, node)['op']
-                    edge_output = op(pred_output)
+                    edge_data = self.get_edge_data(pred, node)
+                    edge_output = edge_data['op'](pred_output, **edge_data)
 
                     edge_outputs.append(edge_output)
 
@@ -160,6 +160,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
                 if issubclass(type(op), EdgeOpGraph):
                     self.add_module('node' + str(node), op)
                     op.parse(optimizer)
+                    #op.architectural_weights = optimizer.architectural_weights['node'+str(node)]
 
     @classmethod
     def from_optimizer_op(cls, optimizer, *args, **kwargs):
