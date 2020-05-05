@@ -23,9 +23,9 @@ class MetaOp(nn.Module):
 
 
 @six.add_metaclass(ABCMeta)
-class MetaEdgeOpGraph(nn.Module):
+class MetaGraph(nn.Module):
     def __init__(self, *args, **kwargs):
-        super(MetaEdgeOpGraph, self).__init__()
+        super(MetaGraph, self).__init__()
 
     @abstractmethod
     def _build_graph(self):
@@ -35,18 +35,44 @@ class MetaEdgeOpGraph(nn.Module):
     def forward(self, *args, **kwargs):
         raise NotImplementedError
 
-
-@six.add_metaclass(ABCMeta)
-class MetaNodeOpGraph(nn.Module):
-    def __init__(self, *args, **kwargs):
-        super(MetaNodeOpGraph, self).__init__()
-
     @abstractmethod
-    def _build_graph(self):
-        pass
-
-    @abstractmethod
-    def forward(self, *args, **kwargs):
+    def parse(self, optimizer, *args, **kwargs):
         raise NotImplementedError
+
+    def set_primitives(self, primitives):
+        self.primitives = primitives
+
+    def get_primitives(self):
+        if hasattr(self, 'primitives'):
+            return self.primitives
+        else:
+            return None
+
+    def is_input(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'input'
+
+    def is_inter(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'inter'
+
+    def is_output(self, node_idx):
+        return self.nodes[node_idx]['type'] == 'output'
+
+    def input_nodes(self):
+        input_nodes = [n for n in self.nodes if self.is_input(n)]
+        return input_nodes
+
+    def inter_nodes(self):
+        inter_nodes = [n for n in self.nodes if self.is_inter(n)]
+        return inter_nodes
+
+    def output_nodes(self):
+        output_nodes = [n for n in self.nodes if self.is_output(n)]
+        return output_nodes
+
+    @classmethod
+    def from_optimizer_op(cls, optimizer, *args, **kwargs):
+        graph = cls(*args, **kwargs)
+        graph.parse(optimizer)
+        return graph
 
 

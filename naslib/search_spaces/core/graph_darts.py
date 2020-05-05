@@ -23,7 +23,8 @@ PRIMITIVES = [
 
 
 class DARTSCell(EdgeOpGraph):
-    def __init__(self, cell_type, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
+    def __init__(self, primitives, cell_type, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
+        self.primitives = primitives
         self.cell_type = cell_type
         self.C_prev_prev = C_prev_prev
         self.C_prev = C_prev
@@ -54,7 +55,7 @@ class DARTSCell(EdgeOpGraph):
             for from_node in range(to_node):
                 stride = 2 if self.cell_type == 'reduction' and from_node < 2 else 1
                 self.add_edge(
-                    from_node, to_node, op=None, op_choices=PRIMITIVES, op_kwargs={'C': self.C, 'stride': stride},
+                    from_node, to_node, op=None, op_choices=self.primitives, op_kwargs={'C': self.C, 'stride': stride},
                     to_node=to_node, from_node=from_node)
 
         # Edges: inter-output
@@ -65,8 +66,9 @@ class DARTSCell(EdgeOpGraph):
 
 
 class DARTSMacroGraph(NodeOpGraph):
-    def __init__(self, config, *args, **kwargs):
+    def __init__(self, config, primitives, *args, **kwargs):
         self.config = config
+        self.primitives = primitives
         super(DARTSMacroGraph, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
@@ -90,11 +92,13 @@ class DARTSMacroGraph(NodeOpGraph):
             else:
                 reduction = False
 
-            self.add_node(cell_num + 2, op=DARTSCell(C_prev_prev=C_prev_prev,
-                                                     C_prev=C_prev, C=C_curr,
-                                                     reduction_prev=reduction_prev,
-                                                     cell_type='reduction' if
-                                                     reduction else 'normal'),
+            self.add_node(cell_num + 2,
+                          op=DARTSCell(primitives=self.primitives,
+                                       C_prev_prev=C_prev_prev,
+                                       C_prev=C_prev, C=C_curr,
+                                       reduction_prev=reduction_prev,
+                                       cell_type='reduction' if
+                                       reduction else 'normal'),
                           type='reduction' if reduction else 'normal')
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
@@ -130,7 +134,9 @@ if __name__ == '__main__':
         config = AttrDict(config)
 
     one_shot_optimizer = OneShotOptimizer()
-    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer, config=config)
+    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer,
+                                                     config=config,
+                                                     primitives=PRIMITIVES)
 
     # Attempt forward pass
     res = search_space(torch.randn(size=[1, 3, 32, 32], dtype=torch.float, requires_grad=False))

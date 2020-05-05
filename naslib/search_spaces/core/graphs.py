@@ -1,48 +1,18 @@
 import networkx as nx
 
-from naslib.search_spaces.core.metaclasses import MetaEdgeOpGraph, MetaNodeOpGraph
+from naslib.search_spaces.core.metaclasses import MetaGraph
 
 
-class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
+class EdgeOpGraph(nx.DiGraph, MetaGraph):
     """A graph whose edges contain operations"""
 
     def __init__(self, *args, **kwargs):
         nx.DiGraph.__init__(self, *args, **kwargs)
-        MetaEdgeOpGraph.__init__(self)
+        MetaGraph.__init__(self)
         self.graph = self._build_graph()
 
     def _build_graph(self):
         pass
-
-    def is_input(self, node_idx):
-        return self.nodes[node_idx]['type'] == 'input'
-
-    def is_inter(self, node_idx):
-        return self.nodes[node_idx]['type'] == 'inter'
-
-    def is_output(self, node_idx):
-        return self.nodes[node_idx]['type'] == 'output'
-
-    def input_nodes(self):
-        input_nodes = [n for n in self.nodes if self.is_input(n)]
-        return input_nodes
-
-    def inter_nodes(self):
-        inter_nodes = [n for n in self.nodes if self.is_inter(n)]
-        return inter_nodes
-
-    def output_nodes(self):
-        output_nodes = [n for n in self.nodes if self.is_output(n)]
-        return output_nodes
-
-    def num_input_nodes(self):
-        return len(self.input_nodes())
-
-    def num_inter_nodes(self):
-        return len(self.inter_nodes())
-
-    def num_output_nodes(self):
-        return len(self.output_nodes())
 
     def parse(self, optimizer):
         topo_order = nx.algorithms.dag.topological_sort(self)
@@ -62,12 +32,6 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
                     edge_data = self.get_edge_data(pred, node)
                     edge_data = optimizer.replace_function(edge_data, self)
                     self.add_module('edge(%d,%d)' % (pred, node), edge_data['op'])
-
-    @classmethod
-    def from_optimizer_op(cls, optimizer, *args, **kwargs):
-        graph = cls(*args, **kwargs)
-        graph.parse(optimizer)
-        return graph
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
@@ -110,37 +74,16 @@ class EdgeOpGraph(nx.DiGraph, MetaEdgeOpGraph):
         return [self.nodes[node]['output'] for node in self.output_nodes()][0]
 
 
-class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
+class NodeOpGraph(nx.MultiDiGraph, MetaGraph):
     """A graph whose nodes contain operations"""
 
     def __init__(self, *args, **kwargs):
         nx.MultiDiGraph.__init__(self, *args, **kwargs)
-        MetaNodeOpGraph.__init__(self)
+        MetaGraph.__init__(self)
         self.graph = self._build_graph()
 
     def _build_graph(self):
         pass
-
-    def is_input(self, node_idx):
-        return self.nodes[node_idx]['type'] == 'input'
-
-    def is_inter(self, node_idx):
-        return self.nodes[node_idx]['type'] == 'inter'
-
-    def is_output(self, node_idx):
-        return self.nodes[node_idx]['type'] == 'output'
-
-    def input_nodes(self):
-        input_nodes = [n for n in self.nodes if self.is_input(n)]
-        return input_nodes
-
-    def inter_nodes(self):
-        inter_nodes = [n for n in self.nodes if self.is_inter(n)]
-        return inter_nodes
-
-    def output_nodes(self):
-        output_nodes = [n for n in self.nodes if self.is_output(n)]
-        return output_nodes
 
     def parse(self, optimizer):
         topo_order = nx.algorithms.dag.topological_sort(self)
@@ -160,13 +103,6 @@ class NodeOpGraph(nx.MultiDiGraph, MetaNodeOpGraph):
                 if issubclass(type(op), EdgeOpGraph):
                     self.add_module('node' + str(node), op)
                     op.parse(optimizer)
-                    #op.architectural_weights = optimizer.architectural_weights['node'+str(node)]
-
-    @classmethod
-    def from_optimizer_op(cls, optimizer, *args, **kwargs):
-        graph = cls(*args, **kwargs)
-        graph.parse(optimizer)
-        return graph
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
