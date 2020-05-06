@@ -1,5 +1,3 @@
-from functools import partial
-
 import torch
 from torch import nn
 
@@ -29,13 +27,13 @@ class Cell(EdgeOpGraph):
         self.add_node(1, type='input', preprocessing=preprocessing1, desc='previous')
 
         # 4 intermediate nodes
-        self.add_node(2, type='inter', comb_op=sum)
-        self.add_node(3, type='inter', comb_op=sum)
-        self.add_node(4, type='inter', comb_op=sum)
-        self.add_node(5, type='inter', comb_op=sum)
+        self.add_node(2, type='inter', comb_op='sum')
+        self.add_node(3, type='inter', comb_op='sum')
+        self.add_node(4, type='inter', comb_op='sum')
+        self.add_node(5, type='inter', comb_op='sum')
 
         # Output node
-        self.add_node(6, type='output', comb_op=partial(torch.cat, dim=1))
+        self.add_node(6, type='output', comb_op='cat_channels')
 
         # Edges: input-inter and inter-inter
         for to_node in self.inter_nodes():
@@ -43,7 +41,8 @@ class Cell(EdgeOpGraph):
                 stride = 2 if self.cell_type == 'reduction' and from_node < 2 else 1
                 self.add_edge(
                     from_node, to_node, op=None, op_choices=self.primitives,
-                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op': sum},
+                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op':
+                               'sum'},
                     to_node=to_node, from_node=from_node)
 
         # Edges: inter-output
@@ -67,6 +66,7 @@ class MacroGraph(NodeOpGraph):
         stem = Stem(C_curr=C_curr)
         C_prev_prev, C_prev, C_curr = C_curr, C_curr, C
 
+        #TODO: set the input edges to the first cell in a nicer way
         self.add_node(0, type='input')
         self.add_node(1, op=stem, type='stem')
         self.add_node('1b', op=stem, type='stem')
