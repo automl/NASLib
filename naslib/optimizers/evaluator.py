@@ -1,6 +1,8 @@
 import logging
 import os
 import random
+import sys
+
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
@@ -8,6 +10,13 @@ import torch.nn as nn
 import torchvision.datasets as dset
 
 from naslib.utils import utils
+
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
+log_format = '%(asctime)s %(message)s'
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 
 class Evaluator(object):
@@ -17,22 +26,24 @@ class Evaluator(object):
             self.config = kwargs.get('config', graph.config)
         except:
             raise ('No configuration specified in graph or kwargs')
-
         np.random.seed(self.config.seed)
         random.seed(self.config.seed)
-        torch.manual_seed(self.config.seed)
-        torch.cuda.set_device(self.config.gpu)
-        cudnn.benchmark = False
-        cudnn.enabled = True
-        cudnn.deterministic = True
-        torch.cuda.manual_seed_all(self.config.seed)
+        if torch.cuda.is_available():
+            torch.manual_seed(self.config.seed)
+            torch.cuda.set_device(self.config.gpu)
+            cudnn.benchmark = False
+            cudnn.enabled = True
+            cudnn.deterministic = True
+            torch.cuda.manual_seed_all(self.config.seed)
 
-        #TODO: move all the data loading and preproces inside another method
-        train_transform, valid_transform = utils._data_transforms_cifar10(config)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        # TODO: move all the data loading and preproces inside another method
+        train_transform, valid_transform = utils._data_transforms_cifar10(self.config)
         self.train_transform = train_transform
         self.valid_transform = valid_transform
-        train_data = dset.CIFAR10(root=config.data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR10(root=config.data, train=False, download=True, transform=valid_transform)
+        train_data = dset.CIFAR10(root=self.config.data, train=True, download=True, transform=train_transform)
+        test_data = dset.CIFAR10(root=self.config.data, train=False, download=True, transform=valid_transform)
 
         num_train = len(train_data)
         indices = list(range(num_train))
@@ -57,7 +68,7 @@ class Evaluator(object):
         criterion = eval('nn.' + self.config.criterion)()
         self.criterion = criterion.cuda()
 
-        self.model = graph.cuda()
+        self.model = self.graph.to(self.device)
 
         logging.info("param size = %fMB", utils.count_parameters_in_MB(self.model))
 
@@ -72,6 +83,7 @@ class Evaluator(object):
             optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
 
         logging.info('Args: {}'.format(self.config))
+        self.run_kwargs = {}
 
     def run(self, *args, **kwargs):
         if 'epochs' not in kwargs:
@@ -80,27 +92,29 @@ class Evaluator(object):
             raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
-            logging.info('epoch %d lr %e', epoch, self.scheduler.get_lr()[0])
+            self.lr = self.scheduler.get_last_lr()[0]
+            logging.info('epoch %d lr %e', epoch, self.lr)
             self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
 
-            train_acc, train_obj = Evaluator.train(self.model, self.optimizer, self.criterion, self.train_queue)
+            train_acc, train_obj = self.train(self.model, self.optimizer, self.criterion, self.train_queue,
+                                              self.valid_queue, device=self.device, **self.run_kwargs)
             logging.info('train_acc %f', train_acc)
 
             if len(self.valid_queue) != 0:
-                valid_acc, valid_obj = Evaluator.infer(self.model, self.criterion, self.valid_queue)
+                valid_acc, valid_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
                 logging.info('valid_acc %f', valid_acc)
 
-            test_acc, test_obj = Evaluator.infer(self.model, self.criterion, self.test_queue)
+            test_acc, test_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
 
             Evaluator.save(self.config.save, self.model, epoch)
 
-    @staticmethod
-    def train(graph, optimizer, criterion, train_queue, *args, **kwargs):
+    def train(self, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
         try:
-            config = config if 'config' in kwargs else graph.config
-        except:
-            raise ('No configuration specified in graph or kwargs')
+            config = kwargs.get('config', graph.config)
+            device = kwargs['device']
+        except Exception as e:
+            raise ModuleNotFoundError('No configuration specified in graph or kwargs')
 
         objs = utils.AvgrageMeter()
         top1 = utils.AvgrageMeter()
@@ -110,8 +124,8 @@ class Evaluator(object):
             graph.train()
             n = input.size(0)
 
-            input = input.cuda()
-            target = target.cuda(non_blocking=True)
+            input = input.to(device)
+            target = target.to(device, non_blocking=True)
 
             optimizer.zero_grad()
             logits, logits_aux = graph(input)
@@ -133,10 +147,10 @@ class Evaluator(object):
 
         return top1.avg, objs.avg
 
-    @staticmethod
-    def infer(graph, criterion, valid_queue, *args, **kwargs):
+    def infer(self, graph, criterion, valid_queue, *args, **kwargs):
         try:
             config = kwargs.get('config', graph.config)
+            device = kwargs['device']
         except:
             raise ('No configuration specified in graph or kwargs')
 
@@ -147,9 +161,8 @@ class Evaluator(object):
 
         with torch.no_grad():
             for step, (input, target) in enumerate(valid_queue):
-                input = input.cuda()
-                target = target.cuda(non_blocking=True)
-
+                input = input.to(device)
+                target = target.to(device, non_blocking=True)
                 logits, _ = graph(input)
                 loss = criterion(logits, target)
 
@@ -169,9 +182,10 @@ class Evaluator(object):
         utils.save(model, os.path.join(save_path,
                                        'one_shot_model_{}.pt'.format(epoch)))
 
+
 if __name__ == '__main__':
     from naslib.search_spaces.darts import MacroGraph, PRIMITIVES
-    from naslib.optimizers.optimizer import OneShotOptimizer, DARTSOptimizer
+    from naslib.optimizers.optimizer import DARTSOptimizer
     from naslib.utils import config_parser
 
     one_shot_optimizer = DARTSOptimizer()
