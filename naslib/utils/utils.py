@@ -9,9 +9,11 @@ import shutil
 import torch
 import torchvision.transforms as transforms
 
-from functools import wraps
+from functools import wraps, partial
 from torch.autograd import Variable
 
+
+cat_channels = partial(torch.cat, dim=1)
 
 def exception(exception_type):
     def exception_decorator(func):
@@ -139,7 +141,6 @@ def drop_path(x, drop_prob):
 
 def _concat(xs):
     return torch.cat([x.view(-1) for x in xs])
-
 
 def create_exp_dir(path):
     if not os.path.exists(path):

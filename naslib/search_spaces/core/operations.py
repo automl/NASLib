@@ -41,8 +41,8 @@ class MixedOp(MetaOp):
         super(MixedOp, self).__init__(primitives)
         self.build(C, stride, out_node_op, ops_dict)
 
-    def build(self, C, stride, out_node_op=sum, ops_dict=OPS):
-        self.out_node_op = out_node_op
+    def build(self, C, stride, out_node_op='sum', ops_dict=OPS):
+        self.out_node_op = eval(out_node_op)
         for primitive in self.primitives:
             op = ops_dict[primitive](C, stride, False)
             if 'pool' in primitive:
@@ -60,8 +60,8 @@ class CategoricalOp(MetaOp):
         super(CategoricalOp, self).__init__(primitives)
         self.build(C, stride, out_node_op, ops_dict)
 
-    def build(self, C, stride, out_node_op=sum, ops_dict=OPS):
-        self.out_node_op = out_node_op
+    def build(self, C, stride, out_node_op='sum', ops_dict=OPS):
+        self.out_node_op = eval(out_node_op)
         for primitive in self.primitives:
             op = ops_dict[primitive](C, stride, False)
             self._ops.append(op)

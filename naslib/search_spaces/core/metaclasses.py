@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 
+import yaml
 import six
 import torch.nn as nn
 
@@ -72,6 +73,22 @@ class MetaGraph(nn.Module):
         output_nodes = [n for n in self.nodes if self.is_output(n)]
         return output_nodes
 
+    def get_node_attributes(self, node_idx, exclude=None):
+        node_attr_dict = self.nodes[node_idx]
+        if exclude is not None:
+            node_attr_dict = {k: v for k, v in node_attr_dict.items() if k not in exclude}
+        return node_attr_dict
+
+    def get_edge_attributes(self, from_node, to_node, exclude=None):
+        edge_attr_dict = self[from_node][to_node]
+        if exclude is not None:
+            edge_attr_dict = {k: v for k, v in edge_attr_dict.items() if k not in exclude}
+        return edge_attr_dict
+
+    @exception(KeyError)
+    def get_node_preprocessing(self, node_idx):
+        return self.nodes[node_idx]['preprocessing']
+
     @exception(KeyError)
     def get_node_op(self, node_idx):
         return self.nodes[node_idx]['op']
@@ -101,3 +118,48 @@ class MetaGraph(nn.Module):
         graph = cls(*args, **kwargs)
         graph.parse(optimizer)
         return graph
+
+    @staticmethod
+    def save_graph(graph, filename=None):
+        _graph = {'type': None, 'nodes': {}, 'edges': {}}
+        _graph.update({'type': type(graph).__name__})
+        if hasattr(graph, 'primitives'):
+            _graph['primitives'] = str(graph.primitives)
+
+        # exctract node attributes and add them to dict
+        for node in graph.nodes:
+            node_attributes = graph.get_node_attributes(node,
+                                                        exclude=['output',
+                                                                 'preprocessing',
+                                                                 'transform',
+                                                                 'op'])
+            _graph['nodes'].update({node: {k: str(v) for k, v in
+                                           node_attributes.items()}})
+            if graph.get_node_preprocessing(node) is not None:
+                _graph['nodes'][node].update({'preprocessing':
+                                              type(graph.get_node_preprocessing(node)).__name__})
+
+            if hasattr(graph.get_node_op(node), 'save_graph'):
+                _graph['nodes'][node].update({'op':
+                                              MetaGraph.save_graph(graph.get_node_op(node))})
+            elif graph.get_node_op(node) is not None:
+                _graph['nodes'][node].update({'op':
+                                              type(graph.get_node_op(node)).__name__})
+
+        # exctract edge attributes and add them to dict
+        for edge in graph.edges:
+            edge_attributes = graph.get_edge_attributes(*edge,
+                                                        exclude=['arch_weight',
+                                                                 'op'])
+            _graph['edges'].update({str(edge): {k: str(v) for k, v in
+                                                edge_attributes.items()}})
+            if graph.get_edge_op(*edge) is not None:
+                _graph['edges'][str(edge)].update({'op':
+                                                   type(graph.get_edge_op(*edge)).__name__})
+
+        if filename is None:
+            return _graph
+        else:
+            with open(filename, 'w') as f:
+                yaml.safe_dump(_graph, f)
+

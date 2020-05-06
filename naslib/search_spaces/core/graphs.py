@@ -1,7 +1,8 @@
+import yaml
 import networkx as nx
 
 from naslib.search_spaces.core.metaclasses import MetaGraph
-
+from naslib.utils.utils import cat_channels
 
 class EdgeOpGraph(nx.DiGraph, MetaGraph):
     """A graph whose edges contain operations"""
@@ -12,6 +13,9 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
         self.graph = self._build_graph()
 
     def _build_graph(self):
+        pass
+
+    def save_graph(self):
         pass
 
     def parse(self, optimizer, *args, **kwargs):
@@ -67,23 +71,26 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
                     edge_outputs.append(edge_output)
 
                 # Combine evaluated input edges to form output of the cell
-                comb_op = node_info['comb_op']
+                comb_op = eval(node_info['comb_op'])
                 self.nodes[node]['output'] = comb_op(edge_outputs)
 
         # Todo: Deal with multiple output EdgeOpGraphs
         return [self.nodes[node]['output'] for node in self.output_nodes()][0]
 
 
-class NodeOpGraph(nx.MultiDiGraph, MetaGraph):
+class NodeOpGraph(nx.DiGraph, MetaGraph):
     """A graph whose nodes contain operations"""
 
     def __init__(self, *args, **kwargs):
-        nx.MultiDiGraph.__init__(self, *args, **kwargs)
+        nx.DiGraph.__init__(self, *args, **kwargs)
         MetaGraph.__init__(self)
         self.graph = self._build_graph()
 
     def _build_graph(self):
         pass
+
+    def save_graph(self, filename='graph.yaml'):
+        MetaGraph.save_graph(self, filename)
 
     def parse(self, optimizer, *args, **kwargs):
         topo_order = nx.algorithms.dag.topological_sort(self)
