@@ -1,8 +1,9 @@
-import torch
-from torch import nn
 from functools import partial
 
-from naslib.optimizers.optimizer import OneShotOptimizer, DARTSOptimizer
+import torch
+from torch import nn
+
+from naslib.optimizers.optimizer import DARTSOptimizer
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity
 from naslib.utils import config_parser
@@ -42,8 +43,7 @@ class Cell(EdgeOpGraph):
                 stride = 2 if self.cell_type == 'reduction' and from_node < 2 else 1
                 self.add_edge(
                     from_node, to_node, op=None, op_choices=self.primitives,
-                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op':
-                               sum},
+                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op': sum},
                     to_node=to_node, from_node=from_node)
 
         # Edges: inter-output

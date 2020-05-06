@@ -14,7 +14,7 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
     def _build_graph(self):
         pass
 
-    def parse(self, optimizer):
+    def parse(self, optimizer, *args, **kwargs):
         topo_order = nx.algorithms.dag.topological_sort(self)
 
         for node in topo_order:
@@ -32,7 +32,6 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
                     edge_data = self.get_edge_data(pred, node)
                     edge_data = optimizer.replace_function(edge_data, self)
                     self.add_module('edge(%d,%d)' % (pred, node), edge_data['op'])
-
 
     def forward(self, inputs):
         # Evaluate the graph in topological ordering
@@ -86,7 +85,7 @@ class NodeOpGraph(nx.MultiDiGraph, MetaGraph):
     def _build_graph(self):
         pass
 
-    def parse(self, optimizer):
+    def parse(self, optimizer, *args, **kwargs):
         topo_order = nx.algorithms.dag.topological_sort(self)
 
         for node in topo_order:

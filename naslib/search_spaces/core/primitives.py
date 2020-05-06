@@ -155,4 +155,3 @@ class NoiseOp(nn.Module):
             x_new = x
         noise = Variable(x_new.data.new(x_new.size()).normal_(self.mean, self.std))
         return noise
-

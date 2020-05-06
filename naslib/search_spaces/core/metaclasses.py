@@ -1,6 +1,8 @@
+from abc import ABCMeta, abstractmethod
+
 import six
 import torch.nn as nn
-from abc import ABCMeta, abstractmethod
+
 from naslib.utils import exception
 
 
@@ -99,5 +101,3 @@ class MetaGraph(nn.Module):
         graph = cls(*args, **kwargs)
         graph.parse(optimizer)
         return graph
-
-
