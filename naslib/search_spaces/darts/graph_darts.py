@@ -1,3 +1,4 @@
+import yaml
 import torch
 from torch import nn
 
@@ -50,6 +51,41 @@ class Cell(EdgeOpGraph):
         self.add_edge(3, 6, op=Identity())
         self.add_edge(4, 6, op=Identity())
         self.add_edge(5, 6, op=Identity())
+
+    @classmethod
+    def from_config(cls, graph_dict, primitives, cell_type, C_prev_prev,
+                    C_prev, C, reduction_prev, *args, **kwargs):
+        graph = cls(primitives, cell_type, C_prev_prev, C_prev, C,
+                    reduction_prev, *args, **kwargs)
+
+        graph.clear()
+        # Input Nodes: Previous / Previous-Previous cell
+        for node, attr in graph_dict['nodes'].items():
+            if 'preprocessing' in attr:
+                if attr['preprocessing'] == 'FactorizedReduce':
+                    input_args = {'C_in': graph.C_prev_prev, 'C_out': graph.C,
+                                  'affine': False}
+                else:
+                    input_args = {'C_in': graph.C_prev_prev, 'C_out': graph.C,
+                                  'kernel_size': 1, 'stride': 1, 'padding': 0,
+                                  'affine': False}
+
+                preprocessing = eval(attr['preprocessing'])(**input_args)
+
+                graph.add_node(node, type=attr['type'],
+                               preprocessing=preprocessing)
+            else:
+                graph.add_nodes_from([(node, attr)])
+
+        edges = [(*eval(e), attr) for e, attr in graph_dict['edges'].items()]
+        for edge, attr in graph_dict['edges'].items():
+            from_node, to_node = eval(edge)
+            graph.add_edge(*eval(edge), **{k: eval(v) for k, v in attr.items() if k
+                                           != 'op'})
+            graph[from_node][to_node]['op'] = None if attr['op'] != 'Identity' else eval(attr['op'])()
+            print(graph[from_node][to_node])
+
+        return graph
 
 
 class MacroGraph(NodeOpGraph):
@@ -114,6 +150,59 @@ class MacroGraph(NodeOpGraph):
         # From output of normal-reduction cell to pooling layer
         self.add_edge(num_layers + 1, num_layers + 2)
         self.add_edge(num_layers + 2, num_layers + 3)
+
+    @classmethod
+    def from_config(cls, config=None, filename=None):
+        with open(filename, 'r') as f:
+            graph_dict = yaml.safe_load(f)
+
+        if config is None:
+            if not hasattr(graph, 'config'):
+                raise('No configuration provided')
+            else:
+                config = graph.config
+
+        graph = cls(config, [])
+
+        graph_type = graph_dict['type']
+        edges = [(*eval(e), attr) for e, attr in graph_dict['edges'].items()]
+        graph.clear()
+        graph.add_edges_from(edges)
+
+        C = config['init_channels']
+        C_curr = config['stem_multiplier'] * C
+
+        stem = Stem(C_curr=C_curr)
+        C_prev_prev, C_prev, C_curr = C_curr, C_curr, C
+
+        for node, attr in graph_dict['nodes'].items():
+            node_type = attr['type']
+            if node_type == 'input':
+                graph.add_node(node, type='input')
+            elif node_type == 'stem':
+                graph.add_node(node, op=stem, type='stem')
+            elif node_type in ['normal', 'reduction']:
+                assert attr['op']['type'] == 'Cell'
+                graph.add_node(node,
+                               op=Cell.from_config(attr['op'], primitives=attr['op']['primitives'],
+                                       C_prev_prev=C_prev_prev, C_prev=C_prev,
+                                       C=C_curr,
+                                       reduction_prev=graph_dict['nodes'][node-1]['type'] == 'reduction',
+                                       cell_type=node_type),
+                               type=node_type)
+                C_prev_prev, C_prev = C_prev, config['channel_multiplier'] * C_curr
+            elif node_type == 'pooling':
+                pooling = nn.AdaptiveAvgPool2d(1)
+                graph.add_node(node, op=pooling, transform=lambda x: x[0],
+                               type='pooling')
+            elif node_type == 'output':
+                classifier = nn.Linear(C_prev, config['num_classes'])
+                graph.add_node(node, op=classifier, transform=lambda x:
+                               x[0].view(x[0].size(0), -1), type='output')
+
+        return graph
+
+
 
 
 if __name__ == '__main__':

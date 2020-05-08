@@ -119,6 +119,10 @@ class MetaGraph(nn.Module):
         graph.parse(optimizer)
         return graph
 
+    @classmethod
+    def from_config(cls, *args, **kwargs):
+        return NotImplementedError
+
     @staticmethod
     def save_graph(graph, filename=None):
         _graph = {'type': None, 'nodes': {}, 'edges': {}}

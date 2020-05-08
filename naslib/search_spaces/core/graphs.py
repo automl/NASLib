@@ -10,7 +10,7 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
     def __init__(self, *args, **kwargs):
         nx.DiGraph.__init__(self, *args, **kwargs)
         MetaGraph.__init__(self)
-        self.graph = self._build_graph()
+        self._build_graph()
 
     def _build_graph(self):
         pass
@@ -84,7 +84,7 @@ class NodeOpGraph(nx.DiGraph, MetaGraph):
     def __init__(self, *args, **kwargs):
         nx.DiGraph.__init__(self, *args, **kwargs)
         MetaGraph.__init__(self)
-        self.graph = self._build_graph()
+        self._build_graph()
 
     def _build_graph(self):
         pass
