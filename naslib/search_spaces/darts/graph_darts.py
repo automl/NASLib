@@ -77,7 +77,6 @@ class Cell(EdgeOpGraph):
             else:
                 graph.add_nodes_from([(node, attr)])
 
-        edges = [(*eval(e), attr) for e, attr in graph_dict['edges'].items()]
         for edge, attr in graph_dict['edges'].items():
             from_node, to_node = eval(edge)
             graph.add_edge(*eval(edge), **{k: eval(v) for k, v in attr.items() if k
@@ -157,10 +156,7 @@ class MacroGraph(NodeOpGraph):
             graph_dict = yaml.safe_load(f)
 
         if config is None:
-            if not hasattr(graph, 'config'):
-                raise('No configuration provided')
-            else:
-                config = graph.config
+            raise('No configuration provided')
 
         graph = cls(config, [])
 
