@@ -1,5 +1,6 @@
 import yaml
 import torch
+import numpy as np
 from torch import nn
 
 from naslib.optimizers.optimizer import DARTSOptimizer
@@ -82,7 +83,6 @@ class Cell(EdgeOpGraph):
             graph.add_edge(*eval(edge), **{k: eval(v) for k, v in attr.items() if k
                                            != 'op'})
             graph[from_node][to_node]['op'] = None if attr['op'] != 'Identity' else eval(attr['op'])()
-            print(graph[from_node][to_node])
 
         return graph
 
@@ -149,6 +149,54 @@ class MacroGraph(NodeOpGraph):
         # From output of normal-reduction cell to pooling layer
         self.add_edge(num_layers + 1, num_layers + 2)
         self.add_edge(num_layers + 2, num_layers + 3)
+
+
+    def sample(self, same_cell_struct=True, n_ops_per_edge=1,
+               n_input_edges=None, dist=None, seed=1):
+        """
+        same_cell_struct: True; if the sampled cell topology is the same or not
+        n_ops_per_edge: 1; number of sampled operations per edge in cell
+        n_input_edges: None; list equal with length with number of intermediate
+        nodes. Determines the number of predecesor nodes for each of them
+        dist: None; distribution to sample operations in edges from
+        seed: 1; random seed
+        """
+        # create a new graph that we will discretize
+        new_graph = MacroGraph(self.config, self.primitives)
+        np.random.seed(seed)
+        seeds = {'normal': seed+1, 'reduction': seed+2}
+
+        for node in new_graph:
+            cell = new_graph.get_node_op(node)
+            if not isinstance(cell, Cell):
+                continue
+
+            if same_cell_struct:
+                np.random.seed(seeds[new_graph.get_node_type(node)])
+
+            for edge in cell.edges:
+                if bool(set(cell.output_nodes()) & set(edge)):
+                    continue
+                op_choices = cell.get_edge_op_choices(*edge)
+                sampled_op = np.random.choice(op_choices, n_ops_per_edge,
+                                              False, p=dist)
+                cell[edge[0]][edge[1]]['op_choices'] = [*sampled_op]
+
+            if n_input_edges is not None:
+                for inter_node, k in zip(cell.inter_nodes(), n_input_edges):
+                    # in case the start node index is not 0
+                    node_idx = list(cell.nodes).index(inter_node)
+                    prev_node_choices = list(cell.nodes)[:node_idx]
+                    assert k <= len(prev_node_choices), 'cannot sample more'
+                    ' than number of predecesor nodes'
+
+                    sampled_input_edges = np.random.choice(prev_node_choices,
+                                                           k, False)
+                    for i in set(prev_node_choices) - set(sampled_input_edges):
+                        cell.remove(i, inter_node)
+
+        return new_graph
+
 
     @classmethod
     def from_config(cls, config=None, filename=None):

@@ -124,7 +124,7 @@ class MetaGraph(nn.Module):
         return NotImplementedError
 
     @staticmethod
-    def save_graph(graph, filename=None):
+    def save_graph(graph, filename=None, save_arch_weights=False):
         _graph = {'type': None, 'nodes': {}, 'edges': {}}
         _graph.update({'type': type(graph).__name__})
         if hasattr(graph, 'primitives'):
@@ -145,16 +145,20 @@ class MetaGraph(nn.Module):
 
             if hasattr(graph.get_node_op(node), 'save_graph'):
                 _graph['nodes'][node].update({'op':
-                                              MetaGraph.save_graph(graph.get_node_op(node))})
+                                              MetaGraph.save_graph(graph.get_node_op(node),
+                                                                  filename=None,
+                                                                  save_arch_weights=save_arch_weights)})
             elif graph.get_node_op(node) is not None:
                 _graph['nodes'][node].update({'op':
                                               type(graph.get_node_op(node)).__name__})
 
         # exctract edge attributes and add them to dict
         for edge in graph.edges:
+            exclude_list = ['op']
+            if save_arch_weights:
+                exclude_list.append('arch_weight')
             edge_attributes = graph.get_edge_attributes(*edge,
-                                                        exclude=['arch_weight',
-                                                                 'op'])
+                                                        exclude=exclude_list)
             _graph['edges'].update({str(edge): {k: str(v) for k, v in
                                                 edge_attributes.items()}})
             if graph.get_edge_op(*edge) is not None:

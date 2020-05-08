@@ -89,8 +89,8 @@ class NodeOpGraph(nx.DiGraph, MetaGraph):
     def _build_graph(self):
         pass
 
-    def save_graph(self, filename='graph.yaml'):
-        MetaGraph.save_graph(self, filename)
+    def save_graph(self, filename='graph.yaml', save_arch_weights=False):
+        MetaGraph.save_graph(self, filename. save_arch_weights)
 
     def parse(self, optimizer, *args, **kwargs):
         topo_order = nx.algorithms.dag.topological_sort(self)
