@@ -128,11 +128,13 @@ class Evaluator(object):
             target = target.to(device, non_blocking=True)
 
             optimizer.zero_grad()
-            logits, logits_aux = graph(input)
+            logits  = graph(input)
             loss = criterion(logits, target)
+            '''
             if config.auxiliary:
                 loss_aux = criterion(logits_aux, target)
                 loss += config.auxiliary_weight * loss_aux
+            '''
             loss.backward()
             nn.utils.clip_grad_norm_(graph.parameters(), config.grad_clip)
             optimizer.step()
@@ -163,7 +165,7 @@ class Evaluator(object):
             for step, (input, target) in enumerate(valid_queue):
                 input = input.to(device)
                 target = target.to(device, non_blocking=True)
-                logits, _ = graph(input)
+                logits = graph(input)
                 loss = criterion(logits, target)
 
                 prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
