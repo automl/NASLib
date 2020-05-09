@@ -2,7 +2,7 @@ import torch
 import yaml
 from torch import nn
 
-from naslib.optimizers.optimizer import OneShotOptimizer
+from naslib.optimizers.optimizer import DARTSOptimizer
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.operations import OPS
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity
@@ -202,7 +202,7 @@ class MacroGraph(NodeOpGraph):
 if __name__ == '__main__':
     from naslib.search_spaces.darts import PRIMITIVES
 
-    one_shot_optimizer = OneShotOptimizer()
+    one_shot_optimizer = DARTSOptimizer()
     search_space = MacroGraph.from_optimizer_op(
         one_shot_optimizer,
         config=config_parser('../../configs/default.yaml'),

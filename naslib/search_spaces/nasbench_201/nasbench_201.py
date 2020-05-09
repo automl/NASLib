@@ -2,7 +2,7 @@ import torch
 import yaml
 from torch import nn
 
-from naslib.optimizers.optimizer import OneShotOptimizer
+from naslib.optimizers.optimizer import DARTSOptimizer
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import Stem
 from naslib.search_spaces.nasbench_201.primitives import OPS as NASBENCH_201_OPS
@@ -12,8 +12,9 @@ from naslib.utils import config_parser
 
 
 class Cell(EdgeOpGraph):
-    def __init__(self, primitives, C_prev, C, stride, ops_dict, *args, **kwargs):
+    def __init__(self, primitives, cell_type, C_prev, C, stride, ops_dict, *args, **kwargs):
         self.primitives = primitives
+        self.cell_type = cell_type
         self.C_prev = C_prev
         self.C = C
         self.stride = stride
@@ -35,7 +36,7 @@ class Cell(EdgeOpGraph):
             for from_node in range(to_node):
                 self.add_edge(
                     from_node, to_node, op=None, op_choices=self.primitives,
-                    op_kwargs={'C_in': self.C_prev, 'C_out': self.C, 'stride': self.stride, 'affine': True,
+                    op_kwargs={'C_in': self.C_prev, 'C': self.C, 'stride': self.stride, 'affine': True,
                                'track_running_stats': True, 'ops_dict': self.ops_dict, 'out_node_op': 'sum'},
                     to_node=to_node, from_node=from_node)
 
@@ -101,7 +102,7 @@ class MacroGraph(NodeOpGraph):
                 self.add_node(cell_num + 2, op=cell, primitives=self.primitives, transform=lambda x: x[0])
             else:
                 cell = Cell(primitives=self.primitives, stride=1, C_prev=C_prev, C=C_curr,
-                            ops_dict=self.ops_dict)
+                            ops_dict=self.ops_dict, cell_type='normal')
                 self.add_node(cell_num + 2, op=cell, primitives=self.primitives)
 
             C_prev = C_curr
@@ -171,7 +172,7 @@ class MacroGraph(NodeOpGraph):
 if __name__ == '__main__':
     from naslib.search_spaces.nasbench_201.primitives import NAS_BENCH_201 as PRIMITIVES
 
-    one_shot_optimizer = OneShotOptimizer()
+    one_shot_optimizer = DARTSOptimizer()
     search_space = MacroGraph.from_optimizer_op(
         one_shot_optimizer,
         config=config_parser('../../configs/search_spaces/nasbench_201.yaml'),

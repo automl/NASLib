@@ -18,71 +18,71 @@ Code from NASBench-201
 """
 
 OPS = {
-    'none': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: Zero(C_in, C_out, stride),
-    'avg_pool_3x3': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: POOLING(C_in, C_out,
-                                                                                                      stride, 'avg',
-                                                                                                      affine,
-                                                                                                      track_running_stats),
-    'max_pool_3x3': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: POOLING(C_in, C_out,
-                                                                                                      stride, 'max',
-                                                                                                      affine,
-                                                                                                      track_running_stats),
-    'nor_conv_7x7': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: ReLUConvBN(C_in, C_out,
-                                                                                                         (7, 7),
-                                                                                                         (stride,
-                                                                                                          stride),
-                                                                                                         (3, 3),
-                                                                                                         (1, 1), affine,
-                                                                                                         track_running_stats),
-    'nor_conv_3x3': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: ReLUConvBN(C_in, C_out,
-                                                                                                         (3, 3),
-                                                                                                         (stride,
-                                                                                                          stride),
-                                                                                                         (1, 1),
-                                                                                                         (1, 1), affine,
-                                                                                                         track_running_stats),
-    'nor_conv_1x1': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: ReLUConvBN(C_in, C_out,
-                                                                                                         (1, 1),
-                                                                                                         (stride,
-                                                                                                          stride),
-                                                                                                         (0, 0),
-                                                                                                         (1, 1), affine,
-                                                                                                         track_running_stats),
-    'dua_sepc_3x3': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: DualSepConv(C_in, C_out,
-                                                                                                          (3, 3),
-                                                                                                          (stride,
-                                                                                                           stride),
-                                                                                                          (1, 1),
-                                                                                                          (1, 1),
-                                                                                                          affine,
-                                                                                                          track_running_stats),
-    'dua_sepc_5x5': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: DualSepConv(C_in, C_out,
-                                                                                                          (5, 5),
-                                                                                                          (stride,
-                                                                                                           stride),
-                                                                                                          (2, 2),
-                                                                                                          (1, 1),
-                                                                                                          affine,
-                                                                                                          track_running_stats),
-    'dil_sepc_3x3': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: SepConv(C_in, C_out,
+    'none': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: Zero(C_in, C, stride),
+    'avg_pool_3x3': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: POOLING(C_in, C,
+                                                                                                  stride, 'avg',
+                                                                                                  affine,
+                                                                                                  track_running_stats),
+    'max_pool_3x3': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: POOLING(C_in, C,
+                                                                                                  stride, 'max',
+                                                                                                  affine,
+                                                                                                  track_running_stats),
+    'nor_conv_7x7': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: ReLUConvBN(C_in, C,
+                                                                                                     (7, 7),
+                                                                                                     (stride,
+                                                                                                      stride),
+                                                                                                     (3, 3),
+                                                                                                     (1, 1), affine,
+                                                                                                     track_running_stats),
+    'nor_conv_3x3': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: ReLUConvBN(C_in, C,
+                                                                                                     (3, 3),
+                                                                                                     (stride,
+                                                                                                      stride),
+                                                                                                     (1, 1),
+                                                                                                     (1, 1), affine,
+                                                                                                     track_running_stats),
+    'nor_conv_1x1': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: ReLUConvBN(C_in, C,
+                                                                                                     (1, 1),
+                                                                                                     (stride,
+                                                                                                      stride),
+                                                                                                     (0, 0),
+                                                                                                     (1, 1), affine,
+                                                                                                     track_running_stats),
+    'dua_sepc_3x3': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: DualSepConv(C_in, C,
                                                                                                       (3, 3),
-                                                                                                      (stride, stride),
-                                                                                                      (2, 2), (2, 2),
+                                                                                                      (stride,
+                                                                                                       stride),
+                                                                                                      (1, 1),
+                                                                                                      (1, 1),
                                                                                                       affine,
                                                                                                       track_running_stats),
-    'dil_sepc_5x5': lambda C_in, C_out, stride, affine, track_running_stats, *args, **kwargs: SepConv(C_in, C_out,
+    'dua_sepc_5x5': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: DualSepConv(C_in, C,
                                                                                                       (5, 5),
-                                                                                                      (stride, stride),
-                                                                                                      (4, 4), (2, 2),
+                                                                                                      (stride,
+                                                                                                       stride),
+                                                                                                      (2, 2),
+                                                                                                      (1, 1),
                                                                                                       affine,
                                                                                                       track_running_stats),
-    'skip_connect': lambda C_in, C_out, stride, affine,
+    'dil_sepc_3x3': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: SepConv(C_in, C,
+                                                                                                  (3, 3),
+                                                                                                  (stride, stride),
+                                                                                                  (2, 2), (2, 2),
+                                                                                                  affine,
+                                                                                                  track_running_stats),
+    'dil_sepc_5x5': lambda C_in, C, stride, affine, track_running_stats, *args, **kwargs: SepConv(C_in, C,
+                                                                                                  (5, 5),
+                                                                                                  (stride, stride),
+                                                                                                  (4, 4), (2, 2),
+                                                                                                  affine,
+                                                                                                  track_running_stats),
+    'skip_connect': lambda C_in, C, stride, affine,
                            track_running_stats, *args,
-                           **kwargs: Identity() if stride == 1 and C_in == C_out else FactorizedReduce(C_in,
-                                                                                                       C_out,
-                                                                                                       stride,
-                                                                                                       affine,
-                                                                                                       track_running_stats),
+                           **kwargs: Identity() if stride == 1 and C_in == C else FactorizedReduce(C_in,
+                                                                                                   C,
+                                                                                                   stride,
+                                                                                                   affine,
+                                                                                                   track_running_stats),
 }
 
 CONNECT_NAS_BENCHMARK = ['none', 'skip_connect', 'nor_conv_3x3']
@@ -109,12 +109,12 @@ class Stem(nn.Module):
 
 class ReLUConvBN(nn.Module):
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine, track_running_stats=True):
+    def __init__(self, C_in, C, kernel_size, stride, padding, dilation, affine, track_running_stats=True):
         super(ReLUConvBN, self).__init__()
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
-            nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=padding, dilation=dilation, bias=False),
-            nn.BatchNorm2d(C_out, affine=affine, track_running_stats=track_running_stats)
+            nn.Conv2d(C_in, C, kernel_size, stride=stride, padding=padding, dilation=dilation, bias=False),
+            nn.BatchNorm2d(C, affine=affine, track_running_stats=track_running_stats)
         )
 
     def forward(self, x):
@@ -123,14 +123,14 @@ class ReLUConvBN(nn.Module):
 
 class SepConv(nn.Module):
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine, track_running_stats=True):
+    def __init__(self, C_in, C, kernel_size, stride, padding, dilation, affine, track_running_stats=True):
         super(SepConv, self).__init__()
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation,
                       groups=C_in, bias=False),
-            nn.Conv2d(C_in, C_out, kernel_size=1, padding=0, bias=False),
-            nn.BatchNorm2d(C_out, affine=affine, track_running_stats=track_running_stats),
+            nn.Conv2d(C_in, C, kernel_size=1, padding=0, bias=False),
+            nn.BatchNorm2d(C, affine=affine, track_running_stats=track_running_stats),
         )
 
     def forward(self, x):
@@ -139,10 +139,10 @@ class SepConv(nn.Module):
 
 class DualSepConv(nn.Module):
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine, track_running_stats=True):
+    def __init__(self, C_in, C, kernel_size, stride, padding, dilation, affine, track_running_stats=True):
         super(DualSepConv, self).__init__()
         self.op_a = SepConv(C_in, C_in, kernel_size, stride, padding, dilation, affine, track_running_stats)
-        self.op_b = SepConv(C_in, C_out, kernel_size, 1, padding, dilation, affine, track_running_stats)
+        self.op_b = SepConv(C_in, C, kernel_size, 1, padding, dilation, affine, track_running_stats)
 
     def forward(self, x):
         x = self.op_a(x)
@@ -188,12 +188,12 @@ class ResNetBasicblock(nn.Module):
 
 class POOLING(nn.Module):
 
-    def __init__(self, C_in, C_out, stride, mode, affine=True, track_running_stats=True):
+    def __init__(self, C_in, C, stride, mode, affine=True, track_running_stats=True):
         super(POOLING, self).__init__()
-        if C_in == C_out:
+        if C_in == C:
             self.preprocess = None
         else:
-            self.preprocess = ReLUConvBN(C_in, C_out, 1, 1, 0, 1, affine, track_running_stats)
+            self.preprocess = ReLUConvBN(C_in, C, 1, 1, 0, 1, affine, track_running_stats)
         if mode == 'avg':
             self.op = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
         elif mode == 'max':
@@ -220,49 +220,49 @@ class Identity(nn.Module):
 
 class Zero(nn.Module):
 
-    def __init__(self, C_in, C_out, stride):
+    def __init__(self, C_in, C, stride):
         super(Zero, self).__init__()
         self.C_in = C_in
-        self.C_out = C_out
+        self.C = C
         self.stride = stride
         self.is_zero = True
 
     def forward(self, x):
-        if self.C_in == self.C_out:
+        if self.C_in == self.C:
             if self.stride == 1:
                 return x.mul(0.)
             else:
                 return x[:, :, ::self.stride, ::self.stride].mul(0.)
         else:
             shape = list(x.shape)
-            shape[1] = self.C_out
+            shape[1] = self.C
             zeros = x.new_zeros(shape, dtype=x.dtype, device=x.device)
             return zeros
 
     def extra_repr(self):
-        return 'C_in={C_in}, C_out={C_out}, stride={stride}'.format(**self.__dict__)
+        return 'C_in={C_in}, C={C}, stride={stride}'.format(**self.__dict__)
 
 
 class FactorizedReduce(nn.Module):
 
-    def __init__(self, C_in, C_out, stride, affine, track_running_stats):
+    def __init__(self, C_in, C, stride, affine, track_running_stats):
         super(FactorizedReduce, self).__init__()
         self.stride = stride
         self.C_in = C_in
-        self.C_out = C_out
+        self.C = C
         self.relu = nn.ReLU(inplace=False)
         if stride == 2:
-            # assert C_out % 2 == 0, 'C_out : {:}'.format(C_out)
-            C_outs = [C_out // 2, C_out - C_out // 2]
+            # assert C % 2 == 0, 'C : {:}'.format(C)
+            Cs = [C // 2, C - C // 2]
             self.convs = nn.ModuleList()
             for i in range(2):
-                self.convs.append(nn.Conv2d(C_in, C_outs[i], 1, stride=stride, padding=0, bias=False))
+                self.convs.append(nn.Conv2d(C_in, Cs[i], 1, stride=stride, padding=0, bias=False))
             self.pad = nn.ConstantPad2d((0, 1, 0, 1), 0)
         elif stride == 1:
-            self.conv = nn.Conv2d(C_in, C_out, 1, stride=stride, padding=0, bias=False)
+            self.conv = nn.Conv2d(C_in, C, 1, stride=stride, padding=0, bias=False)
         else:
             raise ValueError('Invalid stride : {:}'.format(stride))
-        self.bn = nn.BatchNorm2d(C_out, affine=affine, track_running_stats=track_running_stats)
+        self.bn = nn.BatchNorm2d(C, affine=affine, track_running_stats=track_running_stats)
 
     def forward(self, x):
         if self.stride == 2:
@@ -275,13 +275,13 @@ class FactorizedReduce(nn.Module):
         return out
 
     def extra_repr(self):
-        return 'C_in={C_in}, C_out={C_out}, stride={stride}'.format(**self.__dict__)
+        return 'C_in={C_in}, C={C}, stride={stride}'.format(**self.__dict__)
 
 
 # Auto-ReID: Searching for a Part-Aware ConvNet for Person Re-Identification, ICCV 2019
 class PartAwareOp(nn.Module):
 
-    def __init__(self, C_in, C_out, stride, part=4):
+    def __init__(self, C_in, C, stride, part=4):
         super().__init__()
         self.part = 4
         self.hidden = C_in // 3
@@ -295,9 +295,9 @@ class PartAwareOp(nn.Module):
         self.W_Q = nn.Linear(self.hidden, self.hidden)
 
         if stride == 2:
-            self.last = FactorizedReduce(C_in + self.hidden, C_out, 2)
+            self.last = FactorizedReduce(C_in + self.hidden, C, 2)
         elif stride == 1:
-            self.last = FactorizedReduce(C_in + self.hidden, C_out, 1)
+            self.last = FactorizedReduce(C_in + self.hidden, C, 1)
         else:
             raise ValueError('Invalid Stride : {:}'.format(stride))
 

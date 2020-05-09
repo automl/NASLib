@@ -39,16 +39,17 @@ class TestOp(torch.nn.Module):
 
 
 class MixedOp(MetaOp):
-    def __init__(self, primitives, C, stride, out_node_op, ops_dict=OPS):
-        super(MixedOp, self).__init__(primitives)
-        self.build(C, stride, out_node_op, ops_dict)
+    def __init__(self, *args, **kwargs):
+        super(MixedOp, self).__init__(*args, **kwargs)
+        self.ops_dict = kwargs['ops_dict']
+        self.out_node_op = eval(kwargs['out_node_op'])
+        self.build(*args, **kwargs)
 
-    def build(self, C, stride, out_node_op='sum', ops_dict=OPS):
-        self.out_node_op = eval(out_node_op)
+    def build(self, *args, **kwargs):
         for primitive in self.primitives:
-            op = ops_dict[primitive](C, stride, False)
+            op = self.ops_dict[primitive](*args, **kwargs)
             if 'pool' in primitive:
-                op = nn.Sequential(op, nn.BatchNorm2d(C, affine=False))
+                op = nn.Sequential(op, nn.BatchNorm2d(kwargs['C'], affine=False))
             self._ops.append(op)
 
     def forward(self, x, *args, **kwargs):
