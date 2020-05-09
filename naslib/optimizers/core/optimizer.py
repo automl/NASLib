@@ -1,24 +1,5 @@
-import six
-from abc import ABCMeta, abstractmethod
-
-from naslib.search_spaces.core.operations import CategoricalOp
-
-@six.add_metaclass(ABCMeta)
-class MetaOptimizer(object):
-    def __init__(self):
-        super(MetaOptimizer, self).__init__()
-
-    @abstractmethod
-    def replace_function(self, edge, graph):
-        raise NotImplementedError
-
-    @classmethod
-    @abstractmethod
-    def from_config(cls, *args, **kwargs):
-        raise NotImplementedError
-
-    def forward(self, *args, **kwargs):
-        pass
+from .metaclasses import MetaOptimizer
+from .operations import CategoricalOp
 
 
 class NASOptimizer(MetaOptimizer):

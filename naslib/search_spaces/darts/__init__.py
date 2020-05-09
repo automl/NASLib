@@ -1,4 +1,5 @@
-from naslib.search_spaces.darts.graph_darts import Cell, MacroGraph
+from naslib.search_spaces.darts.graph import Cell, MacroGraph
+from naslib.search_spaces.darts.primitives import OPS
 
 PRIMITIVES = [
     'none',

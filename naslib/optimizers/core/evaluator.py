@@ -92,9 +92,8 @@ class Evaluator(object):
             raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
-            #self.lr = self.scheduler.get_last_lr()[0]
-            #logging.info('epoch %d lr %e', epoch, self.lr)
-            logging.info('epoch %d', epoch)
+            self.lr = self.scheduler.get_last_lr()[0]
+            logging.info('epoch %d lr %e', epoch, self.lr)
             self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
 
             train_acc, train_obj = self.train(self.model, self.optimizer, self.criterion, self.train_queue,

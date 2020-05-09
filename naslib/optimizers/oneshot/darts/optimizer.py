@@ -3,7 +3,7 @@ import torch
 from torch.autograd import Variable
 
 from naslib.utils import _concat
-from naslib.search_spaces.core.operations import MixedOp
+from naslib.optimizers.core.operations import MixedOp
 from naslib.optimizers.core import NASOptimizer
 
 

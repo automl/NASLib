@@ -1,7 +1,7 @@
 import networkx as nx
 
-from naslib.search_spaces.core.metaclasses import MetaGraph
 from naslib.utils.utils import cat_channels
+from .metaclasses import MetaGraph
 
 
 class EdgeOpGraph(nx.DiGraph, MetaGraph):

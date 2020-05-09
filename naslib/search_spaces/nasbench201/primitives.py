@@ -4,8 +4,6 @@
 import torch
 import torch.nn as nn
 
-__all__ = ['OPS', 'ResNetBasicblock', 'SearchSpaceNames']
-
 """
 Code from NASBench-201 
 @inproceedings{dong2020nasbench201,
@@ -84,15 +82,6 @@ OPS = {
                                                                                                    affine,
                                                                                                    track_running_stats),
 }
-
-CONNECT_NAS_BENCHMARK = ['none', 'skip_connect', 'nor_conv_3x3']
-NAS_BENCH_201 = ['none', 'skip_connect', 'nor_conv_1x1', 'nor_conv_3x3', 'avg_pool_3x3']
-DARTS_SPACE = ['none', 'skip_connect', 'dua_sepc_3x3', 'dua_sepc_5x5', 'dil_sepc_3x3', 'dil_sepc_5x5', 'avg_pool_3x3',
-               'max_pool_3x3']
-
-SearchSpaceNames = {'connect-nas': CONNECT_NAS_BENCHMARK,
-                    'nas-bench-201': NAS_BENCH_201,
-                    'darts': DARTS_SPACE}
 
 
 class Stem(nn.Module):

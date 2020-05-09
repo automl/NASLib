@@ -1,4 +1,4 @@
-data: "data"
+data: "../../data"
 gpu: 0
 seed: 10
 report_freq: 1

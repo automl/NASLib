@@ -4,11 +4,8 @@ import numpy as np
 from scipy.special import softmax
 from torch import nn
 
-from naslib.optimizers.oneshot.darts import DARTSOptimizer
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
-from naslib.search_spaces.core.operations import OPS
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity
-from naslib.utils import config_parser
 
 
 class Cell(EdgeOpGraph):
@@ -301,17 +298,3 @@ class MacroGraph(NodeOpGraph):
 
         return graph
 
-
-if __name__ == '__main__':
-    from naslib.search_spaces.darts import PRIMITIVES
-
-    one_shot_optimizer = DARTSOptimizer()
-    search_space = MacroGraph.from_optimizer_op(
-        one_shot_optimizer,
-        config=config_parser('../../configs/default.yaml'),
-        primitives=PRIMITIVES,
-        ops_dict=OPS
-    )
-
-    # Attempt forward pass
-    res = search_space(torch.randn(size=[1, 3, 32, 32], dtype=torch.float, requires_grad=False))
