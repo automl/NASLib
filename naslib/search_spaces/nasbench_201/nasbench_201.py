@@ -7,6 +7,7 @@ from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import Stem
 from naslib.search_spaces.nasbench_201.primitives import OPS as NASBENCH_201_OPS
 from naslib.search_spaces.nasbench_201.primitives import ResNetBasicblock
+from naslib.search_spaces.nasbench_201.primitives import Stem as NASBENCH_201_Stem
 from naslib.utils import config_parser
 
 
@@ -88,10 +89,7 @@ class MacroGraph(NodeOpGraph):
         layer_reductions = [False] * num_cells_per_stack + [True] + [False] * num_cells_per_stack + [True] + [
             False] * num_cells_per_stack
 
-        stem = nn.Sequential(
-            nn.Conv2d(3, C, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(C))
-
+        stem = NASBENCH_201_Stem(C=C)
         self.add_node(0, type='input')
         self.add_node(1, op=stem, type='stem')
 
@@ -100,18 +98,19 @@ class MacroGraph(NodeOpGraph):
         for cell_num, (C_curr, reduction) in enumerate(zip(layer_channels, layer_reductions)):
             if reduction:
                 cell = ResNetBasicblock(C_prev, C_curr, 2, True)
+                self.add_node(cell_num + 2, op=cell, primitives=self.primitives, transform=lambda x: x[0])
             else:
                 cell = Cell(primitives=self.primitives, stride=1, C_prev=C_prev, C=C_curr,
                             ops_dict=self.ops_dict)
+                self.add_node(cell_num + 2, op=cell, primitives=self.primitives)
 
-            self.add_node(cell_num + 2, op=cell, primitives=self.primitives)
             C_prev = C_curr
 
         lastact = nn.Sequential(nn.BatchNorm2d(C_prev), nn.ReLU(inplace=True))
         pooling = nn.AdaptiveAvgPool2d(1)
         classifier = nn.Linear(C_prev, self.config['num_classes'])
 
-        self.add_node(cell_num + 3, op=lastact, type='postprocessing_nb201')
+        self.add_node(cell_num + 3, op=lastact, transform=lambda x: x[0], type='postprocessing_nb201')
         self.add_node(cell_num + 4, op=pooling, transform=lambda x: x[0], type='pooling')
         self.add_node(cell_num + 5, op=classifier, transform=lambda x: x[0].view(x[0].size(0), -1),
                       type='output')

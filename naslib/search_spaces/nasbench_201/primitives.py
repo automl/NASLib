@@ -95,6 +95,18 @@ SearchSpaceNames = {'connect-nas': CONNECT_NAS_BENCHMARK,
                     'darts': DARTS_SPACE}
 
 
+class Stem(nn.Module):
+
+    def __init__(self, C):
+        super(Stem, self).__init__()
+        self.seq = nn.Sequential(
+            nn.Conv2d(3, C, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(C))
+
+    def forward(self, x, *args, **kwargs):
+        return self.seq(x[0])
+
+
 class ReLUConvBN(nn.Module):
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine, track_running_stats=True):
@@ -164,7 +176,6 @@ class ResNetBasicblock(nn.Module):
         return string
 
     def forward(self, inputs):
-
         basicblock = self.conv_a(inputs)
         basicblock = self.conv_b(basicblock)
 
