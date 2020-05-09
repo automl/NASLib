@@ -92,8 +92,9 @@ class Evaluator(object):
             raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
-            self.lr = self.scheduler.get_last_lr()[0]
-            logging.info('epoch %d lr %e', epoch, self.lr)
+            #self.lr = self.scheduler.get_last_lr()[0]
+            #logging.info('epoch %d lr %e', epoch, self.lr)
+            logging.info('epoch %d', epoch)
             self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
 
             train_acc, train_obj = self.train(self.model, self.optimizer, self.criterion, self.train_queue,
@@ -128,11 +129,12 @@ class Evaluator(object):
             target = target.to(device, non_blocking=True)
 
             optimizer.zero_grad()
-            logits, logits_aux = graph(input)
+            #logits, logits_aux = graph(input)
+            logits = graph(input)
             loss = criterion(logits, target)
-            if config.auxiliary:
-                loss_aux = criterion(logits_aux, target)
-                loss += config.auxiliary_weight * loss_aux
+            #if config.auxiliary:
+            #    loss_aux = criterion(logits_aux, target)
+            #    loss += config.auxiliary_weight * loss_aux
             loss.backward()
             nn.utils.clip_grad_norm_(graph.parameters(), config.grad_clip)
             optimizer.step()
@@ -163,7 +165,8 @@ class Evaluator(object):
             for step, (input, target) in enumerate(valid_queue):
                 input = input.to(device)
                 target = target.to(device, non_blocking=True)
-                logits, _ = graph(input)
+                #logits, _ = graph(input)
+                logits = graph(input)
                 loss = criterion(logits, target)
 
                 prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
@@ -191,7 +194,7 @@ if __name__ == '__main__':
     one_shot_optimizer = DARTSOptimizer()
     search_space = MacroGraph.from_optimizer_op(
         one_shot_optimizer,
-        config=config_parser('../../configs/default.yaml'),
+        config=config_parser('../configs/default.yaml'),
         primitives=PRIMITIVES
     )
 
