@@ -9,6 +9,7 @@ from naslib.optimizers.optimizer import DARTSOptimizer
 from naslib.search_spaces.nasbench_201.nasbench_201 import MacroGraph
 from naslib.search_spaces.nasbench_201.primitives import NAS_BENCH_201 as PRIMITIVES
 from naslib.search_spaces.nasbench_201.primitives import OPS as NASBENCH_201_OPS
+from naslib.search_spaces.nasbench_201.utils import discretize_architectural_weights
 from naslib.utils import config_parser
 from naslib.utils import utils
 
@@ -48,11 +49,11 @@ class OneShotSearchBase(Evaluator):
 
             input_valid, target_valid = next(iter(valid_queue))
             input_valid = input_valid.to(device)
-            target_valid = target_valid.to(device)
+            target_valid = target_valid.to(device, non_blocking=True)
 
             arch_optimizer.step(graph, criterion, input_train, target_train, input_valid, target_valid, self.lr,
                                 self.optimizer, config.unrolled)
-
+            discretize_architectural_weights(arch_optimizer.architectural_weights)
             optimizer.zero_grad()
             logits = graph(input_train)
             loss = criterion(logits, target_train)
