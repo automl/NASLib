@@ -4,11 +4,13 @@ import sys
 import torch
 import torch.nn as nn
 
-from naslib.optimizers.evaluator import Evaluator
-from naslib.optimizers.optimizer import DARTSOptimizer
-from naslib.search_spaces.nasbench_201.nasbench_201 import MacroGraph
-from naslib.search_spaces.nasbench_201.primitives import NAS_BENCH_201 as PRIMITIVES
-from naslib.search_spaces.nasbench_201.primitives import OPS as NASBENCH_201_OPS
+from naslib.optimizers.core import Evaluator
+from naslib.optimizers.oneshot.darts import DARTSOptimizer
+from naslib.search_spaces.core.operations import OPS
+from naslib.search_spaces.darts import PRIMITIVES, MacroGraph
+#from naslib.search_spaces.nasbench_201.nasbench_201 import MacroGraph
+#from naslib.search_spaces.nasbench_201.primitives import NAS_BENCH_201 as PRIMITIVES
+#from naslib.search_spaces.nasbench_201.primitives import OPS as NASBENCH_201_OPS
 from naslib.utils import config_parser
 from naslib.utils import utils
 
@@ -20,9 +22,9 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 
-class OneShotSearchBase(Evaluator):
+class Searcher(Evaluator):
     def __init__(self, graph, arch_optimizer, *args, **kwargs):
-        super(OneShotSearchBase, self).__init__(graph, *args, **kwargs)
+        super(Searcher, self).__init__(graph, *args, **kwargs)
         self.arch_optimizer = arch_optimizer
         self.arch_optimizer.architectural_weights.to(self.device)
         self.run_kwargs['arch_optimizer'] = self.arch_optimizer
@@ -82,15 +84,17 @@ class OneShotSearchBase(Evaluator):
 
 
 if __name__ == '__main__':
-    one_shot_optimizer = DARTSOptimizer()
-    config = config_parser('../../../configs/search_spaces/nasbench_201.yaml')
+    #config = config_parser('../../configs/search_spaces/nasbench_201.yaml')
+    config = config_parser('../../configs/default.yaml')
+
+    one_shot_optimizer = DARTSOptimizer.from_config(**config)
     search_space = MacroGraph.from_optimizer_op(
         one_shot_optimizer,
         config=config,
         primitives=PRIMITIVES,
-        ops_dict=NASBENCH_201_OPS
+        ops_dict=OPS
     )
-    one_shot_optimizer.create_optimizer(**config)
+    one_shot_optimizer.init()
 
-    evaluator = OneShotSearchBase(search_space, arch_optimizer=one_shot_optimizer)
-    evaluator.run()
+    searcher = Searcher(search_space, arch_optimizer=one_shot_optimizer)
+    searcher.run()

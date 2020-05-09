@@ -1,36 +1,13 @@
-from abc import abstractmethod
-
 import numpy as np
 import torch
 from torch.autograd import Variable
 
-from naslib.search_spaces.core.operations import CategoricalOp, MixedOp
 from naslib.utils import _concat
+from naslib.search_spaces.core.operations import MixedOp
+from naslib.optimizers.core import NASOptimizer
 
 
-class MetaOptimizer(object):
-    def __init__(self):
-        super(MetaOptimizer, self).__init__()
-
-    @abstractmethod
-    def replace_function(self, edge, graph):
-        raise NotImplementedError
-
-    def forward(self, *args, **kwargs):
-        pass
-
-
-class OneShotOptimizer(MetaOptimizer):
-    def __init__(self):
-        super(OneShotOptimizer).__init__()
-
-    def replace_function(self, edge, graph):
-        if 'op_choices' in edge:
-            edge['op'] = CategoricalOp(primitives=edge['op_choices'], **edge['op_kwargs'])
-        return edge
-
-
-class DARTSOptimizer(MetaOptimizer):
+class DARTSOptimizer(NASOptimizer):
     def __init__(self):
         super(DARTSOptimizer, self).__init__()
         self.network_momentum = None
@@ -38,6 +15,28 @@ class DARTSOptimizer(MetaOptimizer):
         self.grad_clip = None
         self.optimizer = None
         self.architectural_weights = torch.nn.ParameterDict()
+
+
+    @classmethod
+    def from_config(cls, momentum, weight_decay, arch_learning_rate,
+                    arch_weight_decay, grad_clip=None, *args, **kwargs):
+        nas_opt = cls()
+        nas_opt.network_momentum = momentum
+        nas_opt.network_weight_decay = weight_decay
+        nas_opt.grad_clip = grad_clip
+        nas_opt.arch_learning_rate = arch_learning_rate
+        nas_opt.arch_weight_decay = arch_weight_decay
+        return nas_opt
+
+
+    def init(self, optimizer=torch.optim.Adam):
+        self.optimizer = optimizer(
+            self.architectural_weights.parameters(),
+            lr=self.arch_learning_rate,
+            betas=(0.5, 0.999),
+            weight_decay=self.arch_weight_decay
+        )
+
 
     def replace_function(self, edge, graph):
         graph.architectural_weights = self.architectural_weights
@@ -158,10 +157,3 @@ class DARTSOptimizer(MetaOptimizer):
         pred = model(input)
         return criterion(pred, target)
 
-    def create_optimizer(self, momentum, weight_decay, arch_learning_rate,
-                         arch_weight_decay, grad_clip=None, *args, **kwargs):
-        self.network_momentum = momentum
-        self.network_weight_decay = weight_decay
-        self.grad_clip = grad_clip
-        self.optimizer = torch.optim.Adam(self.architectural_weights.parameters(), lr=arch_learning_rate,
-                                          betas=(0.5, 0.999), weight_decay=arch_weight_decay)

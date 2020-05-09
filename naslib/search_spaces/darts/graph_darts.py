@@ -4,7 +4,7 @@ import numpy as np
 from scipy.special import softmax
 from torch import nn
 
-from naslib.optimizers.optimizer import DARTSOptimizer
+from naslib.optimizers.oneshot.darts import DARTSOptimizer
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.operations import OPS
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity

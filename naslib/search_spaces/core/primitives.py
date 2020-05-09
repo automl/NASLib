@@ -44,17 +44,6 @@ class ConvBnRelu(nn.Module):
         return self.op(x)
 
 
-class ConvBnRelu(nn.Module):
-
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
-        super(ConvBnRelu, self).__init__()
-        self.op = ConvBnRelu(C_in=C_in, C_out=C_out, kernel_size=kernel_size,
-                             stride=stride, padding=padding, affine=affine)
-
-    def forward(self, x, *args, **kwargs):
-        return self.op(x)
-
-
 class DilConv(nn.Module):
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):

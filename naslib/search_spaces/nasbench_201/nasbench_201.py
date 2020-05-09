@@ -2,7 +2,7 @@ import torch
 import yaml
 from torch import nn
 
-from naslib.optimizers.optimizer import DARTSOptimizer
+from naslib.optimizers.oneshot.darts import DARTSOptimizer
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import Stem
 from naslib.search_spaces.nasbench_201.primitives import OPS as NASBENCH_201_OPS
