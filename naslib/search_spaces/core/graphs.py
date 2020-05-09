@@ -1,8 +1,8 @@
-import yaml
 import networkx as nx
 
 from naslib.search_spaces.core.metaclasses import MetaGraph
 from naslib.utils.utils import cat_channels
+
 
 class EdgeOpGraph(nx.DiGraph, MetaGraph):
     """A graph whose edges contain operations"""
