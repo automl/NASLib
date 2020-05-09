@@ -1,23 +1,25 @@
-import yaml
 import torch
+import yaml
 import numpy as np
 from scipy.special import softmax
 from torch import nn
 
 from naslib.optimizers.optimizer import DARTSOptimizer
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
+from naslib.search_spaces.core.operations import OPS
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity
 from naslib.utils import config_parser
 
 
 class Cell(EdgeOpGraph):
-    def __init__(self, primitives, cell_type, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
+    def __init__(self, primitives, cell_type, C_prev_prev, C_prev, C, reduction_prev, ops_dict, *args, **kwargs):
         self.primitives = primitives
         self.cell_type = cell_type
         self.C_prev_prev = C_prev_prev
         self.C_prev = C_prev
         self.C = C
         self.reduction_prev = reduction_prev
+        self.ops_dict = ops_dict
         super(Cell, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
@@ -44,8 +46,8 @@ class Cell(EdgeOpGraph):
                 stride = 2 if self.cell_type == 'reduction' and from_node < 2 else 1
                 self.add_edge(
                     from_node, to_node, op=None, op_choices=self.primitives,
-                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op':
-                               'sum'},
+                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op': 'sum', 'ops_dict': self.ops_dict,
+                               'affine': False},
                     to_node=to_node, from_node=from_node)
 
         # Edges: inter-output
@@ -89,9 +91,10 @@ class Cell(EdgeOpGraph):
 
 
 class MacroGraph(NodeOpGraph):
-    def __init__(self, config, primitives, *args, **kwargs):
+    def __init__(self, config, primitives, ops_dict, *args, **kwargs):
         self.config = config
         self.primitives = primitives
+        self.ops_dict = ops_dict
         super(MacroGraph, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
@@ -102,7 +105,7 @@ class MacroGraph(NodeOpGraph):
         stem = Stem(C_curr=C_curr)
         C_prev_prev, C_prev, C_curr = C_curr, C_curr, C
 
-        #TODO: set the input edges to the first cell in a nicer way
+        # TODO: set the input edges to the first cell in a nicer way
         self.add_node(0, type='input')
         self.add_node(1, op=stem, type='stem')
         self.add_node('1b', op=stem, type='stem')
@@ -117,12 +120,9 @@ class MacroGraph(NodeOpGraph):
                 reduction = False
 
             self.add_node(cell_num + 2,
-                          op=Cell(primitives=self.primitives,
-                                  C_prev_prev=C_prev_prev,
-                                  C_prev=C_prev, C=C_curr,
-                                  reduction_prev=reduction_prev,
-                                  cell_type='reduction' if
-                                  reduction else 'normal'),
+                          op=Cell(primitives=self.primitives, C_prev_prev=C_prev_prev, C_prev=C_prev, C=C_curr,
+                                  reduction_prev=reduction_prev, cell_type='reduction' if reduction else 'normal',
+                                  ops_dict=self.ops_dict),
                           type='reduction' if reduction else 'normal')
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
@@ -259,7 +259,7 @@ class MacroGraph(NodeOpGraph):
             graph_dict = yaml.safe_load(f)
 
         if config is None:
-            raise('No configuration provided')
+            raise ('No configuration provided')
 
         graph = cls(config, [])
 
@@ -284,10 +284,10 @@ class MacroGraph(NodeOpGraph):
                 assert attr['op']['type'] == 'Cell'
                 graph.add_node(node,
                                op=Cell.from_config(attr['op'], primitives=attr['op']['primitives'],
-                                       C_prev_prev=C_prev_prev, C_prev=C_prev,
-                                       C=C_curr,
-                                       reduction_prev=graph_dict['nodes'][node-1]['type'] == 'reduction',
-                                       cell_type=node_type),
+                                                   C_prev_prev=C_prev_prev, C_prev=C_prev,
+                                                   C=C_curr,
+                                                   reduction_prev=graph_dict['nodes'][node - 1]['type'] == 'reduction',
+                                                   cell_type=node_type),
                                type=node_type)
                 C_prev_prev, C_prev = C_prev, config['channel_multiplier'] * C_curr
             elif node_type == 'pooling':
@@ -297,11 +297,9 @@ class MacroGraph(NodeOpGraph):
             elif node_type == 'output':
                 classifier = nn.Linear(C_prev, config['num_classes'])
                 graph.add_node(node, op=classifier, transform=lambda x:
-                               x[0].view(x[0].size(0), -1), type='output')
+                x[0].view(x[0].size(0), -1), type='output')
 
         return graph
-
-
 
 
 if __name__ == '__main__':
@@ -311,7 +309,8 @@ if __name__ == '__main__':
     search_space = MacroGraph.from_optimizer_op(
         one_shot_optimizer,
         config=config_parser('../../configs/default.yaml'),
-        primitives=PRIMITIVES
+        primitives=PRIMITIVES,
+        ops_dict=OPS
     )
 
     # Attempt forward pass

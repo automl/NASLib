@@ -1,15 +1,15 @@
 from abc import ABCMeta, abstractmethod
 
-import yaml
 import six
 import torch.nn as nn
+import yaml
 
 from naslib.utils import exception
 
 
 @six.add_metaclass(ABCMeta)
 class MetaOp(nn.Module):
-    def __init__(self, primitives):
+    def __init__(self, primitives, *args, **kwargs):
         super(MetaOp, self).__init__()
         self.primitives = primitives
         self._ops = nn.ModuleList()
@@ -141,16 +141,16 @@ class MetaGraph(nn.Module):
                                            node_attributes.items()}})
             if graph.get_node_preprocessing(node) is not None:
                 _graph['nodes'][node].update({'preprocessing':
-                                              type(graph.get_node_preprocessing(node)).__name__})
+                                                  type(graph.get_node_preprocessing(node)).__name__})
 
             if hasattr(graph.get_node_op(node), 'save_graph'):
                 _graph['nodes'][node].update({'op':
-                                              MetaGraph.save_graph(graph.get_node_op(node),
-                                                                  filename=None,
-                                                                  save_arch_weights=save_arch_weights)})
+                                                  MetaGraph.save_graph(graph.get_node_op(node),
+                                                                       filename=None,
+                                                                       save_arch_weights=save_arch_weights)})
             elif graph.get_node_op(node) is not None:
                 _graph['nodes'][node].update({'op':
-                                              type(graph.get_node_op(node)).__name__})
+                                                  type(graph.get_node_op(node)).__name__})
 
         # exctract edge attributes and add them to dict
         for edge in graph.edges:
@@ -163,11 +163,10 @@ class MetaGraph(nn.Module):
                                                 edge_attributes.items()}})
             if graph.get_edge_op(*edge) is not None:
                 _graph['edges'][str(edge)].update({'op':
-                                                   type(graph.get_edge_op(*edge)).__name__})
+                                                       type(graph.get_edge_op(*edge)).__name__})
 
         if filename is None:
             return _graph
         else:
             with open(filename, 'w') as f:
                 yaml.safe_dump(_graph, f)
-
