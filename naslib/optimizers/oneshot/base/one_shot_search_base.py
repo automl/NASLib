@@ -1,9 +1,15 @@
 import logging
 import sys
 
+import torch
 import torch.nn as nn
 
 from naslib.optimizers.evaluator import Evaluator
+from naslib.optimizers.optimizer import DARTSOptimizer
+from naslib.search_spaces.nasbench_201.nasbench_201 import MacroGraph
+from naslib.search_spaces.nasbench_201.primitives import NAS_BENCH_201 as PRIMITIVES
+from naslib.search_spaces.nasbench_201.primitives import OPS as NASBENCH_201_OPS
+from naslib.utils import config_parser
 from naslib.utils import utils
 
 for handler in logging.root.handlers[:]:
@@ -66,22 +72,23 @@ class OneShotSearchBase(Evaluator):
             top5.update(prec5.data.item(), n)
 
             if step % config.report_freq == 0:
+                arch_key = list(arch_optimizer.architectural_weights.keys())[-1]
                 logging.info('train %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
+                logging.info(
+                    'train {}: {}'.format(arch_key, torch.softmax(arch_optimizer.architectural_weights[arch_key],
+                                                                  dim=-1)))
 
         return top1.avg, objs.avg
 
 
 if __name__ == '__main__':
-    from naslib.search_spaces.darts import MacroGraph, PRIMITIVES
-    from naslib.optimizers.optimizer import DARTSOptimizer
-    from naslib.utils import config_parser
-
     one_shot_optimizer = DARTSOptimizer()
-    config = config_parser('../../../configs/default.yaml')
+    config = config_parser('../../../configs/search_spaces/nasbench_201.yaml')
     search_space = MacroGraph.from_optimizer_op(
         one_shot_optimizer,
         config=config,
-        primitives=PRIMITIVES
+        primitives=PRIMITIVES,
+        ops_dict=NASBENCH_201_OPS
     )
     one_shot_optimizer.create_optimizer(**config)
 

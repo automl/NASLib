@@ -1,0 +1,35 @@
+data: "data"
+gpu: 0
+seed: 10
+report_freq: 50
+
+init_channels: 16
+num_cells_per_stack: 5
+model_path: "saved_models"
+
+batch_size: 96
+learning_rate: 0.025
+learning_rate_min: 0.001
+momentum: 0.9
+weight_decay: 0.0003
+epochs: 50
+warm_start_epochs: 0
+grad_clip: 5
+train_portion: 0.5
+data_size: 25000
+time_steps: 1
+num_classes: 10
+criterion: CrossEntropyLoss
+
+cutout: False
+cutout_length: 16
+cutout_prob: 1.0
+drop_path_prob: 0.3
+
+unrolled: False
+arch_learning_rate: 0.0003
+arch_weight_decay: 0.001
+output_weights: True
+
+working_dir: run
+save: run
