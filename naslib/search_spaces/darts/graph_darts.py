@@ -1,6 +1,7 @@
 import yaml
 import torch
 import numpy as np
+from scipy.special import softmax
 from torch import nn
 
 from naslib.optimizers.optimizer import DARTSOptimizer
@@ -151,15 +152,69 @@ class MacroGraph(NodeOpGraph):
         self.add_edge(num_layers + 2, num_layers + 3)
 
 
+    #TODO: merge with sample method
+    def discretize(self, n_ops_per_edge=1, n_input_edges=None):
+        """
+        n_ops_per_edge:
+            1; number of sampled operations per edge in cell
+        n_input_edges:
+            None; list equal with length with number of intermediate
+        nodes. Determines the number of predecesor nodes for each of them
+        """
+        # create a new graph that we will discretize
+        new_graph = MacroGraph(self.config, self.primitives)
+
+        for node in new_graph:
+            _cell = self.get_node_op(node)
+            cell = new_graph.get_node_op(node)
+            if not isinstance(cell, Cell):
+                continue
+
+            for edge in _cell.edges:
+                if bool(set(_cell.output_nodes()) & set(edge)):
+                    continue
+                op_choices = _cell.get_edge_op_choices(*edge)
+                alphas = _cell.get_edge_arch_weights(*edge).detach().numpy()
+                sampled_op = np.array(op_choices)[np.argsort(alphas)[-n_ops_per_edge:]]
+                cell[edge[0]][edge[1]]['op_choices'] = [*sampled_op]
+
+            if n_input_edges is not None:
+                for inter_node, k in zip(_cell.inter_nodes(), n_input_edges):
+                    # in case the start node index is not 0
+                    node_idx = list(_cell.nodes).index(inter_node)
+                    prev_node_choices = list(_cell.nodes)[:node_idx]
+                    assert k <= len(prev_node_choices), 'cannot sample more'
+                    ' than number of predecesor nodes'
+
+                    previous_argmax_alphas = [
+                        max(softmax(_cell.get_edge_arch_weights(
+                            i, inter_node
+                        ).detach().numpy())) for i in prev_node_choices
+                    ]
+                    sampled_input_edges = np.array(
+                        prev_node_choices
+                    )[np.argsort(previous_argmax_alphas)[-k:]]
+
+                    for i in set(prev_node_choices) - set(sampled_input_edges):
+                        cell.remove_edge(i, inter_node)
+
+        return new_graph
+
+
     def sample(self, same_cell_struct=True, n_ops_per_edge=1,
                n_input_edges=None, dist=None, seed=1):
         """
-        same_cell_struct: True; if the sampled cell topology is the same or not
-        n_ops_per_edge: 1; number of sampled operations per edge in cell
-        n_input_edges: None; list equal with length with number of intermediate
+        same_cell_struct:
+            True; if the sampled cell topology is the same or not
+        n_ops_per_edge:
+            1; number of sampled operations per edge in cell
+        n_input_edges:
+            None; list equal with length with number of intermediate
         nodes. Determines the number of predecesor nodes for each of them
-        dist: None; distribution to sample operations in edges from
-        seed: 1; random seed
+        dist:
+            None; distribution to sample operations in edges from
+        seed:
+            1; random seed
         """
         # create a new graph that we will discretize
         new_graph = MacroGraph(self.config, self.primitives)
@@ -193,7 +248,7 @@ class MacroGraph(NodeOpGraph):
                     sampled_input_edges = np.random.choice(prev_node_choices,
                                                            k, False)
                     for i in set(prev_node_choices) - set(sampled_input_edges):
-                        cell.remove(i, inter_node)
+                        cell.remove_edge(i, inter_node)
 
         return new_graph
 
