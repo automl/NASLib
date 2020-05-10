@@ -95,8 +95,7 @@ class Stem(nn.Module):
         super(Stem, self).__init__()
         self.seq = nn.Sequential(
             nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
-            nn.BatchNorm2d(C_curr)
-        )
+            nn.BatchNorm2d(C_curr))
 
     def forward(self, x, *args, **kwargs):
         return self.seq(x[0])

@@ -166,8 +166,7 @@ class MacroGraph(NodeOpGraph):
 
         return graph
 
-    @staticmethod
-    def query_architecture(arch_weights):
+    def query_architecture(self, arch_weights):
         arch_weight_idx_to_parent = {0: 0, 1: 0, 2: 1, 3: 0, 4: 1, 5: 2}
         arch_strs = {
             'cell_normal_from_0_to_1': '',
@@ -183,8 +182,9 @@ class MacroGraph(NodeOpGraph):
             arch_strs[edge_key] = '{}~{}'.format(selected_op_str, arch_weight_idx_to_parent[arch_weight_idx])
 
         arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*arch_strs.values())
-        api = API('/home/siemsj/projects/NASLib/naslib/search_spaces/nasbench201/nasbench_201.pth')
-        print(arch_str)
-        index = api.query_index_by_arch(arch_str)
-        info = api.query_meta_info_by_index(index)
+        if not hasattr(self, 'nasbench_api'):
+            self.nasbench_api = API('/home/siemsj/nasbench_201.pth')
+        index = self.nasbench_api.query_index_by_arch(arch_str)
+        self.nasbench_api.show(index)
+        info = self.nasbench_api.query_meta_info_by_index(index)
         return info

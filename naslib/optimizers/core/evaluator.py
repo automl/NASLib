@@ -93,6 +93,7 @@ class Evaluator(object):
             test_acc, test_obj = self.infer(self.model, self.criterion,
                                             self.test_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
+
             if callable(getattr(self.graph, 'query_architecture')):
                 # Record anytime performance
                 arch_info = self.graph.query_architecture(self.arch_optimizer.architectural_weights)
