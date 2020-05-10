@@ -7,6 +7,7 @@ from naslib.search_spaces.darts import MacroGraph, PRIMITIVES, OPS
 from naslib.optimizers.core import NASOptimizer, Evaluator
 from naslib.optimizers.oneshot.darts import DARTSOptimizer, Searcher
 from naslib.utils import config_parser
+from naslib.utils.utils import create_exp_dir
 from naslib.utils.parser import Parser
 
 log_format = '%(asctime)s %(message)s'
@@ -28,6 +29,7 @@ if __name__ == '__main__':
     config.seed = parser.config.seed = args.seed
     config.epochs = parser.config.epochs = args.epochs
     parser.config.save += '/{}'.format(args.optimizer)
+    create_exp_dir(parser.config.save)
 
     fh = logging.FileHandler(os.path.join(parser.config.save,
                                       'log_{}.txt'.format(config.seed)))
