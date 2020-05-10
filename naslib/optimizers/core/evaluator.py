@@ -98,8 +98,7 @@ class Evaluator(object):
                 logging.info('epoch {}, arch {}'.format(epoch, arch_info))
                 if 'arch_eval' not in self.errors_dict:
                     self.errors_dict['arch_eval'] = []
-                else:
-                    self.errors_dict['arch_eval'].append(arch_info)
+                self.errors_dict['arch_eval'].append(arch_info)
 
             self.errors_dict.train_acc.append(train_acc)
             self.errors_dict.train_loss.append(train_obj)
