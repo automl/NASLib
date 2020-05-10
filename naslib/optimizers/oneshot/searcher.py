@@ -1,23 +1,14 @@
 import logging
-import sys
-
 import torch
 import torch.nn as nn
 
 from naslib.optimizers.core import Evaluator
 from naslib.utils import utils
 
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
-
-log_format = '%(asctime)s %(message)s'
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format=log_format, datefmt='%m/%d %I:%M:%S %p')
-
 
 class Searcher(Evaluator):
-    def __init__(self, graph, arch_optimizer, *args, **kwargs):
-        super(Searcher, self).__init__(graph, *args, **kwargs)
+    def __init__(self, graph, parser, arch_optimizer, *args, **kwargs):
+        super(Searcher, self).__init__(graph, parser, *args, **kwargs)
         self.arch_optimizer = arch_optimizer
         self.arch_optimizer.architectural_weights.to(self.device)
         self.run_kwargs['arch_optimizer'] = self.arch_optimizer

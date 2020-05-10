@@ -1,7 +1,8 @@
 import logging
 import os
+import codecs
+import json
 import random
-import sys
 
 import numpy as np
 import torch
@@ -11,17 +12,12 @@ import torchvision.datasets as dset
 
 from naslib.utils import utils
 
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
-
-log_format = '%(asctime)s %(message)s'
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 
 class Evaluator(object):
-    def __init__(self, graph, *args, **kwargs):
+    def __init__(self, graph, parser, *args, **kwargs):
         self.graph = graph
+        self.parser = parser
         try:
             self.config = kwargs.get('config', graph.config)
         except:
@@ -38,32 +34,13 @@ class Evaluator(object):
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        # TODO: move all the data loading and preproces inside another method
-        train_transform, valid_transform = utils._data_transforms_cifar10(self.config)
+        # dataloaders
+        train_queue, valid_queue, test_queue, train_transform, valid_transform = parser.get_train_val_loaders()
+        self.train_queue = train_queue
+        self.valid_queue = valid_queue
+        self.test_queue = test_queue
         self.train_transform = train_transform
         self.valid_transform = valid_transform
-        train_data = dset.CIFAR10(root=self.config.data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR10(root=self.config.data, train=False, download=True, transform=valid_transform)
-
-        num_train = len(train_data)
-        indices = list(range(num_train))
-        split = int(np.floor(self.config.train_portion * num_train))
-
-        self.train_queue = torch.utils.data.DataLoader(
-            train_data, batch_size=self.config.batch_size,
-            sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
-            pin_memory=True, num_workers=0,
-            worker_init_fn=np.random.seed(self.config.seed))
-
-        self.valid_queue = torch.utils.data.DataLoader(
-            train_data, batch_size=self.config.batch_size,
-            sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
-            pin_memory=True, num_workers=0,
-            worker_init_fn=np.random.seed(self.config.seed))
-
-        self.test_queue = torch.utils.data.DataLoader(
-            test_data, batch_size=self.config.batch_size,
-            shuffle=False, pin_memory=True, num_workers=0)
 
         criterion = eval('nn.' + self.config.criterion)()
         self.criterion = criterion.cuda()
@@ -85,6 +62,15 @@ class Evaluator(object):
         logging.info('Args: {}'.format(self.config))
         self.run_kwargs = {}
 
+        self.errors_dict = utils.AttrDict(
+            {'train_acc': [],
+             'train_loss': [],
+             'valid_acc': [],
+             'valid_loss': [],
+             'test_acc': [],
+             'test_loss': []}
+        )
+
     def run(self, *args, **kwargs):
         if 'epochs' not in kwargs:
             epochs = self.config.epochs
@@ -104,14 +90,22 @@ class Evaluator(object):
                 valid_acc, valid_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
                 logging.info('valid_acc %f', valid_acc)
 
-            test_acc, test_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
+            test_acc, test_obj = self.infer(self.model, self.criterion,
+                                            self.test_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
             if callable(getattr(self.graph, 'query_architecture')):
                 # Record anytime performance
                 arch_info = self.graph.query_architecture(self.arch_optimizer.architectural_weights)
                 logging.info('epoch {}, arch {}'.format(epoch, arch_info))
 
-            Evaluator.save(self.config.save, self.model, epoch)
+            self.errors_dict.train_acc.append(train_acc)
+            self.errors_dict.train_loss.append(train_obj)
+            self.errors_dict.valid_acc.append(valid_acc)
+            self.errors_dict.valid_loss.append(valid_obj)
+            self.errors_dict.test_acc.append(test_acc)
+            self.errors_dict.test_loss.append(test_obj)
+            Evaluator.save(self.parser.config.save, self.model, epoch)
+            self.log_to_json(self.parser.config.save)
 
     def train(self, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
         try:
@@ -185,21 +179,15 @@ class Evaluator(object):
 
     @staticmethod
     def save(save_path, model, epoch):
-        utils.save(model, os.path.join(save_path,
-                                       'one_shot_model_{}.pt'.format(epoch)))
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        utils.save(model, os.path.join(save_path, 'model_{}.pt'.format(epoch)))
 
+    def log_to_json(self, save_path):
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        with codecs.open(os.path.join(save_path,
+                         'errors_{}.json'.format(self.config.seed)),
+                         'w', encoding='utf-8') as file:
+            json.dump(self.errors_dict, file, separators=(',', ':'))
 
-if __name__ == '__main__':
-    from naslib.search_spaces.darts import MacroGraph, PRIMITIVES
-    from naslib.optimizers.oneshot.darts import DARTSOptimizer
-    from naslib.utils import config_parser
-
-    one_shot_optimizer = DARTSOptimizer()
-    search_space = MacroGraph.from_optimizer_op(
-        one_shot_optimizer,
-        config=config_parser('../configs/default.yaml'),
-        primitives=PRIMITIVES
-    )
-
-    evaluator = Evaluator(search_space)
-    evaluator.run()
