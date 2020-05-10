@@ -65,12 +65,14 @@ if __name__ == '__main__':
 
     searcher = Searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
     searcher.run()
+    search_space.save_graph(filename=os.path.join(parser.config.save,
+                                                  'graph.yaml'),
+                            save_arch_weights=True)
 
     # discretize
     config = config_parser('../../configs/final_eval.yaml')
     parser = Parser('../../configs/final_eval.yaml')
     config.seed = parser.config.seed = args.seed
-    config.epochs = parser.config.epochs = args.epochs
     parser.config.save += '/{}/{}'.format(args.optimizer, args.space)
     create_exp_dir(parser.config.save)
 

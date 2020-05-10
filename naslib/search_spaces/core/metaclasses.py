@@ -136,7 +136,7 @@ class MetaGraph(nn.Module):
         # exctract edge attributes and add them to dict
         for edge in graph.edges:
             exclude_list = ['op']
-            if save_arch_weights:
+            if not save_arch_weights:
                 exclude_list.append('arch_weight')
             edge_attributes = graph.get_edge_attributes(*edge,
                                                         exclude=exclude_list)

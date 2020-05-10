@@ -82,7 +82,10 @@ class Evaluator(object):
         for epoch in range(epochs):
             self.lr = self.scheduler.get_last_lr()[0]
             logging.info('epoch %d lr %e', epoch, self.lr)
-            self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
+            for n in self.graph.nodes:
+                node = self.graph.get_node_op(n)
+                if type(node).__name__ == 'Cell':
+                    node.drop_path_prob = self.parser.config.drop_path_prob * epoch / epochs
 
             train_acc, train_obj, runtime = self.train(self.model, self.optimizer, self.criterion, self.train_queue,
                                                        self.valid_queue, device=self.device, **self.run_kwargs)

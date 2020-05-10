@@ -9,7 +9,8 @@ from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, S
 
 
 class Cell(EdgeOpGraph):
-    def __init__(self, primitives, cell_type, C_prev_prev, C_prev, C, reduction_prev, ops_dict, *args, **kwargs):
+    def __init__(self, primitives, cell_type, C_prev_prev, C_prev, C,
+                 reduction_prev, ops_dict, *args, **kwargs):
         self.primitives = primitives
         self.cell_type = cell_type
         self.C_prev_prev = C_prev_prev
@@ -17,6 +18,7 @@ class Cell(EdgeOpGraph):
         self.C = C
         self.reduction_prev = reduction_prev
         self.ops_dict = ops_dict
+        self.drop_path_prob = 0
         super(Cell, self).__init__(*args, **kwargs)
 
     def _build_graph(self):

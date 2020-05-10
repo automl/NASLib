@@ -1,6 +1,7 @@
 import networkx as nx
 
-from naslib.utils.utils import cat_channels
+from naslib.utils.utils import cat_channels, drop_path
+from .primitives import Identity
 from .metaclasses import MetaGraph
 
 
@@ -68,6 +69,17 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
                     edge_data = self.get_edge_data(pred, node)
                     edge_output = edge_data['op'](pred_output, **edge_data)
 
+                    if hasattr(self, 'drop_path_prob'):
+                        if self.training and self.drop_path_prob > 0:
+                            edge_op = self.get_edge_op(pred, node)
+                            if self.is_inter(node):
+                                if len(edge_op) == 1:
+                                    if not isinstance(edge_op._ops[0], Identity):
+                                        edge_output = drop_path(edge_output,
+                                                            self.drop_path_prob)
+                                else:
+                                    edge_output = drop_path(edge_output,
+                                                        self.drop_path_prob)
                     edge_outputs.append(edge_output)
 
                 # Combine evaluated input edges to form output of the cell
@@ -90,7 +102,7 @@ class NodeOpGraph(nx.DiGraph, MetaGraph):
         pass
 
     def save_graph(self, filename='graph.yaml', save_arch_weights=False):
-        MetaGraph.save_graph(self, filename. save_arch_weights)
+        MetaGraph.save_graph(self, filename, save_arch_weights)
 
     def parse(self, optimizer, *args, **kwargs):
         topo_order = nx.algorithms.dag.topological_sort(self)
