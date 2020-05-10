@@ -106,6 +106,10 @@ class Evaluator(object):
 
             test_acc, test_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
+            if callable(getattr(self.graph, 'query_architecture')):
+                # Record anytime performance
+                arch_info = self.graph.query_architecture(self.arch_optimizer.architectural_weights)
+                logging.info('epoch {}, arch {}'.format(epoch, arch_info))
 
             Evaluator.save(self.config.save, self.model, epoch)
 
@@ -128,10 +132,10 @@ class Evaluator(object):
             target = target.to(device, non_blocking=True)
 
             optimizer.zero_grad()
-            #logits, logits_aux = graph(input)
+            # logits, logits_aux = graph(input)
             logits = graph(input)
             loss = criterion(logits, target)
-            #if config.auxiliary:
+            # if config.auxiliary:
             #    loss_aux = criterion(logits_aux, target)
             #    loss += config.auxiliary_weight * loss_aux
             loss.backward()
@@ -164,7 +168,7 @@ class Evaluator(object):
             for step, (input, target) in enumerate(valid_queue):
                 input = input.to(device)
                 target = target.to(device, non_blocking=True)
-                #logits, _ = graph(input)
+                # logits, _ = graph(input)
                 logits = graph(input)
                 loss = criterion(logits, target)
 
@@ -187,7 +191,7 @@ class Evaluator(object):
 
 if __name__ == '__main__':
     from naslib.search_spaces.darts import MacroGraph, PRIMITIVES
-    from naslib.optimizers.optimizer import DARTSOptimizer
+    from naslib.optimizers.oneshot.darts import DARTSOptimizer
     from naslib.utils import config_parser
 
     one_shot_optimizer = DARTSOptimizer()

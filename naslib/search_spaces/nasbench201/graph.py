@@ -1,10 +1,11 @@
 import torch
 import yaml
+from nas_201_api import NASBench201API as API
 from torch import nn
 
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import Stem
-from naslib.search_spaces.nasbench201.primitives import ResNetBasicblock
+from naslib.search_spaces.nasbench201.primitives import ResNetBasicblock, PRIMITIVES
 from naslib.search_spaces.nasbench201.primitives import Stem as NASBENCH_201_Stem
 
 
@@ -165,3 +166,25 @@ class MacroGraph(NodeOpGraph):
 
         return graph
 
+    @staticmethod
+    def query_architecture(arch_weights):
+        arch_weight_idx_to_parent = {0: 0, 1: 0, 2: 1, 3: 0, 4: 1, 5: 2}
+        arch_strs = {
+            'cell_normal_from_0_to_1': '',
+            'cell_normal_from_0_to_2': '',
+            'cell_normal_from_1_to_2': '',
+            'cell_normal_from_0_to_3': '',
+            'cell_normal_from_1_to_3': '',
+            'cell_normal_from_2_to_3': '',
+        }
+        for arch_weight_idx, (edge_key, edge_weights) in enumerate(arch_weights.items()):
+            edge_weights_norm = torch.softmax(edge_weights, dim=-1)
+            selected_op_str = PRIMITIVES[edge_weights_norm.argmax()]
+            arch_strs[edge_key] = '{}~{}'.format(selected_op_str, arch_weight_idx_to_parent[arch_weight_idx])
+
+        arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*arch_strs.values())
+        api = API('/home/siemsj/projects/NASLib/naslib/search_spaces/nasbench201/nasbench_201.pth')
+        print(arch_str)
+        index = api.query_index_by_arch(arch_str)
+        info = api.query_meta_info_by_index(index)
+        return info

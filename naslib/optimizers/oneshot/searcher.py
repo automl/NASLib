@@ -7,7 +7,6 @@ import torch.nn as nn
 from naslib.optimizers.core import Evaluator
 from naslib.utils import utils
 
-
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
@@ -75,5 +74,3 @@ class Searcher(Evaluator):
                                                                   dim=-1)))
 
         return top1.avg, objs.avg
-
-
