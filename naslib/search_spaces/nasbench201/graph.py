@@ -183,8 +183,8 @@ class MacroGraph(NodeOpGraph):
             arch_strs[edge_key] = '{}~{}'.format(selected_op_str, arch_weight_idx_to_parent[arch_weight_idx])
 
         arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*arch_strs.values())
-        api = API('/home/siemsj/projects/NASLib/naslib/search_spaces/nasbench201/nasbench_201.pth')
-        print(arch_str)
+        api = API('/home/siemsj/nasbench_201.pth')
         index = api.query_index_by_arch(arch_str)
+        api.show(index)
         info = api.query_meta_info_by_index(index)
         return info
