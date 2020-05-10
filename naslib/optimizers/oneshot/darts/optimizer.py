@@ -45,7 +45,7 @@ class DARTSOptimizer(NASOptimizer):
             edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
 
             weights = self.architectural_weights[edge_key] if edge_key in self.architectural_weights else \
-                torch.nn.Parameter(torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
+                torch.nn.Parameter(1e-3*torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
 
             self.architectural_weights[edge_key] = weights
             edge['arch_weight'] = self.architectural_weights[edge_key]

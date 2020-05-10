@@ -55,23 +55,34 @@ class Cell(EdgeOpGraph):
 
     @classmethod
     def from_config(cls, graph_dict, primitives, cell_type, C_prev_prev,
-                    C_prev, C, reduction_prev, *args, **kwargs):
+                    C_prev, C, reduction_prev, ops_dict, *args, **kwargs):
         graph = cls(primitives, cell_type, C_prev_prev, C_prev, C,
-                    reduction_prev, *args, **kwargs)
+                    reduction_prev, ops_dict, *args, **kwargs)
 
         graph.clear()
         # Input Nodes: Previous / Previous-Previous cell
         for node, attr in graph_dict['nodes'].items():
             if 'preprocessing' in attr:
+                # Input Nodes: Previous / Previous-Previous cell
+                #TODO: find better way to do this
+                if node == 0:
+                    preprocessing = FactorizedReduce(C_prev_prev, C, affine=False) \
+                        if reduction_prev else ReLUConvBN(C_prev_prev,
+                                                          C, 1, 1, 0, affine=False)
+                elif node == 1:
+                    preprocessing = ReLUConvBN(C_prev, C, 1, 1, 0, affine=False)
+                """
                 if attr['preprocessing'] == 'FactorizedReduce':
-                    input_args = {'C_in': graph.C_prev_prev, 'C_out': graph.C,
+                    input_args = {'C_in': C_prev_prev, 'C_out': C,
                                   'affine': False}
                 else:
-                    input_args = {'C_in': graph.C_prev_prev, 'C_out': graph.C,
+                    in_channels = C_prev_prev if reduction_prev else C_prev
+                    input_args = {'C_in': in_channels, 'C_out': C,
                                   'kernel_size': 1, 'stride': 1, 'padding': 0,
                                   'affine': False}
 
                 preprocessing = eval(attr['preprocessing'])(**input_args)
+                """
 
                 graph.add_node(node, type=attr['type'],
                                preprocessing=preprocessing)
@@ -83,6 +94,10 @@ class Cell(EdgeOpGraph):
             graph.add_edge(*eval(edge), **{k: eval(v) for k, v in attr.items() if k
                                            != 'op'})
             graph[from_node][to_node]['op'] = None if attr['op'] != 'Identity' else eval(attr['op'])()
+            if 'op_kwargs' in graph[from_node][to_node]:
+                graph[from_node][to_node]['op_kwargs']['ops_dict'] = ops_dict
+                if 'affine' not in graph[from_node][to_node]['op_kwargs']:
+                    graph[from_node][to_node]['op_kwargs']['affine'] = False
 
         return graph
 
@@ -251,14 +266,14 @@ class MacroGraph(NodeOpGraph):
 
 
     @classmethod
-    def from_config(cls, config=None, filename=None):
+    def from_config(cls, config=None, filename=None, **kwargs):
         with open(filename, 'r') as f:
             graph_dict = yaml.safe_load(f)
 
         if config is None:
             raise ('No configuration provided')
 
-        graph = cls(config, [])
+        graph = cls(config, [], **kwargs)
 
         graph_type = graph_dict['type']
         edges = [(*eval(e), attr) for e, attr in graph_dict['edges'].items()]
@@ -279,12 +294,15 @@ class MacroGraph(NodeOpGraph):
                 graph.add_node(node, op=stem, type='stem')
             elif node_type in ['normal', 'reduction']:
                 assert attr['op']['type'] == 'Cell'
+                if node_type == 'reduction':
+                    C_curr *= 2
                 graph.add_node(node,
                                op=Cell.from_config(attr['op'], primitives=attr['op']['primitives'],
                                                    C_prev_prev=C_prev_prev, C_prev=C_prev,
                                                    C=C_curr,
                                                    reduction_prev=graph_dict['nodes'][node - 1]['type'] == 'reduction',
-                                                   cell_type=node_type),
+                                                   cell_type=node_type,
+                                                   ops_dict=kwargs['ops_dict']),
                                type=node_type)
                 C_prev_prev, C_prev = C_prev, config['channel_multiplier'] * C_curr
             elif node_type == 'pooling':

@@ -7,12 +7,12 @@ if __name__ == '__main__':
     config = config_parser('../../configs/default.yaml')
 
     one_shot_optimizer = DARTSOptimizer.from_config(**config)
-    search_space = MacroGraph.from_optimizer_op(
-        one_shot_optimizer,
+    search_space = MacroGraph.from_config(
         config=config,
-        primitives=PRIMITIVES,
+        filename='../../configs/search_spaces/robust_darts/s1.yaml',
         ops_dict=OPS
     )
+    search_space.parse(one_shot_optimizer)
     one_shot_optimizer.init()
 
     searcher = Searcher(search_space, arch_optimizer=one_shot_optimizer)

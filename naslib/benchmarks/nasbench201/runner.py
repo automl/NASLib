@@ -1,6 +1,5 @@
 from naslib.search_spaces.nasbench201 import MacroGraph, PRIMITIVES, OPS
-from naslib.optimizers.oneshot.darts import DARTSOptimizer
-from naslib.optimizers.oneshot import Searcher
+from naslib.optimizers.oneshot.darts import DARTSOptimizer, Searcher
 from naslib.utils import config_parser
 
 

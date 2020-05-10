@@ -1,0 +1,1055 @@
+edges:
+  ('1b', 2):
+    desc: previous
+    type: input
+  (0, '1b'): {}
+  (0, 1): {}
+  (1, 2):
+    desc: previous-previous
+    type: input
+  (1, 3):
+    desc: previous-previous
+    type: input
+  (10, 11): {}
+  (2, 3):
+    desc: previous
+    type: input
+  (2, 4):
+    desc: previous-previous
+    type: input
+  (3, 4):
+    desc: previous
+    type: input
+  (3, 5):
+    desc: previous-previous
+    type: input
+  (4, 5):
+    desc: previous
+    type: input
+  (4, 6):
+    desc: previous-previous
+    type: input
+  (5, 6):
+    desc: previous
+    type: input
+  (5, 7):
+    desc: previous-previous
+    type: input
+  (6, 7):
+    desc: previous
+    type: input
+  (6, 8):
+    desc: previous-previous
+    type: input
+  (7, 8):
+    desc: previous
+    type: input
+  (7, 9):
+    desc: previous-previous
+    type: input
+  (8, 9):
+    desc: previous
+    type: input
+  (9, 10): {}
+nodes:
+  0:
+    type: input
+  1:
+    op: Stem
+    type: stem
+  1b:
+    op: Stem
+    type: stem
+  2:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: ReLUConvBN
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: normal
+  3:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 16, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: ReLUConvBN
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: normal
+  4:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''avg_pool_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''avg_pool_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 32, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: ReLUConvBN
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: reduction
+  5:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: FactorizedReduce
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: normal
+  6:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 32, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: ReLUConvBN
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: normal
+  7:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''avg_pool_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''avg_pool_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 64, ''stride'': 2, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: ReLUConvBN
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: reduction
+  8:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: FactorizedReduce
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: normal
+  9:
+    op:
+      edges:
+        (0, 2):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (0, 3):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (0, 4):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (0, 5):
+          from_node: '0'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (1, 2):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '2'
+        (1, 3):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (1, 4):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (1, 5):
+          from_node: '1'
+          op: MixedOp
+          op_choices: '[''max_pool_3x3'', ''skip_connect'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 3):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '3'
+        (2, 4):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''sep_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (2, 5):
+          from_node: '2'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (2, 6):
+          op: Identity
+        (3, 4):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''skip_connect'', ''dil_conv_3x3'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '4'
+        (3, 5):
+          from_node: '3'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (3, 6):
+          op: Identity
+        (4, 5):
+          from_node: '4'
+          op: MixedOp
+          op_choices: '[''dil_conv_3x3'', ''dil_conv_5x5'']'
+          op_kwargs: '{''C'': 64, ''stride'': 1, ''out_node_op'': ''sum''}'
+          to_node: '5'
+        (4, 6):
+          op: Identity
+        (5, 6):
+          op: Identity
+      nodes:
+        0:
+          desc: previous-previous
+          preprocessing: ReLUConvBN
+          type: input
+        1:
+          desc: previous
+          preprocessing: ReLUConvBN
+          type: input
+        2:
+          comb_op: sum
+          type: inter
+        3:
+          comb_op: sum
+          type: inter
+        4:
+          comb_op: sum
+          type: inter
+        5:
+          comb_op: sum
+          type: inter
+        6:
+          comb_op: cat_channels
+          type: output
+      primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'',
+        ''sep_conv_3x3'', ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+      type: Cell
+    type: normal
+  10:
+    op: AdaptiveAvgPool2d
+    type: pooling
+  11:
+    op: Linear
+    type: output
+primitives: '[''none'', ''max_pool_3x3'', ''avg_pool_3x3'', ''skip_connect'', ''sep_conv_3x3'',
+  ''sep_conv_5x5'', ''dil_conv_3x3'', ''dil_conv_5x5'']'
+type: MacroGraph
