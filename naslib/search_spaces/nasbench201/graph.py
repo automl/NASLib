@@ -170,6 +170,8 @@ class MacroGraph(NodeOpGraph):
     def export_nasbench_201_results_to_dict(information):
         results_dict = {}
         dataset_names = information.get_dataset_names()
+        results_dict['arch'] = information.arch_str
+        results_dict['datasets'] = dataset_names
 
         for ida, dataset in enumerate(dataset_names):
             dataset_results = {}
