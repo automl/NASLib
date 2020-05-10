@@ -67,6 +67,16 @@ if __name__ == '__main__':
     searcher.run()
 
     # discretize
+    config = config_parser('../../configs/final_eval.yaml')
+    parser = Parser('../../configs/final_eval.yaml')
+    config.seed = parser.config.seed = args.seed
+    config.epochs = parser.config.epochs = args.epochs
+    parser.config.save += '/{}/{}'.format(args.optimizer, args.space)
+    create_exp_dir(parser.config.save)
+
+    fh = logging.FileHandler(os.path.join(parser.config.save,
+                                      'log_{}.txt'.format(config.seed)))
+
     final_arch = search_space.discretize(n_input_edges=[2 for _ in search_space.inter_nodes()])
     del search_space, one_shot_optimizer, searcher
 
