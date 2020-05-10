@@ -1,10 +1,10 @@
+from naslib.optimizers.oneshot import Searcher
+from naslib.optimizers.oneshot.darts import DARTSOptimizer
 from naslib.search_spaces.nasbench201 import MacroGraph, PRIMITIVES, OPS
-from naslib.optimizers.oneshot.darts import DARTSOptimizer, Searcher
 from naslib.utils import config_parser
 
-
 if __name__ == '__main__':
-    config = config_parser('../../configs/default.yaml')
+    config = config_parser('../../configs/nasbench_201.yaml')
 
     one_shot_optimizer = DARTSOptimizer.from_config(**config)
     search_space = MacroGraph.from_optimizer_op(
@@ -17,4 +17,3 @@ if __name__ == '__main__':
 
     searcher = Searcher(search_space, arch_optimizer=one_shot_optimizer)
     searcher.run()
-

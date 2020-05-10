@@ -83,6 +83,14 @@ OPS = {
                                                                                                    track_running_stats),
 }
 
+PRIMITIVES = [
+    'none',
+    'skip_connect',
+    'nor_conv_1x1',
+    'nor_conv_3x3',
+    'avg_pool_3x3'
+]
+
 
 class Stem(nn.Module):
 
