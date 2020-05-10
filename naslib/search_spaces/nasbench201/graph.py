@@ -166,6 +166,51 @@ class MacroGraph(NodeOpGraph):
 
         return graph
 
+    @staticmethod
+    def export_nasbench_201_results_to_dict(information):
+        results_dict = {}
+        dataset_names = information.get_dataset_names()
+
+        for ida, dataset in enumerate(dataset_names):
+            dataset_results = {}
+            dataset_results['dataset'] = dataset
+
+            metric = information.get_compute_costs(dataset)
+            flop, param, latency = metric['flops'], metric['params'], metric['latency']
+            dataset_results['flop'] = flop
+            dataset_results['params (MB)'] = param
+            dataset_results['latency (ms)'] = latency * 1000 if latency is not None and latency > 0 else None
+
+            train_info = information.get_metrics(dataset, 'train')
+            if dataset == 'cifar10-valid':
+                valid_info = information.get_metrics(dataset, 'x-valid')
+                dataset_results['train_loss'] = train_info['loss']
+                dataset_results['train_accuracy'] = train_info['accuracy']
+
+                dataset_results['valid_loss'] = valid_info['loss']
+                dataset_results['valid_accuracy'] = valid_info['accuracy']
+
+            elif dataset == 'cifar10':
+                test__info = information.get_metrics(dataset, 'ori-test')
+                dataset_results['train_loss'] = train_info['loss']
+                dataset_results['train_accuracy'] = train_info['accuracy']
+
+                dataset_results['test_loss'] = test__info['loss']
+                dataset_results['test_accuracy'] = test__info['accuracy']
+            else:
+                valid_info = information.get_metrics(dataset, 'x-valid')
+                test__info = information.get_metrics(dataset, 'x-test')
+                dataset_results['train_loss'] = train_info['loss']
+                dataset_results['train_accuracy'] = train_info['accuracy']
+
+                dataset_results['valid_loss'] = valid_info['loss']
+                dataset_results['valid_accuracy'] = valid_info['accuracy']
+
+                dataset_results['test_loss'] = test__info['loss']
+                dataset_results['test_accuracy'] = test__info['accuracy']
+            results_dict[dataset] = dataset_results
+        return results_dict
+
     def query_architecture(self, arch_weights):
         arch_weight_idx_to_parent = {0: 0, 1: 0, 2: 1, 3: 0, 4: 1, 5: 2}
         arch_strs = {
@@ -187,4 +232,4 @@ class MacroGraph(NodeOpGraph):
         index = self.nasbench_api.query_index_by_arch(arch_str)
         self.nasbench_api.show(index)
         info = self.nasbench_api.query_by_index(index)
-        return info.show()
+        return self.export_nasbench_201_results_to_dict(info)
