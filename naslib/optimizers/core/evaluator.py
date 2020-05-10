@@ -1,17 +1,15 @@
-import logging
-import os
 import codecs
 import json
+import logging
+import os
 import random
 
 import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
-import torchvision.datasets as dset
 
 from naslib.utils import utils
-
 
 
 class Evaluator(object):
@@ -98,6 +96,10 @@ class Evaluator(object):
                 # Record anytime performance
                 arch_info = self.graph.query_architecture(self.arch_optimizer.architectural_weights)
                 logging.info('epoch {}, arch {}'.format(epoch, arch_info))
+                if 'arch_eval' not in self.errors_dict:
+                    self.errors_dict['arch_eval'] = []
+                else:
+                    self.errors_dict['arch_eval'].append(arch_info)
 
             self.errors_dict.train_acc.append(train_acc)
             self.errors_dict.train_loss.append(train_obj)
@@ -188,7 +190,6 @@ class Evaluator(object):
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         with codecs.open(os.path.join(save_path,
-                         'errors_{}.json'.format(self.config.seed)),
+                                      'errors_{}.json'.format(self.config.seed)),
                          'w', encoding='utf-8') as file:
             json.dump(self.errors_dict, file, separators=(',', ':'))
-
