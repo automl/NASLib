@@ -186,5 +186,5 @@ class MacroGraph(NodeOpGraph):
             self.nasbench_api = API('/home/siemsj/nasbench_201.pth')
         index = self.nasbench_api.query_index_by_arch(arch_str)
         self.nasbench_api.show(index)
-        info = self.nasbench_api.query_meta_info_by_index(index)
-        return info
+        info = self.nasbench_api.query_by_index(index)
+        return info.show()
