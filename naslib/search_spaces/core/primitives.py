@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.autograd import Variable
 
 # Batch Normalization from nasbench
 BN_MOMENTUM = 0.997

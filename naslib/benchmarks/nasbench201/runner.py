@@ -4,6 +4,7 @@ import sys
 
 from naslib.optimizers.oneshot import Searcher
 from naslib.optimizers.oneshot.darts import DARTSOptimizer
+from naslib.optimizers.core import NASOptimizer, Evaluator
 from naslib.search_spaces.nasbench201 import MacroGraph, PRIMITIVES, OPS
 from naslib.utils import config_parser
 from naslib.utils.parser import Parser
@@ -31,7 +32,7 @@ if __name__ == '__main__':
     )
     one_shot_optimizer.init()
 
-    searcher = Searcher(search_space, arch_optimizer=one_shot_optimizer)
+    searcher = Searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
     searcher.run()
 
     # discretize
