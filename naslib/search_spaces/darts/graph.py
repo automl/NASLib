@@ -174,7 +174,7 @@ class MacroGraph(NodeOpGraph):
         nodes. Determines the number of predecesor nodes for each of them
         """
         # create a new graph that we will discretize
-        new_graph = MacroGraph(self.config, self.primitives)
+        new_graph = MacroGraph(self.config, self.primitives, self.ops_dict)
 
         for node in new_graph:
             _cell = self.get_node_op(node)
@@ -186,7 +186,7 @@ class MacroGraph(NodeOpGraph):
                 if bool(set(_cell.output_nodes()) & set(edge)):
                     continue
                 op_choices = _cell.get_edge_op_choices(*edge)
-                alphas = _cell.get_edge_arch_weights(*edge).detach().numpy()
+                alphas = _cell.get_edge_arch_weights(*edge).cpu().detach().numpy()
                 sampled_op = np.array(op_choices)[np.argsort(alphas)[-n_ops_per_edge:]]
                 cell[edge[0]][edge[1]]['op_choices'] = [*sampled_op]
 
@@ -229,7 +229,7 @@ class MacroGraph(NodeOpGraph):
             1; random seed
         """
         # create a new graph that we will discretize
-        new_graph = MacroGraph(self.config, self.primitives)
+        new_graph = MacroGraph(self.config, self.primitives, self.ops_dict)
         np.random.seed(seed)
         seeds = {'normal': seed+1, 'reduction': seed+2}
 
