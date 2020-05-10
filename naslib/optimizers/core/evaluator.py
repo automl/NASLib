@@ -1,6 +1,7 @@
 import logging
 import os
 import codecs
+import time
 import json
 import random
 
@@ -47,7 +48,8 @@ class Evaluator(object):
 
         self.model = self.graph.to(self.device)
 
-        logging.info("param size = %fMB", utils.count_parameters_in_MB(self.model))
+        n_parameters = utils.count_parameters_in_MB(self.model)
+        logging.info("param size = %fMB", n_parameters)
 
         optimizer = torch.optim.SGD(
             self.model.parameters(),
@@ -68,7 +70,9 @@ class Evaluator(object):
              'valid_acc': [],
              'valid_loss': [],
              'test_acc': [],
-             'test_loss': []}
+             'test_loss': [],
+             'runtime': [],
+             'params': n_parameters}
         )
 
     def run(self, *args, **kwargs):
@@ -82,31 +86,32 @@ class Evaluator(object):
             logging.info('epoch %d lr %e', epoch, self.lr)
             self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
 
-            train_acc, train_obj = self.train(self.model, self.optimizer, self.criterion, self.train_queue,
-                                              self.valid_queue, device=self.device, **self.run_kwargs)
+            train_acc, train_obj, runtime = self.train(self.model, self.optimizer, self.criterion, self.train_queue,
+                                                       self.valid_queue, device=self.device, **self.run_kwargs)
             logging.info('train_acc %f', train_acc)
 
             if len(self.valid_queue) != 0:
                 valid_acc, valid_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
                 logging.info('valid_acc %f', valid_acc)
+                self.errors_dict.valid_acc.append(valid_acc)
+                self.errors_dict.valid_loss.append(valid_obj)
 
             test_acc, test_obj = self.infer(self.model, self.criterion,
                                             self.test_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
 
-            if callable(getattr(self.graph, 'query_architecture')):
+            if hasattr(self.graph, 'query_architecture'):
                 # Record anytime performance
                 arch_info = self.graph.query_architecture(self.arch_optimizer.architectural_weights)
                 logging.info('epoch {}, arch {}'.format(epoch, arch_info))
 
             self.errors_dict.train_acc.append(train_acc)
             self.errors_dict.train_loss.append(train_obj)
-            self.errors_dict.valid_acc.append(valid_acc)
-            self.errors_dict.valid_loss.append(valid_obj)
             self.errors_dict.test_acc.append(test_acc)
             self.errors_dict.test_loss.append(test_obj)
-            Evaluator.save(self.parser.config.save, self.model, epoch)
+            self.errors_dict.runtime.append(runtime)
             self.log_to_json(self.parser.config.save)
+        Evaluator.save(self.parser.config.save, self.model, epoch)
 
     def train(self, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
         try:
@@ -119,6 +124,7 @@ class Evaluator(object):
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
 
+        start_time = time.time()
         for step, (input, target) in enumerate(train_queue):
             graph.train()
             n = input.size(0)
@@ -145,7 +151,8 @@ class Evaluator(object):
             if step % config.report_freq == 0:
                 logging.info('train %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
 
-        return top1.avg, objs.avg
+        end_time = time.time()
+        return top1.avg, objs.avg, end_time-start_time
 
     def infer(self, graph, criterion, valid_queue, *args, **kwargs):
         try:

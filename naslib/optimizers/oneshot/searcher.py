@@ -1,3 +1,4 @@
+import time
 import logging
 import torch
 import torch.nn as nn
@@ -25,6 +26,7 @@ class Searcher(Evaluator):
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
 
+        start_time = time.time()
         for step, (input_train, target_train) in enumerate(train_queue):
             graph.train()
             n = input_train.size(0)
@@ -64,4 +66,5 @@ class Searcher(Evaluator):
                     'train {}: {}'.format(arch_key, torch.softmax(arch_optimizer.architectural_weights[arch_key],
                                                                   dim=-1)))
 
-        return top1.avg, objs.avg
+        end_time = time.time()
+        return top1.avg, objs.avg, end_time-start_time
