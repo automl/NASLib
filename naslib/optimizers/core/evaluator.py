@@ -92,10 +92,6 @@ class Evaluator(object):
             raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
-            if callable(getattr(self.graph, 'query_architecture')):
-                # Record anytime performance
-                arch_info = self.graph.query_architecture(self.arch_optimizer.architectural_weights)
-                logging.info('epoch {}, arch {}'.format(epoch, arch_info))
             self.lr = self.scheduler.get_last_lr()[0]
             logging.info('epoch %d lr %e', epoch, self.lr)
             self.model.drop_path_prob = self.config.drop_path_prob * epoch / epochs
@@ -110,6 +106,11 @@ class Evaluator(object):
 
             test_acc, test_obj = self.infer(self.model, self.criterion, self.test_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
+
+            if callable(getattr(self.graph, 'query_architecture')):
+                # Record anytime performance
+                arch_info = self.graph.query_architecture(self.arch_optimizer.architectural_weights)
+                logging.info('epoch {}, arch {}'.format(epoch, arch_info))
 
             Evaluator.save(self.config.save, self.model, epoch)
 
