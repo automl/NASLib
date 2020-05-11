@@ -1,9 +1,13 @@
 #!/bin/bash
 
 datasets="cifar10 cifar100 svhn"
+opt="DARTSOptimizer"
 
-for d in $datasets; do
-	sbatch -J darts_${d} DARTS_search.sh $d
-	echo submmited job $d
+for o in $opt; do
+	for d in $datasets; do
+		sbatch -J ${o}_${d} DARTS_search.sh $d $o
+		echo submmited job $d $o
+		sleep 2
+	done
 done
 

@@ -28,7 +28,6 @@ if __name__ == '__main__':
     config = config_parser('../../configs/default.yaml')
     parser = Parser('../../configs/default.yaml')
     config.seed = parser.config.seed = args.seed
-    config.epochs = parser.config.epochs = args.epochs
     config.dataset = parser.config.dataset = args.dataset
     parser.config.save += '/{}/{}'.format(args.optimizer, args.dataset)
     create_exp_dir(parser.config.save)
