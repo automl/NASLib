@@ -166,8 +166,16 @@ class MacroGraph(NodeOpGraph):
         self.add_edge(num_layers + 2, num_layers + 3)
 
 
+    def get_cells(self, cell_type):
+        cells = list()
+        for n in self.nodes:
+            if 'type' in self.nodes[n] and self.nodes[n]['type'] == cell_type:
+                cells.append(n)
+        return cells
+
+
     #TODO: merge with sample method
-    def discretize(self, n_ops_per_edge=1, n_input_edges=None):
+    def discretize(self, config, n_ops_per_edge=1, n_input_edges=None):
         """
         n_ops_per_edge:
             1; number of sampled operations per edge in cell
@@ -176,13 +184,16 @@ class MacroGraph(NodeOpGraph):
         nodes. Determines the number of predecesor nodes for each of them
         """
         # create a new graph that we will discretize
-        new_graph = MacroGraph(self.config, self.primitives, self.ops_dict)
+        new_graph = MacroGraph(config, self.primitives, self.ops_dict)
+        normal_cell = self.get_node_op(self.get_cells('normal')[0])
+        reduction_cell = self.get_node_op(self.get_cells('reduction')[0])
 
         for node in new_graph:
-            _cell = self.get_node_op(node)
+            #_cell = self.get_node_op(node)
             cell = new_graph.get_node_op(node)
             if not isinstance(cell, Cell):
                 continue
+            _cell = normal_cell if cell.cell_type == 'normal' else reduction_cell
 
             for edge in _cell.edges:
                 if bool(set(_cell.output_nodes()) & set(edge)):

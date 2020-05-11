@@ -108,6 +108,8 @@ data/
 *.obj
 *bohb_output
 logs/
+run/
+final_eval/
 
 # Swap
 [._]*.s[a-v][a-z]
