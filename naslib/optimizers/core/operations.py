@@ -4,6 +4,23 @@ import torch.nn as nn
 from .metaclasses import MetaOp
 
 
+def channel_shuffle(x, groups):
+    """
+    https://github.com/yuhuixu1993/PC-DARTS/blob/86446d1b6bbbd5f752cc60396be13d2d5737a081/model_search.py#L9
+    """
+    batchsize, num_channels, height, width = x.data.size()
+    channels_per_group = num_channels // groups
+
+    # reshape
+    x = x.view(batchsize, groups,
+               channels_per_group, height, width)
+    x = torch.transpose(x, 1, 2).contiguous()
+
+    # flatten
+    x = x.view(batchsize, -1, height, width)
+    return x
+
+
 class TestOp(MetaOp):
     def __init__(self, *args, **kwargs):
         super(TestOp).__init__(*args, **kwargs)
@@ -50,6 +67,24 @@ class GDASMixedOp(MixedOp):
                     clist.append(weights[j] * self._ops[j](x))
             assert len(clist) > 0, 'invalid length : {:}'.format(cpu_weights)
             return self.out_node_op(clist)
+
+
+class PCDARTSMixedOp(MixedOp):
+    def __init__(self, channel_divisor, *args, **kwargs):
+        self.channel_divisor = channel_divisor
+        kwargs['C'] = kwargs['C'] // channel_divisor
+        super(PCDARTSMixedOp, self).__init__(*args, **kwargs)
+
+    def forward(self, x, *args, **kwargs):
+        arch_weight = kwargs['arch_weight']
+        weights = torch.softmax(arch_weight, dim=-1)
+
+        dim_2 = x.shape[1]
+        xtemp = x[:, :dim_2 // self.channel_divisor, :, :]
+        xtemp2 = x[:, dim_2 // self.channel_divisor:, :, :]
+        temp1 = self.out_node_op(w * op(xtemp) for w, op in zip(weights, self._ops))
+        ans = torch.cat([temp1, xtemp2], dim=1)
+        return channel_shuffle(ans, self.channel_divisor)
 
 
 class CategoricalOp(MetaOp):

@@ -8,23 +8,19 @@ from naslib.utils import _concat
 
 
 class DARTSOptimizer(NASOptimizer):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, momentum, weight_decay, arch_learning_rate, arch_weight_decay, grad_clip, *args, **kwargs):
         super(DARTSOptimizer, self).__init__()
-        self.network_momentum = None
-        self.network_weight_decay = None
-        self.grad_clip = None
+        self.network_momentum = momentum
+        self.network_weight_decay = weight_decay
+        self.grad_clip = grad_clip
         self.optimizer = None
+        self.arch_learning_rate = arch_learning_rate
+        self.arch_weight_decay = arch_weight_decay
         self.architectural_weights = torch.nn.ParameterDict()
 
     @classmethod
-    def from_config(cls, momentum, weight_decay, arch_learning_rate,
-                    arch_weight_decay, grad_clip=None, *args, **kwargs):
+    def from_config(cls, *args, **kwargs):
         nas_opt = cls(*args, **kwargs)
-        nas_opt.network_momentum = momentum
-        nas_opt.network_weight_decay = weight_decay
-        nas_opt.grad_clip = grad_clip
-        nas_opt.arch_learning_rate = arch_learning_rate
-        nas_opt.arch_weight_decay = arch_weight_decay
         return nas_opt
 
     def init(self, optimizer=torch.optim.Adam):

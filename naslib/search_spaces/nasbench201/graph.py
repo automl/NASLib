@@ -34,7 +34,7 @@ class Cell(EdgeOpGraph):
             for from_node in range(to_node):
                 self.add_edge(
                     from_node, to_node, op=None, op_choices=self.primitives,
-                    op_kwargs={'C_in': self.C_prev, 'C': self.C, 'stride': self.stride, 'affine': True,
+                    op_kwargs={'C': self.C, 'stride': self.stride, 'affine': True,
                                'track_running_stats': True, 'ops_dict': self.ops_dict, 'out_node_op': 'sum'},
                     to_node=to_node, from_node=from_node)
 

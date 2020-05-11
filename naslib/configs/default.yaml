@@ -10,7 +10,7 @@ stem_multiplier: 3
 layers: 8
 model_path: "saved_models"
 
-batch_size: 64
+batch_size: 96
 learning_rate: 0.025
 learning_rate_min: 0.001
 momentum: 0.9
@@ -23,8 +23,11 @@ data_size: 25000
 time_steps: 1
 num_classes: 10
 criterion: CrossEntropyLoss
+# GDAS
 tau_max: 10
 tau_min: 1
+# PC-DARTS
+channel_divisor: 4
 
 cutout: False
 cutout_length: 16
