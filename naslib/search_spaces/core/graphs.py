@@ -1,8 +1,11 @@
 import networkx as nx
 
-from naslib.utils.utils import cat_channels, drop_path
-from .primitives import Identity
+from naslib.utils.utils import drop_path, cat_channels
 from .metaclasses import MetaGraph
+from .primitives import Identity
+
+# Todo: Remove 'eval' functionality with something safer
+test = cat_channels
 
 
 class EdgeOpGraph(nx.DiGraph, MetaGraph):
@@ -76,10 +79,10 @@ class EdgeOpGraph(nx.DiGraph, MetaGraph):
                                 if len(edge_op) == 1:
                                     if not isinstance(edge_op._ops[0], Identity):
                                         edge_output = drop_path(edge_output,
-                                                            self.drop_path_prob)
+                                                                self.drop_path_prob)
                                 else:
                                     edge_output = drop_path(edge_output,
-                                                        self.drop_path_prob)
+                                                            self.drop_path_prob)
                     edge_outputs.append(edge_output)
 
                 # Combine evaluated input edges to form output of the cell
