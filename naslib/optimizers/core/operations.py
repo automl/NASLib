@@ -70,10 +70,16 @@ class GDASMixedOp(MixedOp):
 
 
 class PCDARTSMixedOp(MixedOp):
+    """
+    Adapted from PC-DARTS code base
+    https://github.com/yuhuixu1993/PC-DARTS/blob/2f6aac375ada8aca3b9cbf782e456f8ce7e0243a/model_search.py#L25
+    """
+
     def __init__(self, channel_divisor, *args, **kwargs):
         self.channel_divisor = channel_divisor
         kwargs['C'] = kwargs['C'] // channel_divisor
         super(PCDARTSMixedOp, self).__init__(*args, **kwargs)
+        self.mp = nn.MaxPool2d(2, 2)
 
     def forward(self, x, *args, **kwargs):
         arch_weight = kwargs['arch_weight']
@@ -83,7 +89,10 @@ class PCDARTSMixedOp(MixedOp):
         xtemp = x[:, :dim_2 // self.channel_divisor, :, :]
         xtemp2 = x[:, dim_2 // self.channel_divisor:, :, :]
         temp1 = self.out_node_op(w * op(xtemp) for w, op in zip(weights, self._ops))
-        ans = torch.cat([temp1, xtemp2], dim=1)
+        if temp1.shape[2] == x.shape[2]:
+            ans = torch.cat([temp1, xtemp2], dim=1)
+        else:
+            ans = torch.cat([temp1, self.mp(xtemp2)], dim=1)
         return channel_shuffle(ans, self.channel_divisor)
 
 
