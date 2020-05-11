@@ -1,7 +1,7 @@
 data: "../data"
 gpu: 0
 seed: 10
-report_freq: 30
+report_freq: 1
 dataset: cifar10
 
 init_channels: 16
@@ -26,8 +26,12 @@ cutout: False
 cutout_length: 16
 cutout_prob: 1.0
 drop_path_prob: 0.3
+# GDAS
 tau_max: 10
 tau_min: 1
+# PC-DARTS
+channel_divisor: 4
+
 
 unrolled: False
 arch_learning_rate: 0.0003

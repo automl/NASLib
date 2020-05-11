@@ -8,7 +8,7 @@ from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 
 class GDASOptimizer(DARTSOptimizer):
     def __init__(self, tau_max, tau_min, epochs, *args, **kwargs):
-        super(GDASOptimizer, self).__init__()
+        super(GDASOptimizer, self).__init__(*args, **kwargs)
         self.edges = {}
 
         # Linear tau schedule
