@@ -2,13 +2,13 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 
-from naslib.utils import _concat
-from naslib.optimizers.core.operations import MixedOp
 from naslib.optimizers.core import NASOptimizer
+from naslib.optimizers.core.operations import MixedOp
+from naslib.utils import _concat
 
 
 class DARTSOptimizer(NASOptimizer):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(DARTSOptimizer, self).__init__()
         self.network_momentum = None
         self.network_weight_decay = None
@@ -16,18 +16,16 @@ class DARTSOptimizer(NASOptimizer):
         self.optimizer = None
         self.architectural_weights = torch.nn.ParameterDict()
 
-
     @classmethod
     def from_config(cls, momentum, weight_decay, arch_learning_rate,
                     arch_weight_decay, grad_clip=None, *args, **kwargs):
-        nas_opt = cls()
+        nas_opt = cls(*args, **kwargs)
         nas_opt.network_momentum = momentum
         nas_opt.network_weight_decay = weight_decay
         nas_opt.grad_clip = grad_clip
         nas_opt.arch_learning_rate = arch_learning_rate
         nas_opt.arch_weight_decay = arch_weight_decay
         return nas_opt
-
 
     def init(self, optimizer=torch.optim.Adam):
         self.optimizer = optimizer(
@@ -37,7 +35,6 @@ class DARTSOptimizer(NASOptimizer):
             weight_decay=self.arch_weight_decay
         )
 
-
     def replace_function(self, edge, graph):
         graph.architectural_weights = self.architectural_weights
 
@@ -45,7 +42,7 @@ class DARTSOptimizer(NASOptimizer):
             edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
 
             weights = self.architectural_weights[edge_key] if edge_key in self.architectural_weights else \
-                torch.nn.Parameter(1e-3*torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
+                torch.nn.Parameter(1e-3 * torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
 
             self.architectural_weights[edge_key] = weights
             edge['arch_weight'] = self.architectural_weights[edge_key]
@@ -156,4 +153,3 @@ class DARTSOptimizer(NASOptimizer):
     def _loss(self, model, criterion, input, target):
         pred = model(input)
         return criterion(pred, target)
-

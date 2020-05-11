@@ -33,6 +33,25 @@ class MixedOp(MetaOp):
         return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
 
 
+class GDASMixedOp(MixedOp):
+    def __init__(self, *args, **kwargs):
+        super(GDASMixedOp, self).__init__(*args, **kwargs)
+
+    def forward(self, x, *args, **kwargs):
+        weights = kwargs['sampled_arch_weight']
+        cpu_weights = weights.tolist()
+        use_sum = sum([abs(_) > 1e-10 for _ in cpu_weights])
+        if use_sum > len(self.primitives):
+            return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
+        else:
+            clist = []
+            for j, cpu_weight in enumerate(cpu_weights):
+                if abs(cpu_weight) > 1e-10:
+                    clist.append(weights[j] * self._ops[j](x))
+            assert len(clist) > 0, 'invalid length : {:}'.format(cpu_weights)
+            return self.out_node_op(clist)
+
+
 class CategoricalOp(MetaOp):
     def __init__(self, *args, **kwargs):
         super(CategoricalOp, self).__init__(*args, **kwargs)
@@ -47,5 +66,3 @@ class CategoricalOp(MetaOp):
 
     def forward(self, x, *args, **kwargs):
         return self.out_node_op(op(x) for op in self._ops)
-
-
