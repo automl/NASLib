@@ -6,19 +6,20 @@ import sys
 from naslib.optimizers.core import NASOptimizer, Evaluator
 from naslib.optimizers.oneshot.darts import Searcher, DARTSOptimizer
 from naslib.optimizers.oneshot.gdas import GDASOptimizer
+from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
 from naslib.search_spaces.darts import MacroGraph, PRIMITIVES, OPS
 from naslib.utils import config_parser
 from naslib.utils.parser import Parser
 from naslib.utils.utils import create_exp_dir
 
-opt_list = [DARTSOptimizer, GDASOptimizer]
+opt_list = [DARTSOptimizer, GDASOptimizer, PCDARTSOptimizer]
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 parser = argparse.ArgumentParser('nasbench201')
-parser.add_argument('--optimizer', type=str, default='GDASOptimizer')
+parser.add_argument('--optimizer', type=str, default='PCDARTSOptimizer')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
 parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     create_exp_dir(parser.config.save)
 
     fh = logging.FileHandler(os.path.join(parser.config.save,
-                                      'log_{}.txt'.format(config.seed)))
+                                          'log_{}.txt'.format(config.seed)))
 
     final_arch = search_space.discretize(config,
                                          n_input_edges=[2 for _ in search_space.inter_nodes()])
