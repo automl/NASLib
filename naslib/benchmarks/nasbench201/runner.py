@@ -18,7 +18,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 parser = argparse.ArgumentParser('nasbench201')
-parser.add_argument('--optimizer', type=str, default='GDASOptimizer')
+parser.add_argument('--optimizer', type=str, default='PCDARTSOptimizer')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
 parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
