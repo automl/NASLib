@@ -15,7 +15,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
 format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 
-parser = argparse.ArgumentParser('nasbench201')
+parser = argparse.ArgumentParser('robustdarts')
 parser.add_argument('--optimizer', type=str, default='DARTSOptimizer')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
@@ -36,6 +36,7 @@ if __name__ == '__main__':
     parser = Parser('../../configs/default.yaml')
     config.seed = parser.config.seed = args.seed
     config.epochs = parser.config.epochs = args.epochs
+    config.dataset = parser.config.dataset = args.dataset
     parser.config.save += '/{}/{}'.format(args.optimizer, args.space)
     create_exp_dir(parser.config.save)
 
@@ -73,6 +74,7 @@ if __name__ == '__main__':
     config = config_parser('../../configs/final_eval.yaml')
     parser = Parser('../../configs/final_eval.yaml')
     config.seed = parser.config.seed = args.seed
+    config.dataset = parser.config.dataset = args.dataset
     parser.config.save += '/{}/{}'.format(args.optimizer, args.space)
     create_exp_dir(parser.config.save)
 

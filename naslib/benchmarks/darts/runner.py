@@ -29,7 +29,8 @@ if __name__ == '__main__':
     parser = Parser('../../configs/default.yaml')
     config.seed = parser.config.seed = args.seed
     config.epochs = parser.config.epochs = args.epochs
-    parser.config.save += '/{}'.format(args.optimizer)
+    config.dataset = parser.config.dataset = args.dataset
+    parser.config.save += '/{}/{}'.format(args.optimizer, args.dataset)
     create_exp_dir(parser.config.save)
 
     fh = logging.FileHandler(os.path.join(parser.config.save,
@@ -50,10 +51,22 @@ if __name__ == '__main__':
     searcher.run()
 
     # discretize
-    final_arch = search_space.discretize(n_input_edges=[2 for _ in search_space.inter_nodes()])
+    config = config_parser('../../configs/final_eval.yaml')
+    parser = Parser('../../configs/final_eval.yaml')
+    config.seed = parser.config.seed = args.seed
+    config.dataset = parser.config.dataset = args.dataset
+    parser.config.save += '/{}/{}'.format(args.optimizer, args.dataset)
+    create_exp_dir(parser.config.save)
+
+    fh = logging.FileHandler(os.path.join(parser.config.save,
+                                      'log_{}.txt'.format(config.seed)))
+
+    final_arch = search_space.discretize(config,
+                                         n_input_edges=[2 for _ in search_space.inter_nodes()])
     del search_space, one_shot_optimizer, searcher
 
     # run final network from scratch
+    config.dataset = parser.config.dataset = args.dataset
     opt = NASOptimizer()
     final_arch.parse(opt)
     evaluator = Evaluator(final_arch, parser)
