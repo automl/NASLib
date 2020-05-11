@@ -15,5 +15,5 @@
 #
 
 source activate tensorflow-stable
-python runner.py --space $1 --dataset $2
+python runner.py --space $1 --dataset $2 --optimizer $3
 

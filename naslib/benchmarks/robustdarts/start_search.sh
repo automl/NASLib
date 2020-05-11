@@ -2,11 +2,15 @@
 
 datasets="cifar10 cifar100 svhn"
 spaces="s1 s2 s3 s4"
+opt="DARTSOptimizer GDASOptimizer"
 
-for d in $datasets; do
-	for s in $spaces; do
-		sbatch -J ${s}_${d} DARTS_search.sh $s $d
-		echo submmited job $s $d
+for o in $opt; do
+	for d in $datasets; do
+		for s in $spaces; do
+			sbatch -J ${s}_${d}_${o} DARTS_search.sh $s $d $o
+			echo submmited job $s $d $o
+			sleep 2
+		done
 	done
 done
 
