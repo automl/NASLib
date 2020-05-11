@@ -8,7 +8,7 @@ init_channels: 16
 num_cells_per_stack: 5
 model_path: "saved_models"
 
-batch_size: 96
+batch_size: 64
 learning_rate: 0.025
 learning_rate_min: 0.001
 momentum: 0.9
