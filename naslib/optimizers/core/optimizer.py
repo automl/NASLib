@@ -15,3 +15,15 @@ class NASOptimizer(MetaOptimizer):
     def from_config(cls, *args, **kwargs):
         pass
 
+    def forward_pass_adjustment(self, *args, **kwargs):
+        """
+        Function evaluated prior to every forward pass
+        """
+        pass
+
+    def new_epoch(self):
+        """
+        Function evaluated at the beginning of each new search epoch
+        """
+        pass
+
