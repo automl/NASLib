@@ -1,7 +1,7 @@
 data: "../../data"
 gpu: 0
 seed: 10
-report_freq: 1
+report_freq: 30
 dataset: cifar10
 
 init_channels: 16
@@ -23,6 +23,8 @@ data_size: 25000
 time_steps: 1
 num_classes: 10
 criterion: CrossEntropyLoss
+tau_max: 10
+tau_min: 1
 
 cutout: False
 cutout_length: 16

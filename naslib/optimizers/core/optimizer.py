@@ -3,7 +3,7 @@ from .operations import CategoricalOp
 
 
 class NASOptimizer(MetaOptimizer):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         super(NASOptimizer).__init__()
 
     def replace_function(self, edge, graph):
@@ -14,3 +14,4 @@ class NASOptimizer(MetaOptimizer):
     @classmethod
     def from_config(cls, *args, **kwargs):
         pass
+

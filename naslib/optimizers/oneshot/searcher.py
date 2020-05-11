@@ -1,5 +1,6 @@
-import time
 import logging
+import time
+
 import torch
 import torch.nn as nn
 
@@ -26,6 +27,9 @@ class Searcher(Evaluator):
         top1 = utils.AvgrageMeter()
         top5 = utils.AvgrageMeter()
 
+        # Adjust arch optimizer for new search epoch
+        arch_optimizer.new_epoch()
+
         start_time = time.time()
         for step, (input_train, target_train) in enumerate(train_queue):
             graph.train()
@@ -34,22 +38,20 @@ class Searcher(Evaluator):
             input_train = input_train.to(device)
             target_train = target_train.to(device, non_blocking=True)
 
+            # Architecture update
+            arch_optimizer.forward_pass_adjustment()
             input_valid, target_valid = next(iter(valid_queue))
             input_valid = input_valid.to(device)
-            target_valid = target_valid.to(device)
+            target_valid = target_valid.to(device, non_blocking=True)
 
             arch_optimizer.step(graph, criterion, input_train, target_train, input_valid, target_valid, self.lr,
                                 self.optimizer, config.unrolled)
-
             optimizer.zero_grad()
+
+            # OP-weight update
+            arch_optimizer.forward_pass_adjustment()
             logits = graph(input_train)
             loss = criterion(logits, target_train)
-
-            '''
-            if config.auxiliary:
-                loss_aux = criterion(logits_aux, target)
-                loss += config.auxiliary_weight * loss_aux
-            '''
             loss.backward()
             nn.utils.clip_grad_norm_(graph.parameters(), config.grad_clip)
             optimizer.step()
@@ -67,4 +69,4 @@ class Searcher(Evaluator):
                 #                                                  dim=-1)))
 
         end_time = time.time()
-        return top1.avg, objs.avg, end_time-start_time
+        return top1.avg, objs.avg, end_time - start_time

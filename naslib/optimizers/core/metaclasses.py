@@ -1,6 +1,7 @@
+from abc import ABCMeta, abstractmethod
+
 import six
 import torch.nn as nn
-from abc import ABCMeta, abstractmethod
 
 
 @six.add_metaclass(ABCMeta)
@@ -36,3 +37,14 @@ class MetaOptimizer(object):
     def from_config(cls, *args, **kwargs):
         raise NotImplementedError
 
+    def forward_pass_adjustment(self, *args, **kwargs):
+        """
+        Function evaluated prior to every forward pass
+        """
+        pass
+
+    def new_epoch(self):
+        """
+        Function evaluated at the beginning of each new search epoch
+        """
+        pass
