@@ -1,19 +1,18 @@
 from __future__ import print_function
 
-import numpy as np
 import os
 import os.path
-import sys
-import yaml
 import shutil
+from functools import wraps, partial
+
+import numpy as np
 import torch
 import torchvision.transforms as transforms
-
-from functools import wraps, partial
+import yaml
 from torch.autograd import Variable
 
-
 cat_channels = partial(torch.cat, dim=1)
+
 
 def exception(exception_type):
     def exception_decorator(func):
@@ -23,7 +22,9 @@ def exception(exception_type):
                 return func(*args, **kwargs)
             except exception_type:
                 return None
+
         return function_wrapper
+
     return exception_decorator
 
 
@@ -108,46 +109,47 @@ def _data_transforms_cifar10(args):
     ])
     return train_transform, valid_transform
 
+
 def _data_transforms_svhn(args):
-  SVHN_MEAN = [0.4377, 0.4438, 0.4728]
-  SVHN_STD = [0.1980, 0.2010, 0.1970]
+    SVHN_MEAN = [0.4377, 0.4438, 0.4728]
+    SVHN_STD = [0.1980, 0.2010, 0.1970]
 
-  train_transform = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize(SVHN_MEAN, SVHN_STD),
-  ])
-  if args.cutout:
-    train_transform.transforms.append(Cutout(args.cutout_length,
-                                      args.cutout_prob))
-
-  valid_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(SVHN_MEAN, SVHN_STD),
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(SVHN_MEAN, SVHN_STD),
     ])
-  return train_transform, valid_transform
+    if args.cutout:
+        train_transform.transforms.append(Cutout(args.cutout_length,
+                                                 args.cutout_prob))
+
+    valid_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(SVHN_MEAN, SVHN_STD),
+    ])
+    return train_transform, valid_transform
 
 
 def _data_transforms_cifar100(args):
-  CIFAR_MEAN = [0.5071, 0.4865, 0.4409]
-  CIFAR_STD = [0.2673, 0.2564, 0.2762]
+    CIFAR_MEAN = [0.5071, 0.4865, 0.4409]
+    CIFAR_STD = [0.2673, 0.2564, 0.2762]
 
-  train_transform = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-  ])
-  if args.cutout:
-    train_transform.transforms.append(Cutout(args.cutout_length,
-                                      args.cutout_prob))
-
-  valid_transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ])
-  return train_transform, valid_transform
+    if args.cutout:
+        train_transform.transforms.append(Cutout(args.cutout_length,
+                                                 args.cutout_prob))
+
+    valid_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+    ])
+    return train_transform, valid_transform
 
 
 def count_parameters_in_MB(model):
@@ -170,7 +172,6 @@ def print_args(args):
 
 
 def save(model, model_path):
-
     torch.save(model.state_dict(), model_path)
 
 
@@ -190,9 +191,10 @@ def drop_path(x, drop_prob):
 def _concat(xs):
     return torch.cat([x.view(-1) for x in xs])
 
+
 def create_exp_dir(path):
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
     print('Experiment dir : {}'.format(path))
 
 
@@ -201,7 +203,6 @@ def config_parser(config_file='../configs/default.yaml'):
         try:
             config = yaml.safe_load(f)
         except yaml.YAMLError as exc:
-            raise(exc)
+            raise (exc)
         else:
             return AttrDict(config)
-
