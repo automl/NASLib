@@ -19,7 +19,7 @@ log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
-parser = argparse.ArgumentParser('nasbench201')
+parser = argparse.ArgumentParser('sdarts')
 parser.add_argument('--optimizer', type=str, default='DARTSOptimizer')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
