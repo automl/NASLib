@@ -22,12 +22,12 @@ def get_nb_eval(optimizer_runs, dataset, metric):
     return nb_metric_per_run
 
 
-def analyze(optimizer_dict):
+def analyze(optimizer_dict, dataset):
     fig, ax_left = plt.subplots(figsize=(5, 4))
-    ax_left.set_ylabel('Test error (OS) (-)')
+    ax_left.set_ylabel('Test error (NB) (-)')
 
     for optimizer_name, optimizer_runs in optimizer_dict.items():
-        nb_test_error = 1 - np.array(get_nb_eval(optimizer_runs, 'cifar10', 'test_accuracy')) / 100
+        nb_test_error = 1 - np.array(get_nb_eval(optimizer_runs, dataset, 'test_accuracy')) / 100
 
         mean, std = np.mean(nb_test_error, axis=0), np.std(nb_test_error, axis=0)
         ax_left.plot(np.arange(len(mean)), mean, label=optimizer_name)
@@ -45,7 +45,7 @@ def analyze(optimizer_dict):
     ax_left.set_yscale('log')
     ax_right.set_yscale('log')
     plt.xlim(left=0, right=len(mean))
-    plt.savefig('optimizer_comp_nb201.pdf')
+    plt.savefig('optimizer_comp_nb201_{}.pdf'.format(dataset))
 
 
 if __name__ == '__main__':
@@ -55,4 +55,6 @@ if __name__ == '__main__':
             optimizer)
         for res_json_path in glob.glob(os.path.join(optimizer_path, 'errors_*.json')):
             optimizer_dict[optimizer].append(json.load(open(res_json_path, 'r')))
-    analyze(optimizer_dict)
+
+    for dataset in ['cifar10', 'cifar100', 'ImageNet16-120']:
+        analyze(optimizer_dict, dataset)
