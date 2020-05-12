@@ -1,0 +1,38 @@
+data: "../../data"
+gpu: 0
+seed: 1
+report_freq: 50
+dataset: cifar10
+
+init_channels: 16
+channel_multiplier: 4
+stem_multiplier: 3
+layers: 20
+model_path: "saved_models"
+
+batch_size: 96
+learning_rate: 0.025
+learning_rate_min: 0
+momentum: 0.9
+weight_decay: 0.0003
+epochs: 600
+warm_start_epochs: 0
+grad_clip: 5
+train_portion: 1.0
+data_size: 50000
+time_steps: 1
+num_classes: 10
+criterion: CrossEntropyLoss
+
+cutout: True
+cutout_length: 16
+cutout_prob: 1.0
+drop_path_prob: 0.2
+
+unrolled: False
+arch_learning_rate: 0.0003
+arch_weight_decay: 0.001
+output_weights: True
+
+working_dir: final_eval_2
+save: final_eval_2

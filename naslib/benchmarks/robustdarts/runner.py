@@ -7,6 +7,7 @@ from naslib.search_spaces.darts import MacroGraph, OPS
 from naslib.optimizers.core import NASOptimizer, Evaluator
 from naslib.optimizers.oneshot.gdas import GDASOptimizer
 from naslib.optimizers.oneshot.darts import DARTSOptimizer, Searcher
+from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
 from naslib.utils import config_parser
 from naslib.utils.utils import create_exp_dir
 from naslib.utils.parser import Parser
@@ -34,11 +35,11 @@ robust_darts_primitives = {
 
 
 if __name__ == '__main__':
-    config = config_parser('../../configs/default_2.yaml')
-    parser = Parser('../../configs/default_2.yaml')
+    config = config_parser('../../configs/default.yaml')
+    parser = Parser('../../configs/default.yaml')
     config.seed = parser.config.seed = args.seed
     config.dataset = parser.config.dataset = args.dataset
-    parser.config.save += '/{}/{}'.format(args.optimizer, args.space)
+    parser.config.save += '/{}/{}/{}'.format(args.optimizer, args.dataset, args.space)
     create_exp_dir(parser.config.save)
 
     fh = logging.FileHandler(os.path.join(parser.config.save,
@@ -51,7 +52,8 @@ if __name__ == '__main__':
         search_space = MacroGraph.from_config(
             config=config,
             filename='../../configs/search_spaces/robust_darts/s1.yaml',
-            ops_dict=OPS
+            ops_dict=OPS,
+            load_kwargs=True
         )
         search_space.parse(one_shot_optimizer)
     else:
@@ -72,11 +74,11 @@ if __name__ == '__main__':
                             save_arch_weights=True)
 
     # discretize
-    config = config_parser('../../configs/final_eval.yaml')
-    parser = Parser('../../configs/final_eval.yaml')
+    config = config_parser('../../configs/final_eval_2.yaml')
+    parser = Parser('../../configs/final_eval_2.yaml')
     config.seed = parser.config.seed = args.seed
     config.dataset = parser.config.dataset = args.dataset
-    parser.config.save += '/{}/{}'.format(args.optimizer, args.space)
+    parser.config.save += '/{}/{}/{}'.format(args.optimizer, args.dataset, args.space)
     create_exp_dir(parser.config.save)
 
     fh = logging.FileHandler(os.path.join(parser.config.save,

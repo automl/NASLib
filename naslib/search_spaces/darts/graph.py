@@ -57,7 +57,7 @@ class Cell(EdgeOpGraph):
 
     @classmethod
     def from_config(cls, graph_dict, primitives, cell_type, C_prev_prev,
-                    C_prev, C, reduction_prev, ops_dict, *args, **kwargs):
+                    C_prev, C, reduction_prev, ops_dict, load_kwargs, *args, **kwargs):
         graph = cls(primitives, cell_type, C_prev_prev, C_prev, C,
                     reduction_prev, ops_dict, *args, **kwargs)
 
@@ -103,6 +103,10 @@ class Cell(EdgeOpGraph):
                     arch_weight[arch_weight.index('(')+1: arch_weight.index('device')-2]
                 ))
             #TODO: add this option later
+            if load_kwargs and 'op_choices' in graph[from_node][to_node]:
+                graph[from_node][to_node]['op_kwargs'] = eval(attr['op_kwargs'])
+                print(eval(attr['op_kwargs']))
+
             if 'op_kwargs' in graph[from_node][to_node]:
                 graph[from_node][to_node]['op_kwargs']['ops_dict'] = ops_dict
                 if 'affine' not in graph[from_node][to_node]['op_kwargs']:
@@ -292,7 +296,7 @@ class MacroGraph(NodeOpGraph):
 
 
     @classmethod
-    def from_config(cls, config=None, filename=None, **kwargs):
+    def from_config(cls, config=None, filename=None, load_kwargs=False, **kwargs):
         with open(filename, 'r') as f:
             graph_dict = yaml.safe_load(f)
 
@@ -328,7 +332,8 @@ class MacroGraph(NodeOpGraph):
                                                    C=C_curr,
                                                    reduction_prev=graph_dict['nodes'][node - 1]['type'] == 'reduction',
                                                    cell_type=node_type,
-                                                   ops_dict=kwargs['ops_dict']),
+                                                   ops_dict=kwargs['ops_dict'],
+                                                   load_kwargs=load_kwargs),
                                type=node_type)
                 C_prev_prev, C_prev = C_prev, config['channel_multiplier'] * C_curr
             elif node_type == 'pooling':
