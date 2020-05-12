@@ -21,6 +21,23 @@ class GDASOptimizer(DARTSOptimizer):
         self.tau_curr += self.tau_step
         logging.info('TAU {}'.format(self.tau_curr))
 
+    def replace_function(self, edge, graph):
+        graph.architectural_weights = self.architectural_weights
+
+        if 'op_choices' in edge:
+            edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
+
+            weights = self.architectural_weights[edge_key] if edge_key in self.architectural_weights else \
+                torch.nn.Parameter(1e-3 * torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
+
+            self.architectural_weights[edge_key] = weights
+            edge['op'] = GDASMixedOp(primitives=edge['op_choices'], **edge['op_kwargs'])
+
+            if edge_key not in self.edges:
+                self.edges[edge_key] = []
+            self.edges[edge_key].append(edge)
+        return edge
+
     def forward_pass_adjustment(self, *args, **kwargs):
         """
         Replaces the architectural weights in the edges with gumbel softmax near one-hot encodings.

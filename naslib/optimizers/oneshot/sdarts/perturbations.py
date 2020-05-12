@@ -43,13 +43,6 @@ def Linf_PGD_alpha(model, criterion, X, y, epsilon, steps=7, random_start=True):
 
 
 def Random_alpha(nas_optimizer, criterion, X, y, epsilon):
-    for arch_key, arch_weight in nas_optimizer.architectural_weights.items():
-        perturbation = torch.zeros_like(
-        for edge in nas_optimizer.edges[arch_key]:
-            edge['softmaxed_arch_weight'].data.add_(
-        edge['softmaxed_arch_weight'].data.add_(torch.zeros_like(p).uniform_(-epsilon,
-                                                                                 epsilon))
-
     for p in model.arch_parameters():
         p.data.add_(torch.zeros_like(p).uniform_(-epsilon, epsilon))
     model.clip()

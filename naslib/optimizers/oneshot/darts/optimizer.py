@@ -34,10 +34,10 @@ class DARTSOptimizer(NASOptimizer):
             self.epsilon_alpha = 0.03 + (self.epsilon - 0.03) * epoch/self.epochs
 
     def add_perturbation(self, perturbation=None, epsilon=.3):
-        if pertubation == None:
+        if perturbation == None:
             return
         else:
-            self.perturb_alphas = pertubation
+            self.perturb_alphas = perturbation
 
 
     def init(self, optimizer=torch.optim.Adam):
@@ -73,15 +73,21 @@ class DARTSOptimizer(NASOptimizer):
         for arch_key, arch_weight in self.architectural_weights.items():
             softmaxed_arch_weight = torch.nn.functional.softmax(arch_weight.clone(),
                                                                 dim=-1)
+            if self.perturb_alphas == 'random':
+                perturbation = torch.zeros_like(softmaxed_arch_weight).uniform_(
+                    -self.epsilon_alpha, self.epsilon_alpha
+                )
+                softmaxed_arch_weight.data.add_(perturbation)
+                # clipping
+                max_index = softmaxed_arch_weight.argmax()
+                softmaxed_arch_weight.data.clamp_(0, 1)
+                if softmaxed_arch_weight.sum() == 0.0:
+                    softmaxed_arch_weight.data[max_index] = 1.0
+                softmaxed_arch_weight.data.div_(softmaxed_arch_weight.sum())
+
             for edge in self.edges[arch_key]:
                 edge['softmaxed_arch_weight'] = softmaxed_arch_weight
                 edge['perturb_alphas'] = True
-
-    def perturb_arch_weights(self, criterion, input_train, target_train,
-                             *args, **kwargs):
-        if self.perturb_alphas is not None:
-            self.perturb_alphas(self, criterion, input_train, target_train,
-                                self.epsilon_alpha)
 
 
     def undo_forward_pass_adjustment(self, *args, **kwargs):
