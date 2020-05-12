@@ -8,7 +8,8 @@ from naslib.utils import _concat
 
 
 class DARTSOptimizer(NASOptimizer):
-    def __init__(self, momentum, weight_decay, arch_learning_rate, arch_weight_decay, grad_clip, *args, **kwargs):
+    def __init__(self, epochs, momentum, weight_decay, arch_learning_rate,
+                 arch_weight_decay, grad_clip, *args, **kwargs):
         super(DARTSOptimizer, self).__init__()
         self.network_momentum = momentum
         self.network_weight_decay = weight_decay
@@ -18,10 +19,26 @@ class DARTSOptimizer(NASOptimizer):
         self.arch_weight_decay = arch_weight_decay
         self.architectural_weights = torch.nn.ParameterDict()
 
+        self.perturb_alphas = None
+        self.epsilon = 0
+        self.epochs = epochs
+        self.edges = {}
+
     @classmethod
     def from_config(cls, *args, **kwargs):
         nas_opt = cls(*args, **kwargs)
         return nas_opt
+
+    def new_epoch(self, epoch):
+        if self.perturb_alphas is not None:
+            self.epsilon_alpha = 0.03 + (self.epsilon - 0.03) * epoch/self.epochs
+
+    def add_perturbation(self, perturbation=None, epsilon=.3):
+        if pertubation == None:
+            return
+        else:
+            self.perturb_alphas = pertubation
+
 
     def init(self, optimizer=torch.optim.Adam):
         self.optimizer = optimizer(
@@ -43,7 +60,38 @@ class DARTSOptimizer(NASOptimizer):
             self.architectural_weights[edge_key] = weights
             edge['arch_weight'] = self.architectural_weights[edge_key]
             edge['op'] = MixedOp(primitives=edge['op_choices'], **edge['op_kwargs'])
+
+            if edge_key not in self.edges:
+                self.edges[edge_key] = []
+            self.edges[edge_key].append(edge)
         return edge
+
+    def forward_pass_adjustment(self, *args, **kwargs):
+        if self.perturb_alphas is None:
+            return
+
+        for arch_key, arch_weight in self.architectural_weights.items():
+            softmaxed_arch_weight = torch.nn.functional.softmax(arch_weight.clone(),
+                                                                dim=-1)
+            for edge in self.edges[arch_key]:
+                edge['softmaxed_arch_weight'] = softmaxed_arch_weight
+                edge['perturb_alphas'] = True
+
+    def perturb_arch_weights(self, criterion, input_train, target_train,
+                             *args, **kwargs):
+        if self.perturb_alphas is not None:
+            self.perturb_alphas(self, criterion, input_train, target_train,
+                                self.epsilon_alpha)
+
+
+    def undo_forward_pass_adjustment(self, *args, **kwargs):
+        try:
+            for arch_key in self.architectural_weights:
+                for edge in self.edges[arch_key]:
+                    del edge['softmaxed_arch_weight']
+                    del edge['perturb_alphas']
+        except KeyError:
+            return
 
     def step(self, *args, **kwargs):
         self._step(*args, **kwargs)

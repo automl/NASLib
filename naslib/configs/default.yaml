@@ -10,7 +10,7 @@ stem_multiplier: 3
 layers: 8
 model_path: "saved_models"
 
-batch_size: 96
+batch_size: 64
 learning_rate: 0.025
 learning_rate_min: 0.001
 momentum: 0.9
@@ -32,7 +32,7 @@ channel_divisor: 4
 cutout: False
 cutout_length: 16
 cutout_prob: 1.0
-drop_path_prob: 0.3
+drop_path_prob: 0.0
 
 unrolled: False
 arch_learning_rate: 0.0003

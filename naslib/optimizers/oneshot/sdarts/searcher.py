@@ -15,7 +15,7 @@ class Searcher(Evaluator):
         self.arch_optimizer.architectural_weights.to(self.device)
         self.run_kwargs['arch_optimizer'] = self.arch_optimizer
 
-    def train(self, epoch, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
+    def train(self, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
         try:
             config = kwargs.get('config', graph.config)
             device = kwargs['device']
@@ -28,7 +28,7 @@ class Searcher(Evaluator):
         top5 = utils.AvgrageMeter()
 
         # Adjust arch optimizer for new search epoch
-        arch_optimizer.new_epoch(epoch)
+        arch_optimizer.new_epoch()
 
         start_time = time.time()
         for step, (input_train, target_train) in enumerate(train_queue):

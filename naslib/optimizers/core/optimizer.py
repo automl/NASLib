@@ -27,3 +27,5 @@ class NASOptimizer(MetaOptimizer):
         """
         pass
 
+    def perturb_alphas(self, perturbation=None, epsilon=0.3):
+        pass

@@ -34,8 +34,8 @@ robust_darts_primitives = {
 
 
 if __name__ == '__main__':
-    config = config_parser('../../configs/default.yaml')
-    parser = Parser('../../configs/default.yaml')
+    config = config_parser('../../configs/default_2.yaml')
+    parser = Parser('../../configs/default_2.yaml')
     config.seed = parser.config.seed = args.seed
     config.dataset = parser.config.dataset = args.dataset
     parser.config.save += '/{}/{}'.format(args.optimizer, args.space)
