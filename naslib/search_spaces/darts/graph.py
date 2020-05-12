@@ -94,8 +94,15 @@ class Cell(EdgeOpGraph):
         for edge, attr in graph_dict['edges'].items():
             from_node, to_node = eval(edge)
             graph.add_edge(*eval(edge), **{k: eval(v) for k, v in attr.items() if k
-                                           != 'op'})
+                                           in ['from_node', 'to_node',
+                                               'op_choices']})
             graph[from_node][to_node]['op'] = None if attr['op'] != 'Identity' else eval(attr['op'])()
+            if 'arch_weight' in attr:
+                arch_weight = attr['arch_weight']
+                graph[from_node][to_node]['arch_weight'] = np.array(eval(
+                    arch_weight[arch_weight.index('(')+1: arch_weight.index('device')-2]
+                ))
+            #TODO: add this option later
             if 'op_kwargs' in graph[from_node][to_node]:
                 graph[from_node][to_node]['op_kwargs']['ops_dict'] = ops_dict
                 if 'affine' not in graph[from_node][to_node]['op_kwargs']:
@@ -199,7 +206,9 @@ class MacroGraph(NodeOpGraph):
                 if bool(set(_cell.output_nodes()) & set(edge)):
                     continue
                 op_choices = _cell.get_edge_op_choices(*edge)
-                alphas = _cell.get_edge_arch_weights(*edge).cpu().detach().numpy()
+                alphas = _cell.get_edge_arch_weights(*edge)
+                if type(alphas) == torch.nn.parameter.Parameter:
+                    alphas = alphas.cpu().detach().numpy()
                 sampled_op = np.array(op_choices)[np.argsort(alphas)[-n_ops_per_edge:]]
                 cell[edge[0]][edge[1]]['op_choices'] = [*sampled_op]
 
@@ -211,11 +220,15 @@ class MacroGraph(NodeOpGraph):
                     assert k <= len(prev_node_choices), 'cannot sample more'
                     ' than number of predecesor nodes'
 
-                    previous_argmax_alphas = [
-                        max(softmax(_cell.get_edge_arch_weights(
-                            i, inter_node
-                        ).detach().numpy())) for i in prev_node_choices
-                    ]
+                    previous_argmax_alphas = []
+                    for i in prev_node_choices:
+                        alphas = softmax(
+                            _cell.get_edge_arch_weights(i, inter_node)
+                        )
+                        if type(alphas) == torch.nn.parameter.Parameter:
+                            alphas = alphas.cpu().detach().numpy()
+                        previous_argmax_alphas.append(max(alphas))
+
                     sampled_input_edges = np.array(
                         prev_node_choices
                     )[np.argsort(previous_argmax_alphas)[-k:]]

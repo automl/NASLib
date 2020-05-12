@@ -37,14 +37,16 @@ class MetaOptimizer(object):
     def from_config(cls, *args, **kwargs):
         raise NotImplementedError
 
+    @abstractmethod
     def forward_pass_adjustment(self, *args, **kwargs):
         """
         Function evaluated prior to every forward pass
         """
-        pass
+        raise NotImplementedError
 
+    @abstractmethod
     def new_epoch(self):
         """
         Function evaluated at the beginning of each new search epoch
         """
-        pass
+        raise NotImplementedError

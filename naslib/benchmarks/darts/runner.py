@@ -49,10 +49,13 @@ if __name__ == '__main__':
 
     searcher = Searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
     searcher.run()
+    search_space.save_graph(filename=os.path.join(parser.config.save,
+                                                  'graph.yaml'),
+                            save_arch_weights=True)
 
     # discretize
-    config = config_parser('../../configs/final_eval.yaml')
-    parser = Parser('../../configs/final_eval.yaml')
+    config = config_parser('../../configs/final_eval_2.yaml')
+    parser = Parser('../../configs/final_eval_2.yaml')
     config.seed = parser.config.seed = args.seed
     config.dataset = parser.config.dataset = args.dataset
     parser.config.save += '/{}/{}'.format(args.optimizer, args.dataset)

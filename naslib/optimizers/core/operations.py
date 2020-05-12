@@ -45,8 +45,11 @@ class MixedOp(MetaOp):
             self._ops.append(op)
 
     def forward(self, x, *args, **kwargs):
-        arch_weight = kwargs['arch_weight']
-        weights = torch.softmax(arch_weight, dim=-1)
+        if 'perturb_alphas' in kwargs:
+            weights = kwargs['softmaxed_arch_weight']
+        else:
+            arch_weight = kwargs['arch_weight']
+            weights = torch.softmax(arch_weight, dim=-1)
         return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
 
 

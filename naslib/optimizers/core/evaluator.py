@@ -87,7 +87,7 @@ class Evaluator(object):
                 if type(node).__name__ == 'Cell':
                     node.drop_path_prob = self.parser.config.drop_path_prob * epoch / epochs
 
-            train_acc, train_obj, runtime = self.train(self.model, self.optimizer, self.criterion, self.train_queue,
+            train_acc, train_obj, runtime = self.train(epoch, self.model, self.optimizer, self.criterion, self.train_queue,
                                                        self.valid_queue, device=self.device, **self.run_kwargs)
             logging.info('train_acc %f', train_acc)
 
@@ -117,7 +117,7 @@ class Evaluator(object):
             self.log_to_json(self.parser.config.save)
         Evaluator.save(self.parser.config.save, self.model, epoch)
 
-    def train(self, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
+    def train(self, epoch, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
         try:
             config = kwargs.get('config', graph.config)
             device = kwargs['device']
