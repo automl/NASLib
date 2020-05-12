@@ -19,7 +19,7 @@ conda activate pytorch1.5
 
 gpu_counter=1
 
-for optimizer in "GDASOptimizer" "DARTSOptimizer"; do
+for optimizer in "PCDARTSOp<timizer"; do
   for seed in {0..3}; do
     # Job to perform
     if [ $gpu_counter -eq $SLURM_ARRAY_TASK_ID ]; then
