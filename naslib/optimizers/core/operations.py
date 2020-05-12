@@ -85,8 +85,11 @@ class PCDARTSMixedOp(MixedOp):
         self.mp = nn.MaxPool2d(2, 2)
 
     def forward(self, x, *args, **kwargs):
-        arch_weight = kwargs['arch_weight']
-        weights = torch.softmax(arch_weight, dim=-1)
+        if 'perturb_alphas' in kwargs:
+            weights = kwargs['softmaxed_arch_weight']
+        else:
+            arch_weight = kwargs['arch_weight']
+            weights = torch.softmax(arch_weight, dim=-1)
 
         dim_2 = x.shape[1]
         xtemp = x[:, :dim_2 // self.channel_divisor, :, :]

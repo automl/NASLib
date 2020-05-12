@@ -22,4 +22,9 @@ class PCDARTSOptimizer(DARTSOptimizer):
             edge['arch_weight'] = self.architectural_weights[edge_key]
             edge['op'] = PCDARTSMixedOp(primitives=edge['op_choices'], channel_divisor=self.channel_divisor,
                                         **edge['op_kwargs'])
+
+            if edge_key not in self.edges:
+                self.edges[edge_key] = []
+            self.edges[edge_key].append(edge)
         return edge
+
