@@ -58,7 +58,10 @@ class GDASMixedOp(MixedOp):
         super(GDASMixedOp, self).__init__(*args, **kwargs)
 
     def forward(self, x, *args, **kwargs):
-        weights = kwargs['sampled_arch_weight']
+        if 'perturb_alphas' in kwargs:
+            weights = kwargs['softmaxed_arch_weight']
+        else:
+            weights = kwargs['sampled_arch_weight']
         cpu_weights = weights.tolist()
         use_sum = sum([abs(_) > 1e-10 for _ in cpu_weights])
         if use_sum > len(self.primitives):

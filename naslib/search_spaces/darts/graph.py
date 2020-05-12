@@ -105,7 +105,6 @@ class Cell(EdgeOpGraph):
             #TODO: add this option later
             if load_kwargs and 'op_choices' in graph[from_node][to_node]:
                 graph[from_node][to_node]['op_kwargs'] = eval(attr['op_kwargs'])
-                print(eval(attr['op_kwargs']))
 
             if 'op_kwargs' in graph[from_node][to_node]:
                 graph[from_node][to_node]['op_kwargs']['ops_dict'] = ops_dict

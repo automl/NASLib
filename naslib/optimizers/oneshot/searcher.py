@@ -64,9 +64,6 @@ class Searcher(Evaluator):
             if step % config.report_freq == 0:
                 arch_key = list(arch_optimizer.architectural_weights.keys())[-1]
                 logging.info('train %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
-                #logging.info(
-                #    'train {}: {}'.format(arch_key, torch.softmax(arch_optimizer.architectural_weights[arch_key],
-                #                                                  dim=-1)))
 
         end_time = time.time()
         return top1.avg, objs.avg, end_time - start_time

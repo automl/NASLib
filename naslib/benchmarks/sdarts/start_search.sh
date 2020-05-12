@@ -1,7 +1,7 @@
 #!/bin/bash
 
 datasets="cifar10 cifar100 svhn"
-opt="DARTSOptimizer"
+opt="GDASOptimizer"
 
 for o in $opt; do
 	for d in $datasets; do

@@ -40,6 +40,11 @@ class Searcher(Evaluator):
             input_train = input_train.to(device)
             target_train = target_train.to(device, non_blocking=True)
 
+            # this is just for GDAS to activate the gumbel softmax but not the
+            # random perturbation
+            arch_optimizer.forward_pass_adjustment()
+            arch_optimizer.undo_forward_pass_adjustment()
+
             # Architecture update
             input_valid, target_valid = next(iter(valid_queue))
             input_valid = input_valid.to(device)

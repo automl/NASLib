@@ -46,6 +46,25 @@ class GDASOptimizer(DARTSOptimizer):
         for arch_key, arch_weight in self.architectural_weights.items():
             # gumbel sample arch weights and assign them in self.edges
             sampled_arch_weight = torch.nn.functional.gumbel_softmax(arch_weight, tau=self.tau_curr)
+
+            # random perturbation part
+            if self.perturb_alphas == 'random':
+                softmaxed_arch_weight = sampled_arch_weight.clone()
+                perturbation = torch.zeros_like(softmaxed_arch_weight).uniform_(
+                    -self.epsilon_alpha,
+                    self.epsilon_alpha
+                )
+                softmaxed_arch_weight.data.add_(perturbation)
+                #clipping
+                max_index = softmaxed_arch_weight.argmax()
+                softmaxed_arch_weight.data.clamp_(0, 1)
+                if softmaxed_arch_weight.sum() == 0.0:
+                    softmaxed_arch_weight.data[max_index] = 1.0
+                softmaxed_arch_weight.data.div_(softmaxed_arch_weight.sum())
+
             for edge in self.edges[arch_key]:
                 edge['sampled_arch_weight'] = sampled_arch_weight
+                if self.perturb_alphas == 'random':
+                    edge['softmaxed_arch_weight'] = softmaxed_arch_weight
+                    edge['perturb_alphas'] = True
 
