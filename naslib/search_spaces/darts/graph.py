@@ -3,6 +3,7 @@ import yaml
 import numpy as np
 from scipy.special import softmax
 from torch import nn
+from copy import deepcopy
 
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
 from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity
@@ -205,16 +206,6 @@ class MacroGraph(NodeOpGraph):
                 continue
             _cell = normal_cell if cell.cell_type == 'normal' else reduction_cell
 
-            for edge in _cell.edges:
-                if bool(set(_cell.output_nodes()) & set(edge)):
-                    continue
-                op_choices = _cell.get_edge_op_choices(*edge)
-                alphas = _cell.get_edge_arch_weights(*edge)
-                if type(alphas) == torch.nn.parameter.Parameter:
-                    alphas = alphas.cpu().detach().numpy()
-                sampled_op = np.array(op_choices)[np.argsort(alphas)[-n_ops_per_edge:]]
-                cell[edge[0]][edge[1]]['op_choices'] = [*sampled_op]
-
             if n_input_edges is not None:
                 for inter_node, k in zip(_cell.inter_nodes(), n_input_edges):
                     # in case the start node index is not 0
@@ -223,21 +214,53 @@ class MacroGraph(NodeOpGraph):
                     assert k <= len(prev_node_choices), 'cannot sample more'
                     ' than number of predecesor nodes'
 
-                    previous_argmax_alphas = []
+                    previous_argmax_alphas = {}
+                    op_choices = {}
                     for i in prev_node_choices:
+                        op_choices[i] = _cell.get_edge_op_choices(i,
+                                                                  inter_node)
                         alphas = softmax(
                             _cell.get_edge_arch_weights(i, inter_node)
                         )
                         if type(alphas) == torch.nn.parameter.Parameter:
                             alphas = alphas.cpu().detach().numpy()
-                        previous_argmax_alphas.append(max(alphas))
+                        previous_argmax_alphas[i] = alphas
 
-                    sampled_input_edges = np.array(
-                        prev_node_choices
-                    )[np.argsort(previous_argmax_alphas)[-k:]]
+                    try:
+                        sampled_input_edges = sorted(prev_node_choices, key=lambda
+                                                     x:
+                                                     -max(previous_argmax_alphas[x][k]
+                                                          for k in
+                                                          range(len(previous_argmax_alphas[x]))
+                                                          if k !=
+                                                          op_choices[x].index('none')))[:k]
+                    except ValueError:
+                        sampled_input_edges = sorted(prev_node_choices, key=lambda
+                                                     x:
+                                                     -max(previous_argmax_alphas[x][k]
+                                                          for k in
+                                                          range(len(previous_argmax_alphas[x]))))[:k]
 
                     for i in set(prev_node_choices) - set(sampled_input_edges):
                         cell.remove_edge(i, inter_node)
+
+            for edge in cell.edges:
+                if bool(set(_cell.output_nodes()) & set(edge)):
+                    continue
+                op_choices = deepcopy(_cell.get_edge_op_choices(*edge))
+                _alphas = _cell.get_edge_arch_weights(*edge)
+                if type(_alphas) == torch.nn.parameter.Parameter:
+                    alphas = deepcopy(list(_alphas.cpu().detach().numpy()))
+                else:
+                    alphas = deepcopy(list(_alphas))
+
+                if 'none' in op_choices:
+                    none_idx = op_choices.index('none')
+                    del op_choices[none_idx]
+                    del alphas[none_idx]
+
+                sampled_op = np.array(op_choices)[np.argsort(alphas)[-n_ops_per_edge:]]
+                cell[edge[0]][edge[1]]['op_choices'] = [*sampled_op]
 
         return new_graph
 

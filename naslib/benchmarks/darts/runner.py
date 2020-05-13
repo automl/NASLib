@@ -65,7 +65,7 @@ if __name__ == '__main__':
                                           'log_{}.txt'.format(config.seed)))
 
     final_arch = search_space.discretize(config,
-                                         n_input_edges=[2 for _ in search_space.inter_nodes()])
+                                         n_input_edges=[2 for _ in search_space.get_node_op(2).inter_nodes()])
     del search_space, one_shot_optimizer, searcher
 
     # run final network from scratch
