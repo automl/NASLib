@@ -100,9 +100,9 @@ class Cell(EdgeOpGraph):
             graph[from_node][to_node]['op'] = None if attr['op'] != 'Identity' else eval(attr['op'])()
             if 'arch_weight' in attr:
                 arch_weight = attr['arch_weight']
-                graph[from_node][to_node]['arch_weight'] = np.array(eval(
-                    arch_weight[arch_weight.index('(')+1: arch_weight.index('device')-2]
-                ))
+                arch_weight_str = arch_weight[arch_weight.index('['):
+                                              arch_weight.index(']')+1]
+                graph[from_node][to_node]['arch_weight'] = np.array(eval(arch_weight_str))
             #TODO: add this option later
             if load_kwargs and 'op_choices' in graph[from_node][to_node]:
                 graph[from_node][to_node]['op_kwargs'] = eval(attr['op_kwargs'])
