@@ -103,6 +103,11 @@ class Cell(EdgeOpGraph):
                 arch_weight_str = arch_weight[arch_weight.index('['):
                                               arch_weight.index(']')+1]
                 graph[from_node][to_node]['arch_weight'] = np.array(eval(arch_weight_str))
+            elif 'sampled_arch_weight' in attr:
+                arch_weight = attr['sampled_arch_weight']
+                arch_weight_str = arch_weight[arch_weight.index('['):
+                                              arch_weight.index(']')+1]
+                graph[from_node][to_node]['arch_weight'] = np.array(eval(arch_weight_str))
             #TODO: add this option later
             if load_kwargs and 'op_choices' in graph[from_node][to_node]:
                 graph[from_node][to_node]['op_kwargs'] = eval(attr['op_kwargs'])

@@ -9,7 +9,7 @@ opt="DARTSOptimizer GDASOptimizer PCDARTSOptimizer"
 for o in $opt; do
 	for d in $datasets; do
 		for s in $spaces; do
-			sbatch -J ${s}_${d}_${o} --bosch DARTS_search.sh $s $d $o
+			sbatch -J ${s}_${d}_${o} --bosch DARTS_eval.sh $s $d $o
 			echo submmited job $s $d $o
 			sleep 2
 		done

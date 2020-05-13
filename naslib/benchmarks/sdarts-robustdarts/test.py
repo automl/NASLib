@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import sys
+import time
 
 from naslib.search_spaces.darts import MacroGraph, OPS
 from naslib.optimizers.core import NASOptimizer, Evaluator
@@ -42,7 +43,6 @@ if __name__ == '__main__':
     config.seed = parser.config.seed = args.seed
     config.dataset = parser.config.dataset = args.dataset
     parser.config.save += '/{}/{}/{}'.format(args.optimizer, args.dataset, args.space)
-    create_exp_dir(parser.config.save)
 
     search_space = MacroGraph.from_config(
         config=config,
