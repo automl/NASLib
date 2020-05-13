@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p bosch_gpu-rtx2080 # partition (queue)
+#SBATCH -p meta_gpu-ti # partition (queue)
 #SBATCH --mem 30000 # memory pool for all cores (8GB)
 #SBATCH -t 11-00:00 # time (D-HH:MM)
 #SBATCH -c 2 # number of cores
@@ -23,7 +23,7 @@ for optimizer in "GDASOptimizer"; do
   for seed in {0..3}; do
     # Job to perform
     if [ $gpu_counter -eq $SLURM_ARRAY_TASK_ID ]; then
-      PYTHONPATH=../../../. python runner.py --seed=${seed} --optimizer=${optimizer}
+      PYTHONPATH=../../../. python runner_sdarts.py --seed=${seed} --optimizer=${optimizer}
       exit $?
     fi
     let gpu_counter+=1

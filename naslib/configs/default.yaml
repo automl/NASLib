@@ -25,7 +25,7 @@ num_classes: 10
 criterion: CrossEntropyLoss
 # GDAS
 tau_max: 10
-tau_min: 1
+tau_min: 0.1
 # PC-DARTS
 channel_divisor: 4
 

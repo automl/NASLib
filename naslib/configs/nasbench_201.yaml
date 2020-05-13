@@ -28,7 +28,7 @@ cutout_prob: 1.0
 drop_path_prob: 0.3
 # GDAS
 tau_max: 10
-tau_min: 1
+tau_min: 0.1
 # PC-DARTS
 channel_divisor: 4
 
