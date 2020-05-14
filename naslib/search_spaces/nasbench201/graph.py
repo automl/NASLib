@@ -78,6 +78,7 @@ class MacroGraph(NodeOpGraph):
         self.config = config
         self.primitives = primitives
         self.ops_dict = ops_dict
+        self.nasbench_api = API('/home/siemsj/nasbench_201.pth')
         super(MacroGraph, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
