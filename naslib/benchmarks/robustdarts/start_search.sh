@@ -4,7 +4,7 @@
 
 datasets="cifar10 cifar100 svhn"
 spaces="s1 s2 s3 s4"
-opt="DARTSOptimizer GDASOptimizer PCDARTSOptimizer"
+opt="DARTSOptimizer PCDARTSOptimizer"
 
 for o in $opt; do
 	for d in $datasets; do
