@@ -31,6 +31,7 @@ class GDASOptimizer(DARTSOptimizer):
                 torch.nn.Parameter(1e-3 * torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
 
             self.architectural_weights[edge_key] = weights
+            edge['arch_weight'] = self.architectural_weights[edge_key]
             edge['op'] = GDASMixedOp(primitives=edge['op_choices'], **edge['op_kwargs'])
 
             if edge_key not in self.edges:
@@ -45,7 +46,9 @@ class GDASOptimizer(DARTSOptimizer):
 
         for arch_key, arch_weight in self.architectural_weights.items():
             # gumbel sample arch weights and assign them in self.edges
-            sampled_arch_weight = torch.nn.functional.gumbel_softmax(arch_weight, tau=self.tau_curr, hard=True)
+            sampled_arch_weight = torch.nn.functional.gumbel_softmax(
+                arch_weight, tau=self.tau_curr, hard=False
+            )
 
             # random perturbation part
             if self.perturb_alphas == 'random':

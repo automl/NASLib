@@ -224,11 +224,16 @@ class MacroGraph(NodeOpGraph):
                     for i in prev_node_choices:
                         op_choices[i] = _cell.get_edge_op_choices(i,
                                                                   inter_node)
-                        alphas = softmax(
-                            _cell.get_edge_arch_weights(i, inter_node)
-                        )
+                        arch_weight_data = _cell.get_edge_arch_weights(i,
+                                                                       inter_node)
+                        if type(arch_weight_data) == torch.nn.parameter.Parameter:
+                            alphas = softmax(
+                                arch_weight_data.cpu().detach()
+                            )
+                        else:
+                            alphas = softmax(arch_weight_data)
                         if type(alphas) == torch.nn.parameter.Parameter:
-                            alphas = alphas.cpu().detach().numpy()
+                            alphas = alphas.numpy()
                         previous_argmax_alphas[i] = alphas
 
                     try:

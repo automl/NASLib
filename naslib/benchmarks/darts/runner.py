@@ -22,7 +22,6 @@ parser = argparse.ArgumentParser('nasbench201')
 parser.add_argument('--optimizer', type=str, default='PCDARTSOptimizer')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
-parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
 args = parser.parse_args()
 
 if __name__ == '__main__':
