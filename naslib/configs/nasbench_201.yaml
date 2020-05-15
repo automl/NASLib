@@ -31,6 +31,9 @@ tau_max: 10
 tau_min: 0.1
 # PC-DARTS
 channel_divisor: 4
+# RE
+population_size: 100
+sample_size: 10
 
 
 unrolled: False

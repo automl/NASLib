@@ -5,6 +5,8 @@ import sys
 
 from naslib.optimizers.discrete.rs import RandomSearch
 from naslib.optimizers.discrete.rs import Searcher as RSSearcher
+from naslib.optimizers.discrete.re import RegularizedEvolution as RE
+from naslib.optimizers.discrete.re import Searcher as RESearcher
 from naslib.optimizers.oneshot.darts import Searcher, DARTSOptimizer
 from naslib.optimizers.oneshot.gdas import GDASOptimizer
 from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
@@ -20,7 +22,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 parser = argparse.ArgumentParser('nasbench201')
-parser.add_argument('--optimizer', type=str, default='PCDARTSOptimizer')
+parser.add_argument('--optimizer', type=str, default='RE')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
 parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
@@ -49,6 +51,11 @@ if __name__ == '__main__':
     )
     one_shot_optimizer.init()
 
-    _searcher = RSSearcher if args.optimizer == 'RandomSearch' else Searcher
+    if args.optimizer == 'RS':
+        _searcher = RSSearcher
+    elif args.optimizer == 'RE':
+        _searcher = RESearcher
+    else:
+        _searcher = Searcher
     searcher = _searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
     searcher.run(n_evaluations=args.n_evals)

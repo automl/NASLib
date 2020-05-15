@@ -1,11 +1,8 @@
 import logging
-import time
-
 import torch
 import torch.nn as nn
 
 from naslib.optimizers.core import Evaluator
-from naslib.utils import utils
 
 
 class Searcher(Evaluator):
@@ -28,6 +25,7 @@ class Searcher(Evaluator):
                 if 'arch_eval' not in self.errors_dict:
                     self.errors_dict['arch_eval'] = []
                 self.errors_dict['arch_eval'].append(arch_info)
+                self.log_to_json(self.parser.config.save)
             else:
                 train_acc, train_obj, runtime = self.train(
                     self.parser.config.epochs,
