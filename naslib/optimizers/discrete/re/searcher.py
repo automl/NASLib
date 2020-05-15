@@ -1,9 +1,8 @@
-import logging
 import collections
-import torch
-import torch.nn as nn
-
+import logging
 from copy import deepcopy
+
+import numpy as np
 
 from naslib.optimizers.discrete import Searcher as BaseSearcher
 from naslib.utils.utils import AttrDict
@@ -18,7 +17,6 @@ class Searcher(BaseSearcher):
         self.population_size = parser.config.population_size
         self.sample_size = parser.config.sample_size
 
-
     def run(self, n_evaluations, *args, **kwargs):
         while len(self.population) < self.population_size:
             model = AttrDict()
@@ -26,7 +24,7 @@ class Searcher(BaseSearcher):
             self.arch_optimizer.uniform_sample()
             model.arch = deepcopy(self.arch_optimizer.architectural_weights)
             arch_info = self.query()
-            model.accuracy = arch_info['cifar10-valid']
+            model.accuracy = arch_info['cifar10-valid']['valid_accuracy']
             self.population.append(model)
             self.history.append(model)
 
@@ -42,14 +40,13 @@ class Searcher(BaseSearcher):
             self.arch_optimizer.mutate_arch(deepcopy(parent.arch))
             child.arch = deepcopy(self.arch_optimizer.architectural_weights)
             arch_info = self.query()
-            child.accuracy = arch_info['cifar10-valid']
+            child.accuracy = arch_info['cifar10-valid']['valid_accuracy']
             self.population.append(child)
             self.history.append(child)
 
             self.population.popleft()
 
-
-    #NOTE: this works only for nasbench201 for now
+    # NOTE: this works only for nasbench201 for now
     def query(self):
         if hasattr(self.graph, 'query_architecture'):
             # Record anytime performance
@@ -60,5 +57,3 @@ class Searcher(BaseSearcher):
             self.errors_dict['arch_eval'].append(arch_info)
             self.log_to_json(self.parser.config.save)
             return arch_info
-
-

@@ -17,6 +17,6 @@ class RegularizedEvolution(RandomSearch):
         list_of_idx.remove(argmax)
         idx = np.random.choice(list_of_idx)
         parent_arch[dim].data[argmax] = 0
-        parent_arch[dim].data[idx].data = 1
+        parent_arch[dim].data[idx] = 1
 
         self.architectural_weights = parent_arch
