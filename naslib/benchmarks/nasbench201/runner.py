@@ -3,6 +3,8 @@ import logging
 import os
 import sys
 
+from naslib.optimizers.discrete.rs import RandomSearch
+from naslib.optimizers.discrete.rs import Searcher as RSSearcher
 from naslib.optimizers.oneshot.darts import Searcher, DARTSOptimizer
 from naslib.optimizers.oneshot.gdas import GDASOptimizer
 from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
@@ -22,6 +24,7 @@ parser.add_argument('--optimizer', type=str, default='PCDARTSOptimizer')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
 parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
+parser.add_argument('--n_evals', type=int, default=50, help='num of function evaluations')
 args = parser.parse_args()
 
 if __name__ == '__main__':
@@ -46,5 +49,6 @@ if __name__ == '__main__':
     )
     one_shot_optimizer.init()
 
-    searcher = Searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
-    searcher.run()
+    _searcher = RSSearcher if args.optimizer == 'RandomSearch' else Searcher
+    searcher = _searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
+    searcher.run(n_evaluations=args.n_evals)
