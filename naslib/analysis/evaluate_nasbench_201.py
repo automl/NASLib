@@ -56,8 +56,8 @@ def analyze(optimizer_dict, dataset):
 
 
 if __name__ == '__main__':
-    optimizer_dict = {'DARTS': [], 'GDAS': [], 'PCDARTS': []}
-    # optimizer_dict = {'SDARTSDARTS': [], 'SDARTSGDAS': [], 'SDARTSPCDARTS': []}
+    # optimizer_dict = {'DARTS': [], 'GDAS': [], 'PCDARTS': []}
+    optimizer_dict = {'SDARTSDARTS': [], 'SDARTSGDAS': [], 'SDARTSPCDARTS': []}
     for optimizer in optimizer_dict.keys():
         optimizer_path = '/home/siemsj/projects/NASLib/naslib/benchmarks/nasbench201/run/cifar10/{}Optimizer'.format(
             optimizer)

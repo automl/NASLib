@@ -13,7 +13,8 @@ mpl.use('Agg')
 
 optimizer_dir_name_to_name = {
     'RE': 'Regularized Evolution',
-    'RS': 'Random Search'
+    'RS': 'Random Search',
+    'TPE': 'Tree Parzen Estimator'
 }
 
 
@@ -49,11 +50,12 @@ def analyze(optimizer_dict, dataset):
 
     plt.yscale('log')
     plt.xlim(left=0, right=200)
+    plt.ylim(top=6e-1)
     plt.savefig('optimizer_comp_nb201_{}_discrete.pdf'.format(dataset))
 
 
 if __name__ == '__main__':
-    optimizer_dict = {'RE': [], 'RS': []}
+    optimizer_dict = {'RE': [], 'RS': [], 'TPE': []}
     # optimizer_dict = {'SDARTSDARTS': [], 'SDARTSGDAS': [], 'SDARTSPCDARTS': []}
     for optimizer in optimizer_dict.keys():
         optimizer_path = '/home/siemsj/projects/NASLib/naslib/benchmarks/nasbench201/run/cifar10/{}'.format(

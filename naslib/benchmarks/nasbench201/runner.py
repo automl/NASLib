@@ -9,9 +9,8 @@ from naslib.optimizers.discrete.re import RegularizedEvolution as RE
 from naslib.optimizers.discrete.re import Searcher as RESearcher
 from naslib.optimizers.discrete.rs import RandomSearch as RS
 from naslib.optimizers.discrete.rs import Searcher as RSSearcher
-from naslib.optimizers.discrete.tpe import TPE
 from naslib.optimizers.discrete.tpe import Searcher as TPESearcher
-
+from naslib.optimizers.discrete.tpe import TPE
 from naslib.optimizers.oneshot.darts import Searcher, DARTSOptimizer
 from naslib.optimizers.oneshot.gdas import GDASOptimizer
 from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
@@ -20,7 +19,7 @@ from naslib.utils import config_parser
 from naslib.utils.parser import Parser
 from naslib.utils.utils import create_exp_dir
 
-opt_list = [DARTSOptimizer, GDASOptimizer, PCDARTSOptimizer, RE, RS]
+opt_list = [DARTSOptimizer, GDASOptimizer, PCDARTSOptimizer, RE, TPE, RS]
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -33,8 +32,6 @@ parser.add_argument('--dataset', type=str, default='cifar10')
 parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
 parser.add_argument('--n_evals', type=int, default=200, help='num of function evaluations')
 args = parser.parse_args()
-
-from IPython import embed
 
 if __name__ == '__main__':
     config = config_parser('../../configs/nasbench_201.yaml')

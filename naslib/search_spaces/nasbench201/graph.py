@@ -119,7 +119,6 @@ class MacroGraph(NodeOpGraph):
         for i in range(1, cell_num + 6):
             self.add_edge(i - 1, i, type='input', desc='previous')
 
-
     def sample(self, same_cell_struct=True, n_ops_per_edge=1,
                n_input_edges=None, dist=None, seed=1):
         """
@@ -138,7 +137,7 @@ class MacroGraph(NodeOpGraph):
         # create a new graph that we will discretize
         new_graph = MacroGraph(self.config, self.primitives, self.ops_dict)
         np.random.seed(seed)
-        seeds = {'normal': seed+1, 'reduction': seed+2}
+        seeds = {'normal': seed + 1, 'reduction': seed + 2}
 
         for node in new_graph:
             cell = new_graph.get_node_op(node)
@@ -168,7 +167,6 @@ class MacroGraph(NodeOpGraph):
                         cell.remove_edge(i, inter_node)
 
         return new_graph
-
 
     @classmethod
     def from_config(cls, config=None, filename=None):
@@ -230,10 +228,12 @@ class MacroGraph(NodeOpGraph):
             dataset_results['dataset'] = dataset
 
             metric = information.get_compute_costs(dataset)
-            flop, param, latency = metric['flops'], metric['params'], metric['latency']
+            flop, param, latency, training_time = metric['flops'], metric['params'], metric['latency'], metric[
+                'T-train@total']
             dataset_results['flop'] = flop
             dataset_results['params (MB)'] = param
             dataset_results['latency (ms)'] = latency * 1000 if latency is not None and latency > 0 else None
+            dataset_results['training_time'] = training_time
 
             train_info = information.get_metrics(dataset, 'train')
             if dataset == 'cifar10-valid':
