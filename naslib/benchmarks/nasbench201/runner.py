@@ -7,6 +7,9 @@ from naslib.optimizers.discrete.rs import RandomSearch
 from naslib.optimizers.discrete.rs import Searcher as RSSearcher
 from naslib.optimizers.discrete.re import RegularizedEvolution as RE
 from naslib.optimizers.discrete.re import Searcher as RESearcher
+from naslib.optimizers.discrete.tpe import TPE
+from naslib.optimizers.discrete.tpe import Searcher as TPESearcher
+
 from naslib.optimizers.oneshot.darts import Searcher, DARTSOptimizer
 from naslib.optimizers.oneshot.gdas import GDASOptimizer
 from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
@@ -29,6 +32,8 @@ parser.add_argument('--epochs', type=int, default=50, help='num of training epoc
 parser.add_argument('--n_evals', type=int, default=50, help='num of function evaluations')
 args = parser.parse_args()
 
+from IPython import embed
+
 if __name__ == '__main__':
     config = config_parser('../../configs/nasbench_201.yaml')
     parser = Parser('../../configs/nasbench_201.yaml')
@@ -50,12 +55,17 @@ if __name__ == '__main__':
         ops_dict=OPS
     )
     one_shot_optimizer.init()
+    if hasattr(one_shot_optimizer, 'fill_space'):
+        one_shot_optimizer.fill_space()
 
     if args.optimizer == 'RS':
         _searcher = RSSearcher
     elif args.optimizer == 'RE':
         _searcher = RESearcher
+    elif args.optimizer == 'TPE':
+        _searcher = TPESearcher
     else:
         _searcher = Searcher
+
     searcher = _searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
     searcher.run(n_evaluations=args.n_evals)
