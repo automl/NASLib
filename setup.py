@@ -38,19 +38,20 @@ with open(version_path, 'w') as f:
 requires = [
     "ConfigSpace",
     "cython",
-    "george==0.3.1",
     "hyperopt==0.1.2",
     "pyyaml",
-    "cave",
-    "hpbandster",
     "numpy==1.16.4",
-    "pyrfr==0.8.0",
-    "Pyro4==4.76",
-    "RoBO==0.3.1",
     "torch>=1.2.0",
     "torchvision>=0.4.0",
     "tensorflow-gpu==1.14.0",
     "tensorflow-probability==0.7.0",
+    # None of these requirements is actually used, right?
+    #"pyrfr==0.8.0",
+    #"Pyro4==4.76",
+    #"RoBO==0.3.1",
+    #"cave",
+    #"hpbandster",
+    #"george==0.3.1",
 ]
 
 import subprocess
