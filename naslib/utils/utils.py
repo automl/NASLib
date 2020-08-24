@@ -14,6 +14,17 @@ from torch.autograd import Variable
 cat_channels = partial(torch.cat, dim=1)
 
 
+def iter_flatten(iterable):
+    # taken from https://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
+    it = iter(iterable)
+    for e in it:
+        if isinstance(e, (list, tuple)):
+            for f in iter_flatten(e):
+                yield f
+        else:
+            yield e
+
+
 def exception(exception_type):
     def exception_decorator(func):
         @wraps(func)

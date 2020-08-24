@@ -9,7 +9,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 from naslib.utils.utils import drop_path, cat_channels
 from naslib.search_spaces.core.metaclasses import MetaGraph
+from naslib.search_spaces.core.primitives import Identity, AbstractPrimitive
 
+from naslib.utils import iter_flatten
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s [%(filename)s:%(lineno)s]: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,7 +23,7 @@ test = cat_channels
 writer = SummaryWriter('runs/test')
 
 
-class EgdeData():
+class EdgeData():
     """
     Class that holds data for each edge.
     Data can be shared between instances of the graph
@@ -30,10 +32,19 @@ class EgdeData():
     Also defines the default `op`, which is `Identity()`
     """
 
-    def __init__(self):
+    def __init__(self, data={}):
         self._private = {}
         self._shared = {}
         self.set('op', Identity(), shared=False)
+        for k, v in data.items():
+            self.set(k, v, shared=False)
+
+
+    def has(self, key):
+        if key in self._private.keys() or key in self._shared.keys():
+            return True
+        else:
+            return False
 
     
     def __getattr__(self, name: str):
@@ -68,7 +79,7 @@ class EgdeData():
         if isinstance(data, dict):
             for k, v in data.items():
                 self.set(k, v)
-        elif isinstance(data, EgdeData):
+        elif isinstance(data, EdgeData):
             # TODO: do update and not replace!
             self.__dict__.update(data.__dict__)
         else:
@@ -80,7 +91,7 @@ class EgdeData():
         at more than one location. E.g. for DARTS architectureal
         weights should be shared, but parameters of a 3x3 conv not.
         """
-        new_self = EgdeData()
+        new_self = EdgeData()
         new_self._private = copy.deepcopy(self._private)
         new_self._shared = self._shared
         return new_self
@@ -114,16 +125,17 @@ class Graph(nx.DiGraph, torch.nn.Module):
         nx.DiGraph.__init__(self)
         torch.nn.Module.__init__(self)
         
-        # Replace the default dicts at the edges with `EgdeData` objects
+        # Replace the default dicts at the edges with `EdgeData` objects
         # `EdgeData` can be easily customized and allow shared parameters
         # across different Graph instances.
-        self.edge_attr_dict_factory = lambda: EgdeData()
+        self.edge_attr_dict_factory = lambda: EdgeData()
 
         # Replace the default dicts at the nodes to include `input` from the beginning.
         # `input` is required for storing the results of incoming edges.
-        self.node_attr_dict_factory = lambda: dict({'input': {}})
+        self.node_attr_dict_factory = lambda: dict({'input': {}, 'comb_op': sum})
 
         self.name = None
+        self.scope = None
         self.input_node_idxs = None
 
     def __eq__(self, other): 
@@ -131,6 +143,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
     def __hash__(self):
         return hash(self.name)
+
+    def set_scope(self, scope):
+        self.scope = scope
+        return self
 
     def set_input(self, node_idxs):
         """
@@ -183,7 +199,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 if self.in_degree(node_idx) == 0:
                     self.nodes[node_idx]['input'] = {0: x[next(input_node_iterator)]}
 
-    def __call__(self, x, **kargs):
+    def forward(self, x, **kargs):
         """
         Forward some data through the graph. This is done recursively
         in case there are graphs defined on nodes or as 'op' on edges.
@@ -199,17 +215,17 @@ class Graph(nx.DiGraph, torch.nn.Module):
             
             # node internal: process input if necessary
             if 'subgraph' in node:
-                x = node['subgraph'](node['input'])
+                x = node['subgraph'].forward(node['input'])
             else:
                 if len(node['input'].values()) == 1:
                     x = list(node['input'].values())[0]
                 else:
-                    x = sum(list(node['input'].values()))
+                    x = node['comb_op'](list(node['input'].values()))
             
             # outgoing edges: process all outgoing edges
             for neigbor_idx in self.neighbors(node_idx):
                 edge_data = self.get_edge_data(node_idx, neigbor_idx)
-                edge_output = edge_data.op(x, edge_data=edge_data)
+                edge_output = edge_data.op.forward(x, edge_data=edge_data)
                 self.nodes[neigbor_idx]['input'].update({node_idx: edge_output})
             
             logger.debug("Node {}-{}, processing done.".format(self.name, node_idx))
@@ -244,16 +260,19 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     if isinstance(op, Graph):
                         graphs.append(op)
                         graphs.append(op._get_child_graphs())
-            elif isinstance(edge_data.op, SampleOp) or isinstance(edge_data.op, Identity):    # todo should be metaop
-                # maybe it is a nested op?
-                for child_op in edge_data.op.get_ops():
-                    if isinstance(child_op, Graph):
-                        graphs.append(child_op)
-                        graphs.append(child_op._get_child_graphs())
+            elif isinstance(edge_data.op, AbstractPrimitive):
+                # maybe it is an embedded op?
+                embedded_ops = edge_data.op.get_embedded_ops()
+                if embedded_ops is not None:
+                    assert isinstance(embedded_ops, list), "Unsupported return of `get_embedded_ops()` of {}. Expected list, got {}".format(edge_data.op, type(embedded_ops))
+                    for child_op in edge_data.op.get_embedded_ops():
+                        if isinstance(child_op, Graph):
+                            graphs.append(child_op)
+                            graphs.append(child_op._get_child_graphs())
             else:
                 raise ValueError("Unknown format of op: {}".format(edge_data.op))
         
-        graphs = [g for g in graphs if isinstance(g, Graph)]
+        graphs = [g for g in iter_flatten(graphs)]
         if single_instances:
             return list(set(graphs))
         else:
@@ -277,24 +296,12 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 `op` during the initialization of the optimizer (e.g. replacing it
                 with MixedOp or SampleOp)
         """
-        
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
-            print('updateing {}'.format(graph.name))
-            if scope == 'all' or graph.name in scope:
+            if scope == 'all' or (graph.scope is not None and graph.scope in scope):
+                print('updating {}'.format(graph.name))
                 for u, v, edge_data in graph.edges.data():
                     graph.edges[u, v].update(update_func(current_edge_data=edge_data))
 
-
-class Identity(nn.Module):
-
-    def __init__(self):
-        super(Identity, self).__init__()
-
-    def forward(self, x, *args, **kwargs):
-        return x
-
-    def get_ops(self):
-        return [self]
 
 
 class MixedOp(torch.nn.Module):
@@ -326,97 +333,6 @@ class SampleOp(torch.nn.Module):
         return self.primitives
 
 
-class SimpleHierarchicalSpace(Graph):
-
-    def __init__(self):
-        super().__init__()
-        
-        # This is optimizer specific and therefore will 
-        # be injected into the forward method on each edge
-        
-        # TODO: how can we disentangle that from the search space definition?
-        # Maybe by: search_space.update_edge_data(insert_alphas) where 
-        # `def insert_alphas(current_edge_data): ...` However this does it for
-        # all levels...
-        # We could define an optimizer scope for that?
-        edge_data = EgdeData()
-        
-        #edge_data.set('op', MixedOp([Identity(), Identity()]))
-        #edge_data.set('arch_weights', torch.nn.Parameter(torch.rand(2)), shared=True)   # Should torch.nn.Parameter()
-
-        edge_data.set('op', [Identity(), Identity()])
-        
-
-        cell1 = Graph()
-        cell1.name = "cell1"
-        # mock. should be done via config="cell1.yaml" in Graph constructor
-        cell1.add_nodes_from([1, 2, 3])
-        cell1.add_edges_from([(1, 3, edge_data.clone()), (2, 3, edge_data.clone())])
-        
-        motif1 = Graph()
-        motif1.name = "motif1"
-        motif1.add_nodes_from([1, 2, 3])
-        motif1.add_edges_from([(1, 2, edge_data.clone()), (1, 3), (2, 3, edge_data.clone())])
-
-        self.name = "makrograph"
-        self.add_node(1)
-        self.add_node(2)
-        self.add_node(3, subgraph=cell1.copy().set_input([1, 2]))   # subgraph on node
-    
-        self.add_edges_from([(1, 2, {'op': motif1.copy()}), (1, 3, {'op': motif1.copy()}), (2, 3)])    # subgraph on edge
-
-
-        print(self._get_child_graphs())
-
-
-        def update_op(current_edge_data):
-            primitives = current_edge_data.op
-            current_edge_data.set('op', SampleOp(primitives))
-            return current_edge_data
-
-        def update_sample_state(current_edge_data):
-            current_edge_data.set('sample_state', torch.randint(0, 2, (1,)), shared=True)
-            return current_edge_data
-
-
-        self.update_edges(update_func=update_sample_state, private_edge_data=False)
-
-        self.update_edges(update_func=update_op, private_edge_data=True)
-
-        self.update_edges(update_func=update_sample_state, private_edge_data=False)
-
-
-        
-
-
-        self.parse()
-        print(torch.nn.Module.__str__(self))
-
-        
-        x = self(torch.ones(1))
-
-            
-        print(x)    # should be 3
-
-
-        # writer.add_graph(self, torch.rand(1), True)
-        # writer.close()
-
-        # Tests for shared and private variables in EdgeData
-        # print("Shared")
-        # print(cell1.edges[1, 3].arch_weights)
-        # print(self.nodes[3]['subgraph'].edges[1, 3].arch_weights)
-        # cell1.edges[1, 3].set('arch_weights', torch.nn.Parameter(torch.rand(2)), shared=True)
-        # print(cell1.edges[1, 3].arch_weights)
-        # print(self.nodes[3]['subgraph'].edges[1, 3].arch_weights)
-        # print("Private")
-        # print(cell1.edges[1, 3].op)
-        # print(self.nodes[3]['subgraph'].edges[1, 3].op)
-        # cell1.edges[1, 3].set('op', Identity(), shared=False)
-        # print(cell1.edges[1, 3].op)
-        # print(self.nodes[3]['subgraph'].edges[1, 3].op)
-
-        pass
 
 
 

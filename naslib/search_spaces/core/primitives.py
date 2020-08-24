@@ -2,6 +2,140 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 
+from abc import ABCMeta, abstractmethod
+
+class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
+    """
+    Use this class when creating new operations for edges.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super(AbstractPrimitive, self).__init__()
+    
+    @abstractmethod
+    def forward(self, x, edge_data):
+        """
+        The forward processing of the operation.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_embedded_ops(self):
+        """
+        Return any embedded ops so that they can be
+        analysed whether they contain a child graph, e.g.
+        a 'motif' in the hierachical search space.
+
+        If there are no embedded ops, then simply return
+        `None`. Should return a list otherwise.
+        """
+        raise NotImplementedError()
+
+
+class Identity(AbstractPrimitive):
+    """
+    An implementation of the Identity operation.
+    """
+
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, x, edge_data):
+        return x
+
+    def get_embedded_ops(self):
+        return None
+
+
+class Zero(AbstractPrimitive):
+
+    def __init__(self):
+        super(Zero, self).__init__()
+
+    def forward(self, x, edge_data):
+        return x.mul(0.)
+    
+    def get_embedded_ops(self):
+        return None
+
+
+class SepConv(AbstractPrimitive):
+
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+        super(SepConv, self).__init__()
+        self.op = nn.Sequential(
+            nn.ReLU(inplace=False),
+            nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, groups=C_in, bias=False),
+            nn.Conv2d(C_in, C_in, kernel_size=1, padding=0, bias=False),
+            nn.BatchNorm2d(C_in, affine=affine),
+            nn.ReLU(inplace=False),
+            nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=1, padding=padding, groups=C_in, bias=False),
+            nn.Conv2d(C_in, C_out, kernel_size=1, padding=0, bias=False),
+            nn.BatchNorm2d(C_out, affine=affine),
+        )
+
+    def forward(self, x, edge_data):
+        return self.op(x)
+    
+    def get_embedded_ops(self):
+        return None
+
+
+class DilConv(AbstractPrimitive):
+
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
+        super(DilConv, self).__init__()
+        self.op = nn.Sequential(
+            nn.ReLU(inplace=False),
+            nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation,
+                      groups=C_in, bias=False),
+            nn.Conv2d(C_in, C_out, kernel_size=1, padding=0, bias=False),
+            nn.BatchNorm2d(C_out, affine=affine),
+        )
+
+    def forward(self, x, *args, **kwargs):
+        return self.op(x)
+
+
+    def get_embedded_ops(self):
+        return None
+
+
+class Stem(AbstractPrimitive):
+
+    def __init__(self, C_curr):
+        super(Stem, self).__init__()
+        self.seq = nn.Sequential(
+            nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
+            nn.BatchNorm2d(C_curr))
+
+    def forward(self, x, edge_data):
+        return self.seq(x[0])
+    
+    def get_embedded_ops(self):
+        return None
+
+
+class Sequential(AbstractPrimitive):
+
+    def __init__(self, *args):
+        super(Sequential, self).__init__()
+        self.primitives = args
+        self.op = nn.Sequential(*args)
+    
+    def forward(self, x, edge_data):
+        return self.op(x)
+    
+    def get_embedded_ops(self):
+        return list(self.primitives)
+
+
+if __name__ == '__main__':
+    i = Identity()
+    print(issubclass(type(i), AbstractPrimitive))
+    print(isinstance(i, AbstractPrimitive))
+
+
 # Batch Normalization from nasbench
 BN_MOMENTUM = 0.997
 BN_EPSILON = 1e-5
@@ -45,72 +179,11 @@ class ConvBnRelu(nn.Module):
         return self.op(x)
 
 
-class DilConv(nn.Module):
-
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
-        super(DilConv, self).__init__()
-        self.op = nn.Sequential(
-            nn.ReLU(inplace=False),
-            nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation,
-                      groups=C_in, bias=False),
-            nn.Conv2d(C_in, C_out, kernel_size=1, padding=0, bias=False),
-            nn.BatchNorm2d(C_out, affine=affine),
-        )
-
-    def forward(self, x, *args, **kwargs):
-        return self.op(x)
 
 
-class SepConv(nn.Module):
-
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
-        super(SepConv, self).__init__()
-        self.op = nn.Sequential(
-            nn.ReLU(inplace=False),
-            nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, groups=C_in, bias=False),
-            nn.Conv2d(C_in, C_in, kernel_size=1, padding=0, bias=False),
-            nn.BatchNorm2d(C_in, affine=affine),
-            nn.ReLU(inplace=False),
-            nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=1, padding=padding, groups=C_in, bias=False),
-            nn.Conv2d(C_in, C_out, kernel_size=1, padding=0, bias=False),
-            nn.BatchNorm2d(C_out, affine=affine),
-        )
-
-    def forward(self, x, *args, **kwargs):
-        return self.op(x)
 
 
-class Identity(nn.Module):
 
-    def __init__(self):
-        super(Identity, self).__init__()
-
-    def forward(self, x, *args, **kwargs):
-        return x
-
-
-class Stem(nn.Module):
-
-    def __init__(self, C_curr):
-        super(Stem, self).__init__()
-        self.seq = nn.Sequential(
-            nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
-            nn.BatchNorm2d(C_curr))
-
-    def forward(self, x, *args, **kwargs):
-        return self.seq(x[0])
-
-
-class Zero(nn.Module):
-
-    def __init__(self, stride):
-        super(Zero, self).__init__()
-        self.stride = stride
-
-    def forward(self, x, *args, **kwargs):
-        if self.stride == 1:
-            return x.mul(0.)
-        return x[:, :, ::self.stride, ::self.stride].mul(0.)
 
 
 class FactorizedReduce(nn.Module):
