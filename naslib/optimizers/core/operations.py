@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 from .metaclasses import MetaOp
+from naslib.search_spaces.core.primitives import AbstractPrimitive
 
 
 def channel_shuffle(x, groups):
@@ -30,27 +31,42 @@ class TestOp(MetaOp):
         return x + self.var + 1
 
 
-class MixedOp(MetaOp):
-    def __init__(self, *args, **kwargs):
-        super(MixedOp, self).__init__(*args, **kwargs)
-        self.ops_dict = kwargs['ops_dict']
-        self.out_node_op = eval(kwargs['out_node_op'])
-        self.build(*args, **kwargs)
+class MixedOp(AbstractPrimitive):
+    """
+    Defined by the optimizer!
+    """
+    def __init__(self, primitives, **kwargs):
+        super(MixedOp, self).__init__()
+        self.primitives = primitives
+    
+    def forward(self, x, edge_data):
+        normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
+        return sum(w * op(x, None) for w, op in zip(normed_alphas, self.primitives))
+    
+    def get_embedded_ops(self):
+        return self.primitives
 
-    def build(self, *args, **kwargs):
-        for primitive in self.primitives:
-            op = self.ops_dict[primitive](*args, **kwargs)
-            if 'pool' in primitive:
-                op = nn.Sequential(op, nn.BatchNorm2d(kwargs['C'], affine=False))
-            self._ops.append(op)
+# class MixedOp(MetaOp):
+#     def __init__(self, *args, **kwargs):
+#         super(MixedOp, self).__init__(*args, **kwargs)
+#         self.ops_dict = kwargs['ops_dict']
+#         self.out_node_op = eval(kwargs['out_node_op'])
+#         self.build(*args, **kwargs)
 
-    def forward(self, x, *args, **kwargs):
-        if 'perturb_alphas' in kwargs:
-            weights = kwargs['softmaxed_arch_weight']
-        else:
-            arch_weight = kwargs['arch_weight']
-            weights = torch.softmax(arch_weight, dim=-1)
-        return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
+#     def build(self, *args, **kwargs):
+#         for primitive in self.primitives:
+#             op = self.ops_dict[primitive](*args, **kwargs)
+#             if 'pool' in primitive:
+#                 op = nn.Sequential(op, nn.BatchNorm2d(kwargs['C'], affine=False))
+#             self._ops.append(op)
+
+#     def forward(self, x, *args, **kwargs):
+#         if 'perturb_alphas' in kwargs:
+#             weights = kwargs['softmaxed_arch_weight']
+#         else:
+#             arch_weight = kwargs['arch_weight']
+#             weights = torch.softmax(arch_weight, dim=-1)
+#         return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
 
 
 class GDASMixedOp(MixedOp):

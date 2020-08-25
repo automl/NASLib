@@ -7,7 +7,7 @@ from naslib.optimizers.core import NASOptimizer, Evaluator
 from naslib.optimizers.oneshot.darts import Searcher, DARTSOptimizer
 from naslib.optimizers.oneshot.gdas import GDASOptimizer
 from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
-from naslib.search_spaces.darts import MacroGraph, PRIMITIVES, OPS
+from naslib.search_spaces.darts import MacroGraph, PRIMITIVES, OPS, DartsSearchSpace
 from naslib.utils import config_parser
 from naslib.utils.parser import Parser
 from naslib.utils.utils import create_exp_dir
@@ -19,7 +19,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 parser = argparse.ArgumentParser('nasbench201')
-parser.add_argument('--optimizer', type=str, default='PCDARTSOptimizer')
+parser.add_argument('--optimizer', type=str, default='DARTSOptimizer')
 parser.add_argument('--seed', type=int, default=1)
 parser.add_argument('--dataset', type=str, default='cifar10')
 args = parser.parse_args()
@@ -38,15 +38,20 @@ if __name__ == '__main__':
     logging.getLogger().addHandler(fh)
 
     one_shot_optimizer = eval(args.optimizer).from_config(**config)
-    search_space = MacroGraph.from_optimizer_op(
-        one_shot_optimizer,
-        config=config,
-        primitives=PRIMITIVES,
-        ops_dict=OPS
-    )
+    
+    search_space = DartsSearchSpace()
+    one_shot_optimizer.adapt_search_space(search_space)
+    search_space.config = config
+    
+    # search_space = MacroGraph.from_optimizer_op(
+    #     one_shot_optimizer,
+    #     config=config,
+    #     primitives=PRIMITIVES,
+    #     ops_dict=OPS
+    # )
     one_shot_optimizer.init()
 
-    searcher = Searcher(search_space, parser, arch_optimizer=one_shot_optimizer)
+    searcher = Searcher(search_space, parser, arch_optimizer=one_shot_optimizer, config=config)
     searcher.run()
     search_space.save_graph(filename=os.path.join(parser.config.save,
                                                   'graph.yaml'),

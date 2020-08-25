@@ -17,12 +17,51 @@ class DARTSOptimizer(NASOptimizer):
         self.optimizer = None
         self.arch_learning_rate = arch_learning_rate
         self.arch_weight_decay = arch_weight_decay
-        self.architectural_weights = torch.nn.ParameterDict()
+        self.architectural_weights = torch.nn.ParameterList()
+        # self.architectural_weights = torch.nn.ParameterDict()
 
         self.perturb_alphas = None
         self.epsilon = 0
         self.epochs = epochs
         self.edges = {}
+
+
+    def adapt_search_space(self, search_space):
+
+        # 1. add alphas
+        def add_alphas(current_edge_data):
+            if current_edge_data.has('final') and current_edge_data.final:
+                return current_edge_data
+            len_primitives = len(current_edge_data.op)
+            alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
+            current_edge_data.set('alpha', alpha, shared=True)
+            return current_edge_data
+        
+        search_space.update_edges(
+            add_alphas,
+            scope=["n_stage_1", "n_stage_2", "n_stage_3", "r_stage_1", "r_stage_2"],
+            private_edge_data=False
+        )
+
+        # 2. add mixed_op
+        def update_ops(current_edge_data):
+            if current_edge_data.has('final') and current_edge_data.final:
+                return current_edge_data
+            primitives = current_edge_data.op
+            current_edge_data.set('op', MixedOp(primitives))
+            return current_edge_data
+        
+        search_space.update_edges(
+            update_ops, 
+            scope=["n_stage_1", "n_stage_2", "n_stage_3", "r_stage_1", "r_stage_2"],
+            private_edge_data=True
+        )
+
+        for alpha in search_space.get_all_edge_data('alpha'):
+            self.architectural_weights.append(alpha)
+        
+        search_space.parse()
+        print()
 
     @classmethod
     def from_config(cls, *args, **kwargs):

@@ -14,13 +14,16 @@ from naslib.utils import utils
 
 
 class Evaluator(object):
+    """
+    Class for training...?
+    """
     def __init__(self, graph, parser, *args, **kwargs):
         self.graph = graph
         self.parser = parser
         try:
             self.config = kwargs.get('config', graph.config)
         except:
-            raise ('No configuration specified in graph or kwargs')
+            raise Exception('No configuration specified in graph or kwargs')
         np.random.seed(self.config.seed)
         random.seed(self.config.seed)
         if torch.cuda.is_available():
@@ -83,7 +86,7 @@ class Evaluator(object):
             self.lr = self.scheduler.get_last_lr()[0]
             logging.info('epoch %d lr %e', epoch, self.lr)
             for n in self.graph.nodes:
-                node = self.graph.get_node_op(n)
+                node = self.graph.get_node_op(n)    # subgraph
                 if type(node).__name__ == 'Cell':
                     node.drop_path_prob = self.parser.config.drop_path_prob * epoch / epochs
 
