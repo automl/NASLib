@@ -5,29 +5,29 @@ from scipy.special import softmax
 from torch import nn
 from copy import deepcopy
 
-from naslib.search_spaces.core.graphs import Graph, EdgeData
+from naslib.search_spaces.core.graphs import Graph, EdgeData, GraphWrapper
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
-from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity, Zero, SepConv, DilConv, Sequential
-
+from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity, Zero, SepConv, DilConv, Sequential, ModuleWrapper, MaxPool1x1, AvgPool1x1
 
 def set_cell_ops(current_edge_data, C, stride):
     if current_edge_data.has('final') and current_edge_data.final:
         return current_edge_data
     else:
+        C_in = C if stride==1 else C//2
         current_edge_data.set('op', [
-            Identity(),
-            Zero(),
-            nn.MaxPool2d(3, stride=stride, padding=1),
-            nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
-            SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            SepConv(C, C, kernel_size=5, stride=stride, padding=1, affine=False),
-            DilConv(C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-            DilConv(C, C, kernel_size=5, stride=stride, padding=2, dilation=2, affine=False),
+            Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            Zero(stride=stride),
+            MaxPool1x1(3, stride, C_in, C),
+            AvgPool1x1(3, stride, C_in, C),
+            SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+            SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
+            DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+            DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
         ])
     return current_edge_data
 
 
-class DartsSearchSpace(Graph):
+class DartsSearchSpace(GraphWrapper):
 
     def __init__(self):
         super().__init__()
@@ -39,25 +39,25 @@ class DartsSearchSpace(Graph):
         normal_cell.name = "normal_cell"    # Use the same name for all cells with shared attributes
 
         # Input nodes
-        normal_cell.add_node(0)
         normal_cell.add_node(1)
+        normal_cell.add_node(2)
 
         # Intermediate nodes
-        normal_cell.add_node(2)
         normal_cell.add_node(3)
         normal_cell.add_node(4)
         normal_cell.add_node(5)
+        normal_cell.add_node(6)
 
         # Output node
-        normal_cell.add_node(6)
+        normal_cell.add_node(7)
         
         # Edges
-        normal_cell.add_edges_from([(0, i) for i in range(2, 6)])   # input 1
-        normal_cell.add_edges_from([(1, i) for i in range(2, 6)])   # input 2
-        normal_cell.add_edges_from([(2, 3), (2, 4), (2, 5)])
-        normal_cell.add_edges_from([(3, 4), (3, 5)])
-        normal_cell.add_edges_from([(4, 5)])
-        normal_cell.add_edges_from([(i, 6, EdgeData({'final': True})) for i in range(2, 6)])   # output
+        normal_cell.add_edges_from([(1, i) for i in range(3, 7)])   # input 1
+        normal_cell.add_edges_from([(2, i) for i in range(3, 7)])   # input 2
+        normal_cell.add_edges_from([(3, 4), (3, 5), (3, 6)])
+        normal_cell.add_edges_from([(4, 5), (4, 6)])
+        normal_cell.add_edges_from([(5, 6)])
+        normal_cell.add_edges_from([(i, 7, EdgeData({'final': True})) for i in range(3, 7)])   # output
         
 
         reduction_cell = deepcopy(normal_cell)
@@ -68,30 +68,30 @@ class DartsSearchSpace(Graph):
         #
         self.name = "makrograph"
 
-        self.add_node(0)    # input node
-        self.add_node(1)    # preprocessing
-        self.add_node(2, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([1, 1]))
-        self.add_node(3, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([1, 2]))
-        self.add_node(4, subgraph=reduction_cell.copy().set_scope("r_stage_1").set_input([2, 3]))
-        self.add_node(5, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 4]))   # TODO: is this correct?
-        self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 5]))
-        self.add_node(7, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([5, 6]))
-        self.add_node(8, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([7, 7]))   # See above
-        self.add_node(9, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([7, 8]))
-        self.add_node(10)    # output
+        self.add_node(1)    # input node
+        self.add_node(2)    # preprocessing
+        self.add_node(3, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 2]))
+        self.add_node(4, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 3]))
+        self.add_node(5, subgraph=reduction_cell.copy().set_scope("r_stage_1").set_input([3, 4]))
+        self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 5]))   # TODO: is this correct?
+        self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
+        self.add_node(8, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([6, 7]))
+        self.add_node(9, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 8]))   # See above
+        self.add_node(10, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 9]))
+        self.add_node(11)   # output
 
-        self.add_edge(0, 1)     # pre-processing (stem) 
-        self.add_edges_from([(1, 2), (1, 3), (2, 3), (2, 4), (3, 4)])   # first stage
-        self.add_edges_from([(4, 5), (4, 6), (5, 6), (5, 7), (6, 7)])   # second stage
-        self.add_edges_from([(7, 8), (7, 9), (8, 9)])                   # third stage
-        self.add_edge(9, 10)    # post-processing (pooling, classifier)
+        self.add_edge(1, 2)     # pre-processing (stem)
+        self.add_edges_from([(2, 3), (2, 4), (3, 4), (3, 5), (4, 5)])   # first stage
+        self.add_edges_from([(5, 6), (5, 7), (6, 7), (6, 8), (7, 8)])   # second stage
+        self.add_edges_from([(8, 9), (8, 10), (9, 10)])                 # third stage
+        self.add_edge(10, 11)   # post-processing (pooling, classifier)
 
         #
         # Operations at the edges
         #
 
         # pre-processing
-        self.edges[0, 1].set('op', Stem(16))
+        self.edges[1, 2].set('op', Stem(16))
 
         # normal cells
         channels = [16, 32, 64]
@@ -101,20 +101,21 @@ class DartsSearchSpace(Graph):
             self.update_edges(
                 update_func=lambda current_edge_data: set_cell_ops(current_edge_data, c, stride=1),
                 scope=scope,
-                private_edge_data=False)
+                private_edge_data=True
+            )
 
         # reduction cells
-        stages = ["r_stage_1", "r_stage_2"]
-        for scope, c in zip(stages, channels[:-1]):
-            self.update_edges(
-                update_func=lambda current_edge_data: set_cell_ops(current_edge_data, c, stride=2),
-                scope=scope,
-                private_edge_data=False)
-
-
+        nodes = [5, 8]
+        for n, c in zip(nodes, channels[1:]):
+            reduction_cell = self.nodes[n]['subgraph']
+            for u, v, data in reduction_cell.edges.data():
+                stride = 2 if u in (1, 2) else 1
+                reduction_cell.edges[u, v].update(set_cell_ops(data, c, stride))
+        
         # post-processing
-        self.edges[8, 9].set('op', Sequential(
+        self.edges[10, 11].set('op', Sequential(
             nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
             nn.Linear(channels[-1], 10))
         )
 
@@ -125,7 +126,9 @@ class DartsSearchSpace(Graph):
 
 
 if __name__ == '__main__':
-    DartsSearchSpace()
+    sspace = DartsSearchSpace()
+
+    print()
 
 
 

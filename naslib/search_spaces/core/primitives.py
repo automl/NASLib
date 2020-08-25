@@ -10,7 +10,7 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
     """
 
     def __init__(self, *args, **kwargs):
-        super(AbstractPrimitive, self).__init__()
+        super(AbstractPrimitive, self).__init__(*args, **kwargs)
     
     @abstractmethod
     def forward(self, x, edge_data):
@@ -49,11 +49,30 @@ class Identity(AbstractPrimitive):
 
 class Zero(AbstractPrimitive):
 
-    def __init__(self):
+    def __init__(self, stride):
         super(Zero, self).__init__()
+        self.stride = stride
+
 
     def forward(self, x, edge_data):
-        return x.mul(0.)
+        if self.stride == 1:
+            return x.mul(0.)
+        else:
+            x = x[:, :, ::self.stride, ::self.stride].mul(0.)
+            return torch.cat([x, x], dim=1)   # double the channels TODO: ugly as hell
+    
+    def get_embedded_ops(self):
+        return None
+
+
+class ModuleWrapper(AbstractPrimitive):
+
+    def __init__(self, module):
+        super(ModuleWrapper, self).__init__()
+        self.module = module
+
+    def forward(self, x, edge_data):
+        return self.module.forward(x)
     
     def get_embedded_ops(self):
         return None
@@ -93,7 +112,7 @@ class DilConv(AbstractPrimitive):
             nn.BatchNorm2d(C_out, affine=affine),
         )
 
-    def forward(self, x, *args, **kwargs):
+    def forward(self, x, edge_data):
         return self.op(x)
 
 
@@ -110,10 +129,12 @@ class Stem(AbstractPrimitive):
             nn.BatchNorm2d(C_curr))
 
     def forward(self, x, edge_data):
-        return self.seq(x[0])
+        return self.seq(x)
     
     def get_embedded_ops(self):
         return None
+
+
 
 
 class Sequential(AbstractPrimitive):
@@ -128,6 +149,73 @@ class Sequential(AbstractPrimitive):
     
     def get_embedded_ops(self):
         return list(self.primitives)
+
+
+class FactorizedReduce(AbstractPrimitive):
+    """
+    Whatever this is, it replaces the identiy when stride=2
+    """
+
+    def __init__(self, C_in, C_out, affine=False):
+        super(FactorizedReduce, self).__init__()
+        assert C_out % 2 == 0
+        self.relu = nn.ReLU(inplace=False)
+        self.conv_1 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
+        self.conv_2 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
+        self.bn = nn.BatchNorm2d(C_out, affine=affine)
+
+    def forward(self, x, edge_data):
+        x = self.relu(x)
+        out = torch.cat([self.conv_1(x), self.conv_2(x[:, :, 1:, 1:])], dim=1)
+        out = self.bn(out)
+        return out
+    
+    def get_embedded_ops(self):
+        return None
+
+
+class MaxPool1x1(AbstractPrimitive):
+
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
+        super(MaxPool1x1, self).__init__()
+        self.stride = stride
+        self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
+        if stride > 1:
+            assert C_in is not None and C_out is not None
+            self.conv = nn.Conv2d(C_in, C_out, 1, stride=1, padding=0, bias=False)
+            self.bn = nn.BatchNorm2d(C_out, affine=affine)
+    
+    def forward(self, x, edge_data):
+        x = self.maxpool(x)
+        if self.stride > 1:
+            x = self.conv(x)
+            x = self.bn(x)
+        return x
+
+    def get_embedded_ops(self):
+        return None
+
+
+class AvgPool1x1(AbstractPrimitive):
+
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
+        super(AvgPool1x1, self).__init__()
+        self.stride = stride
+        self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
+        if stride > 1:
+            assert C_in is not None and C_out is not None
+            self.conv = nn.Conv2d(C_in, C_out, 1, stride=1, padding=0, bias=False)
+            self.bn = nn.BatchNorm2d(C_out, affine=affine)
+    
+    def forward(self, x, edge_data):
+        x = self.avgpool(x)
+        if self.stride > 1:
+            x = self.conv(x)
+            x = self.bn(x)
+        return x
+
+    def get_embedded_ops(self):
+        return None
 
 
 if __name__ == '__main__':
@@ -186,21 +274,6 @@ class ConvBnRelu(nn.Module):
 
 
 
-class FactorizedReduce(nn.Module):
-
-    def __init__(self, C_in, C_out, affine=True):
-        super(FactorizedReduce, self).__init__()
-        assert C_out % 2 == 0
-        self.relu = nn.ReLU(inplace=False)
-        self.conv_1 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
-        self.conv_2 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
-        self.bn = nn.BatchNorm2d(C_out, affine=affine)
-
-    def forward(self, x, *args, **kwargs):
-        x = self.relu(x)
-        out = torch.cat([self.conv_1(x), self.conv_2(x[:, :, 1:, 1:])], dim=1)
-        out = self.bn(out)
-        return out
 
 
 class NoiseOp(nn.Module):
