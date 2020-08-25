@@ -46,6 +46,10 @@ class EdgeData():
         else:
             return False
 
+
+    def __getitem__(self, key):
+        return self.__getattr__(key)
+
     
     def __getattr__(self, name: str):
         if name.startswith("__"):       # Required for deepcoy, not sure why
@@ -83,7 +87,7 @@ class EdgeData():
             # TODO: do update and not replace!
             self.__dict__.update(data.__dict__)
         else:
-            raise ValueError("Unsupported type")
+            raise ValueError("Unsupported type {}".format(data))
 
     def copy(self):
         """
@@ -193,17 +197,24 @@ class Graph(nx.DiGraph, torch.nn.Module):
             self.nodes[1]['input'] = {0: x}
         else:
             # assign the input to the corresponding nodes
-            assert self.num_input_nodes() == len(x), "Expecting an entry in x for each input node"
+            assert all([i in x.keys() for i in self.input_node_idxs]), "got x from an unexpected input edge"
+            if self.num_input_nodes() > len(x):
+                # here is the case where the same input is assigned to more than one node
+                # this can happen when there are cells with two inputs but at the very first
+                # layer of the network, there is just one output (i.e. the data inputed to the
+                # makro input node). Handle it and log a Info. This should happen only rarly
+                logger.info("We are using the same x for two inputs in graph {}".format(self.name))
             input_node_iterator = iter(self.input_node_idxs)
             for node_idx in nx.algorithms.dag.lexicographical_topological_sort(self):
                 if self.in_degree(node_idx) == 0:
                     self.nodes[node_idx]['input'] = {0: x[next(input_node_iterator)]}
 
-    def forward(self, x, **kargs):
+    def forward(self, x):
         """
         Forward some data through the graph. This is done recursively
         in case there are graphs defined on nodes or as 'op' on edges.
         """
+        logger.info("Graph {} called.".format(self.name))
         logger.debug("Graph {} called. Input {}.".format(self.name, x))
         
         # Assign x to the corresponding input nodes
@@ -225,7 +236,16 @@ class Graph(nx.DiGraph, torch.nn.Module):
             # outgoing edges: process all outgoing edges
             for neigbor_idx in self.neighbors(node_idx):
                 edge_data = self.get_edge_data(node_idx, neigbor_idx)
-                edge_output = edge_data.op.forward(x, edge_data=edge_data)
+                # inject edge data only for AbstractPrimitive, not Graphs
+                if isinstance(edge_data.op, Graph):
+                    edge_output = edge_data.op.forward(x)
+                elif isinstance(edge_data.op, AbstractPrimitive):
+                    logger.info("Processing op {}".format(edge_data.op))
+                    edge_output = edge_data.op.forward(x, edge_data=edge_data)
+                else:
+                    raise ValueError("Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(
+                            edge_data.op
+                        ))
                 self.nodes[neigbor_idx]['input'].update({node_idx: edge_output})
             
             logger.debug("Node {}-{}, processing done.".format(self.name, node_idx))
@@ -278,6 +298,15 @@ class Graph(nx.DiGraph, torch.nn.Module):
         else:
             return graphs
 
+    def get_all_edge_data(self, key, scope='all', private_edge_data=False):
+        result = []
+        for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
+            if scope == 'all' or (graph.scope is not None and graph.scope in scope):
+                for u, v, edge_data in graph.edges.data():
+                    if edge_data.has(key):
+                        result.append(edge_data[key])
+        return result
+
     def update_edges(self, update_func, scope="all", private_edge_data=False):
         """
         This updates the graph and all child graphs, but only one
@@ -304,18 +333,23 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
 
 
-class MixedOp(torch.nn.Module):
+class GraphWrapper(Graph):
     """
-    Defined by the optimizer!
+    Provide methods currently required by optimizers/evaluators.
+
+    TODO: Refactor optimizers so this is not needed anymode.
     """
-    def __init__(self, primitives):
-        super(MixedOp, self).__init__()
-        self.primitives = primitives
-    
-    def forward(self, x, edge_data):
-        arch_weights = edge_data.arch_weights
-        t = torch.softmax(arch_weights, dim=-1)
-        return sum(w * op(x) for w, op in zip(t, self.primitives))
+
+    __name__ = "Cell"
+
+    def get_node_op(self, n):
+        if 'subgraph' in self.nodes[n]:
+            return self.nodes[n]['subgraph']
+        else:
+            return None
+
+
+
 
 
 class SampleOp(torch.nn.Module):
