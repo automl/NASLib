@@ -8,8 +8,50 @@ from naslib.utils import _concat
 
 
 class DARTSOptimizer(NASOptimizer):
+    """
+    Implementation of the DARTS paper as in 
+        Liu et al. 2019: DARTS: Differentiable Architecture Search.
+    """
+
+    @staticmethod
+    def add_alphas(current_edge_data):
+        """
+        Function to add the architectural weights to the edges.
+        """
+        if current_edge_data.has('final') and current_edge_data.final:
+            return current_edge_data
+        len_primitives = len(current_edge_data.op)
+        alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
+        current_edge_data.set('alpha', alpha, shared=True)
+        return current_edge_data
+
+
+    @staticmethod
+    def update_ops(current_edge_data):
+        """
+        Function to replace the primitive ops at the edges
+        with the DARTS specific MixedOp.
+        """
+        if current_edge_data.has('final') and current_edge_data.final:
+            return current_edge_data
+        primitives = current_edge_data.op
+        current_edge_data.set('op', MixedOp(primitives))
+        return current_edge_data
+
+
     def __init__(self, epochs, momentum, weight_decay, arch_learning_rate,
                  arch_weight_decay, grad_clip, *args, **kwargs):
+        """
+        Initialize a new instance.
+
+        Args:
+            epochs (int): Number of epochs to run
+            momentum: TODO
+            weight_decay: TODO
+            arch_learning_rate (float): The learning rate for the architecure optimizer.
+            arch_weight_decay: TODO
+            grad_clip: TODO
+        """
         super(DARTSOptimizer, self).__init__()
         self.network_momentum = momentum
         self.network_weight_decay = weight_decay
@@ -26,34 +68,25 @@ class DARTSOptimizer(NASOptimizer):
         self.edges = {}
 
 
-    def adapt_search_space(self, search_space):
+    def adapt_search_space(self, search_space, scope=None):
+        # We are going to modify the search space
+        search_space = search_space.clone()
+
+        # If there is no scope defined, let's use the search space default one
+        if not scope:
+            scope = search_space.OPTIMIZER_SCOPE
 
         # 1. add alphas
-        def add_alphas(current_edge_data):
-            if current_edge_data.has('final') and current_edge_data.final:
-                return current_edge_data
-            len_primitives = len(current_edge_data.op)
-            alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
-            current_edge_data.set('alpha', alpha, shared=True)
-            return current_edge_data
-        
         search_space.update_edges(
-            add_alphas,
-            scope=["n_stage_1", "n_stage_2", "n_stage_3", "r_stage_1", "r_stage_2"],
+            self.add_alphas,
+            scope=scope,
             private_edge_data=False
         )
 
-        # 2. add mixed_op
-        def update_ops(current_edge_data):
-            if current_edge_data.has('final') and current_edge_data.final:
-                return current_edge_data
-            primitives = current_edge_data.op
-            current_edge_data.set('op', MixedOp(primitives))
-            return current_edge_data
-        
+        # 2. replace primitives with mixed_op
         search_space.update_edges(
-            update_ops, 
-            scope=["n_stage_1", "n_stage_2", "n_stage_3", "r_stage_1", "r_stage_2"],
+            self.update_ops, 
+            scope=scope,
             private_edge_data=True
         )
 
@@ -61,7 +94,7 @@ class DARTSOptimizer(NASOptimizer):
             self.architectural_weights.append(alpha)
         
         search_space.parse()
-        print()
+        return search_space
 
     @classmethod
     def from_config(cls, *args, **kwargs):
@@ -77,7 +110,6 @@ class DARTSOptimizer(NASOptimizer):
             return
         else:
             self.perturb_alphas = perturbation
-
 
     def init(self, optimizer=torch.optim.Adam):
         self.optimizer = optimizer(
@@ -127,7 +159,6 @@ class DARTSOptimizer(NASOptimizer):
             for edge in self.edges[arch_key]:
                 edge['softmaxed_arch_weight'] = softmaxed_arch_weight
                 edge['perturb_alphas'] = True
-
 
     def undo_forward_pass_adjustment(self, *args, **kwargs):
         try:
