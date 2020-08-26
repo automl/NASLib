@@ -7,34 +7,77 @@ from copy import deepcopy
 
 from naslib.search_spaces.core.graphs import Graph, EdgeData, GraphWrapper
 from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
-from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity, Zero, SepConv, DilConv, Sequential, ModuleWrapper, MaxPool1x1, AvgPool1x1
-
-def set_cell_ops(current_edge_data, C, stride):
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    else:
-        C_in = C if stride==1 else C//2
-        current_edge_data.set('op', [
-            Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
-            Zero(stride=stride),
-            MaxPool1x1(3, stride, C_in, C),
-            AvgPool1x1(3, stride, C_in, C),
-            SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
-            DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-            DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
-        ])
-    return current_edge_data
+import naslib.search_spaces.core.primitives as ops
 
 
 class DartsSearchSpace(GraphWrapper):
+    """
+    The search space for CIFAR-10 as defined in
+    
+        Liu et al. 2019: DARTS: Differentiable Architecture Search
+    
+    It consists of a makrograph which is predefined and not optimized
+    and two kinds of learnable cells: normal and reduction cells. At
+    each edge are 8 primitive operations.
+    """
+
+    @staticmethod
+    def set_cell_ops(current_edge_data, C, stride):
+        """
+        Replace the 'op' at the edges with the ones defined here.
+        This function is called by the framework for every edge in
+        the defined scope.
+
+        Args:
+            current_egde_data (EdgeData): The data that currently sits
+                at the edge.
+            C (int): convolutional channels
+            stride (int): stride for the operation
+        
+        Returns:
+            EdgeData: the updated EdgeData object.
+        """
+        if current_edge_data.has('final') and current_edge_data.final:
+            return current_edge_data
+        else:
+            C_in = C if stride==1 else C//2
+            current_edge_data.set('op', [
+                ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+                ops.Zero(stride=stride),
+                ops.MaxPool1x1(3, stride, C_in, C),
+                ops.AvgPool1x1(3, stride, C_in, C),
+                ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+                ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
+                ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+                ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
+            ])
+        return current_edge_data
+
+    """
+    Scope is used to target different instances of the same cell.
+    Here we divide the cells in normal/reduction cell and stage.
+    This is necessary to set the correct channels at each stage.
+    The architecture optimizer should consider all of them equally.
+    """
+    OPTIMIZER_SCOPE = [
+        "n_stage_1",
+        "n_stage_2", 
+        "n_stage_3", 
+        "r_stage_1", 
+        "r_stage_2",
+    ]
 
     def __init__(self):
+        """
+        Initialize a new instance of the DARTS search space.
+        """
         super().__init__()
         
         #
         # Cell definition
         #
+
+        # Normal cell first
         normal_cell = Graph()
         normal_cell.name = "normal_cell"    # Use the same name for all cells with shared attributes
 
@@ -59,7 +102,7 @@ class DartsSearchSpace(GraphWrapper):
         normal_cell.add_edges_from([(5, 6)])
         normal_cell.add_edges_from([(i, 7, EdgeData({'final': True})) for i in range(3, 7)])   # output
         
-
+        # Reduction cell has the same topology
         reduction_cell = deepcopy(normal_cell)
         reduction_cell.name = "reduction_cell"
 
@@ -70,9 +113,9 @@ class DartsSearchSpace(GraphWrapper):
 
         self.add_node(1)    # input node
         self.add_node(2)    # preprocessing
-        self.add_node(3, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 2]))
+        self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
         self.add_node(4, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 3]))
-        self.add_node(5, subgraph=reduction_cell.copy().set_scope("r_stage_1").set_input([3, 4]))
+        self.add_node(5, subgraph=reduction_cell.set_scope("r_stage_1").set_input([3, 4]))
         self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 5]))   # TODO: is this correct?
         self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
         self.add_node(8, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([6, 7]))
@@ -89,36 +132,144 @@ class DartsSearchSpace(GraphWrapper):
         #
         # Operations at the edges
         #
+        channels = [16, 32, 64]
 
         # pre-processing
-        self.edges[1, 2].set('op', Stem(16))
+        self.edges[1, 2].set('op', ops.Stem(channels[0]))
 
         # normal cells
-        channels = [16, 32, 64]
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
 
         for scope, c in zip(stages, channels):
             self.update_edges(
-                update_func=lambda current_edge_data: set_cell_ops(current_edge_data, c, stride=1),
+                update_func=lambda current_edge_data: self.set_cell_ops(current_edge_data, c, stride=1),
                 scope=scope,
                 private_edge_data=True
             )
 
         # reduction cells
-        nodes = [5, 8]
-        for n, c in zip(nodes, channels[1:]):
+        # stride=2 is only for some edges, that's why we have to do it this way
+        r_cell_nodes = [5, 8]
+        for n, c in zip(r_cell_nodes, channels[1:]):
             reduction_cell = self.nodes[n]['subgraph']
             for u, v, data in reduction_cell.edges.data():
                 stride = 2 if u in (1, 2) else 1
-                reduction_cell.edges[u, v].update(set_cell_ops(data, c, stride))
+                reduction_cell.edges[u, v].update(self.set_cell_ops(data, c, stride))
         
         # post-processing
-        self.edges[10, 11].set('op', Sequential(
+        self.edges[10, 11].set('op', ops.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Linear(channels[-1], 10))
         )
 
+
+class SimpleCellSearchSpace(GraphWrapper):
+
+    @staticmethod
+    def set_cell_ops(current_edge_data, C, stride):
+        if current_edge_data.has('final') and current_edge_data.final:
+            return current_edge_data
+        else:
+            C_in = C if stride==1 else C//2
+            current_edge_data.set('op', [
+                ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+                ops.Zero(stride=stride),
+                ops.MaxPool1x1(3, stride, C_in, C),
+                ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+                ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+            ])
+        return current_edge_data
+
+    OPTIMIZER_SCOPE = [
+        "n_stage_1",
+        "n_stage_2",  
+        "r_stage_1",
+    ]
+
+    def __init__(self):
+        super().__init__()
+        
+        #
+        # Cell definition
+        #
+        normal_cell = Graph()
+        normal_cell.name = "normal_cell"    # Use the same name for all cells with shared attributes
+
+        # Input nodes
+        normal_cell.add_node(1)
+        normal_cell.add_node(2)
+
+        # Intermediate nodes
+        normal_cell.add_node(3)
+        normal_cell.add_node(4)
+
+        # Output node
+        normal_cell.add_node(5)
+        
+        # Edges
+        normal_cell.add_edges_from([(1, i) for i in range(3, 5)])   # input 1
+        normal_cell.add_edges_from([(2, i) for i in range(3, 5)])   # input 2
+        normal_cell.add_edges_from([(3, 4)])
+        normal_cell.add_edges_from([(i, 5, EdgeData({'final': True})) for i in range(3, 5)])   # output
+        
+
+        reduction_cell = deepcopy(normal_cell)
+        reduction_cell.name = "reduction_cell"
+
+        #
+        # Makrograph definition
+        #
+        self.name = "makrograph"
+
+        self.add_node(1)    # input node
+        self.add_node(2)    # preprocessing
+        self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
+        self.add_node(4, subgraph=reduction_cell.set_scope("r_stage_1").set_input([2, 3]))
+        self.add_node(5, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 4]))
+        self.add_node(6)    # output
+
+        self.add_edge(1, 2)     # pre-processing (stem)
+        self.add_edges_from([(2, 3), (2, 4), (3, 4)])   # first stage
+        self.add_edges_from([(4, 5)])   # second stage
+        self.add_edge(5, 6)   # post-processing (pooling, classifier)
+
+        #
+        # Operations at the edges
+        #
+
+        # pre-processing
+        self.edges[1, 2].set('op', ops.Stem(16))
+
+        # normal cells
+        channels = [16, 32]
+        stages = ["n_stage_1", "n_stage_2"]
+
+        for scope, c in zip(stages, channels):
+            self.update_edges(
+                update_func=lambda current_edge_data: self.set_cell_ops(current_edge_data, c, stride=1),
+                scope=scope,
+                private_edge_data=True
+            )
+
+        # reduction cells
+        nodes = [4]
+        for n, c in zip(nodes, channels[1:]):
+            reduction_cell = self.nodes[n]['subgraph']
+            for u, v, data in reduction_cell.edges.data():
+                stride = 2 if u in (1, 2) else 1
+                reduction_cell.edges[u, v].update(self.set_cell_ops(data, c, stride))
+        
+        # post-processing
+        self.edges[5, 6].set('op', ops.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(channels[-1], 10))
+        )
+
+
+############################################################################################
+# TODO: Remove the parts below once all optimizers are adapted to the new search space api
 
 
 
@@ -126,7 +277,7 @@ class DartsSearchSpace(GraphWrapper):
 
 
 if __name__ == '__main__':
-    sspace = DartsSearchSpace()
+    sspace = SimpleCellSearchSpace()
 
     print()
 

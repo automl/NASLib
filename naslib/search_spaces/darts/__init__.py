@@ -1,4 +1,4 @@
-from naslib.search_spaces.darts.graph import Cell, MacroGraph, DartsSearchSpace
+from naslib.search_spaces.darts.graph import Cell, MacroGraph, DartsSearchSpace, SimpleCellSearchSpace
 from naslib.search_spaces.darts.primitives import OPS
 
 PRIMITIVES = [
