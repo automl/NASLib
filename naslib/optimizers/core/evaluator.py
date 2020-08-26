@@ -52,15 +52,17 @@ class Evaluator(object):
         n_parameters = utils.count_parameters_in_MB(self.model)
         logging.info("param size = %fMB", n_parameters)
 
-        optimizer = torch.optim.SGD(
-            self.model.parameters(),
-            self.config.learning_rate,
-            momentum=self.config.momentum,
-            weight_decay=self.config.weight_decay)
-        self.optimizer = optimizer
+        # optimizer = torch.optim.SGD(
+        #     self.model.parameters(),
+        #     self.config.learning_rate,
+        #     momentum=self.config.momentum,
+        #     weight_decay=self.config.weight_decay)
+        # self.optimizer = optimizer
+        self.optimizer = None
 
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #     optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
+        self.scheduler = None
 
         logging.info('Args: {}'.format(self.config))
         self.run_kwargs = {}
@@ -83,7 +85,8 @@ class Evaluator(object):
             raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
-            self.lr = self.scheduler.get_last_lr()[0]
+            # self.lr = self.scheduler.get_last_lr()[0]
+            self.lr = 0.01
             logging.info('epoch %d lr %e', epoch, self.lr)
             for n in self.graph.nodes:
                 node = self.graph.get_node_op(n)    # subgraph
