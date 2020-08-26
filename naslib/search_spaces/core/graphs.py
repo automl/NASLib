@@ -13,14 +13,9 @@ from naslib.search_spaces.core.primitives import Identity, AbstractPrimitive
 
 from naslib.utils import iter_flatten
 
+# TODO: do logging
 logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s [%(filename)s:%(lineno)s]: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-# Todo: Remove 'eval' functionality with something safer
-test = cat_channels
-
-writer = SummaryWriter('runs/test')
 
 
 class EdgeData():
@@ -29,10 +24,21 @@ class EdgeData():
     Data can be shared between instances of the graph
     where the edges lives in.
 
-    Also defines the default `op`, which is `Identity()`
+    Also defines the default key 'op', which is `Identity()`. It must
+    be private always.
+
+    Items can be accessed directly as attributes with `.key` or
+    in a dict-like fashion with `[key]`. To set a new item use `.set()`.
     """
 
     def __init__(self, data={}):
+        """
+        Initializes a new EdgeData object.
+        'op' is set as Identity() and private by default
+
+        Args:
+            data (dict): Inject some initial data. Will be always private.
+        """
         self._private = {}
         self._shared = {}
         self.set('op', Identity(), shared=False)
@@ -41,6 +47,16 @@ class EdgeData():
 
 
     def has(self, key):
+        """
+        Checks whether `key` exists.
+
+        Args:
+            key (str): The key to check.
+        
+        Returns:
+            bool: True if key exists, False otherwise.
+
+        """
         if key in self._private.keys() or key in self._shared.keys():
             return True
         else:
@@ -72,13 +88,19 @@ class EdgeData():
     def __str__(self):
         return "private: <{}>, shared: <{}>".format(str(self._private), str(self._shared))
 
+
     def __repr__(self):
         return self.__str__()
+
 
     def update(self, data):
         """
         Update the data in here. If the data is added as dict,
         then all variables will be handled as private.
+
+        Args:
+            data (EdgeData or dict): If dict, then values will be set as
+                private. If EdgeData then all entries will be replaced.
         """
         if isinstance(data, dict):
             for k, v in data.items():
@@ -89,31 +111,61 @@ class EdgeData():
         else:
             raise ValueError("Unsupported type {}".format(data))
 
+
     def copy(self):
         """
-        This intendend to be used when reusing subgraphs
-        at more than one location. E.g. for DARTS architectureal
-        weights should be shared, but parameters of a 3x3 conv not.
+        When a graph is copied to get multiple instances (e.g. when 
+        reusing subgraphs at more than one location) then
+        this function will be called for all edges.
+
+        It will create a deep copy for the private entries but
+        only a shallow copy for the shared entries. E.g. architectural
+        weights should be shared, but parameters of a 3x3 convolution not.
+
+        Therefore 'op' must be always private.
+
+        Returns:
+            EdgeData: A new EdgeData object with independent private
+                items, but shallow shared items.
         """
         new_self = EdgeData()
         new_self._private = copy.deepcopy(self._private)
         new_self._shared = self._shared
         return new_self
-    
-    def set(self, key, item, shared=False):
+
+
+    def set(self, key, value, shared=False):
+        """
+        Used to assign a new item to the EdgeData object.
+
+        Args:
+            key (str): The key.
+            value (object): The value to store
+            shared (bool): Default: False. Whether the item should
+                be a shallow copy between different instances of EdgeData
+                (and consequently between different instances of Graph).
+        """
+        assert isinstance(key, str), "Accepting only string keys, got {}".format(type(key))
         if shared:
             if key in self._private:
                 raise ValueError("Key {} alredy defined as non-shared")
             else:
-                self._shared[key] = item
+                self._shared[key] = value
         else:
             if key in self._shared:
                 raise ValueError("Key {} alredy defined as shared")
             else:
-                self._private[key] = item
+                self._private[key] = value
 
 
     def clone(self):
+        """
+        Return a true deep copy of EdgeData. Even shared
+        items are not shared anymore.
+
+        Returns:
+            EdgeData: New independent instance.
+        """
         return copy.deepcopy(self)
 
 
@@ -124,6 +176,9 @@ class Graph(nx.DiGraph, torch.nn.Module):
     one input. if sitting on node it can have
     `k` inputs and `set_inputs` must be called.
     """
+
+    OPTIMIZER_SCOPE = "all"
+
     
     def __init__(self):
         nx.DiGraph.__init__(self)
@@ -142,15 +197,19 @@ class Graph(nx.DiGraph, torch.nn.Module):
         self.scope = None
         self.input_node_idxs = None
 
+
     def __eq__(self, other): 
         return self.name == other.name
+
 
     def __hash__(self):
         return hash(self.name)
 
+
     def set_scope(self, scope):
         self.scope = scope
         return self
+
 
     def set_input(self, node_idxs):
         """
@@ -176,8 +235,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
         self.input_node_idxs = node_idxs
         return self
 
+
     def num_input_nodes(self):
         return sum(self.in_degree(n) == 0 for n in self.nodes)
+
 
     def _assign_x_to_nodes(self, x):
         """
@@ -203,19 +264,19 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 # this can happen when there are cells with two inputs but at the very first
                 # layer of the network, there is just one output (i.e. the data inputed to the
                 # makro input node). Handle it and log a Info. This should happen only rarly
-                logger.info("We are using the same x for two inputs in graph {}".format(self.name))
+                logger.debug("We are using the same x for two inputs in graph {}".format(self.name))
             input_node_iterator = iter(self.input_node_idxs)
             for node_idx in nx.algorithms.dag.lexicographical_topological_sort(self):
                 if self.in_degree(node_idx) == 0:
                     self.nodes[node_idx]['input'] = {0: x[next(input_node_iterator)]}
+
 
     def forward(self, x):
         """
         Forward some data through the graph. This is done recursively
         in case there are graphs defined on nodes or as 'op' on edges.
         """
-        logger.info("Graph {} called.".format(self.name))
-        logger.debug("Graph {} called. Input {}.".format(self.name, x))
+        logger.debug("Graph {} called. Input {}.".format(self.name, x.shape if isinstance(x, torch.Tensor) else x))
         
         # Assign x to the corresponding input nodes
         self._assign_x_to_nodes(x)
@@ -240,7 +301,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 if isinstance(edge_data.op, Graph):
                     edge_output = edge_data.op.forward(x)
                 elif isinstance(edge_data.op, AbstractPrimitive):
-                    logger.info("Processing op {}".format(edge_data.op))
+                    logger.debug("Processing op {}".format(edge_data.op))
                     edge_output = edge_data.op.forward(x, edge_data=edge_data)
                 else:
                     raise ValueError("Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(
@@ -253,6 +314,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         logger.debug("Graph {} exiting. Output {}.".format(self.name, x))
         return x
 
+
     def parse(self):
         for node_idx in lexicographical_topological_sort(self):
             if 'subgraph' in self.nodes[node_idx]:
@@ -263,6 +325,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 if isinstance(edge_data.op, Graph):
                     edge_data.op.parse()
                 self.add_module("{}-edge({},{})".format(self.name, node_idx, neigbor_idx), edge_data.op)
+
 
     def _get_child_graphs(self, single_instances=False):
         graphs = []
@@ -298,6 +361,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         else:
             return graphs
 
+
     def get_all_edge_data(self, key, scope='all', private_edge_data=False):
         result = []
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
@@ -306,6 +370,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     if edge_data.has(key):
                         result.append(edge_data[key])
         return result
+
 
     def update_edges(self, update_func, scope="all", private_edge_data=False):
         """
@@ -332,6 +397,15 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     graph.edges[u, v].update(update_func(current_edge_data=edge_data))
 
 
+    def clone(self):
+        """
+        Deep copy of the current graph.
+
+        Returns:
+            Graph: Deep copy of the graph.
+        """
+        return copy.deepcopy(self)
+
 
 class GraphWrapper(Graph):
     """
@@ -349,8 +423,9 @@ class GraphWrapper(Graph):
             return None
 
 
-
-
+####################################################################################
+# TODO: Remove the parts below as they are the old search space implementation
+#
 
 class SampleOp(torch.nn.Module):
     
@@ -365,34 +440,6 @@ class SampleOp(torch.nn.Module):
     
     def get_ops(self):
         return self.primitives
-
-
-
-
-
-if __name__ == '__main__':
-    x = SimpleHierarchicalSpace()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class EdgeOpGraph(nx.DiGraph, MetaGraph):
@@ -533,3 +580,6 @@ class NodeOpGraph(nx.DiGraph, MetaGraph):
                 node_info['output'] = node_info['op'](cell_input)
         return [self.nodes[node]['output'] for node in self.output_nodes()][0]
 
+
+if __name__ == '__main__':
+    x = SimpleHierarchicalSpace()

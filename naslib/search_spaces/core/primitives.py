@@ -7,6 +7,10 @@ from abc import ABCMeta, abstractmethod
 class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
     """
     Use this class when creating new operations for edges.
+
+    This is required because we are agnostic to operations
+    at the edges. As a consequence, they can contain subgraphs
+    which requires naslib to detect and properly process them.
     """
 
     def __init__(self, *args, **kwargs):
@@ -48,8 +52,16 @@ class Identity(AbstractPrimitive):
 
 
 class Zero(AbstractPrimitive):
+    """
+    Implementation of the zero operation. It removes
+    the connection by multiplying its input with zero.
+    """
 
     def __init__(self, stride):
+        """
+        When setting stride > 1 then it is assumed that the
+        channels must be doubled.
+        """
         super(Zero, self).__init__()
         self.stride = stride
 
@@ -65,20 +77,11 @@ class Zero(AbstractPrimitive):
         return None
 
 
-class ModuleWrapper(AbstractPrimitive):
-
-    def __init__(self, module):
-        super(ModuleWrapper, self).__init__()
-        self.module = module
-
-    def forward(self, x, edge_data):
-        return self.module.forward(x)
-    
-    def get_embedded_ops(self):
-        return None
-
-
 class SepConv(AbstractPrimitive):
+    """
+    Implementation of Separable convolution operation as
+    in the DARTS paper, i.e. 2 sepconv directly after another.
+    """
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
         super(SepConv, self).__init__()
@@ -101,6 +104,10 @@ class SepConv(AbstractPrimitive):
 
 
 class DilConv(AbstractPrimitive):
+    """
+    Implementation of a dilated separable convolution as
+    used in the DARTS paper.
+    """
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
         super(DilConv, self).__init__()
@@ -121,12 +128,16 @@ class DilConv(AbstractPrimitive):
 
 
 class Stem(AbstractPrimitive):
+    """
+    This is used as an initial layer directly after the
+    image input.
+    """
 
-    def __init__(self, C_curr):
+    def __init__(self, channels_out):
         super(Stem, self).__init__()
         self.seq = nn.Sequential(
-            nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
-            nn.BatchNorm2d(C_curr))
+            nn.Conv2d(3, channels_out, 3, padding=1, bias=False),
+            nn.BatchNorm2d(channels_out))
 
     def forward(self, x, edge_data):
         return self.seq(x)
@@ -135,9 +146,11 @@ class Stem(AbstractPrimitive):
         return None
 
 
-
-
 class Sequential(AbstractPrimitive):
+    """
+    Implementation of `torch.nn.Sequential` to be used
+    as op on edges.
+    """
 
     def __init__(self, *args):
         super(Sequential, self).__init__()
@@ -153,7 +166,7 @@ class Sequential(AbstractPrimitive):
 
 class FactorizedReduce(AbstractPrimitive):
     """
-    Whatever this is, it replaces the identiy when stride=2
+    Whatever this is, it replaces the identity when stride=2
     """
 
     def __init__(self, C_in, C_out, affine=False):
@@ -175,6 +188,11 @@ class FactorizedReduce(AbstractPrimitive):
 
 
 class MaxPool1x1(AbstractPrimitive):
+    """
+    Implementation of MaxPool with an optional 1x1 convolution
+    in case stride > 1. The 1x1 convolution is required to increase
+    the number of channels.
+    """
 
     def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
         super(MaxPool1x1, self).__init__()
@@ -197,6 +215,11 @@ class MaxPool1x1(AbstractPrimitive):
 
 
 class AvgPool1x1(AbstractPrimitive):
+    """
+    Implementation of Avergae Pooling with an optional
+    1x1 convolution afterwards. The convolution is required
+    to increase the number of channels if stride > 1.
+    """
 
     def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
         super(AvgPool1x1, self).__init__()
@@ -216,6 +239,17 @@ class AvgPool1x1(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return None
+
+
+
+
+
+###################################################
+# TODO: what is with the primitives below?
+
+
+
+
 
 
 if __name__ == '__main__':
