@@ -112,6 +112,21 @@ class EdgeData():
             raise ValueError("Unsupported type {}".format(data))
 
 
+    def remove(self, key):
+        """
+        Removes an item from the EdgeData
+
+        Args:
+            key (str): The key for the item to be removed.
+        """
+        if key in self._private:
+            del self._private[key]
+        elif key in self._shared:
+            del self._shared[key]
+        else:
+            raise KeyError("Tried to delete unkown key {}".format(key))
+
+
     def copy(self):
         """
         When a graph is copied to get multiple instances (e.g. when 
@@ -405,6 +420,25 @@ class Graph(nx.DiGraph, torch.nn.Module):
             Graph: Deep copy of the graph.
         """
         return copy.deepcopy(self)
+
+
+    def reset_weights(self, inplace=False):
+        """
+        Resets the weights for the 'op' at all edges.
+
+        Args:
+            inplace (bool): Do the operation in place or
+                return a modified copy.
+        """
+        if inplace:
+            graph = self
+        else:
+            graph = self.clone()
+        
+        for m in self.modules():
+            mm.reset_parameters()
+        
+        return graph
 
 
 class GraphWrapper(Graph):
