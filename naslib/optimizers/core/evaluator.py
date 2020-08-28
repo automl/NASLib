@@ -29,20 +29,8 @@ class Trainer(object):
         self.epochs = 1     # config.epochs
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._set_seed(config.seed)
         self._prepare_dataloaders(parser.get_train_val_loaders)
 
-
-    @staticmethod
-    def _set_seed(seed):
-        np.random.seed(seed)
-        random.seed(seed)
-        torch.manual_seed(seed)
-        if torch.cuda.is_available():
-            cudnn.benchmark = False
-            cudnn.enabled = True
-            cudnn.deterministic = True
-            torch.cuda.manual_seed_all(seed)
 
 
     def _prepare_dataloaders(self, get_data_loaders):

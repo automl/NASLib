@@ -62,7 +62,7 @@ class Parser(object):
 
         test_queue = torch.utils.data.DataLoader(
             test_data, batch_size=self.args.batch_size, shuffle=False,
-            pin_memory=True, num_workers=0)
+            pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(self.config.seed))
 
 
         return train_queue, valid_queue, test_queue, train_transform, valid_transform

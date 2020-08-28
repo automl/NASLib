@@ -45,7 +45,7 @@ class RandomSearch(MetaOptimizer):
         if current_edge_data.has('final') and current_edge_data.final:
             return current_edge_data
         
-        op_index = torch.randint(len(current_edge_data.op), (1, ))
+        op_index = np.random.randint(len(current_edge_data.op))
         current_edge_data.set('op_index', op_index, shared=True)
         return current_edge_data
 
@@ -89,7 +89,7 @@ class RandomSearch(MetaOptimizer):
             )
 
             architecture_i.parse()
-            architecture_i.training()
+            architecture_i.train()
 
             self.sampled_archs.append(architecture_i)
             self.weight_optimizers.append(self.weight_optimizer(architecture_i.parameters(), 0.01))
