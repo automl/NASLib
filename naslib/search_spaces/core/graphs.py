@@ -344,7 +344,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
     def _get_child_graphs(self, single_instances=False):
         graphs = []
-        for _, node_data in self.nodes(data=True):
+        for node_idx in lexicographical_topological_sort(self):
+            node_data = self.nodes[node_idx]
             if 'subgraph' in node_data:
                 graphs.append(node_data['subgraph'])
                 graphs.append(node_data['subgraph']._get_child_graphs())
@@ -371,10 +372,11 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 raise ValueError("Unknown format of op: {}".format(edge_data.op))
         
         graphs = [g for g in iter_flatten(graphs)]
+        
         if single_instances:
-            return list(set(graphs))
+            return sorted(list(set(graphs)), key=lambda x: x.name)
         else:
-            return graphs
+            return sorted(graphs, key=lambda x: x.name)
 
 
     def get_all_edge_data(self, key, scope='all', private_edge_data=False):
