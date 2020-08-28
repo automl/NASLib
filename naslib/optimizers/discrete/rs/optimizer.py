@@ -1,25 +1,38 @@
 import numpy as np
 import torch
 
-from naslib.optimizers.core import NASOptimizer
+from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.core.operations import CategoricalOp
 
-class RandomSearch(NASOptimizer):
+class RandomSearch(MetaOptimizer):
     """
     Random search in DARTS is done by randomly sampling `k` architectures
     and training them for `n` epochs, then selecting the best architecture.
     DARTS paper: `k=24` and `n=100` for cifar-10.
-
-    TODO: This is not what is happening here, right?
-
     """
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, sample_size, weight_optimizer=torch.optim.SGD, loss_criteria=torch.nn.CrossEntropyLoss(), grad_clip=None):
+        """
+        Initialize a random search optimizer.
+
+        Args:
+            sample_size (int): Number of sampled architecures to train.
+            weight_optimizer (torch.optim.Optimizer): The optimizer to 
+                train the (convolutional) weights.
+            loss_criteria (TODO): The loss
+            grad_clip (float): Where to clip the gradients (default None).
+        """
         super(RandomSearch, self).__init__()
-        #self.architectural_weights = torch.nn.ParameterDict()
-        self.sample_size = 5
+        self.sample_size = sample_size
+        self.weight_optimizer = weight_optimizer
+        self.loss = loss_criteria
+        self.grad_clip = grad_clip
+        
         self.sampled_archs = []
-        self.weight_optimizer = torch.optim.SGD
         self.weight_optimizers = []
+
+        self.validation_losses = [0 for _ in range(sample_size)]
+
 
     """
     These two function discretize the graph.
@@ -76,65 +89,81 @@ class RandomSearch(NASOptimizer):
             )
 
             architecture_i.parse()
+            architecture_i.training()
+
             self.sampled_archs.append(architecture_i)
             self.weight_optimizers.append(self.weight_optimizer(architecture_i.parameters(), 0.01))
-        return search_space
 
 
-    def step(self, *args, **kwargs):
-        graph = args[0]
-        criterion = args[1]
-        input_train = args[2] 
-        target_train = args[3] 
-        input_valid = args[4] 
-        target_valid = args[5]
+    def step(self, data_train, data_val):
+        input_train, target_train = data_train
+        input_val, target_val = data_val
 
-        grad_clip = 5#kwargs['grad_clip']
+        self.grad_clip = 5
 
-        for arch, optim in zip(self.sampled_archs, self.weight_optimizers):
+        for i, (arch, optim) in enumerate(zip(self.sampled_archs, self.weight_optimizers)):
+            optim.zero_grad()
+
+            # train
             logits = arch(input_train)
-            loss = criterion(logits, target_train)
+            loss = self.loss(logits, target_train)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(arch.parameters(), grad_clip)
+            if self.grad_clip:
+                torch.nn.utils.clip_grad_norm_(arch.parameters(), self.grad_clip)
             optim.step()
         
+            # measure val loss for best architecture determination later
+            self.validation_losses[i] = self.loss(arch(input_val), target_val)
         
-            print()
+        print('step done')
 
 
-    def new_epoch(self, e):
-        pass
+    def get_final_architecture(self):
+        """
+        Returns the sampled architecture with the lowest validation error.
+        """
+        return self.sampled_archs[np.argmin(self.validation_losses)]
 
 
-    @classmethod
-    def from_config(cls, *args, **kwargs):
-        return cls(*args, **kwargs)
+    def get_op_optimizer(self):
+        return self.weight_optimizer
 
-    def replace_function(self, edge, graph):
-        graph.architectural_weights = self.architectural_weights
 
-        if 'op_choices' in edge:
-            edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
 
-            weights = self.architectural_weights[edge_key] if edge_key in self.architectural_weights else \
-                torch.nn.Parameter(torch.zeros(size=[len(edge['op_choices'])],
-                                               requires_grad=False))
 
-            self.architectural_weights[edge_key] = weights
-            edge['arch_weight'] = self.architectural_weights[edge_key]
-            edge['op'] = CategoricalOp(primitives=edge['op_choices'], **edge['op_kwargs'])
 
-        return edge
 
-    def uniform_sample(self, *args, **kwargs):
-        self.set_to_zero()
-        for arch_key, arch_weight in self.architectural_weights.items():
-            idx = np.random.choice(len(arch_weight))
-            arch_weight.data[idx] = 1
 
-    def set_to_zero(self, *args, **kwargs):
-        for arch_key, arch_weight in self.architectural_weights.items():
-            arch_weight.data = torch.zeros(size=[len(arch_weight)])
+
+    # @classmethod
+    # def from_config(cls, *args, **kwargs):
+    #     return cls(*args, **kwargs)
+
+    # def replace_function(self, edge, graph):
+    #     graph.architectural_weights = self.architectural_weights
+
+    #     if 'op_choices' in edge:
+    #         edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
+
+    #         weights = self.architectural_weights[edge_key] if edge_key in self.architectural_weights else \
+    #             torch.nn.Parameter(torch.zeros(size=[len(edge['op_choices'])],
+    #                                            requires_grad=False))
+
+    #         self.architectural_weights[edge_key] = weights
+    #         edge['arch_weight'] = self.architectural_weights[edge_key]
+    #         edge['op'] = CategoricalOp(primitives=edge['op_choices'], **edge['op_kwargs'])
+
+    #     return edge
+
+    # def uniform_sample(self, *args, **kwargs):
+    #     self.set_to_zero()
+    #     for arch_key, arch_weight in self.architectural_weights.items():
+    #         idx = np.random.choice(len(arch_weight))
+    #         arch_weight.data[idx] = 1
+
+    # def set_to_zero(self, *args, **kwargs):
+    #     for arch_key, arch_weight in self.architectural_weights.items():
+    #         arch_weight.data = torch.zeros(size=[len(arch_weight)])
 
     # def step(self, *args, **kwargs):
     #    self.uniform_sample()

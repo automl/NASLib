@@ -13,6 +13,101 @@ import torch.nn as nn
 from naslib.utils import utils
 
 
+class Trainer(object):
+    """
+    Class which handles all the training.
+
+    - Data loading and preparing batches
+    - train loop
+    - gather statistics
+    - do the final evaluation
+    """
+
+    def __init__(self, optimizer, dataset, config, parser):
+        self.optimizer = optimizer
+        self.dataset = dataset
+        self.epochs = 1     # config.epochs
+
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._set_seed(config.seed)
+        self._prepare_dataloaders(parser.get_train_val_loaders)
+
+
+    @staticmethod
+    def _set_seed(seed):
+        np.random.seed(seed)
+        random.seed(seed)
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            cudnn.benchmark = False
+            cudnn.enabled = True
+            cudnn.deterministic = True
+            torch.cuda.manual_seed_all(seed)
+
+
+    def _prepare_dataloaders(self, get_data_loaders):
+        train_queue, valid_queue, test_queue, train_transform, valid_transform = get_data_loaders()
+        self.train_queue = train_queue
+        self.valid_queue = valid_queue
+        self.test_queue = test_queue
+        self.train_transform = train_transform  # TODO they are not used are they?
+        self.valid_transform = valid_transform
+
+
+    def train(self):
+        print("Start training")
+        for e in range(self.epochs):
+            self.optimizer.new_epoch(e)
+            for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
+                # logits_train, logits_val, train_loss = 
+                self.optimizer.step(data_train, data_val)
+                break
+        print("Training finished")
+                
+
+    def evaluate(self, retrain=False):
+        print("Start evaluation")
+        best_arch = self.optimizer.get_final_architecture()
+
+        if retrain:
+            best_arch.reset_weights(inplace=True)
+            optim = self.optimizer.get_weight_optimizer()
+            optim = optim(best_arch.parameters(), 0.01)
+            
+            # train from scratch
+            for step, data_train in enumerate(self.train_queue):
+                pass
+        
+
+        # measure final test accuracy
+        top1 = utils.AvgrageMeter()
+        top5 = utils.AvgrageMeter()
+
+        best_arch.eval()
+
+        for data_test in self.test_queue:
+            input_test, target_test = data_test
+            n = input_test.size(0)
+
+            with torch.no_grad():
+                logits = best_arch(input_test)
+
+                prec1, prec5 = utils.accuracy(logits, target_test, topk=(1, 5))
+                top1.update(prec1.data.item(), n)
+                top5.update(prec5.data.item(), n)
+
+            break
+        
+        print("Evaluation finished. Test accuracies: top-1 = {}, top-5 = {}".format(top1.avg, top5.avg))
+
+
+
+
+
+
+
+
+
 class Evaluator(object):
     """
     Class for training...?
