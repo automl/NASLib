@@ -60,6 +60,9 @@ class GDASMixedOp(AbstractPrimitive):
         Applies the gumbel softmax to the architecture weights
         before forwarding `x` through the graph as in DARTS
         """
+
+        # This is now done redundantly, although it is only required once
+        # per epoch for all alphas. Potential for speedup.
         sampled_arch_weight = torch.nn.functional.gumbel_softmax(
                 edge_data.alpha, tau=edge_data.tau, hard=False
             )

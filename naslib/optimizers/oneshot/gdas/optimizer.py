@@ -7,15 +7,33 @@ from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 
 
 class GDASOptimizer(DARTSOptimizer):
+    """
+    Implements GDAS as defined in
+
+        Dong and Yang (2019): Searching for a Robust Neural Architecture in Four GPU Hours
+
+    """
     def __init__(self, 
-            epochs, 
-            tau_max=10, 
-            tau_min=0.1, 
-            op_optimizer=torch.optim.SGD, 
-            arch_optimizer=torch.optim.Adam, 
+            epochs: int, 
+            tau_max: float = 10, 
+            tau_min: float = 0.1, 
+            op_optimizer: torch.optim.Optimizer = torch.optim.SGD, 
+            arch_optimizer: torch.optim.Optimizer = torch.optim.Adam, 
             loss_criteria=torch.nn.CrossEntropyLoss(), 
             grad_clip=None
         ):
+        """
+        Instantiate the optimizer
+
+        Args:
+            epochs (int): Number of epochs. Required for tau
+            tau_max (float): Initial tau
+            tau_min (float): The minimum tau where it is decayed to
+            op_optimizer (torch.optim.Optimizer): optimizer for the op weights
+            arch_optimizer (torch.optim.Optimizer): optimizer for the architecture weights
+            loss_criteria: The loss.
+            grad_clip (float): Clipping of the gradients. Default None.
+        """
         super(GDASOptimizer, self).__init__(op_optimizer, arch_optimizer, 
             loss_criteria, grad_clip)
 
@@ -30,6 +48,9 @@ class GDASOptimizer(DARTSOptimizer):
     
     @staticmethod
     def update_tau(current_edge_data, tau):
+        """
+        Add tau as a shared attribute to edges.
+        """
         if current_edge_data.has('final') and current_edge_data.final:
             return current_edge_data
         current_edge_data.set('tau', tau, shared=True)
@@ -40,7 +61,7 @@ class GDASOptimizer(DARTSOptimizer):
     def update_ops(current_edge_data):
         """
         Function to replace the primitive ops at the edges
-        with the DARTS specific MixedOp.
+        with the GDAS specific GDASMixedOp.
         """
         if current_edge_data.has('final') and current_edge_data.final:
             return current_edge_data
@@ -50,6 +71,12 @@ class GDASOptimizer(DARTSOptimizer):
 
 
     def adapt_search_space(self, search_space, scope=None):
+        """
+        Adapts the search space for GDAS. Use same as in DARTS.
+
+        tau does not need to be set here, as `new_epoch()` will
+        be called before the first forward pass.
+        """
         super().adapt_search_space(search_space, scope)
 
         self.scope = scope if scope else self.graph.OPTIMIZER_SCOPE

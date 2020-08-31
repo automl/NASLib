@@ -2,6 +2,7 @@ import networkx as nx
 import copy
 import logging
 import torch
+import warnings
 
 from collections.abc import Iterable
 from networkx.algorithms.dag import lexicographical_topological_sort
@@ -186,16 +187,49 @@ class EdgeData():
 
 class Graph(nx.DiGraph, torch.nn.Module):
     """
-    Can sit on an edge or on a node.
-    if sitting on edge, then must have exactly
-    one input. if sitting on node it can have
-    `k` inputs and `set_inputs` must be called.
+    Base class for defining a search space. Add nodes and edges
+    as for a directed acyclic graph in `networkx`. Nodes can contain
+    graphs as children, also edges can contain graphs as operations.
+
+    Note, if a graph is copied, the shared attributes of its edges are
+    shallow copies whereas the private attributes are deep copies.
+
+    To differentiate copies of the same graph you can define a `scope`
+    with `set_scope()`. 
+
+    **Graph at nodes:**
+    >>> graph = Graph()
+    >>> graph.add_node(1, subgraph=Graph())
+
+    If the node has more than one input use `set_input()` to define the
+    routing to the input nodes of the subgraph.
+
+    **Graph at edges:**
+    >>> graph = Graph()
+    >>> graph.add_nodes_from([1, 2])
+    >>> graph.add_edge(1, 2, EdgeData({'op': Graph()}))
+
+    **Modify the graph after definition**
+
+    If you want to modify the graph e.g. in an optimizer once
+    it has been defined already use the function `update_edges()`. 
+    
     """
 
+    """
+    Usually the optimizer does not operate on the whole graph, e.g. preprocessing
+    and post-processing are excluded. Scope can be used to define that or to
+    differentate instances of the "same" graph.
+    """
     OPTIMIZER_SCOPE = "all"
 
     
     def __init__(self):
+        """
+        Initialise a graph. The edges are automatically filled with an EdgeData object
+        which defines the default operation as Identity. The default combination operation
+        is set as sum.
+        """
         nx.DiGraph.__init__(self)
         torch.nn.Module.__init__(self)
         
@@ -213,20 +247,35 @@ class Graph(nx.DiGraph, torch.nn.Module):
         self.input_node_idxs = None
 
 
-    def __eq__(self, other): 
-        return self.name == other.name
-
-
     def __hash__(self):
+        """
+        As it is very complicated to compare graphs (i.e. check all edge
+        attributes, do the have shared attributes, ...) use just the name
+        for comparison.
+
+        This is used when determining whether two instances are copies.
+        """
         return hash(self.name)
 
 
-    def set_scope(self, scope):
+    def set_scope(self, scope: str):
+        """
+        Sets the scope of this instance of the graph.
+
+        The function should be used in a builder-like pattern
+        `'subgraph'=Graph().set_scope("scope")`.
+
+        Args:
+            scope (str): the scope
+        
+        Returns:
+            Graph: self with the setted scope.
+        """
         self.scope = scope
         return self
 
 
-    def set_input(self, node_idxs):
+    def set_input(self, node_idxs: list):
         """
         Route the input from specific parent edges to the input nodes of 
         this subgraph. Inputs are assigned in lexicographical order.
@@ -243,6 +292,15 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Similarly, if `node_idxs = [5, 5]` then input of node 5 is routed
         to both node 1 and 2. Warning: In this case the output of another 
         incoming edge is ignored!
+
+        Should be used in a builder-like pattern: `'subgraph'=Graph().set_input([5, 3])`
+
+        Args:
+            node_idx (list): The index of the nodes where the data is coming from.
+        
+        Returns:
+            Graph: self with input node indices set.
+
         """
         num_innodes = sum([self.in_degree(n) == 0 for n in self.nodes])
         assert num_innodes == len(node_idxs), \
@@ -251,7 +309,14 @@ class Graph(nx.DiGraph, torch.nn.Module):
         return self
 
 
-    def num_input_nodes(self):
+    def num_input_nodes(self) -> int:
+        """
+        The number of input nodes, i.e. the nodes without an
+        incoming edge.
+
+        Returns:
+            int: Number of input nodes.
+        """
         return sum(self.in_degree(n) == 0 for n in self.nodes)
 
 
@@ -261,6 +326,9 @@ class Graph(nx.DiGraph, torch.nn.Module):
         edge or nodes.
 
         Performs also several sanity checks of the input.
+
+        Args:
+            x (Tensor or dict): Input to be assigned.
         """
         # We need dict in case of cell and int in case of motif
         assert isinstance(x, dict) or isinstance(x, torch.Tensor)
@@ -331,6 +399,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
 
     def parse(self):
+        """
+        Convert the graph into a neural network which can then
+        be optimized by pytorch.
+        """
         for node_idx in lexicographical_topological_sort(self):
             if 'subgraph' in self.nodes[node_idx]:
                 self.nodes[node_idx]['subgraph'].parse()
@@ -342,7 +414,18 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 self.add_module("{}-edge({},{})".format(self.name, node_idx, neigbor_idx), edge_data.op)
 
 
-    def _get_child_graphs(self, single_instances=False):
+    def _get_child_graphs(self, single_instances: bool = False) -> list:
+        """
+        Get all child graphs of the current graph.
+
+        Args:
+            single_instances (bool): Whether to return multiple instances
+                (i.e. copies) of the same graph. When changing shared data
+                this should be set to True.
+        
+        Returns:
+            list: A list of all child graphs (can be empty)
+        """
         graphs = []
         for node_idx in lexicographical_topological_sort(self):
             node_data = self.nodes[node_idx]
@@ -379,7 +462,18 @@ class Graph(nx.DiGraph, torch.nn.Module):
             return sorted(graphs, key=lambda x: x.name)
 
 
-    def get_all_edge_data(self, key, scope='all', private_edge_data=False):
+    def get_all_edge_data(self, key: str, scope='all', private_edge_data: bool = False) -> list:
+        """
+        Get edge attributes of this graph and all child graphs in one go.
+
+        Args:
+            key (str): The key of the attribute
+            scope (str): The scope to be applied
+            private_edge_data (bool): Whether to return data from graph copies as well.
+        
+        Returns:
+            list: All data in a list.
+        """
         result = []
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
             if scope == 'all' or (graph.scope is not None and graph.scope in scope):
@@ -389,16 +483,58 @@ class Graph(nx.DiGraph, torch.nn.Module):
         return result
 
 
-    def update_edges(self, update_func, scope="all", private_edge_data=False):
+    def _verify_update_function(update_func: callable, private_edge_data: bool):
         """
-        This updates the graph and all child graphs, but only one
-        instance of each.
+        Verify that the update function actually modifies only
+        shared/private edge data attributes based on setting of
+        `private_edge_data`.
+
+        Args:
+            update_func (callable): callable that expects one argument
+                named `current_edge_data`.
+            private_edge_data (bool): Whether the update function is applied
+                to all graph instances including copies or just to one instance
+                per graph
+        """
+
+        test = EdgeData()
+        test.set('shared', True, shared=True)
+        test.set('op', True)
+
+        try:
+            result = update_func(current_edge_data=test.clone())
+        except:
+            warnings.warn("Update function could not be veryfied. Be cautious with the"
+                "setting of `private_edge_data`", UserWarning)
+            return
+
+        assert isinstance(result, EdgeData), "Update function does not return the edge data object."
+
+        if private_edge_data:
+            assert result._shared == test._shared, \
+                "The update function changes shared data although `private_edge_data` set to True. " \
+                "This is not the indended use of `update_edges`. The update function should only modify " \
+                "private edge data."
+        else:
+            assert result._private == test._private, \
+                "The update function changes private data although `private_edge_data` set to False. " \
+                "This is not the indended use of `update_edges`. The update function should only modify " \
+                "shared edge data."
+
+
+    def update_edges(self, update_func: callable, scope="all", private_edge_data: bool = False):
+        """
+        This updates the edge data of this graph and all child graphs.
+        This is the preferred way to manipulate the edges after the definition
+        of the graph, e.g. by optimizers who want to insert their own op. 
         `update_func(current_edge_data)`. This way optimizers
         can initialize and store necessary information at edges.
 
-        scope can be "all" or list of graph names to be updated.
-
-        private_edge_data: if set to true, this means update_func will be
+        Args:
+            update_func (callable): Function which accepts one argument called `current_edge_data`.
+                and returns the modified EdgeData object.
+            scope (str or list(str)): Can be "all" or list of scopes to be updated.
+            private_edge_data (bool): If set to true, this means update_func will be
                 applied to all edges. THIS IS NOT RECOMMENDED FOR SHARED 
                 ATTRIBUTES. Shared attributes should be set only once, we
                 take care it is syncronized across all copies of this graph.
@@ -407,6 +543,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 `op` during the initialization of the optimizer (e.g. replacing it
                 with MixedOp or SampleOp)
         """
+        Graph._verify_update_function(update_func, private_edge_data)
+
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
             if scope == 'all' or (graph.scope is not None and graph.scope in scope):
                 print('updating {}'.format(graph.name))
@@ -424,13 +562,15 @@ class Graph(nx.DiGraph, torch.nn.Module):
         return copy.deepcopy(self)
 
 
-    def reset_weights(self, inplace=False):
+    def reset_weights(self, inplace: bool = False):
         """
         Resets the weights for the 'op' at all edges.
 
         Args:
             inplace (bool): Do the operation in place or
                 return a modified copy.
+        Returns:
+            Graph: Returns the modified version of the graph.
         """
         if inplace:
             graph = self
@@ -441,6 +581,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
             mm.reset_parameters()
         
         return graph
+
 
 
 class GraphWrapper(Graph):
