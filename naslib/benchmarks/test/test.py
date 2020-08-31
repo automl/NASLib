@@ -1,4 +1,5 @@
 import logging
+import sys
 
 from naslib.optimizers.core import Trainer
 from naslib.optimizers.oneshot.darts import DARTSOptimizer
@@ -24,8 +25,9 @@ if __name__ == '__main__':
 
     search_space = SimpleCellSearchSpace()
 
-    #optimizer = RandomSearch(sample_size=1)
-    optimizer = DARTSOptimizer()
+    # optimizer = RandomSearch(sample_size=1)
+    # optimizer = DARTSOptimizer()
+    optimizer = GDASOptimizer(config.epochs)
 
     optimizer.adapt_search_space(search_space)
     

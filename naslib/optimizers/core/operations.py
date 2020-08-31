@@ -35,7 +35,7 @@ class MixedOp(AbstractPrimitive):
     """
     Defined by the optimizer!
     """
-    def __init__(self, primitives, **kwargs):
+    def __init__(self, primitives):
         super(MixedOp, self).__init__()
         self.primitives = primitives
     
@@ -45,6 +45,35 @@ class MixedOp(AbstractPrimitive):
     
     def get_embedded_ops(self):
         return self.primitives
+
+
+class GDASMixedOp(AbstractPrimitive):
+
+
+    def __init__(self, primitives):
+        super(GDASMixedOp, self).__init__()
+        self.primitives = primitives
+
+
+    def forward(self, x, edge_data):
+        """
+        Applies the gumbel softmax to the architecture weights
+        before forwarding `x` through the graph as in DARTS
+        """
+        sampled_arch_weight = torch.nn.functional.gumbel_softmax(
+                edge_data.alpha, tau=edge_data.tau, hard=False
+            )
+        
+        return sum(
+            w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives)
+            if abs(w) > 1e-10
+        )
+    
+    def get_embedded_ops(self):
+        return self.primitives
+
+
+
 
 # class MixedOp(MetaOp):
 #     def __init__(self, *args, **kwargs):
@@ -69,26 +98,26 @@ class MixedOp(AbstractPrimitive):
 #         return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
 
 
-class GDASMixedOp(MixedOp):
-    def __init__(self, *args, **kwargs):
-        super(GDASMixedOp, self).__init__(*args, **kwargs)
+# class GDASMixedOp(MixedOp):
+#     def __init__(self, *args, **kwargs):
+#         super(GDASMixedOp, self).__init__(*args, **kwargs)
 
-    def forward(self, x, *args, **kwargs):
-        if 'perturb_alphas' in kwargs:
-            weights = kwargs['softmaxed_arch_weight']
-        else:
-            weights = kwargs['sampled_arch_weight']
-        cpu_weights = weights.tolist()
-        use_sum = sum([abs(_) > 1e-10 for _ in cpu_weights])
-        if use_sum > len(self.primitives):
-            return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
-        else:
-            clist = []
-            for j, cpu_weight in enumerate(cpu_weights):
-                if abs(cpu_weight) > 1e-10:
-                    clist.append(weights[j] * self._ops[j](x))
-            assert len(clist) > 0, 'invalid length : {:}'.format(cpu_weights)
-            return self.out_node_op(clist)
+#     def forward(self, x, *args, **kwargs):
+#         if 'perturb_alphas' in kwargs:
+#             weights = kwargs['softmaxed_arch_weight']
+#         else:
+#             weights = kwargs['sampled_arch_weight']
+#         cpu_weights = weights.tolist()
+#         use_sum = sum([abs(_) > 1e-10 for _ in cpu_weights])
+#         if use_sum > len(self.primitives):
+#             return self.out_node_op(w * op(x) for w, op in zip(weights, self._ops))
+#         else:
+#             clist = []
+#             for j, cpu_weight in enumerate(cpu_weights):
+#                 if abs(cpu_weight) > 1e-10:
+#                     clist.append(weights[j] * self._ops[j](x))
+#             assert len(clist) > 0, 'invalid length : {:}'.format(cpu_weights)
+#             return self.out_node_op(clist)
 
 
 class PCDARTSMixedOp(MixedOp):
