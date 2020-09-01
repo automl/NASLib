@@ -2,20 +2,18 @@ import networkx as nx
 import copy
 import logging
 import torch
-import warnings
 
 from collections.abc import Iterable
 from networkx.algorithms.dag import lexicographical_topological_sort
 from torch.utils.tensorboard import SummaryWriter
 
 from naslib.utils.utils import drop_path, cat_channels
+from naslib.utils.logging import log_formats
 from naslib.search_spaces.core.metaclasses import MetaGraph
 from naslib.search_spaces.core.primitives import Identity, AbstractPrimitive
 
 from naslib.utils import iter_flatten
 
-# TODO: do logging
-logging.basicConfig(format='%(asctime)s %(levelname)s %(name)s [%(filename)s:%(lineno)s]: %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -359,14 +357,14 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Forward some data through the graph. This is done recursively
         in case there are graphs defined on nodes or as 'op' on edges.
         """
-        logger.debug("Graph {} called. Input {}.".format(self.name, x.shape if isinstance(x, torch.Tensor) else x))
+        logger.debug("Graph {} called. Input {}.".format(self.name, log_formats(x)))
         
         # Assign x to the corresponding input nodes
         self._assign_x_to_nodes(x)
 
         for node_idx in lexicographical_topological_sort(self):
             node = self.nodes[node_idx]
-            logger.debug("Node {}-{}, current data {}, start processing...".format(self.name, node_idx, node))
+            logger.debug("Node {}-{}, current data {}, start processing...".format(self.name, node_idx, log_formats(node)))
             
             # node internal: process input if necessary
             if 'subgraph' in node:
@@ -394,7 +392,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
             
             logger.debug("Node {}-{}, processing done.".format(self.name, node_idx))
 
-        logger.debug("Graph {} exiting. Output {}.".format(self.name, x))
+        logger.debug("Graph {} exiting. Output {}.".format(self.name, log_formats(x)))
         return x
 
 
@@ -504,8 +502,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
         try:
             result = update_func(current_edge_data=test.clone())
         except:
-            warnings.warn("Update function could not be veryfied. Be cautious with the"
-                "setting of `private_edge_data`", UserWarning)
+            logger.warn("Update function could not be veryfied. Be cautious with the "
+                "setting of `private_edge_data` in `update_edges()`")
             return
 
         assert isinstance(result, EdgeData), "Update function does not return the edge data object."
@@ -547,7 +545,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
             if scope == 'all' or (graph.scope is not None and graph.scope in scope):
-                print('updating {}'.format(graph.name))
+                logger.debug('Updating {}'.format(graph.name))
                 for u, v, edge_data in graph.edges.data():
                     graph.edges[u, v].update(update_func(current_edge_data=edge_data))
 

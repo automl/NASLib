@@ -107,6 +107,7 @@ class DARTSOptimizer(MetaOptimizer):
         )
 
         graph.train()
+        graph = graph.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
 
         self.graph = graph
         
@@ -124,9 +125,9 @@ class DARTSOptimizer(MetaOptimizer):
             raise NotImplementedError()
         else:
             # Update architecture weights
-            logits = self.graph(input_val)
-            loss = self.loss(logits, target_val)
-            loss.backward()
+            logits_val = self.graph(input_val)
+            val_loss = self.loss(logits_val, target_val)
+            val_loss.backward()
 
             if self.grad_clip:
                 torch.nn.utils.clip_grad_norm_(self.architectural_weights.parameters(), self.grad_clip)
@@ -134,12 +135,14 @@ class DARTSOptimizer(MetaOptimizer):
             self.arch_optimizer.step()
 
             # Update op weights
-            logits = self.graph(input_train)
-            loss = self.loss(logits, target_train)
-            loss.backward()
+            logits_train = self.graph(input_train)
+            train_loss = self.loss(logits_train, target_train)
+            train_loss.backward()
             if self.grad_clip:
                 torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
             self.op_optimizer.step()
+        
+        return logits_train, logits_val, train_loss, val_loss
 
         
     

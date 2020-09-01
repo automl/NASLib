@@ -9,12 +9,10 @@ from naslib.optimizers.discrete.rs import RandomSearch
 from naslib.search_spaces.darts import DartsSearchSpace, SimpleCellSearchSpace
 from naslib.utils import config_parser, set_seed
 from naslib.utils.parser import Parser
+from naslib.utils.logging import setup_logger
 
-
-log_format = '%(asctime)s %(message)s'
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format=log_format, datefmt='%m/%d %I:%M:%S %p')
-
+logger = setup_logger("test.log")
+logger.setLevel(logging.INFO)
 
 
 if __name__ == '__main__':
@@ -25,9 +23,9 @@ if __name__ == '__main__':
 
     search_space = SimpleCellSearchSpace()
 
-    # optimizer = RandomSearch(sample_size=1)
+    optimizer = RandomSearch(sample_size=1)
     # optimizer = DARTSOptimizer()
-    optimizer = GDASOptimizer(config.epochs)
+    # optimizer = GDASOptimizer(config.epochs)
 
     optimizer.adapt_search_space(search_space)
     

@@ -91,6 +91,8 @@ class RandomSearch(MetaOptimizer):
             architecture_i.parse()
             architecture_i.train()
 
+            architecture_i = architecture_i.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+
             self.sampled_archs.append(architecture_i)
             self.weight_optimizers.append(self.weight_optimizer(architecture_i.parameters(), 0.01))
 
@@ -105,17 +107,21 @@ class RandomSearch(MetaOptimizer):
             optim.zero_grad()
 
             # train
-            logits = arch(input_train)
-            loss = self.loss(logits, target_train)
-            loss.backward()
+            logits_train = arch(input_train)
+            train_loss = self.loss(logits_train, target_train)
+            train_loss.backward()
             if self.grad_clip:
                 torch.nn.utils.clip_grad_norm_(arch.parameters(), self.grad_clip)
             optim.step()
         
             # measure val loss for best architecture determination later
-            self.validation_losses[i] = self.loss(arch(input_val), target_val)
+            logits_val = arch(input_val)
+            val_loss = self.loss(logits_val, target_val)
+
+            self.validation_losses[i] = val_loss
         
-        print('step done')
+        # return just the last one for statistics
+        return logits_train, logits_val, train_loss, val_loss
 
 
     def get_final_architecture(self):

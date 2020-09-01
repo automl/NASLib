@@ -11,7 +11,9 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 
 from naslib.utils import utils
+from naslib.utils.logging import log_every_n_seconds
 
+logger = logging.getLogger(__name__)
 
 class Trainer(object):
     """
@@ -31,27 +33,68 @@ class Trainer(object):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._prepare_dataloaders(parser.get_train_val_loaders)
 
+        self.train_top1 = utils.AvgrageMeter()
+        self.train_top5 = utils.AvgrageMeter()
+        self.val_top1 = utils.AvgrageMeter()
+        self.val_top5 = utils.AvgrageMeter()
+
 
 
     def _prepare_dataloaders(self, get_data_loaders):
-        train_queue, valid_queue, test_queue, train_transform, valid_transform = get_data_loaders()
+        train_queue, valid_queue, test_queue, _, _ = get_data_loaders()
         self.train_queue = train_queue
         self.valid_queue = valid_queue
         self.test_queue = test_queue
-        self.train_transform = train_transform  # TODO they are not used are they?
-        self.valid_transform = valid_transform
 
 
     def train(self):
-        print("Start training")
+        logger.info("Start training")
         for e in range(self.epochs):
             self.optimizer.new_epoch(e)
+
             for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
-                # logits_train, logits_val, train_loss = 
-                self.optimizer.step(data_train, data_val)
-                break
-        print("Training finished")
+                data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
+                data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
+
+                stats = self.optimizer.step(data_train, data_val)
+                logits_train, logits_val, train_loss, val_loss = stats
+
+                self._store_accuracies(logits_train, data_train[1], 'train')
+                self._store_accuracies(logits_val, data_val[1], 'val')
                 
+                log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}".format(
+                    e, step, train_loss, val_loss), n=5)
+        
+            self._log_and_reset_accuracies(e)
+        logger.info("Training finished")
+    
+
+    def _log_and_reset_accuracies(self, epoch):
+        logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}, Validation accuracy: {:.5}, {:.5}".format(
+                epoch,
+                self.train_top1.avg, self.train_top5.avg,
+                self.val_top1.avg, self.val_top5.avg
+            ))
+        self.train_top1.reset()
+        self.train_top5.reset()
+        self.val_top1.reset()
+        self.val_top5.reset()
+
+
+    def _store_accuracies(self, logits, target, split):
+
+        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
+        n = logits.size(0)
+
+        if split == 'train':
+            self.train_top1.update(prec1.data.item(), n)
+            self.train_top5.update(prec5.data.item(), n)
+        elif split == 'val':
+            self.val_top1.update(prec1.data.item(), n)
+            self.val_top5.update(prec5.data.item(), n)
+        else:
+            raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
+
 
     def evaluate(self, retrain=False):
         print("Start evaluation")
@@ -64,7 +107,7 @@ class Trainer(object):
             
             # train from scratch
             for step, data_train in enumerate(self.train_queue):
-                pass
+                raise NotImplementedError()
         
 
         # measure final test accuracy
@@ -86,7 +129,7 @@ class Trainer(object):
 
             break
         
-        print("Evaluation finished. Test accuracies: top-1 = {}, top-5 = {}".format(top1.avg, top5.avg))
+        print("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
 
 
 

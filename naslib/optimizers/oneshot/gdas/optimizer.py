@@ -5,6 +5,7 @@ import torch
 from naslib.optimizers.core.operations import GDASMixedOp
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 
+logger = logging.getLogger(__name__)
 
 class GDASOptimizer(DARTSOptimizer):
     """
