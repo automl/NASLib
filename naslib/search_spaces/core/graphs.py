@@ -273,6 +273,21 @@ class Graph(nx.DiGraph, torch.nn.Module):
         return self
 
 
+    def add_node(self, node_index, **attr):
+        """
+        Adds a node to the graph.
+
+        Note that adding a node using an index that has been used already
+        will override its attributes.
+
+        Args:
+            node_index (int): The index for the node. Expect to be >= 1.
+            **attr: The attributes which can be added in a dict like form.
+        """
+        assert node_index >= 1, "Expecting the node index to be greater or equal 1"
+        super().add_node(node_index, **attr)
+
+
     def set_input(self, node_idxs: list):
         """
         Route the input from specific parent edges to the input nodes of 
@@ -760,7 +775,3 @@ class NodeOpGraph(nx.DiGraph, MetaGraph):
                     cell_input = node_info['transform'](cell_input)
                 node_info['output'] = node_info['op'](cell_input)
         return [self.nodes[node]['output'] for node in self.output_nodes()][0]
-
-
-if __name__ == '__main__':
-    x = SimpleHierarchicalSpace()
