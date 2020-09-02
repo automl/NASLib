@@ -1,10 +1,13 @@
 import numpy as np
 import torch
+import logging
 from torch.autograd import Variable
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer 
 from naslib.optimizers.core.operations import MixedOp
 from naslib.utils import _concat
+
+logger = logging.getLogger(__name__)
 
 
 class DARTSOptimizer(MetaOptimizer):
@@ -109,6 +112,7 @@ class DARTSOptimizer(MetaOptimizer):
         graph.train()
         graph = graph.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
 
+        logger.info("Parsed graph:\n" + torch.nn.Module.__str__(graph)) # is this save?
         self.graph = graph
         
 
