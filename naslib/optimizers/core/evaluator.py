@@ -25,13 +25,14 @@ class Trainer(object):
     - do the final evaluation
     """
 
-    def __init__(self, optimizer, dataset, config, parser):
+    def __init__(self, optimizer, dataset, config):
         self.optimizer = optimizer
         self.dataset = dataset
+        self.config = config
         self.epochs = 1     # config.epochs
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._prepare_dataloaders(parser.get_train_val_loaders)
+        self._prepare_dataloaders()
 
         self.train_top1 = utils.AvgrageMeter()
         self.train_top5 = utils.AvgrageMeter()
@@ -40,8 +41,8 @@ class Trainer(object):
 
 
 
-    def _prepare_dataloaders(self, get_data_loaders):
-        train_queue, valid_queue, test_queue, _, _ = get_data_loaders()
+    def _prepare_dataloaders(self):
+        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(self.config)
         self.train_queue = train_queue
         self.valid_queue = valid_queue
         self.test_queue = test_queue
