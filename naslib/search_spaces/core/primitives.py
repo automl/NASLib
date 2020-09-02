@@ -241,7 +241,26 @@ class AvgPool1x1(AbstractPrimitive):
         return None
 
 
+class Concat1x1(nn.Module):
+    """
+    Implementation of the channel-wise concatination followed by a 1x1 convolution
+    to retain the channel dimension.
+    """
 
+    def __init__(self, num_in_edges, channels, affine=False):
+        super(Concat1x1, self).__init__()
+        self.conv = nn.Conv2d(num_in_edges * channels, channels, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn = nn.BatchNorm2d(channels, affine=affine)
+    
+    def forward(self, x):
+        """
+        Expecting a list of input tensors. Stacking them channel-wise
+        and applying 1x1 conv
+        """
+        x = torch.cat(x, dim=1)
+        x = self.conv(x)
+        x = self.bn(x)
+        return x
 
 
 ###################################################

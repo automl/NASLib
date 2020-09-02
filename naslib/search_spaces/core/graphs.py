@@ -8,7 +8,7 @@ from networkx.algorithms.dag import lexicographical_topological_sort
 from torch.utils.tensorboard import SummaryWriter
 
 from naslib.utils.utils import drop_path, cat_channels
-from naslib.utils.logging import log_formats
+from naslib.utils.logging import log_formats, log_first_n
 from naslib.search_spaces.core.metaclasses import MetaGraph
 from naslib.search_spaces.core.primitives import Identity, AbstractPrimitive
 
@@ -367,13 +367,16 @@ class Graph(nx.DiGraph, torch.nn.Module):
             logger.debug("Node {}-{}, current data {}, start processing...".format(self.name, node_idx, log_formats(node)))
             
             # node internal: process input if necessary
+            if ('subgraph' in node and 'comb_op' not in node) or ('comb_op' in node and 'subgraph' not in node):
+                log_first_n(logging.WARN, "Comb_op is ignored if subgraph is defined!", n=1)
+            # TODO: merge 'subgraph' and 'comb_op'. It is basicallly the same thing. Also in parse()
             if 'subgraph' in node:
                 x = node['subgraph'].forward(node['input'])
             else:
                 if len(node['input'].values()) == 1:
                     x = list(node['input'].values())[0]
                 else:
-                    x = node['comb_op'](list(node['input'].values()))
+                    x = node['comb_op']([node['input'][k] for k in sorted(node['input'].keys())])
             
             # outgoing edges: process all outgoing edges
             for neigbor_idx in self.neighbors(node_idx):
@@ -405,6 +408,9 @@ class Graph(nx.DiGraph, torch.nn.Module):
             if 'subgraph' in self.nodes[node_idx]:
                 self.nodes[node_idx]['subgraph'].parse()
                 self.add_module("{}-subgraph_at({})".format(self.name, node_idx), self.nodes[node_idx]['subgraph'])
+            else:
+                if isinstance(self.nodes[node_idx]['comb_op'], torch.nn.Module):
+                    self.add_module("{}-comb_op_at({})".format(self.name, node_idx), self.nodes[node_idx]['comb_op'])
             for neigbor_idx in self.neighbors(node_idx):
                 edge_data = self.get_edge_data(node_idx, neigbor_idx)
                 if isinstance(edge_data.op, Graph):

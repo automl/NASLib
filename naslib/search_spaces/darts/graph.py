@@ -163,6 +163,12 @@ class DartsSearchSpace(GraphWrapper):
             nn.Linear(channels[-1], 10))
         )
 
+        #
+        # Combining operations
+        #
+        for n, c in zip(range(3, 11), [16, 16, 32, 32, 32, 64, 64, 64]):
+            self.nodes[n]['subgraph'].nodes[7]['comb_op'] = ops.Concat1x1(num_in_edges=4, channels=c)
+
 
 class SimpleCellSearchSpace(GraphWrapper):
 
@@ -267,6 +273,12 @@ class SimpleCellSearchSpace(GraphWrapper):
             nn.Linear(channels[-1], 10))
         )
 
+        #
+        # Combining operations
+        #
+        self.nodes[3]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=16)
+        self.nodes[4]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=32)
+        self.nodes[5]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=32)
 
 ############################################################################################
 # TODO: Remove the parts below once all optimizers are adapted to the new search space api
