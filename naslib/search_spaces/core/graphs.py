@@ -244,6 +244,9 @@ class Graph(nx.DiGraph, torch.nn.Module):
         self.scope = None
         self.input_node_idxs = None
 
+    def __eq__(self, other):
+        return self.name == other.name
+
 
     def __hash__(self):
         """
@@ -571,6 +574,22 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     graph.edges[u, v].update(update_func(current_edge_data=edge_data))
 
 
+    def update_nodes(self, update_func: callable, scope="all", private_node_data: bool = False):
+        """
+        Update the nodes
+        """
+        for graph in self._get_child_graphs(single_instances=not private_node_data) + [self]:
+            if scope == 'all' or (graph.scope is not None and graph.scope in scope):
+                logger.debug('Updating {}'.format(graph.name))
+                for node_idx in lexicographical_topological_sort(graph):
+                    node = self.nodes[node_idx]
+                    in_edges = list(graph.in_edges(node_idx, data=True))
+                    out_edges = list(graph.out_edges(node_idx, data=True))
+                    update_func(node=node, in_edges=in_edges, out_edges=out_edges)
+
+                    
+
+
     def clone(self):
         """
         Deep copy of the current graph.
@@ -618,6 +637,13 @@ class GraphWrapper(Graph):
         else:
             return None
 
+
+if __name__ == "__main__":
+    test = Graph()
+    test.name = 'test'
+    test.add_node(1)
+
+    print()
 
 ####################################################################################
 # TODO: Remove the parts below as they are the old search space implementation

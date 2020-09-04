@@ -50,6 +50,7 @@ class Trainer(object):
 
     def train(self):
         logger.info("Start training")
+        self.optimizer.before_training()
         for e in range(self.epochs):
             self.optimizer.new_epoch(e)
 
@@ -65,8 +66,10 @@ class Trainer(object):
                 
                 log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}".format(
                     e, step, train_loss, val_loss), n=5)
+                break
         
             self._log_and_reset_accuracies(e)
+        self.optimizer.after_training()
         logger.info("Training finished")
     
 
@@ -100,6 +103,7 @@ class Trainer(object):
     def evaluate(self, retrain=False):
         print("Start evaluation")
         best_arch = self.optimizer.get_final_architecture()
+        logger.info("Final architecture:\n" + torch.nn.Module.__str__(best_arch)) # is this save?
 
         if retrain:
             best_arch.reset_weights(inplace=True)
@@ -117,7 +121,7 @@ class Trainer(object):
 
         best_arch.eval()
 
-        for data_test in self.test_queue:
+        for i, data_test in enumerate(self.test_queue):
             input_test, target_test = data_test
             n = input_test.size(0)
 
@@ -127,8 +131,10 @@ class Trainer(object):
                 prec1, prec5 = utils.accuracy(logits, target_test, topk=(1, 5))
                 top1.update(prec1.data.item(), n)
                 top5.update(prec5.data.item(), n)
+            
+            log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
 
-            break
+            
         
         print("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
 

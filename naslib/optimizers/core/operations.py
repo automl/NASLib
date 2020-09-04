@@ -50,7 +50,15 @@ class MixedOp(AbstractPrimitive):
 class GDASMixedOp(AbstractPrimitive):
 
 
-    def __init__(self, primitives):
+    def __init__(self, primitives, min_cuda_memory=False):
+        """
+        Initialize the mixed op for GDAS as defined in
+
+
+
+        Args:
+            primitives (list): The primitive operations to sample from.
+        """
         super(GDASMixedOp, self).__init__()
         self.primitives = primitives
 
@@ -64,13 +72,9 @@ class GDASMixedOp(AbstractPrimitive):
         # This is now done redundantly, although it is only required once
         # per epoch for all alphas. Potential for speedup.
         sampled_arch_weight = torch.nn.functional.gumbel_softmax(
-                edge_data.alpha, tau=edge_data.tau, hard=False
+                edge_data.alpha, tau=edge_data.tau, hard=True
             )
-        
-        return sum(
-            w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives)
-            if abs(w) > 1e-10
-        )
+        return sum(w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives))
     
     def get_embedded_ops(self):
         return self.primitives

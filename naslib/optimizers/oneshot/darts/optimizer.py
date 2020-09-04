@@ -6,6 +6,7 @@ from torch.autograd import Variable
 from naslib.optimizers.core.metaclasses import MetaOptimizer 
 from naslib.optimizers.core.operations import MixedOp
 from naslib.utils import _concat
+import naslib.search_spaces.core.primitives as ops
 
 logger = logging.getLogger(__name__)
 
@@ -93,8 +94,9 @@ class DARTSOptimizer(MetaOptimizer):
 
         for alpha in graph.get_all_edge_data('alpha'):
             self.architectural_weights.append(alpha)
-        
+
         graph.parse()
+        logger.info("Parsed graph:\n" + torch.nn.Module.__str__(graph)) # is this save?
 
         # Init optimizers
         self.arch_optimizer = self.arch_optimizer(
@@ -110,11 +112,18 @@ class DARTSOptimizer(MetaOptimizer):
         )
 
         graph.train()
-        graph = graph.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
-
-        logger.info("Parsed graph:\n" + torch.nn.Module.__str__(graph)) # is this save?
-        self.graph = graph
         
+        self.graph = graph
+        self.scope = scope
+        
+
+    def before_training(self):
+        """
+        Move the graph into cuda memory if available.
+        """
+        self.graph = self.graph.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+        
+
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
@@ -148,19 +157,41 @@ class DARTSOptimizer(MetaOptimizer):
         
         return logits_train, logits_val, train_loss, val_loss
 
-        
-    
 
     def get_final_architecture(self):
+
+        def determine_input(node, in_edges, out_edges):
+            if len(in_edges) >= 2:
+                for _, _, data in in_edges:
+                    if data.has('final') and data.final:
+                        return  # We are looking at an out node
+                    data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+                sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[2].alpha), reverse=True)
+                keep_edges, _, _ = zip(*sorted_edge_ids[:2])
+                for edge_id, _, edge_data in in_edges:
+                    if edge_id not in keep_edges:
+                        edge_data.remove('alpha')
+            else:
+                print("no update for node")
+
 
         def discretize_ops(current_edge_data):
             if current_edge_data.has('alpha'):
                 primitives = current_edge_data.op.get_embedded_ops()
                 alphas = current_edge_data.alpha.detach()
                 current_edge_data.set('op', primitives[np.argmax(alphas)])
+            elif not (current_edge_data.has('final') and current_edge_data.final):
+                current_edge_data.set('op', current_edge_data.op.primitives[1]) # Ugly. Zero() is at index 1
+            else:
+                print('noting updated')
             return current_edge_data
+
         
-        self.graph.update_edges(discretize_ops, private_edge_data=True)
+        self.graph.update_nodes(determine_input, scope=self.scope, private_node_data=False)
+        self.graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
+        
+        self.graph.parse()
+
         return self.graph
 
 

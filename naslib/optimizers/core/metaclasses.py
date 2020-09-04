@@ -69,10 +69,27 @@ class MetaOptimizer(object, metaclass=ABCMeta):
 
     def new_epoch(self, epoch):
         """
-        Function called at the beginning of each new search epoch
+        Function called at the beginning of each new search epoch. To be 
+        used as hook for the optimizer.
 
         Args:
             epoch (int): Number of the epoch to start.
+        """
+        pass
+
+
+    def before_training(self):
+        """
+        Function called right before training starts. To be used as hook
+        for the optimizer.
+        """
+        pass
+
+
+    def after_training(self):
+        """
+        Function called right after training finished. To be used as hook
+        for the optimizer.
         """
         pass
 
