@@ -1,27 +1,5 @@
 from abc import ABCMeta, abstractmethod
 
-import six
-import torch.nn as nn
-
-
-@six.add_metaclass(ABCMeta)
-class MetaOp(nn.Module):
-    def __init__(self, primitives, *args, **kwargs):
-        super(MetaOp, self).__init__()
-        self.primitives = primitives
-        self._ops = nn.ModuleList()
-
-    def __len__(self):
-        return len(self.primitives)
-
-    @abstractmethod
-    def forward(self, *args, **kwargs):
-        raise NotImplementedError
-
-    @abstractmethod
-    def build(self, C, stride, out_node_op, ops_dict):
-        pass
-
 
 class MetaOptimizer(object, metaclass=ABCMeta):
     """
@@ -114,21 +92,3 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         Returns:
             (torch.optim.Optimizer): The optimizer used for the op weights update.
         """
-
-    #@abstractmethod
-    #def replace_function(self, edge, graph):
-    #    raise NotImplementedError
-
-
-    #@abstractmethod
-    @classmethod
-    def from_config(cls, *args, **kwargs):
-        raise NotImplementedError
-
-    #@abstractmethod
-    def forward_pass_adjustment(self, *args, **kwargs):
-        """
-        Function evaluated prior to every forward pass
-        """
-        raise NotImplementedError
-

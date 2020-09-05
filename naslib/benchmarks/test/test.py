@@ -1,10 +1,10 @@
 import logging
 import sys
 
-from naslib.optimizers.core import Trainer
-from naslib.optimizers.oneshot.darts import DARTSOptimizer
-from naslib.optimizers.oneshot.gdas import GDASOptimizer
-from naslib.optimizers.discrete.rs import RandomSearch
+from naslib.optimizers.core.evaluator import Trainer
+from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
+from naslib.optimizers.oneshot.gdas.optimizer import GDASOptimizer
+from naslib.optimizers.discrete.rs.optimizer import RandomSearch
 
 from naslib.search_spaces.cell.darts import DartsSearchSpace
 from naslib.search_spaces.cell.simple import SimpleCellSearchSpace
