@@ -103,7 +103,7 @@ class Trainer(object):
     def evaluate(self, retrain=False):
         print("Start evaluation")
         best_arch = self.optimizer.get_final_architecture()
-        logger.info("Final architecture:\n" + torch.nn.Module.__str__(best_arch)) # is this save?
+        logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if retrain:
             best_arch.reset_weights(inplace=True)
@@ -133,6 +133,7 @@ class Trainer(object):
                 top5.update(prec5.data.item(), n)
             
             log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
+            break
 
             
         

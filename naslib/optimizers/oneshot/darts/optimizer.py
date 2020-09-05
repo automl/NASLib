@@ -96,7 +96,7 @@ class DARTSOptimizer(MetaOptimizer):
             self.architectural_weights.append(alpha)
 
         graph.parse()
-        logger.info("Parsed graph:\n" + torch.nn.Module.__str__(graph)) # is this save?
+        logger.info("Parsed graph:\n" + graph.modules_str())
 
         # Init optimizers
         self.arch_optimizer = self.arch_optimizer(
@@ -162,13 +162,13 @@ class DARTSOptimizer(MetaOptimizer):
 
         def determine_input(node, in_edges, out_edges):
             if len(in_edges) >= 2:
-                for _, _, data in in_edges:
+                for _, data in in_edges:
                     if data.has('final') and data.final:
                         return  # We are looking at an out node
                     data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
-                sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[2].alpha), reverse=True)
-                keep_edges, _, _ = zip(*sorted_edge_ids[:2])
-                for edge_id, _, edge_data in in_edges:
+                sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
+                keep_edges, _ = zip(*sorted_edge_ids[:2])
+                for edge_id, edge_data in in_edges:
                     if edge_id not in keep_edges:
                         edge_data.remove('alpha')
             else:
@@ -187,7 +187,7 @@ class DARTSOptimizer(MetaOptimizer):
             return current_edge_data
 
         
-        self.graph.update_nodes(determine_input, scope=self.scope, private_node_data=False)
+        self.graph.update_nodes(determine_input, scope=self.scope, single_instances=True)
         self.graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         
         self.graph.parse()
