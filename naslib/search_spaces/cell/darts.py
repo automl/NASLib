@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import naslib.search_spaces.core.primitives as ops
 
@@ -5,6 +6,70 @@ from torch import nn
 from copy import deepcopy
 
 from naslib.search_spaces.core.graph import Graph, EdgeData
+
+
+def _set_cell_ops(current_edge_data, C, stride):
+    """
+    Replace the 'op' at the edges with the ones defined here.
+    This function is called by the framework for every edge in
+    the defined scope.
+
+    Args:
+        current_egde_data (EdgeData): The data that currently sits
+            at the edge.
+        C (int): convolutional channels
+        stride (int): stride for the operation
+    
+    Returns:
+        EdgeData: the updated EdgeData object.
+    """
+    if current_edge_data.has('final') and current_edge_data.final:
+        return current_edge_data
+    else:
+        C_in = C if stride==1 else C//2
+        current_edge_data.set('op', [
+            ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            ops.Zero(stride=stride),
+            ops.MaxPool1x1(3, stride, C_in, C),
+            ops.AvgPool1x1(3, stride, C_in, C),
+            ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+            ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
+            ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+            ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
+        ])
+    return current_edge_data
+
+
+def _truncate_input_edges(node, in_edges, out_edges):
+    """
+    Removes input edges if there are more than k.
+    """
+    k = 2
+    if len(in_edges) >= k:
+        if any(e.has('alpha') or (e.has('final') and e.final) for _, e in in_edges):
+            # We are in the one-shot case
+            for _, data in in_edges:
+                if data.has('final') and data.final:
+                    return  # We are looking at an out node
+                data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+            sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
+            keep_edges, _ = zip(*sorted_edge_ids[:k])
+            for edge_id, edge_data in in_edges:
+                if edge_id not in keep_edges:
+                    edge_data.delete()
+        else:
+            # We are in the discrete case (e.g. random search)
+            for _, data in in_edges:
+                assert isinstance(data.op, list)
+                data.op.pop(1)      # Remove the zero op
+            if any(e.has('final') and e.final for _, e in in_edges):
+                return  # TODO: how about mixed final and non-final?
+            else:
+                for _ in range(len(in_edges) - k):
+                    in_edges[random.randint(0, len(in_edges)-1)][1].delete()
+            
+    else:
+        print("no update for node")
 
 
 class DartsSearchSpace(Graph):
@@ -18,37 +83,7 @@ class DartsSearchSpace(Graph):
     each edge are 8 primitive operations.
     """
 
-    @staticmethod
-    def set_cell_ops(current_edge_data, C, stride):
-        """
-        Replace the 'op' at the edges with the ones defined here.
-        This function is called by the framework for every edge in
-        the defined scope.
-
-        Args:
-            current_egde_data (EdgeData): The data that currently sits
-                at the edge.
-            C (int): convolutional channels
-            stride (int): stride for the operation
-        
-        Returns:
-            EdgeData: the updated EdgeData object.
-        """
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
-        else:
-            C_in = C if stride==1 else C//2
-            current_edge_data.set('op', [
-                ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
-                ops.Zero(stride=stride),
-                ops.MaxPool1x1(3, stride, C_in, C),
-                ops.AvgPool1x1(3, stride, C_in, C),
-                ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-                ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
-                ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-                ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
-            ])
-        return current_edge_data
+    
 
     """
     Scope is used to target different instances of the same cell.
@@ -139,7 +174,7 @@ class DartsSearchSpace(Graph):
 
         for scope, c in zip(stages, channels):
             self.update_edges(
-                update_func=lambda current_edge_data: self.set_cell_ops(current_edge_data, c, stride=1),
+                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
                 scope=scope,
                 private_edge_data=True
             )
@@ -151,7 +186,7 @@ class DartsSearchSpace(Graph):
             reduction_cell = self.nodes[n]['subgraph']
             for u, v, data in reduction_cell.edges.data():
                 stride = 2 if u in (1, 2) else 1
-                reduction_cell.edges[u, v].update(self.set_cell_ops(data, c, stride))
+                reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
         
         # post-processing
         self.edges[10, 11].set('op', ops.Sequential(
@@ -165,3 +200,12 @@ class DartsSearchSpace(Graph):
         #
         for n, c in zip(range(3, 11), [16, 16, 32, 32, 32, 64, 64, 64]):
             self.nodes[n]['subgraph'].nodes[7]['comb_op'] = ops.Concat1x1(num_in_edges=4, channels=c)
+
+
+    def prepare_discretization(self):
+        """
+        In DARTS a node can have a maximum of two incoming edges.
+        This is handled here.
+        """
+        
+        self.update_nodes(_truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True)

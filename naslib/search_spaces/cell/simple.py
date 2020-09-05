@@ -6,22 +6,27 @@ from copy import deepcopy
 
 from naslib.search_spaces.core.graph import Graph, EdgeData
 
-class SimpleCellSearchSpace(Graph):
+from .darts import _truncate_input_edges
 
-    @staticmethod
-    def set_cell_ops(current_edge_data, C, stride):
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
-        else:
-            C_in = C if stride==1 else C//2
-            current_edge_data.set('op', [
-                ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
-                ops.Zero(stride=stride),
-                ops.MaxPool1x1(3, stride, C_in, C),
-                ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-                ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-            ])
+def _set_cell_ops(current_edge_data, C, stride):
+    if current_edge_data.has('final') and current_edge_data.final:
         return current_edge_data
+    else:
+        C_in = C if stride==1 else C//2
+        current_edge_data.set('op', [
+            ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            ops.Zero(stride=stride),
+            ops.MaxPool1x1(3, stride, C_in, C),
+            ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+            ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+        ])
+    return current_edge_data
+
+
+class SimpleCellSearchSpace(Graph):
+    """
+    A simplified version of the DARTS cell search space for playing around.
+    """
 
     OPTIMIZER_SCOPE = [
         "n_stage_1",
@@ -89,7 +94,7 @@ class SimpleCellSearchSpace(Graph):
 
         for scope, c in zip(stages, channels):
             self.update_edges(
-                update_func=lambda current_edge_data: self.set_cell_ops(current_edge_data, c, stride=1),
+                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
                 scope=scope,
                 private_edge_data=True
             )
@@ -100,7 +105,7 @@ class SimpleCellSearchSpace(Graph):
             reduction_cell = self.nodes[n]['subgraph']
             for u, v, data in reduction_cell.edges.data():
                 stride = 2 if u in (1, 2) else 1
-                reduction_cell.edges[u, v].update(self.set_cell_ops(data, c, stride))
+                reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
         
         # post-processing
         self.edges[5, 6].set('op', ops.Sequential(
@@ -116,3 +121,6 @@ class SimpleCellSearchSpace(Graph):
         self.nodes[4]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=32)
         self.nodes[5]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=32)
 
+
+    def prepare_discretization(self):
+        self.update_nodes(_truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True)

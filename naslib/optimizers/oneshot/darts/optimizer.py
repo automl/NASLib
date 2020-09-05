@@ -159,20 +159,7 @@ class DARTSOptimizer(MetaOptimizer):
 
 
     def get_final_architecture(self):
-
-        def determine_input(node, in_edges, out_edges):
-            if len(in_edges) >= 2:
-                for _, data in in_edges:
-                    if data.has('final') and data.final:
-                        return  # We are looking at an out node
-                    data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
-                sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
-                keep_edges, _ = zip(*sorted_edge_ids[:2])
-                for edge_id, edge_data in in_edges:
-                    if edge_id not in keep_edges:
-                        edge_data.remove('alpha')
-            else:
-                print("no update for node")
+        self.graph.prepare_discretization()
 
 
         def discretize_ops(current_edge_data):
@@ -180,14 +167,11 @@ class DARTSOptimizer(MetaOptimizer):
                 primitives = current_edge_data.op.get_embedded_ops()
                 alphas = current_edge_data.alpha.detach()
                 current_edge_data.set('op', primitives[np.argmax(alphas)])
-            elif not (current_edge_data.has('final') and current_edge_data.final):
-                current_edge_data.set('op', current_edge_data.op.primitives[1]) # Ugly. Zero() is at index 1
             else:
                 print('noting updated')
             return current_edge_data
 
         
-        self.graph.update_nodes(determine_input, scope=self.scope, single_instances=True)
         self.graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         
         self.graph.parse()

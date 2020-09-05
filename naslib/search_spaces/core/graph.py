@@ -39,7 +39,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
     **Modify the graph after definition**
 
     If you want to modify the graph e.g. in an optimizer once
-    it has been defined already use the function `update_edges()`. 
+    it has been defined already use the function `update_edges()`
+    or `update_nodes()`. 
     
     """
 
@@ -240,7 +241,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     x = list(node['input'].values())[0]
                 else:
                     x = node['comb_op']([node['input'][k] for k in sorted(node['input'].keys())])
-            
+            node['input'] = {}  # clear the input as we have processed it
+
             # outgoing edges: process all outgoing edges
             for neigbor_idx in self.neighbors(node_idx):
                 edge_data = self.get_edge_data(node_idx, neigbor_idx)
@@ -418,6 +420,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 logger.debug('Updating edges of graph {}'.format(graph.name))
                 for u, v, edge_data in graph.edges.data():
                     graph.edges[u, v].update(update_func(current_edge_data=edge_data))
+        self._delete_flagged_edges()
 
 
     def update_nodes(self, update_func: callable, scope="all", single_instances: bool = True):
@@ -457,6 +460,22 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     out_edges = list(graph.out_edges(node_idx, data=True))      # (v, u, data)
                     out_edges = [(u, data) for v, u, data in out_edges]         # v is same for all
                     update_func(node=node, in_edges=in_edges, out_edges=out_edges)
+        self._delete_flagged_edges()
+
+
+    def _delete_flagged_edges(self):
+        """
+        Delete edges which associated EdgeData is flagged as deleted.
+        """
+        for graph in self._get_child_graphs(single_instances=False) + [self]:    # we operate on shallow copies
+            to_remove = []
+            for u, v, edge_data in graph.edges.data():
+                if edge_data.is_deleted():
+                    to_remove.append((u, v))
+            if to_remove:
+                logger.info("Removing edges {} from graph {}".format(to_remove, graph))
+                graph.remove_edges_from(to_remove)
+                print()
 
 
     def clone(self):
@@ -490,6 +509,15 @@ class Graph(nx.DiGraph, torch.nn.Module):
         return graph
 
 
+    def prepare_discretization(self):
+        """
+        In some cases the search space is manipulated before the final
+        discretization is happening, e.g. DARTS. In such chases this should
+        be defined in the search space, so all optimizers can call it.
+        """
+        pass
+
+
 class EdgeData():
     """
     Class that holds data for each edge.
@@ -516,6 +544,8 @@ class EdgeData():
         self.set('op', Identity(), shared=False)
         for k, v in data.items():
             self.set(k, v, shared=False)
+        
+        self._shared['_deleted'] = False
 
 
     def has(self, key):
@@ -529,6 +559,7 @@ class EdgeData():
             bool: True if key exists, False otherwise.
 
         """
+        assert not key.startswith("_"), "Access to private keys not allowed!"
         if key in self._private.keys() or key in self._shared.keys():
             return True
         else:
@@ -536,18 +567,20 @@ class EdgeData():
 
 
     def __getitem__(self, key):
+        assert not key.startswith("_"), "Access to private keys not allowed!"
         return self.__getattr__(key)
 
     
-    def __getattr__(self, name: str):
-        if name.startswith("__"):       # Required for deepcoy, not sure why
-            raise AttributeError(name)  # 
-        if name in self._private:
-            return self._private[name]
-        elif name in self._shared:
-            return self._shared[name]
+    def __getattr__(self, key: str):
+        if key.startswith("__"):       # Required for deepcoy, not sure why
+            raise AttributeError(key)  # 
+        assert not key.startswith("_"), "Access to private keys not allowed!"
+        if key in self._private:
+            return self._private[key]
+        elif key in self._shared:
+            return self._shared[key]
         else:
-            raise AttributeError("Cannot find field '{}' in the given EdgeData!".format(name))
+            raise AttributeError("Cannot find field '{}' in the given EdgeData!".format(key))
     
 
     def __setattr__(self, name, val):
@@ -633,6 +666,7 @@ class EdgeData():
                 (and consequently between different instances of Graph).
         """
         assert isinstance(key, str), "Accepting only string keys, got {}".format(type(key))
+        assert not key.startswith("_"), "Access to private keys not allowed!"
         if shared:
             if key in self._private:
                 raise ValueError("Key {} alredy defined as non-shared")
@@ -654,3 +688,16 @@ class EdgeData():
             EdgeData: New independent instance.
         """
         return copy.deepcopy(self)
+
+    def delete(self):
+        """
+        Flag to delete the edge where this instance is attached to.
+        """
+        self._shared['_deleted'] = True
+    
+    
+    def is_deleted(self):
+        """
+        Returns true if the edge is flagged to be deleted
+        """
+        return self._shared['_deleted']

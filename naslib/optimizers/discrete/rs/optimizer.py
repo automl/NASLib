@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.core.operations import CategoricalOp
+
 
 class RandomSearch(MetaOptimizer):
     """
@@ -73,6 +73,9 @@ class RandomSearch(MetaOptimizer):
             # If there is no scope defined, let's use the search space default one
             if not scope:
                 scope = architecture_i.OPTIMIZER_SCOPE
+
+            # We are discreticing here so
+            architecture_i.prepare_discretization()
 
             # 1. add the index first (this is shared!)
             architecture_i.update_edges(
