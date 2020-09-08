@@ -148,19 +148,16 @@ class DartsSearchSpace(Graph):
         self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
         self.add_node(4, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 3]))
         self.add_node(5, subgraph=reduction_cell.set_scope("r_stage_1").set_input([3, 4]))
-        self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 5]))   # TODO: is this correct?
+        self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 5]))
         self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
         self.add_node(8, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([6, 7]))
-        self.add_node(9, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 8]))   # See above
+        self.add_node(9, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([7, 8]))
         self.add_node(10, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 9]))
         self.add_node(11)   # output
 
-        self.add_edge(1, 2)     # pre-processing (stem)
-        self.add_edges_from([(2, 3), (2, 4), (3, 4), (3, 5), (4, 5)])   # first stage
-        self.add_edges_from([(5, 6), (5, 7), (6, 7), (6, 8), (7, 8)])   # second stage
-        self.add_edges_from([(8, 9), (8, 10), (9, 10)])                 # third stage
-        self.add_edge(10, 11)   # post-processing (pooling, classifier)
-
+        self.add_edges_from([(i, i+1) for i in range(1, 11)])
+        self.add_edges_from([(i, i+2) for i in range(2, 9)])
+ 
         #
         # Operations at the edges
         #
@@ -168,6 +165,10 @@ class DartsSearchSpace(Graph):
 
         # pre-processing
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
+
+        # Replace Identity for normal cells after reductions cells to handle resolution
+        self.edges[4, 6].set('op', ops.FactorizedReduce(channels[0], channels[1]))
+        self.edges[7, 9].set('op', ops.FactorizedReduce(channels[1], channels[2]))
 
         # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]

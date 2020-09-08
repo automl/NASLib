@@ -275,6 +275,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Convert the graph into a neural network which can then
         be optimized by pytorch.
         """
+        # TODO: handle reparsing of code (del modules does not work easily)
+        # One way would be to store the graph in a file, reload and parse it.
+        # We always train from scratch anyways currently.
+
         for node_idx in lexicographical_topological_sort(self):
             if 'subgraph' in self.nodes[node_idx]:
                 self.nodes[node_idx]['subgraph'].parse()
@@ -485,7 +489,6 @@ class Graph(nx.DiGraph, torch.nn.Module):
             if to_remove:
                 logger.info("Removing edges {} from graph {}".format(to_remove, graph))
                 graph.remove_edges_from(to_remove)
-                print()
 
 
     def clone(self):
