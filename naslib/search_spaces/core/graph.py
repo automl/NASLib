@@ -103,7 +103,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Once the graph has been parsed, prints the modules as they appear in pytorch.
         """
         if self.is_parsed:
-            return torch.nn.Module.__repr__(self)
+            result = ""
+            for g in self._get_child_graphs(single_instances=True):
+                result += "Graph {}:\n {}\n==========\n".format(g.name, torch.nn.Module.__repr__(g))
+            return result
         else:
             return self.__repr__()
 
@@ -334,10 +337,9 @@ class Graph(nx.DiGraph, torch.nn.Module):
             for g in graphs:
                 if g.name not in [sg.name for sg in single]:
                     single.append(g)
-            return single
-            #return sorted(list(set(graphs)), key=lambda x: x.name)
+            return sorted(single, key=lambda g: g.name)
         else:
-            return sorted(graphs, key=lambda x: x.name)
+            return sorted(graphs, key=lambda g: g.name)
 
 
     def get_all_edge_data(self, key: str, scope='all', private_edge_data: bool = False) -> list:
