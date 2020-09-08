@@ -30,9 +30,7 @@ python install .
 ```python
 import naslib as nl
 
-config = config_parser('naslib/configs/default.yaml')
-parser = Parser('naslib/configs/default.yaml')
-
+config = nl.utils.get_config_from_args()    # use --help so see the options
 nl.utils.set_seed(config.seed)   # First thing to do to make naslib deterministic
 
 search_space = nl.search_spaces.darts.DartsSearchSpace()
@@ -41,9 +39,11 @@ optimizer = nl.optimizers.oneshot.darts.DARTSOptimizer()
 optimizer.adapt_search_space(search_space)  # The optimizer is prepating the search space
 
 trainer = nl.optimizers.core.Trainer(optimizer, 'cifar10', config, parser)
-trainer.train()
+trainer.search()
 trainer.evaluate()
 ```
+
+For an example file see `examples`.
 
 
 

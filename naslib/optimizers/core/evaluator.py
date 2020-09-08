@@ -51,7 +51,7 @@ class Trainer(object):
         self.test_queue = test_queue
 
 
-    def train(self):
+    def search(self):
         logger.info("Start training")
         self.optimizer.before_training()
         for e in range(self.epochs):

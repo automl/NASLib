@@ -53,6 +53,8 @@ class GDASMixedOp(AbstractPrimitive):
         """
         super(GDASMixedOp, self).__init__()
         self.primitives = primitives
+        for i, primitive in enumerate(primitives):
+            self.add_module("primitive-{}".format(i), primitive)
 
 
     def forward(self, x, edge_data):
