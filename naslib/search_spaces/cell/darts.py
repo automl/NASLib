@@ -67,9 +67,6 @@ def _truncate_input_edges(node, in_edges, out_edges):
             else:
                 for _ in range(len(in_edges) - k):
                     in_edges[random.randint(0, len(in_edges)-1)][1].delete()
-            
-    else:
-        print("no update for node")
 
 
 class DartsSearchSpace(Graph):

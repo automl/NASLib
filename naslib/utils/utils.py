@@ -306,8 +306,7 @@ def save_checkpoint(state, is_best, save):
 
 def print_args(args):
     for arg, val in args.items():
-        print(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
-    print()
+        logger.info(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
 
 
 def save(model, model_path):
@@ -334,5 +333,5 @@ def _concat(xs):
 def create_exp_dir(path):
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
-    print('Experiment dir : {}'.format(path))
+    logger.info('Experiment dir : {}'.format(path))
 
