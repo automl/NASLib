@@ -2,6 +2,7 @@ import networkx as nx
 import copy
 import logging
 import torch
+import random
 
 from networkx.algorithms.dag import lexicographical_topological_sort
 
@@ -74,6 +75,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         self.scope = None
         self.input_node_idxs = None
         self.is_parsed = False
+        self._id = random.random()    # pytorch expects unique modules in `add_module()`
 
 
     def __eq__(self, other):
@@ -91,11 +93,12 @@ class Graph(nx.DiGraph, torch.nn.Module):
         h = 0
         h += hash(self.name)
         h += hash(self.scope) if self.scope else 0
+        h += hash(self._id)
         return h
 
 
     def __repr__(self):
-        return "Graph {}, scope {}, {} nodes".format(self.name, self.scope, self.number_of_nodes())
+        return "Graph {}-{}, scope {}, {} nodes".format(self.name, self._id, self.scope, self.number_of_nodes())
 
 
     def modules_str(self):
@@ -104,7 +107,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         """
         if self.is_parsed:
             result = ""
-            for g in self._get_child_graphs(single_instances=True):
+            for g in self._get_child_graphs(single_instances=True) + [self]:
                 result += "Graph {}:\n {}\n==========\n".format(g.name, torch.nn.Module.__repr__(g))
             return result
         else:
