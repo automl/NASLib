@@ -34,6 +34,9 @@ class Trainer(object):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._prepare_dataloaders()
 
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer.op_optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
+
         self.train_top1 = utils.AvgrageMeter()
         self.train_top5 = utils.AvgrageMeter()
         self.val_top1 = utils.AvgrageMeter()
@@ -66,9 +69,9 @@ class Trainer(object):
                 
                 log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}".format(
                     e, step, train_loss, val_loss), n=5)
-                break
         
             self._log_and_reset_accuracies(e)
+            self.scheduler.step()
         self.optimizer.after_training()
         logger.info("Training finished")
     
@@ -108,7 +111,7 @@ class Trainer(object):
         if retrain:
             best_arch.reset_weights(inplace=True)
             optim = self.optimizer.get_weight_optimizer()
-            optim = optim(best_arch.parameters(), 0.01)
+            optim = optim(best_arch.parameters(), self.config.learning_rate)
             
             # train from scratch
             for step, data_train in enumerate(self.train_queue):

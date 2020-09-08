@@ -43,11 +43,10 @@ class DARTSOptimizer(MetaOptimizer):
         return current_edge_data
 
 
-    def __init__(self, 
+    def __init__(self, config,
             op_optimizer=torch.optim.SGD, 
             arch_optimizer=torch.optim.Adam, 
-            loss_criteria=torch.nn.CrossEntropyLoss(), 
-            grad_clip=None
+            loss_criteria=torch.nn.CrossEntropyLoss()
         ):
         # epochs, momentum, weight_decay, arch_learning_rate,
         # arch_weight_decay, grad_clip, *args, **kwargs
@@ -59,10 +58,11 @@ class DARTSOptimizer(MetaOptimizer):
         """
         super(DARTSOptimizer, self).__init__()
         
+        self.config = config
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
         self.loss = loss_criteria
-        self.grad_clip = grad_clip
+        self.grad_clip = self.config.grad_clip
 
         self.architectural_weights = torch.nn.ParameterList()
 
@@ -101,14 +101,16 @@ class DARTSOptimizer(MetaOptimizer):
         # Init optimizers
         self.arch_optimizer = self.arch_optimizer(
             self.architectural_weights.parameters(),
-            lr=0.0003,
+            lr=self.config.arch_learning_rate,
             betas=(0.5, 0.999),
-            weight_decay=0.001
+            weight_decay=self.config.arch_weight_decay
         )
 
         self.op_optimizer = self.op_optimizer(
             graph.parameters(),
-            lr=0.01
+            lr=self.config.learning_rate,
+            momentum=self.config.momentum,
+            weight_decay=self.config.weight_decay
         )
 
         graph.train()
