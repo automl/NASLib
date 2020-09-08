@@ -77,7 +77,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
 
     def __eq__(self, other):
-        return self.name == other.name
+        return self.name == other.name and self.scope == other.scope
 
 
     def __hash__(self):
@@ -88,7 +88,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
         This is used when determining whether two instances are copies.
         """
-        return hash(self.name)
+        h = 0
+        h += hash(self.name)
+        h += hash(self.scope) if self.scope else 0
+        return h
 
 
     def __repr__(self):
@@ -327,7 +330,12 @@ class Graph(nx.DiGraph, torch.nn.Module):
         graphs = [g for g in iter_flatten(graphs)]
         
         if single_instances:
-            return sorted(list(set(graphs)), key=lambda x: x.name)
+            single = []
+            for g in graphs:
+                if g.name not in [sg.name for sg in single]:
+                    single.append(g)
+            return single
+            #return sorted(list(set(graphs)), key=lambda x: x.name)
         else:
             return sorted(graphs, key=lambda x: x.name)
 

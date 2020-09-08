@@ -28,6 +28,8 @@ class MixedOp(AbstractPrimitive):
     def __init__(self, primitives):
         super(MixedOp, self).__init__()
         self.primitives = primitives
+        for i, primitive in enumerate(primitives):
+            self.add_module("primitive-{}".format(i), primitive)
     
     def forward(self, x, edge_data):
         normed_alphas = torch.softmax(edge_data.alpha, dim=-1)

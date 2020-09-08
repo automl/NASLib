@@ -123,6 +123,9 @@ class Trainer(object):
 
         for i, data_test in enumerate(self.test_queue):
             input_test, target_test = data_test
+            input_test = input_test.to(self.device)
+            target_test = target_test.to(self.device, non_blocking=True)
+            
             n = input_test.size(0)
 
             with torch.no_grad():
