@@ -124,6 +124,7 @@ class DARTSOptimizer(MetaOptimizer):
         Move the graph into cuda memory if available.
         """
         self.graph = self.graph.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+        self.architectural_weights = self.architectural_weights.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
         
 
 
@@ -167,10 +168,8 @@ class DARTSOptimizer(MetaOptimizer):
         def discretize_ops(current_edge_data):
             if current_edge_data.has('alpha'):
                 primitives = current_edge_data.op.get_embedded_ops()
-                alphas = current_edge_data.alpha.detach()
+                alphas = current_edge_data.alpha.detach().cpu()
                 current_edge_data.set('op', primitives[np.argmax(alphas)])
-            else:
-                print('noting updated')
             return current_edge_data
 
         

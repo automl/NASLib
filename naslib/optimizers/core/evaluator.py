@@ -29,13 +29,13 @@ class Trainer(object):
         self.optimizer = optimizer
         self.dataset = dataset
         self.config = config
-        self.epochs = 1     # config.epochs
+        self.epochs = config.epochs
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._prepare_dataloaders()
 
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer.op_optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
+            optimizer.op_optimizer, float(self.epochs), eta_min=self.config.learning_rate_min)
 
         self.train_top1 = utils.AvgrageMeter()
         self.train_top5 = utils.AvgrageMeter()
@@ -67,9 +67,9 @@ class Trainer(object):
                 self._store_accuracies(logits_train, data_train[1], 'train')
                 self._store_accuracies(logits_val, data_val[1], 'val')
                 
-                log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}".format(
-                    e, step, train_loss, val_loss), n=5)
-        
+                log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
+                    e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
+                
             self._log_and_reset_accuracies(e)
             self.scheduler.step()
         self.optimizer.after_training()
@@ -104,7 +104,7 @@ class Trainer(object):
 
 
     def evaluate(self, retrain=False):
-        print("Start evaluation")
+        logger.info("Start evaluation")
         best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
@@ -139,11 +139,14 @@ class Trainer(object):
                 top5.update(prec5.data.item(), n)
             
             log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
-            break
 
-            
-        
-        print("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
+        logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
+
+
+
+
+
+
 
 
 

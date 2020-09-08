@@ -14,18 +14,17 @@ from naslib.utils.logging import setup_logger
 logger = setup_logger("test.log")
 logger.setLevel(logging.INFO)
 
-
 if __name__ == '__main__':
     
     config = utils.get_config_from_args()
     utils.set_seed(config.seed)
 
-    # search_space = DartsSearchSpace()
-    search_space = SimpleCellSearchSpace()
+    search_space = DartsSearchSpace()
+    # search_space = SimpleCellSearchSpace()
 
     # optimizer = RandomSearch(sample_size=1)
-    # optimizer = DARTSOptimizer()
-    optimizer = GDASOptimizer(config.epochs)
+    optimizer = DARTSOptimizer(config)
+    # optimizer = GDASOptimizer(config.epochs)
 
     optimizer.adapt_search_space(search_space)
     
