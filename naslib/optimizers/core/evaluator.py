@@ -69,7 +69,7 @@ class Trainer(object):
                 
                 log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
                     e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
-
+                
             self._log_and_reset_accuracies(e)
             self.scheduler.step()
         self.optimizer.after_training()
@@ -118,11 +118,15 @@ class Trainer(object):
                 momentum=self.config.momentum,
                 weight_decay=self.config.weight_decay
             )
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optim, float(self.epochs), eta_min=self.config.learning_rate_min)
 
             grad_clip = self.config.grad_clip
             loss = torch.nn.CrossEntropyLoss()
 
             best_arch.train()
+            self.train_top1.reset()
+            self.train_top5.reset()
 
             # train from scratch
             for e in range(self.epochs):
@@ -137,8 +141,16 @@ class Trainer(object):
                     if grad_clip:
                         torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
                     optim.step()
-                    log_every_n_seconds(logging.INFO, "Retrain. batch {}-{}".format(e, i))
-        
+
+                    self._store_accuracies(logits_train, target_train, 'train')
+                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
+                        e, i, train_loss, scheduler.get_last_lr()), n=5)
+                scheduler.step()
+
+                logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
+                    self.train_top1.avg, self.train_top5.avg))
+                self.train_top1.reset()
+                self.train_top5.reset()
 
         # measure final test accuracy
         top1 = utils.AvgrageMeter()
