@@ -134,13 +134,11 @@ class DARTSOptimizer(MetaOptimizer):
         
         unrolled = False    # what it this?
 
-        self.arch_optimizer.zero_grad()
-        self.op_optimizer.zero_grad()
-        
         if unrolled:
             raise NotImplementedError()
         else:
             # Update architecture weights
+            self.arch_optimizer.zero_grad()
             logits_val = self.graph(input_val)
             val_loss = self.loss(logits_val, target_val)
             val_loss.backward()
@@ -151,6 +149,7 @@ class DARTSOptimizer(MetaOptimizer):
             self.arch_optimizer.step()
 
             # Update op weights
+            self.op_optimizer.zero_grad()
             logits_train = self.graph(input_train)
             train_loss = self.loss(logits_train, target_train)
             train_loss.backward()
@@ -162,8 +161,8 @@ class DARTSOptimizer(MetaOptimizer):
 
 
     def get_final_architecture(self):
+        logger.info("Arch weights before discretization: {}".format([a for a in self.optimizer.architectural_weights]))
         self.graph.prepare_discretization()
-
 
         def discretize_ops(current_edge_data):
             if current_edge_data.has('alpha'):
@@ -174,9 +173,7 @@ class DARTSOptimizer(MetaOptimizer):
 
         
         self.graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
-        
         self.graph.parse()
-
         return self.graph
 
 

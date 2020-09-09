@@ -69,7 +69,7 @@ class Trainer(object):
                 
                 log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
                     e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
-                
+
             self._log_and_reset_accuracies(e)
             self.scheduler.step()
         self.optimizer.after_training()
@@ -103,19 +103,41 @@ class Trainer(object):
             raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
 
 
-    def evaluate(self, retrain=False):
+    def evaluate(self, retrain=True):
         logger.info("Start evaluation")
+
         best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if retrain:
-            best_arch.reset_weights(inplace=True)
-            optim = self.optimizer.get_weight_optimizer()
-            optim = optim(best_arch.parameters(), self.config.learning_rate)
-            
+            #best_arch.reset_weights(inplace=True)  does not work
+            optim = self.optimizer.get_op_optimizer()
+            optim = optim(
+                best_arch.parameters(), 
+                self.config.learning_rate,
+                momentum=self.config.momentum,
+                weight_decay=self.config.weight_decay
+            )
+
+            grad_clip = self.config.grad_clip
+            loss = torch.nn.CrossEntropyLoss()
+
+            best_arch.train()
+
             # train from scratch
-            for step, data_train in enumerate(self.train_queue):
-                raise NotImplementedError()
+            for e in range(self.epochs):
+                for i, (input_train, target_train) in enumerate(self.train_queue):
+                    input_train = input_train.to(self.device)
+                    target_train = target_train.to(self.device, non_blocking=True)
+
+                    optim.zero_grad()
+                    logits_train = best_arch(input_train)
+                    train_loss = loss(logits_train, target_train)
+                    train_loss.backward()
+                    if grad_clip:
+                        torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
+                    optim.step()
+                    log_every_n_seconds(logging.INFO, "Retrain. batch {}-{}".format(e, i))
         
 
         # measure final test accuracy
