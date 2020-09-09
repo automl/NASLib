@@ -297,6 +297,27 @@ class Graph(nx.DiGraph, torch.nn.Module):
         self.is_parsed = True
 
 
+    def unparse(self):
+        g = Graph()
+        
+        graph_nodes = self.nodes
+        graph_edges = self.edges   
+
+        nodes_data = copy.deepcopy(graph_nodes.data())
+        for n, data in nodes_data:
+            if 'subgraph' in data:
+                data['subgraph'] = data['subgraph'].clone().unparse()
+        g.add_nodes_from(nodes_data)
+        g.add_edges_from(graph_edges.data())
+        g.graph.update(self.graph)
+        g.name = self.name
+        g.input_node_idxs = self.input_node_idxs
+        g.scope = self.scope
+        g.is_parsed = False
+        g._id = self._id
+        return g
+
+
     def _get_child_graphs(self, single_instances: bool = False) -> list:
         """
         Get all child graphs of the current graph.
@@ -514,13 +535,17 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Returns:
             Graph: Returns the modified version of the graph.
         """
+
+        def weight_reset(m):
+            if isinstance(m, torch.nn.Conv2d) or isinstance(m, torch.nn.Linear):
+                m.reset_parameters()
+
         if inplace:
             graph = self
         else:
             graph = self.clone()
         
-        for m in self.modules():
-            mm.reset_parameters()
+        graph.apply(weight_reset)
         
         return graph
 

@@ -110,7 +110,7 @@ class Trainer(object):
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if retrain:
-            #best_arch.reset_weights(inplace=True)  does not work
+            best_arch.reset_weights(inplace=True)
             optim = self.optimizer.get_op_optimizer()
             optim = optim(
                 best_arch.parameters(), 

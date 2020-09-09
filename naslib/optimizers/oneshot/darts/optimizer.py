@@ -161,7 +161,7 @@ class DARTSOptimizer(MetaOptimizer):
 
 
     def get_final_architecture(self):
-        logger.info("Arch weights before discretization: {}".format([a for a in self.optimizer.architectural_weights]))
+        logger.info("Arch weights before discretization: {}".format([a for a in self.architectural_weights]))
         self.graph.prepare_discretization()
 
         def discretize_ops(current_edge_data):
@@ -171,7 +171,7 @@ class DARTSOptimizer(MetaOptimizer):
                 current_edge_data.set('op', primitives[np.argmax(alphas)])
             return current_edge_data
 
-        
+        self.graph = self.graph.unparse()
         self.graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         self.graph.parse()
         return self.graph
