@@ -3,6 +3,9 @@
 *.err
 *.log
 
+# Model files
+*.pth
+
 # IDE related
 .vscode/
 .idea/

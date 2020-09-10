@@ -31,8 +31,7 @@ class GDASOptimizer(DARTSOptimizer):
             loss_criteria: The loss.
             grad_clip (float): Clipping of the gradients. Default None.
         """
-        super(GDASOptimizer, self).__init__(config, op_optimizer, arch_optimizer, 
-            loss_criteria)
+        super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
 
         self.epochs = config.epochs
         self.tau_max = config.tau_max
@@ -67,25 +66,13 @@ class GDASOptimizer(DARTSOptimizer):
         return current_edge_data
 
 
-    def adapt_search_space(self, search_space, scope=None):
-        """
-        Adapts the search space for GDAS. Use same as in DARTS.
-
-        tau does not need to be set here, as `new_epoch()` will
-        be called before the first forward pass.
-        """
-        super().adapt_search_space(search_space, scope)
-
-        self.scope = scope if scope else self.graph.OPTIMIZER_SCOPE
-
-
     def new_epoch(self, epoch):
         """
         Update the tau softmax parameter at the edges.
 
         This is also initially called before epoch 1.
         """
-        super(GDASOptimizer, self).new_epoch(epoch)
+        super().new_epoch(epoch)
         
         self.tau_curr += self.tau_step
         self.graph.update_edges(
@@ -94,4 +81,4 @@ class GDASOptimizer(DARTSOptimizer):
             private_edge_data=False
         )
 
-        logging.info("tau {}".format(self.tau_curr))
+        logger.info("tau {}".format(self.tau_curr))
