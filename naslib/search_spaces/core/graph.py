@@ -41,8 +41,28 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
     If you want to modify the graph e.g. in an optimizer once
     it has been defined already use the function `update_edges()`
-    or `update_nodes()`. 
+    or `update_nodes()`.
+
+    **Use as pytorch module**
+    If you want to learn the weights of the operations or any
+    other parameters of the graph you have to parse it first.
+    >>> graph = getFancySearchSpace()
+    >>> graph.parse()
+    >>> logits = graph(data)
+    >>> optimizer.min(loss(logits, target))
+
+    To update the pytorch module representation (e.g. after removing or adding
+    some new edges), you have to unparse. Beware that this is not fast, so it should
+    not be done on each batch or epoch, rather once after discretizising. If you 
+    want to change the representation of the graph use rather some shared operation
+    indexing at the edges.
+    >>> graph.update(remove_random_edges)
+    >>> graph.unparse()
+    >>> graph.parse()
+    >>> logits = graph(data)
     
+    **Interface to tabular benchmarks**
+    TODO
     """
 
     """
@@ -51,6 +71,14 @@ class Graph(nx.DiGraph, torch.nn.Module):
     differentate instances of the "same" graph.
     """
     OPTIMIZER_SCOPE = "all"
+
+    """
+    Whether the search space has an interface to one of the tabular benchmarks which
+    can then be used to query architecture performances.
+
+    If this is set to true then `query_performance()` should be implemented.
+    """
+    QUERYABLE = False
 
     
     def __init__(self):
@@ -71,6 +99,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         # `input` is required for storing the results of incoming edges.
         self.node_attr_dict_factory = lambda: dict({'input': {}, 'comb_op': sum})
 
+        # remember to add all members also in `unparse()`
         self.name = None
         self.scope = None
         self.input_node_idxs = None
@@ -298,16 +327,32 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
 
     def unparse(self):
+        """
+        Undo the pytorch parsing by reconstructing the graph uusing the
+        networkx data structures.
+
+        This is done recursively also for child graphs.
+
+        Returns:
+            Graph: An unparsed copy of the graph.
+        """
         g = Graph()
         
         graph_nodes = self.nodes
         graph_edges = self.edges   
 
-        nodes_data = copy.deepcopy(graph_nodes.data())
-        for n, data in nodes_data:
+        # unparse possible child graphs
+        # be careful with copying/deepcopying here cause of shared edge data
+        for n, data in graph_nodes.data():
             if 'subgraph' in data:
-                data['subgraph'] = data['subgraph'].clone().unparse()
-        g.add_nodes_from(nodes_data)
+                data['subgraph'] = data['subgraph'].unparse()
+        for u, v, data in graph_edges.data():
+            if isinstance(data.op, Graph):
+                data.set('op', data.op.unparse())
+        
+        # create the new graph
+        # Remember to add all members here to update. I know it is ugly but don't know better
+        g.add_nodes_from(graph_nodes.data())
         g.add_edges_from(graph_edges.data())
         g.graph.update(self.graph)
         g.name = self.name
@@ -315,6 +360,9 @@ class Graph(nx.DiGraph, torch.nn.Module):
         g.scope = self.scope
         g.is_parsed = False
         g._id = self._id
+        g.OPTIMIZER_SCOPE = self.OPTIMIZER_SCOPE
+        g.QUERYABLE = self.QUERYABLE
+
         return g
 
 
@@ -557,6 +605,22 @@ class Graph(nx.DiGraph, torch.nn.Module):
         be defined in the search space, so all optimizers can call it.
         """
         pass
+
+
+    def query_performance(self):
+        """
+        Can be used to query the performance of the architecture using
+        a tabular benchmark.
+
+        The interface must be provided by the search space.
+
+        Returns:
+            TODO
+        """
+        if self.QUERYABLE:
+            raise NotImplementedError("QUERYABLE set to True therefore query_performance must be implemented")
+        else:
+            raise NotImplementedError("This function should not be used if QUERYABLE is False")
 
 
 class EdgeData():

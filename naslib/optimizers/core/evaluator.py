@@ -158,6 +158,9 @@ class Trainer(object):
         best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
+        if best_arch.QUERYABLE:
+            result = best_arch.query_performance()
+
         if retrain:
             best_arch.reset_weights(inplace=True)
             optim = self.optimizer.get_op_optimizer()
