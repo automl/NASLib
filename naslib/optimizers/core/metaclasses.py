@@ -92,3 +92,12 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         Returns:
             (torch.optim.Optimizer): The optimizer used for the op weights update.
         """
+    
+    def get_model_size(self):
+        """
+        Returns the size of the model parameters in mb, e.g. by using
+        `utils.count_parameters_in_MB()`.
+
+        This is only used for logging purposes.
+        """
+        pass

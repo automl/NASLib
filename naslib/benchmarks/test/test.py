@@ -14,7 +14,7 @@ from naslib.utils import utils
 from naslib.utils.logging import setup_logger
 
 logger = setup_logger("test.log")
-#logger.setLevel(logging.INFO)
+logger.setLevel(logging.INFO)
 
 
 import types
@@ -40,5 +40,8 @@ if __name__ == '__main__':
     optimizer.adapt_search_space(search_space)
     
     trainer = Trainer(optimizer, 'cifar10', config)
+
     trainer.search()
     trainer.evaluate()
+
+    # trainer.evaluate(from_file='run/cifar10/model_0.pt')
