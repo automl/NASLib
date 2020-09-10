@@ -14,14 +14,10 @@ class GDASOptimizer(DARTSOptimizer):
         Dong and Yang (2019): Searching for a Robust Neural Architecture in Four GPU Hours
 
     """
-    def __init__(self, 
-            epochs: int, 
-            tau_max: float = 10, 
-            tau_min: float = 0.1, 
+    def __init__(self, config,
             op_optimizer: torch.optim.Optimizer = torch.optim.SGD, 
             arch_optimizer: torch.optim.Optimizer = torch.optim.Adam, 
-            loss_criteria=torch.nn.CrossEntropyLoss(), 
-            grad_clip=None
+            loss_criteria=torch.nn.CrossEntropyLoss()
         ):
         """
         Instantiate the optimizer
@@ -35,12 +31,12 @@ class GDASOptimizer(DARTSOptimizer):
             loss_criteria: The loss.
             grad_clip (float): Clipping of the gradients. Default None.
         """
-        super(GDASOptimizer, self).__init__(op_optimizer, arch_optimizer, 
-            loss_criteria, grad_clip)
+        super(GDASOptimizer, self).__init__(config, op_optimizer, arch_optimizer, 
+            loss_criteria)
 
-        self.epochs = epochs
-        self.tau_max = tau_max
-        self.tau_min = tau_min
+        self.epochs = config.epochs
+        self.tau_max = config.tau_max
+        self.tau_min = config.tau_min
 
         # Linear tau schedule
         self.tau_step = (self.tau_min - self.tau_max) / self.epochs
@@ -98,64 +94,4 @@ class GDASOptimizer(DARTSOptimizer):
             private_edge_data=False
         )
 
-        logging.info('TAU {}'.format(self.tau_curr))
-
-
-
-
-
-
-    # def replace_function(self, edge, graph):
-    #     graph.architectural_weights = self.architectural_weights
-
-    #     if 'op_choices' in edge:
-    #         edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
-
-    #         weights = self.architectural_weights[edge_key] if edge_key in self.architectural_weights else \
-    #             torch.nn.Parameter(1e-3 * torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
-
-    #         self.architectural_weights[edge_key] = weights
-    #         edge['arch_weight'] = self.architectural_weights[edge_key]
-    #         edge['op'] = GDASMixedOp(primitives=edge['op_choices'], **edge['op_kwargs'])
-
-    #         if edge_key not in self.edges:
-    #             self.edges[edge_key] = []
-    #         self.edges[edge_key].append(edge)
-    #     return edge
-
-    # def forward_pass_adjustment(self, *args, **kwargs):
-    #     """
-    #     Replaces the architectural weights in the edges with gumbel softmax near one-hot encodings.
-    #     """
-
-    #     for arch_key, arch_weight in self.architectural_weights.items():
-    #         # gumbel sample arch weights and assign them in self.edges
-    #         sampled_arch_weight = torch.nn.functional.gumbel_softmax(
-    #             arch_weight, tau=self.tau_curr, hard=False
-    #         )
-
-    #         # random perturbation part
-    #         if self.perturb_alphas == 'random':
-    #             softmaxed_arch_weight = sampled_arch_weight.clone()
-    #             perturbation = torch.zeros_like(softmaxed_arch_weight).uniform_(
-    #                 -self.epsilon_alpha,
-    #                 self.epsilon_alpha
-    #             )
-    #             softmaxed_arch_weight.data.add_(perturbation)
-    #             # clipping
-    #             max_index = softmaxed_arch_weight.argmax()
-    #             softmaxed_arch_weight.data.clamp_(0, 1)
-    #             if softmaxed_arch_weight.sum() == 0.0:
-    #                 softmaxed_arch_weight.data[max_index] = 1.0
-    #             softmaxed_arch_weight.data.div_(softmaxed_arch_weight.sum())
-
-    #         for edge in self.edges[arch_key]:
-    #             edge['sampled_arch_weight'] = sampled_arch_weight
-    #             if self.perturb_alphas == 'random':
-    #                 edge['softmaxed_arch_weight'] = softmaxed_arch_weight
-    #                 edge['perturb_alphas'] = True
-
-    # @classmethod
-    # def from_config(cls, *args, **kwargs):
-    #     nas_opt = cls(*args, **kwargs)
-    #     return nas_opt
+        logging.info("tau {}".format(self.tau_curr))

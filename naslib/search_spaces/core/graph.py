@@ -76,7 +76,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
     Whether the search space has an interface to one of the tabular benchmarks which
     can then be used to query architecture performances.
 
-    If this is set to true then `query_performance()` should be implemented.
+    If this is set to true then `query()` should be implemented.
     """
     QUERYABLE = False
 
@@ -607,15 +607,18 @@ class Graph(nx.DiGraph, torch.nn.Module):
         pass
 
 
-    def query_performance(self):
+    def query(self, metric: str) -> float:
         """
         Can be used to query the performance of the architecture using
         a tabular benchmark.
 
         The interface must be provided by the search space.
 
+        Args:
+            metric (str): the name of the metric to query.
+
         Returns:
-            TODO
+            float: The performance number
         """
         if self.QUERYABLE:
             raise NotImplementedError("QUERYABLE set to True therefore query_performance must be implemented")
