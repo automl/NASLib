@@ -51,7 +51,7 @@ class GDASMixedOp(AbstractPrimitive):
         Args:
             primitives (list): The primitive operations to sample from.
         """
-        super(GDASMixedOp, self).__init__()
+        super().__init__()
         self.primitives = primitives
         for i, primitive in enumerate(primitives):
             self.add_module("primitive-{}".format(i), primitive)
@@ -62,12 +62,7 @@ class GDASMixedOp(AbstractPrimitive):
         Applies the gumbel softmax to the architecture weights
         before forwarding `x` through the graph as in DARTS
         """
-
-        # This is now done redundantly, although it is only required once
-        # per epoch for all alphas. Potential for speedup.
-        sampled_arch_weight = torch.nn.functional.gumbel_softmax(
-                edge_data.alpha, tau=edge_data.tau, hard=True
-            )
+        sampled_arch_weight = edge_data.sampled_arch_weight
         return sum(w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives))
     
     def get_embedded_ops(self):
