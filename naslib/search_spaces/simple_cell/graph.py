@@ -1,4 +1,5 @@
 import numpy as np
+import networkx as nx
 from torch import nn
 from copy import deepcopy
 
@@ -118,9 +119,9 @@ class SimpleCellSearchSpace(Graph):
         #
         # Combining operations
         #
-        self.nodes[3]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=16)
-        self.nodes[4]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=32)
-        self.nodes[5]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, channels=32)
+        self.nodes[3]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, C_out=16)
+        self.nodes[4]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, C_out=32)
+        self.nodes[5]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, C_out=32)
 
 
     def prepare_discretization(self):

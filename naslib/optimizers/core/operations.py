@@ -26,7 +26,7 @@ class MixedOp(AbstractPrimitive):
     Defined by the optimizer!
     """
     def __init__(self, primitives):
-        super(MixedOp, self).__init__()
+        super().__init__(locals())
         self.primitives = primitives
         for i, primitive in enumerate(primitives):
             self.add_module("primitive-{}".format(i), primitive)
@@ -51,7 +51,7 @@ class GDASMixedOp(AbstractPrimitive):
         Args:
             primitives (list): The primitive operations to sample from.
         """
-        super().__init__()
+        super().__init__(locals())
         self.primitives = primitives
         for i, primitive in enumerate(primitives):
             self.add_module("primitive-{}".format(i), primitive)

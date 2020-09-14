@@ -173,6 +173,7 @@ class DARTSOptimizer(MetaOptimizer):
 
         self.graph = self.graph.unparse()
         self.graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
+        self.graph.prepare_evaluation()
         self.graph.parse()
         return self.graph
 

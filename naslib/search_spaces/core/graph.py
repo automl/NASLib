@@ -341,7 +341,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Returns:
             Graph: An unparsed copy of the graph.
         """
-        g = Graph()
+        g = self.__class__()
+        g.clear()
         
         graph_nodes = self.nodes
         graph_edges = self.edges   
@@ -608,6 +609,15 @@ class Graph(nx.DiGraph, torch.nn.Module):
         In some cases the search space is manipulated before the final
         discretization is happening, e.g. DARTS. In such chases this should
         be defined in the search space, so all optimizers can call it.
+        """
+        pass
+
+
+    def prepare_evaluation(self):
+        """
+        In some cases the evaluation architecture does not match the searched
+        one. An example is where the makro_model is extended to increase the
+        parameters. This is done here.
         """
         pass
 

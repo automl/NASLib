@@ -10,7 +10,7 @@ class FactorizedReduce(AbstractPrimitive):
     """
 
     def __init__(self, C_in, C_out, affine=False):
-        super(FactorizedReduce, self).__init__()
+        super().__init__(locals())
         assert C_out % 2 == 0
         self.relu = nn.ReLU(inplace=False)
         self.conv_1 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)

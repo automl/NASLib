@@ -13,8 +13,10 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
     which requires naslib to detect and properly process them.
     """
 
-    def __init__(self, *args, **kwargs):
-        super(AbstractPrimitive, self).__init__(*args, **kwargs)
+    def __init__(self, kwargs):
+        super().__init__()
+
+        self.init_params = {k: v for k, v in kwargs.items() if k != 'self' and not k.startswith('_')}
     
     @abstractmethod
     def forward(self, x, edge_data):
@@ -42,7 +44,7 @@ class Identity(AbstractPrimitive):
     """
 
     def __init__(self):
-        super(Identity, self).__init__()
+        super().__init__(locals())
 
     def forward(self, x, edge_data):
         return x
@@ -62,7 +64,7 @@ class Zero(AbstractPrimitive):
         When setting stride > 1 then it is assumed that the
         channels must be doubled.
         """
-        super(Zero, self).__init__()
+        super().__init__(locals())
         self.stride = stride
 
 
@@ -84,7 +86,7 @@ class SepConv(AbstractPrimitive):
     """
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
-        super(SepConv, self).__init__()
+        super().__init__(locals())
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, groups=C_in, bias=False),
@@ -110,7 +112,7 @@ class DilConv(AbstractPrimitive):
     """
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
-        super(DilConv, self).__init__()
+        super().__init__(locals())
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation,
@@ -133,11 +135,11 @@ class Stem(AbstractPrimitive):
     image input.
     """
 
-    def __init__(self, channels_out):
-        super(Stem, self).__init__()
+    def __init__(self, C_out):
+        super().__init__(locals())
         self.seq = nn.Sequential(
-            nn.Conv2d(3, channels_out, 3, padding=1, bias=False),
-            nn.BatchNorm2d(channels_out))
+            nn.Conv2d(3, C_out, 3, padding=1, bias=False),
+            nn.BatchNorm2d(C_out))
 
     def forward(self, x, edge_data):
         return self.seq(x)
@@ -153,7 +155,7 @@ class Sequential(AbstractPrimitive):
     """
 
     def __init__(self, *args):
-        super(Sequential, self).__init__()
+        super().__init__(locals())
         self.primitives = args
         self.op = nn.Sequential(*args)
     
@@ -172,7 +174,7 @@ class MaxPool1x1(AbstractPrimitive):
     """
 
     def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
-        super(MaxPool1x1, self).__init__()
+        super().__init__(locals())
         self.stride = stride
         self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
         if stride > 1:
@@ -199,7 +201,7 @@ class AvgPool1x1(AbstractPrimitive):
     """
 
     def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
-        super(AvgPool1x1, self).__init__()
+        super().__init__(locals())
         self.stride = stride
         self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
         if stride > 1:
@@ -224,10 +226,10 @@ class Concat1x1(nn.Module):
     to retain the channel dimension.
     """
 
-    def __init__(self, num_in_edges, channels, affine=False):
-        super(Concat1x1, self).__init__()
-        self.conv = nn.Conv2d(num_in_edges * channels, channels, kernel_size=1, stride=1, padding=0, bias=False)
-        self.bn = nn.BatchNorm2d(channels, affine=affine)
+    def __init__(self, num_in_edges, C_out, affine=False):
+        super().__init__()
+        self.conv = nn.Conv2d(num_in_edges * C_out, C_out, kernel_size=1, stride=1, padding=0, bias=False)
+        self.bn = nn.BatchNorm2d(C_out, affine=affine)
     
     def forward(self, x):
         """

@@ -72,7 +72,7 @@ class Trainer(object):
         self.optimizer.before_training()
         for e in range(self.epochs):
             self.optimizer.new_epoch(e)
-
+            
             start_time = time.time()
             for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
                 data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
@@ -163,6 +163,8 @@ class Trainer(object):
 
         if retrain:
             best_arch.reset_weights(inplace=True)
+
+            epochs = self.config.retrain_epochs
             optim = self.optimizer.get_op_optimizer()
             optim = optim(
                 best_arch.parameters(), 
@@ -171,7 +173,7 @@ class Trainer(object):
                 weight_decay=self.config.weight_decay
             )
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optim, float(self.epochs), eta_min=self.config.learning_rate_min)
+                optim, float(epochs), eta_min=self.config.learning_rate_min)
 
             grad_clip = self.config.grad_clip
             loss = torch.nn.CrossEntropyLoss()
@@ -181,7 +183,7 @@ class Trainer(object):
             self.train_top5.reset()
 
             # train from scratch
-            for e in range(self.epochs):
+            for e in range(epochs):
                 for i, (input_train, target_train) in enumerate(self.train_queue):
                     input_train = input_train.to(self.device)
                     target_train = target_train.to(self.device, non_blocking=True)
