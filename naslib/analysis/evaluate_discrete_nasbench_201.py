@@ -6,10 +6,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import rcParams
+from util import get_trajectories, plot_losses
+from IPython import embed
 
-rcParams.update({'figure.autolayout': True})
-plt.style.use('seaborn-whitegrid')
-mpl.use('Agg')
+#rcParams.update({'figure.autolayout': True})
+#plt.style.use('seaborn-whitegrid')
+#mpl.use('Agg')
+rcParams.update({'font.size': 12})
 
 optimizer_dir_name_to_name = {
     'RE': 'Regularized Evolution',
@@ -17,6 +20,11 @@ optimizer_dir_name_to_name = {
     'TPE': 'Tree Parzen Estimator'
 }
 
+lim = {
+    'cifar10': 4e3,
+    'cifar100': 4e3,
+    'ImageNet16-120': 1e4
+}
 
 def get_nb_eval(optimizer_runs, dataset, metric):
     nb_metric_per_run = []
@@ -35,30 +43,40 @@ def get_nb_eval(optimizer_runs, dataset, metric):
 
 
 def analyze(optimizer_dict, dataset):
-    fig = plt.figure(figsize=(5, 4))
-    plt.ylabel('Test Error (NB) (-)')
+    fig, ax = plt.subplots(1, figsize=(6, 4))
+    parser_dict = {k: {} for k in optimizer_dict.keys()}
 
     for optimizer_name, optimizer_runs in optimizer_dict.items():
-        nb_test_error = 1 - np.array(get_nb_eval(optimizer_runs, dataset, 'test_accuracy')) / 100
+        nb_test_error = 100 - np.array(get_nb_eval(optimizer_runs, dataset,
+                                                   'test_accuracy'))
+        parser_dict[optimizer_name]['losses'] = nb_test_error
+        nb_training_time = np.array(get_nb_eval(optimizer_runs, dataset,
+                                                'training_time'))
+        parser_dict[optimizer_name]['time'] = nb_training_time
 
-        mean, std = np.mean(nb_test_error, axis=0), np.std(nb_test_error, axis=0)
-        plt.plot(np.arange(len(mean)), mean, label=optimizer_dir_name_to_name[optimizer_name])
-        plt.fill_between(np.arange(len(mean)), mean - std, mean + std, alpha=0.3)
-    plt.xlabel('Epochs')
+    trajectories = get_trajectories(parser_dict)
+    plot_losses(fig, ax, None, trajectories, regret=False, plot_mean=True)
+
+    ax.set_xlabel('Wallclock time [s]')
+    ax.set_ylabel('Test Error [%]')
+    #ax.set_yscale('log')
+    #ax.set_ylim([6e-1, ])
+    ax.set_xlim(left=lim[dataset])
+    ax.set_xscale('log')
     plt.legend()
-    plt.grid(True, which="both", ls="-", alpha=0.5)
+    plt.title(dataset)
+    plt.grid(True, which="both", ls="-", alpha=0.8)
+    plt.tight_layout()
 
-    plt.yscale('log')
-    plt.xlim(left=0, right=200)
-    plt.ylim(top=6e-1)
     plt.savefig('optimizer_comp_nb201_{}_discrete.pdf'.format(dataset))
+    #plt.show()
 
 
 if __name__ == '__main__':
     optimizer_dict = {'RE': [], 'RS': [], 'TPE': []}
     # optimizer_dict = {'SDARTSDARTS': [], 'SDARTSGDAS': [], 'SDARTSPCDARTS': []}
     for optimizer in optimizer_dict.keys():
-        optimizer_path = '/home/siemsj/projects/NASLib/naslib/benchmarks/nasbench201/run/cifar10/{}'.format(
+        optimizer_path = '/home/zelaa/NASLib/naslib/benchmarks/nasbench201/run/cifar10/{}'.format(
             optimizer)
         for res_json_path in glob.glob(os.path.join(optimizer_path, 'errors_*.json')):
             optimizer_dict[optimizer].append(json.load(open(res_json_path, 'r')))

@@ -1,3 +1,4 @@
+import os
 import torch
 import yaml
 from nas_201_api import NASBench201API as API
@@ -78,7 +79,7 @@ class MacroGraph(NodeOpGraph):
         self.config = config
         self.primitives = primitives
         self.ops_dict = ops_dict
-        self.nasbench_api = API('/home/siemsj/nasbench_201.pth')
+        self.nasbench_api = API(os.path.join(config['data'], 'a.pth'))
         super(MacroGraph, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
@@ -282,7 +283,7 @@ class MacroGraph(NodeOpGraph):
 
         arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*arch_strs.values())
         if not hasattr(self, 'nasbench_api'):
-            self.nasbench_api = API('/home/siemsj/nasbench_201.pth')
+            self.nasbench_api = API(os.path.join(config['data'], 'a.pth'))
         index = self.nasbench_api.query_index_by_arch(arch_str)
         self.nasbench_api.show(index)
         info = self.nasbench_api.query_by_index(index)
