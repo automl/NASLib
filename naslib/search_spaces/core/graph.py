@@ -143,7 +143,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
             return self.__repr__()
 
 
-    def set_scope(self, scope: str):
+    def set_scope(self, scope: str, recursively=True):
         """
         Sets the scope of this instance of the graph.
 
@@ -152,11 +152,16 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
         Args:
             scope (str): the scope
+            recursively (bool): Also set the scope for all child graphs.
+                default True
         
         Returns:
             Graph: self with the setted scope.
         """
         self.scope = scope
+        if recursively:
+            for g in self._get_child_graphs(single_instances=False):
+                g.scope = scope
         return self
 
 
@@ -455,13 +460,13 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
         test = EdgeData()
         test.set('shared', True, shared=True)
-        test.set('op', True)
+        test.set('op', [True])
 
         try:
             result = update_func(current_edge_data=test.clone())
         except:
-            logger.warn("Update function could not be veryfied. Be cautious with the "
-                "setting of `private_edge_data` in `update_edges()`")
+            log_first_n(logging.WARN, "Update function could not be veryfied. Be cautious with the "
+                "setting of `private_edge_data` in `update_edges()`", n=5)
             return
 
         assert isinstance(result, EdgeData), "Update function does not return the edge data object."
@@ -782,7 +787,7 @@ class EdgeData():
                 self._shared[key] = value
         else:
             if key in self._shared:
-                raise ValueError("Key {} alredy defined as shared")
+                raise ValueError("Key {} alredy defined as shared".format(key))
             else:
                 self._private[key] = value
 
