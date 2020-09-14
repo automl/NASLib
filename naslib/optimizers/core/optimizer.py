@@ -13,7 +13,7 @@ class NASOptimizer(MetaOptimizer):
 
     @classmethod
     def from_config(cls, *args, **kwargs):
-        pass
+        return cls(*args, **kwargs)
 
     def forward_pass_adjustment(self, *args, **kwargs):
         """
