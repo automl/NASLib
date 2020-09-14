@@ -1,5 +1,13 @@
 from __future__ import print_function
 
+import sys
+import logging
+import argparse
+import torchvision.datasets as dset
+
+from copy import copy
+
+import random
 import os
 import os.path
 import shutil
@@ -12,6 +20,18 @@ import yaml
 from torch.autograd import Variable
 
 cat_channels = partial(torch.cat, dim=1)
+
+logger = logging.getLogger(__name__)
+
+def iter_flatten(iterable):
+    # taken from https://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
+    it = iter(iterable)
+    for e in it:
+        if isinstance(e, (list, tuple)):
+            for f in iter_flatten(e):
+                yield f
+        else:
+            yield e
 
 
 def exception(exception_type):
@@ -26,6 +46,124 @@ def exception(exception_type):
         return function_wrapper
 
     return exception_decorator
+
+
+# Inspired by the implementation of FAIR's detectron2
+def default_argument_parser():
+    """
+    Returns the argument parser with the available options
+    """
+
+    parser = argparse.ArgumentParser(
+        epilog=f"""
+Examples:
+Run on single machine:
+    $ {sys.argv[0]} --config-file cfg.yaml dataset 'cifar100' seed 1
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--config-file", default="../../configs/default.yaml", metavar="FILE", help="path to config file")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="whether to attempt to resume from the checkpoint directory",
+    )
+    parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
+    parser.add_argument(
+        "opts",
+        help="Modify config options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
+    return parser
+
+
+# from https://stackoverflow.com/questions/5389507/iterating-over-every-two-elements-in-a-list
+def pairwise(iterable):
+    "s -> (s0, s1), (s2, s3), (s4, s5), ..."
+    a = iter(iterable)
+    return zip(a, a)
+
+
+def get_config_from_args():
+    """
+    Parses command line arguments and merges them with the defaults
+    from the config file.
+
+    Prepares experiment directories.
+    """
+    args = default_argument_parser().parse_args()
+    logger.info("Command line args: {}".format(args))
+    with open(args.config_file, 'r') as f:
+        config = AttrDict(yaml.safe_load(f))
+
+    # Override file args with ones from command line
+    for arg, value in pairwise(args.opts):
+        config[arg] = value
+    
+    print_args(config)
+
+    config._save = copy(config.save)
+    config.save = '{}/{}'.format(config.save, config.dataset)
+
+    create_exp_dir(config.save)
+
+    if config.dataset != 'cifar100':
+        config.n_classes = 10
+    else:
+        config.n_classes = 100
+    return config
+
+
+def get_train_val_loaders(config):
+    """
+    Constructs the dataloaders and transforms for training, validation and test data.
+    """
+    if config.dataset == 'cifar10':
+        train_transform, valid_transform = _data_transforms_cifar10(config)
+        train_data = dset.CIFAR10(root=config.data, train=True, download=True, transform=train_transform)
+        test_data = dset.CIFAR10(root=config.data, train=False, download=True, transform=valid_transform)
+    elif config.dataset == 'cifar100':
+        train_transform, valid_transform = _data_transforms_cifar100(config)
+        train_data = dset.CIFAR100(root=config.data, train=True, download=True, transform=train_transform)
+        test_data = dset.CIFAR100(root=config.data, train=False, download=True, transform=valid_transform)
+    elif config.dataset == 'svhn':
+        train_transform, valid_transform = _data_transforms_svhn(config)
+        train_data = dset.SVHN(root=config.data, split='train', download=True, transform=train_transform)
+        test_data = dset.SVHN(root=config.data, split='test', download=True, transform=valid_transform)
+    else:
+        raise ValueError("Unknown dataset: {}".format(config.dataset))
+
+    num_train = len(train_data)
+    indices = list(range(num_train))
+    split = int(np.floor(config.train_portion * num_train))
+
+    train_queue = torch.utils.data.DataLoader(
+        train_data, batch_size=config.batch_size,
+        sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
+        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(config.seed))
+
+    valid_queue = torch.utils.data.DataLoader(
+        train_data, batch_size=config.batch_size,
+        sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
+        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(config.seed))
+
+    test_queue = torch.utils.data.DataLoader(
+        test_data, batch_size=config.batch_size, shuffle=False,
+        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(config.seed))
+
+    return train_queue, valid_queue, test_queue, train_transform, valid_transform
+
+
+def set_seed(seed):
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.deterministic = True
+        torch.cuda.manual_seed_all(seed)
 
 
 class AttrDict(dict):
@@ -166,9 +304,8 @@ def save_checkpoint(state, is_best, save):
 
 
 def print_args(args):
-    for arg, val in args.__dict__.items():
-        print(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
-    print()
+    for arg, val in args.items():
+        logger.info(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
 
 
 def save(model, model_path):
@@ -195,14 +332,5 @@ def _concat(xs):
 def create_exp_dir(path):
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
-    print('Experiment dir : {}'.format(path))
+    logger.info('Experiment dir : {}'.format(path))
 
-
-def config_parser(config_file='../configs/default.yaml'):
-    with open(config_file, 'r') as f:
-        try:
-            config = yaml.safe_load(f)
-        except yaml.YAMLError as exc:
-            raise (exc)
-        else:
-            return AttrDict(config)

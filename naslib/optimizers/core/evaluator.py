@@ -11,16 +11,249 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 
 from naslib.utils import utils
+from naslib.utils.logging import log_every_n_seconds
+
+logger = logging.getLogger(__name__)
+
+class Trainer(object):
+    """
+    Class which handles all the training.
+
+    - Data loading and preparing batches
+    - train loop
+    - gather statistics
+    - do the final evaluation
+    """
+
+    def __init__(self, optimizer, dataset, config):
+        self.optimizer = optimizer
+        self.dataset = dataset
+        self.config = config
+        self.epochs = config.epochs
+
+        # preparations
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self._prepare_dataloaders()
+
+        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer.op_optimizer, float(self.epochs), eta_min=self.config.learning_rate_min)
+
+        # measuring stuff
+        self.train_top1 = utils.AvgrageMeter()
+        self.train_top5 = utils.AvgrageMeter()
+        self.train_loss = utils.AvgrageMeter()
+        self.val_top1 = utils.AvgrageMeter()
+        self.val_top5 = utils.AvgrageMeter()
+        self.val_loss = utils.AvgrageMeter()
+
+        n_parameters = optimizer.get_model_size()
+        logging.info("param size = %fMB", n_parameters)
+        self.errors_dict = utils.AttrDict(
+            {'train_acc': [],
+             'train_loss': [],
+             'valid_acc': [],
+             'valid_loss': [],
+             'test_acc': [],
+             'test_loss': [],
+             'runtime': [],
+             'params': n_parameters}
+        )
+
+
+    def _prepare_dataloaders(self):
+        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(self.config)
+        self.train_queue = train_queue
+        self.valid_queue = valid_queue
+        self.test_queue = test_queue
+
+
+    def search(self):
+        logger.info("Start training")
+        self.optimizer.before_training()
+        for e in range(self.epochs):
+            self.optimizer.new_epoch(e)
+
+            start_time = time.time()
+            for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
+                data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
+                data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
+
+                stats = self.optimizer.step(data_train, data_val)
+                logits_train, logits_val, train_loss, val_loss = stats
+
+                self._store_accuracies(logits_train, data_train[1], 'train')
+                self._store_accuracies(logits_val, data_val[1], 'val')
+                
+                log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
+                    e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
+                
+                self.train_loss.update(float(train_loss.detach().cpu()))
+                self.val_loss.update(float(val_loss.detach().cpu()))
+                
+            self.scheduler.step()
+            end_time = time.time()
+
+            self.errors_dict.train_acc.append(self.train_top1.avg)
+            self.errors_dict.train_loss.append(self.train_loss.avg)
+            self.errors_dict.valid_acc.append(self.val_top1.avg)
+            self.errors_dict.valid_loss.append(self.val_loss.avg)
+            self.errors_dict.runtime.append(end_time - start_time)
+            self.log_to_json()
+            self.save(self.optimizer.graph, e)     # TODO: improve! move to optimizer maybe?
+            self._log_and_reset_accuracies(e)
+
+        self.optimizer.after_training()
+        logger.info("Training finished")
+    
+
+    def _log_and_reset_accuracies(self, epoch):
+        logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}, Validation accuracy: {:.5}, {:.5}".format(
+                epoch,
+                self.train_top1.avg, self.train_top5.avg,
+                self.val_top1.avg, self.val_top5.avg
+            ))
+        self.train_top1.reset()
+        self.train_top5.reset()
+        self.train_loss.reset()
+        self.val_top1.reset()
+        self.val_top5.reset()
+        self.val_loss.reset()
+
+
+    def _store_accuracies(self, logits, target, split):
+
+        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
+        n = logits.size(0)
+
+        if split == 'train':
+            self.train_top1.update(prec1.data.item(), n)
+            self.train_top5.update(prec5.data.item(), n)
+        elif split == 'val':
+            self.val_top1.update(prec1.data.item(), n)
+            self.val_top5.update(prec5.data.item(), n)
+        else:
+            raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
+
+
+    def save(self, model, epoch):
+        utils.save(model, os.path.join(self.config.save, 'model_{}.pth'.format(epoch)))
+
+    def log_to_json(self):
+        if not os.path.exists(self.config.save):
+            os.makedirs(self.config.save)
+        with codecs.open(os.path.join(self.config.save,
+                                      'errors_{}.json'.format(self.config.seed)),
+                         'w', encoding='utf-8') as file:
+            json.dump(self.errors_dict, file, separators=(',', ':'))
+
+
+
+    def evaluate(self, retrain=True, from_file=None):
+        logger.info("Start evaluation")
+
+        if from_file:
+            logger.info("loading model from file {}".format(from_file))
+            utils.load(self.optimizer.graph, from_file)
+
+        best_arch = self.optimizer.get_final_architecture()
+        logger.info("Final architecture:\n" + best_arch.modules_str())
+
+        if best_arch.QUERYABLE:
+            result = best_arch.query_performance()
+
+        if retrain:
+            best_arch.reset_weights(inplace=True)
+            optim = self.optimizer.get_op_optimizer()
+            optim = optim(
+                best_arch.parameters(), 
+                self.config.learning_rate,
+                momentum=self.config.momentum,
+                weight_decay=self.config.weight_decay
+            )
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                optim, float(self.epochs), eta_min=self.config.learning_rate_min)
+
+            grad_clip = self.config.grad_clip
+            loss = torch.nn.CrossEntropyLoss()
+
+            best_arch.train()
+            self.train_top1.reset()
+            self.train_top5.reset()
+
+            # train from scratch
+            for e in range(self.epochs):
+                for i, (input_train, target_train) in enumerate(self.train_queue):
+                    input_train = input_train.to(self.device)
+                    target_train = target_train.to(self.device, non_blocking=True)
+
+                    optim.zero_grad()
+                    logits_train = best_arch(input_train)
+                    train_loss = loss(logits_train, target_train)
+                    train_loss.backward()
+                    if grad_clip:
+                        torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
+                    optim.step()
+
+                    self._store_accuracies(logits_train, target_train, 'train')
+                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
+                        e, i, train_loss, scheduler.get_last_lr()), n=5)
+                    
+                scheduler.step()
+
+                logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
+                    self.train_top1.avg, self.train_top5.avg))
+                self.train_top1.reset()
+                self.train_top5.reset()
+
+        # measure final test accuracy
+        top1 = utils.AvgrageMeter()
+        top5 = utils.AvgrageMeter()
+
+        best_arch.eval()
+
+        for i, data_test in enumerate(self.test_queue):
+            input_test, target_test = data_test
+            input_test = input_test.to(self.device)
+            target_test = target_test.to(self.device, non_blocking=True)
+            
+            n = input_test.size(0)
+
+            with torch.no_grad():
+                logits = best_arch(input_test)
+
+                prec1, prec5 = utils.accuracy(logits, target_test, topk=(1, 5))
+                top1.update(prec1.data.item(), n)
+                top5.update(prec5.data.item(), n)
+            
+            log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
+
+        logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class Evaluator(object):
+    """
+    Class for training...?
+    """
     def __init__(self, graph, parser, *args, **kwargs):
         self.graph = graph
         self.parser = parser
         try:
             self.config = kwargs.get('config', graph.config)
         except:
-            raise ('No configuration specified in graph or kwargs')
+            raise Exception('No configuration specified in graph or kwargs')
         np.random.seed(self.config.seed)
         random.seed(self.config.seed)
         if torch.cuda.is_available():
@@ -49,15 +282,17 @@ class Evaluator(object):
         n_parameters = utils.count_parameters_in_MB(self.model)
         logging.info("param size = %fMB", n_parameters)
 
-        optimizer = torch.optim.SGD(
-            self.model.parameters(),
-            self.config.learning_rate,
-            momentum=self.config.momentum,
-            weight_decay=self.config.weight_decay)
-        self.optimizer = optimizer
+        # optimizer = torch.optim.SGD(
+        #     self.model.parameters(),
+        #     self.config.learning_rate,
+        #     momentum=self.config.momentum,
+        #     weight_decay=self.config.weight_decay)
+        # self.optimizer = optimizer
+        self.optimizer = None
 
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        #     optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
+        self.scheduler = None
 
         logging.info('Args: {}'.format(self.config))
         self.run_kwargs = {}
@@ -80,10 +315,11 @@ class Evaluator(object):
             raise ('No number of epochs specified to run network')
 
         for epoch in range(epochs):
-            self.lr = self.scheduler.get_last_lr()[0]
+            # self.lr = self.scheduler.get_last_lr()[0]
+            self.lr = 0.01
             logging.info('epoch %d lr %e', epoch, self.lr)
             for n in self.graph.nodes:
-                node = self.graph.get_node_op(n)
+                node = self.graph.get_node_op(n)    # subgraph
                 if type(node).__name__ == 'Cell':
                     node.drop_path_prob = self.parser.config.drop_path_prob * epoch / epochs
 
@@ -114,7 +350,7 @@ class Evaluator(object):
             self.errors_dict.test_acc.append(test_acc)
             self.errors_dict.test_loss.append(test_obj)
             self.errors_dict.runtime.append(runtime)
-            self.log_to_json(self.parser.config.save)
+            self.log_to_json(self.config.save)
         Evaluator.save(self.parser.config.save, self.model, epoch)
 
     def train(self, epoch, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
@@ -189,16 +425,4 @@ class Evaluator(object):
 
         return top1.avg, objs.avg
 
-    @staticmethod
-    def save(save_path, model, epoch):
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        utils.save(model, os.path.join(save_path, 'model_{}.pt'.format(epoch)))
-
-    def log_to_json(self, save_path):
-        if not os.path.exists(save_path):
-            os.makedirs(save_path)
-        with codecs.open(os.path.join(save_path,
-                                      'errors_{}.json'.format(self.config.seed)),
-                         'w', encoding='utf-8') as file:
-            json.dump(self.errors_dict, file, separators=(',', ':'))
+    

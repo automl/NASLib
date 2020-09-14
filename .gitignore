@@ -1,3 +1,15 @@
+# Log files
+*.out
+*.err
+*.log
+
+# Model files
+*.pth
+
+# IDE related
+.vscode/
+.idea/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

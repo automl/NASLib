@@ -12,7 +12,7 @@ class Searcher(Evaluator):
     def __init__(self, graph, parser, arch_optimizer, *args, **kwargs):
         super(Searcher, self).__init__(graph, parser, *args, **kwargs)
         self.arch_optimizer = arch_optimizer
-        self.arch_optimizer.architectural_weights.to(self.device)
+        # self.arch_optimizer.architectural_weights.to(self.device)
         self.run_kwargs['arch_optimizer'] = self.arch_optimizer
 
     def train(self, epoch, graph, optimizer, criterion, train_queue, valid_queue, *args, **kwargs):
@@ -46,23 +46,23 @@ class Searcher(Evaluator):
 
             arch_optimizer.step(graph, criterion, input_train, target_train, input_valid, target_valid, self.lr,
                                 self.optimizer, config.unrolled)
-            optimizer.zero_grad()
+            # optimizer.zero_grad()
 
             # OP-weight update
-            arch_optimizer.forward_pass_adjustment()
-            logits = graph(input_train)
-            loss = criterion(logits, target_train)
-            loss.backward()
-            nn.utils.clip_grad_norm_(graph.parameters(), config.grad_clip)
-            optimizer.step()
+            # arch_optimizer.forward_pass_adjustment()
+            # logits = graph(input_train)
+            # loss = criterion(logits, target_train)
+            # loss.backward()
+            # nn.utils.clip_grad_norm_(graph.parameters(), config.grad_clip)
+            # optimizer.step()
 
-            prec1, prec5 = utils.accuracy(logits, target_train, topk=(1, 5))
-            objs.update(loss.data.item(), n)
-            top1.update(prec1.data.item(), n)
-            top5.update(prec5.data.item(), n)
+            # prec1, prec5 = utils.accuracy(logits, target_train, topk=(1, 5))
+            # objs.update(loss.data.item(), n)
+            # top1.update(prec1.data.item(), n)
+            # top5.update(prec5.data.item(), n)
 
             if step % config.report_freq == 0:
-                arch_key = list(arch_optimizer.architectural_weights.keys())[-1]
+                #arch_key = list(arch_optimizer.architectural_weights.keys())[-1]
                 logging.info('train %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
 
         end_time = time.time()
