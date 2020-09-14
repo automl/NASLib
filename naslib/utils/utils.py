@@ -3,7 +3,6 @@ from __future__ import print_function
 import sys
 import logging
 import argparse
-import torch.utils
 import torchvision.datasets as dset
 
 from copy import copy

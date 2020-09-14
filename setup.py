@@ -45,13 +45,6 @@ requires = [
     "torchvision>=0.4.0",
     "tensorflow-gpu==1.14.0",
     "tensorflow-probability==0.7.0",
-    # None of these requirements is actually used, right?
-    #"pyrfr==0.8.0",
-    #"Pyro4==4.76",
-    #"RoBO==0.3.1",
-    #"cave",
-    #"hpbandster",
-    #"george==0.3.1",
 ]
 
 import subprocess

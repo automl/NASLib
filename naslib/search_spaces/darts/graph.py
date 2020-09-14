@@ -1,11 +1,12 @@
 import random
 import numpy as np
-import naslib.search_spaces.core.primitives as ops
+from naslib.search_spaces.core import primitives as ops
 
 from torch import nn
 from copy import deepcopy
 
 from naslib.search_spaces.core.graph import Graph, EdgeData
+from .primitives import FactorizedReduce
 
 
 def _set_cell_ops(current_edge_data, C, stride):
@@ -28,7 +29,7 @@ def _set_cell_ops(current_edge_data, C, stride):
     else:
         C_in = C if stride==1 else C//2
         current_edge_data.set('op', [
-            ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
             ops.Zero(stride=stride),
             ops.MaxPool1x1(3, stride, C_in, C),
             ops.AvgPool1x1(3, stride, C_in, C),
@@ -164,8 +165,8 @@ class DartsSearchSpace(Graph):
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
 
         # Replace Identity for normal cells after reductions cells to handle resolution
-        self.edges[4, 6].set('op', ops.FactorizedReduce(channels[0], channels[1]))
-        self.edges[7, 9].set('op', ops.FactorizedReduce(channels[1], channels[2]))
+        self.edges[4, 6].set('op', FactorizedReduce(channels[0], channels[1]))
+        self.edges[7, 9].set('op', FactorizedReduce(channels[1], channels[2]))
 
         # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
