@@ -29,14 +29,14 @@ class Trainer(object):
         self.optimizer = optimizer
         self.dataset = dataset
         self.config = config
-        self.epochs = config.epochs
+        self.epochs = self.config.search.epochs
 
         # preparations
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._prepare_dataloaders()
+        self._prepare_dataloaders(config.search)
 
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer.op_optimizer, float(self.epochs), eta_min=self.config.learning_rate_min)
+            optimizer.op_optimizer, float(self.epochs), eta_min=self.config.search.learning_rate_min)
 
         # measuring stuff
         self.train_top1 = utils.AvgrageMeter()
@@ -60,8 +60,8 @@ class Trainer(object):
         )
 
 
-    def _prepare_dataloaders(self):
-        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(self.config)
+    def _prepare_dataloaders(self, config):
+        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config)
         self.train_queue = train_queue
         self.valid_queue = valid_queue
         self.test_queue = test_queue
@@ -89,7 +89,7 @@ class Trainer(object):
                 
                 self.train_loss.update(float(train_loss.detach().cpu()))
                 self.val_loss.update(float(val_loss.detach().cpu()))
-                
+                break
             self.scheduler.step()
             end_time = time.time()
 
@@ -150,12 +150,14 @@ class Trainer(object):
 
     def evaluate(self, retrain=True, from_file=None):
         logger.info("Start evaluation")
+        self._prepare_dataloaders(self.config.evaluation)
 
         if from_file:
             logger.info("loading model from file {}".format(from_file))
             utils.load(self.optimizer.graph, from_file)
 
         best_arch = self.optimizer.get_final_architecture()
+        best_arch.to(self.device)
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if best_arch.QUERYABLE:
@@ -164,18 +166,18 @@ class Trainer(object):
         if retrain:
             best_arch.reset_weights(inplace=True)
 
-            epochs = self.config.retrain_epochs
+            epochs = self.config.evaluation.epochs
             optim = self.optimizer.get_op_optimizer()
             optim = optim(
                 best_arch.parameters(), 
-                self.config.learning_rate,
-                momentum=self.config.momentum,
-                weight_decay=self.config.weight_decay
+                self.config.evaluation.learning_rate,
+                momentum=self.config.evaluation.momentum,
+                weight_decay=self.config.evaluation.weight_decay
             )
             scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optim, float(epochs), eta_min=self.config.learning_rate_min)
+                optim, float(epochs), eta_min=self.config.evaluation.learning_rate_min)
 
-            grad_clip = self.config.grad_clip
+            grad_clip = self.config.evaluation.grad_clip
             loss = torch.nn.CrossEntropyLoss()
 
             best_arch.train()
@@ -199,7 +201,7 @@ class Trainer(object):
                     self._store_accuracies(logits_train, target_train, 'train')
                     log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
                         e, i, train_loss, scheduler.get_last_lr()), n=5)
-                    
+                    break
                 scheduler.step()
 
                 logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
