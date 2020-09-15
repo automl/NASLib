@@ -56,28 +56,24 @@ class SmallHierarchicalSearchSpace(Graph):
 
         # Define the motifs (6 level-2 motifs)
         level2_motifs = []
-        for j in range(2):
+        for j in range(6):
             motif = Graph()
             motif.name = "motif{}".format(j)
-            # motif.add_nodes_from([i for i in range(1, 5)])
-            # motif.add_edges_from([(i, i+1) for i in range(1, 4)])
-            # motif.add_edges_from([(i, i+2) for i in range(1, 3)])
-            # motif.add_edge(1, 4)
-            motif.add_edge(1, 2)
-            motif.add_edge(2, 3)
+            motif.add_nodes_from([i for i in range(1, 5)])
+            motif.add_edges_from([(i, i+1) for i in range(1, 4)])
+            motif.add_edges_from([(i, i+2) for i in range(1, 3)])
+            motif.add_edge(1, 4)
 
             level2_motifs.append(motif)
         
         # cell (= one level-3 motif)
         cell = Graph()
         cell.name = "cell"
-        # cell.add_nodes_from([i for i in range(1, 6)])
-        # cell.add_edges_from([(i, i+1) for i in range(1, 5)])
-        # cell.add_edges_from([(i, i+2) for i in range(1, 4)])
-        # cell.add_edges_from([(i, i+3) for i in range(1, 3)])
-        # cell.add_edge(1, 5)
-        cell.add_edge(1, 2)
-        cell.add_edge(2, 3)
+        cell.add_nodes_from([i for i in range(1, 6)])
+        cell.add_edges_from([(i, i+1) for i in range(1, 5)])
+        cell.add_edges_from([(i, i+2) for i in range(1, 4)])
+        cell.add_edges_from([(i, i+3) for i in range(1, 3)])
+        cell.add_edge(1, 5)
 
         cells = []
         channels = [16, 32, 64]
