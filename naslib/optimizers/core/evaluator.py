@@ -100,7 +100,7 @@ class Trainer(object):
             self.errors_dict.valid_loss.append(self.val_loss.avg)
             self.errors_dict.runtime.append(end_time - start_time)
             self.log_to_json()
-            self.save(self.optimizer.graph, e)     # TODO: improve! move to optimizer maybe?
+            self.save(self.optimizer.graph, e, prefix="search")     # TODO: improve! move to optimizer maybe?
             self._log_and_reset_accuracies(e)
 
         self.optimizer.after_training()
@@ -136,8 +136,8 @@ class Trainer(object):
             raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
 
 
-    def save(self, model, epoch):
-        utils.save(model, os.path.join(self.config.save, 'model_{}.pth'.format(epoch)))
+    def save(self, model, epoch, prefix=""):
+        utils.save(model, os.path.join(self.config.save, '{}_model_{}.pth'.format(prefix, epoch)))
 
     def log_to_json(self):
         if not os.path.exists(self.config.save):
@@ -210,6 +210,8 @@ class Trainer(object):
                     self.train_top1.avg, self.train_top5.avg))
                 self.train_top1.reset()
                 self.train_top5.reset()
+
+                self.save(optim.graph, e, prefix="eval")     # TODO: improve! move to optimizer maybe?
 
         # measure final test accuracy
         top1 = utils.AverageMeter()
