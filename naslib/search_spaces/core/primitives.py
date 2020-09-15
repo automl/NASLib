@@ -98,7 +98,7 @@ class SepConv(AbstractPrimitive):
             nn.BatchNorm2d(C_out, affine=affine),
         )
 
-    def forward(self, x, edge_data):
+    def forward(self, x, edge_data=None):
         return self.op(x)
     
     def get_embedded_ops(self):

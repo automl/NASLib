@@ -259,10 +259,18 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     self.nodes[node_idx]['input'] = {0: x[next(input_node_iterator)]}
 
 
-    def forward(self, x):
+    def forward(self, x, *args):
         """
         Forward some data through the graph. This is done recursively
         in case there are graphs defined on nodes or as 'op' on edges.
+
+        Args:
+            x (Tensor or dict): The input. If the graph sits on a node the
+                input can be a dict with {source_idx: Tensor} to be routed
+                to the defined input nodes. If the graph sits on an edge,
+                x is the feature tensor.
+            args: This is only required to handle cases where the graph sits
+                on an edge and receives an EdgeData object which will be ignored
         """
         logger.debug("Graph {} called. Input {}.".format(self.name, log_formats(x)))
         
@@ -327,6 +335,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 edge_data = self.get_edge_data(node_idx, neigbor_idx)
                 if isinstance(edge_data.op, Graph):
                     edge_data.op.parse()
+                elif edge_data.op.get_embedded_ops():
+                    for primitive in edge_data.op.get_embedded_ops(): 
+                        if isinstance(primitive, Graph):
+                            primitive.parse()
                 self.add_module("{}-edge({},{})".format(self.name, node_idx, neigbor_idx), edge_data.op)
         self.is_parsed = True
 
@@ -811,6 +823,7 @@ class EdgeData():
             EdgeData: New independent instance.
         """
         return copy.deepcopy(self)
+
 
     def delete(self):
         """

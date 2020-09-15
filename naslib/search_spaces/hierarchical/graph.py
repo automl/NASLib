@@ -12,7 +12,7 @@ def _set_cell_ops(current_edge_data, C, stride):
         return current_edge_data
     elif isinstance(current_edge_data.op, list) and all(isinstance(op, Graph) for op in current_edge_data.op):
         return current_edge_data    # We are at the edge of an motif
-    else:
+    elif isinstance(current_edge_data.op, ops.Identity):
         current_edge_data.set('op', [
             ops.Identity() if stride==1 else ops.FactorizedReduce(C, C),
             ops.Zero(stride=stride),
@@ -22,7 +22,9 @@ def _set_cell_ops(current_edge_data, C, stride):
             DepthwiseConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
             ConvBNReLU(C, C, kernel_size=1),
         ])
-    return current_edge_data
+        return current_edge_data
+    else:
+        raise ValueError()
 
 
 def _set_motifs(current_edge_data, ops):
@@ -32,7 +34,7 @@ def _set_motifs(current_edge_data, ops):
         # We have to set the op as shared because the archparameters
         # of lower level motivs are shared across cells.
         #current_edge_data.remove('op')
-        current_edge_data.set('op', ops)
+        current_edge_data.set('op', [m.copy() for m in ops])
     return current_edge_data
 
 
@@ -54,34 +56,37 @@ class SmallHierarchicalSearchSpace(Graph):
 
         # Define the motifs (6 level-2 motifs)
         level2_motifs = []
-        for j in range(6):
+        for j in range(2):
             motif = Graph()
             motif.name = "motif{}".format(j)
-            motif.add_nodes_from([i for i in range(1, 5)])
-            motif.add_edges_from([(i, i+1) for i in range(1, 4)])
-            motif.add_edges_from([(i, i+2) for i in range(1, 3)])
-            motif.add_edge(1, 4)
+            # motif.add_nodes_from([i for i in range(1, 5)])
+            # motif.add_edges_from([(i, i+1) for i in range(1, 4)])
+            # motif.add_edges_from([(i, i+2) for i in range(1, 3)])
+            # motif.add_edge(1, 4)
+            motif.add_edge(1, 2)
+            motif.add_edge(2, 3)
 
             level2_motifs.append(motif)
         
         # cell (= one level-3 motif)
         cell = Graph()
         cell.name = "cell"
-        cell.add_nodes_from([i for i in range(1, 6)])
-        cell.add_edges_from([(i, i+1) for i in range(1, 5)])
-        cell.add_edges_from([(i, i+2) for i in range(1, 4)])
-        cell.add_edges_from([(i, i+3) for i in range(1, 3)])
-        cell.add_edge(1, 5)
+        # cell.add_nodes_from([i for i in range(1, 6)])
+        # cell.add_edges_from([(i, i+1) for i in range(1, 5)])
+        # cell.add_edges_from([(i, i+2) for i in range(1, 4)])
+        # cell.add_edges_from([(i, i+3) for i in range(1, 3)])
+        # cell.add_edge(1, 5)
+        cell.add_edge(1, 2)
+        cell.add_edge(2, 3)
 
         cells = []
         channels = [16, 32, 64]
         for scope, c in zip(SmallHierarchicalSearchSpace.OPTIMIZER_SCOPE, channels):
-            cell_i = cell.copy()
-            cell_i_motifs = [m.copy() for m in level2_motifs]
+            cell_i = cell.copy().set_scope(scope)
 
             cell_i.update_edges(
-                update_func=lambda current_edge_data: _set_motifs(current_edge_data, ops=cell_i_motifs),
-                private_edge_data=False
+                update_func=lambda current_edge_data: _set_motifs(current_edge_data, ops=level2_motifs),
+                private_edge_data=True
             )
 
             cell_i.set_scope(scope)
