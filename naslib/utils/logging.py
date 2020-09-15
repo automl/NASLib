@@ -93,7 +93,7 @@ def setup_logger(
             filename = os.path.join(output, "log.txt")
 
         if os.path.dirname(filename):
-            os.makedirs(os.path.dirname(filename))
+            os.makedirs(os.path.dirname(filename), exist_ok=True)
 
         fh = logging.FileHandler(filename)
         fh.setLevel(logging.DEBUG)

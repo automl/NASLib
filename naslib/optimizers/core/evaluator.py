@@ -11,7 +11,7 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 
 from naslib.utils import utils
-from naslib.utils.logging import log_every_n_seconds
+from naslib.utils.logging import log_every_n_seconds, log_first_n
 
 logger = logging.getLogger(__name__)
 
@@ -86,10 +86,11 @@ class Trainer(object):
                 
                 log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
                     e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
-                
+                log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+
                 self.train_loss.update(float(train_loss.detach().cpu()))
                 self.val_loss.update(float(val_loss.detach().cpu()))
-                break
+                
             self.scheduler.step()
             end_time = time.time()
 
@@ -201,7 +202,8 @@ class Trainer(object):
                     self._store_accuracies(logits_train, target_train, 'train')
                     log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
                         e, i, train_loss, scheduler.get_last_lr()), n=5)
-                    break
+                    log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+
                 scheduler.step()
 
                 logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
