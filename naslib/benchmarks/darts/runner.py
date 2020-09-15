@@ -16,8 +16,8 @@ if __name__ == '__main__':
     config = get_config_from_args()
     set_seed(config.seed)
 
-    # search_space = DartsSearchSpace()
-    search_space = SimpleCellSearchSpace()
+    search_space = DartsSearchSpace()
+    # search_space = SimpleCellSearchSpace()
 
     # optimizer = RandomSearch(sample_size=1)
     optimizer = DARTSOptimizer(config.search)

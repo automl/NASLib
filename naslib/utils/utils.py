@@ -176,7 +176,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-class AvgrageMeter(object):
+class AverageMeter(object):
 
     def __init__(self):
         self.reset()

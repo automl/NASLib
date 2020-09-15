@@ -39,12 +39,12 @@ class Trainer(object):
             optimizer.op_optimizer, float(self.epochs), eta_min=self.config.search.learning_rate_min)
 
         # measuring stuff
-        self.train_top1 = utils.AvgrageMeter()
-        self.train_top5 = utils.AvgrageMeter()
-        self.train_loss = utils.AvgrageMeter()
-        self.val_top1 = utils.AvgrageMeter()
-        self.val_top5 = utils.AvgrageMeter()
-        self.val_loss = utils.AvgrageMeter()
+        self.train_top1 = utils.AverageMeter()
+        self.train_top5 = utils.AverageMeter()
+        self.train_loss = utils.AverageMeter()
+        self.val_top1 = utils.AverageMeter()
+        self.val_top5 = utils.AverageMeter()
+        self.val_loss = utils.AverageMeter()
 
         n_parameters = optimizer.get_model_size()
         logger.info("param size = %fMB", n_parameters)
@@ -210,8 +210,8 @@ class Trainer(object):
                 self.train_top5.reset()
 
         # measure final test accuracy
-        top1 = utils.AvgrageMeter()
-        top5 = utils.AvgrageMeter()
+        top1 = utils.AverageMeter()
+        top5 = utils.AverageMeter()
 
         best_arch.eval()
 
@@ -364,9 +364,9 @@ class Evaluator(object):
         except Exception as e:
             raise ModuleNotFoundError('No configuration specified in graph or kwargs')
 
-        objs = utils.AvgrageMeter()
-        top1 = utils.AvgrageMeter()
-        top5 = utils.AvgrageMeter()
+        objs = utils.AverageMeter()
+        top1 = utils.AverageMeter()
+        top5 = utils.AverageMeter()
 
         start_time = time.time()
         for step, (input, target) in enumerate(train_queue):
@@ -405,9 +405,9 @@ class Evaluator(object):
         except:
             raise ('No configuration specified in graph or kwargs')
 
-        objs = utils.AvgrageMeter()
-        top1 = utils.AvgrageMeter()
-        top5 = utils.AvgrageMeter()
+        objs = utils.AverageMeter()
+        top1 = utils.AverageMeter()
+        top5 = utils.AverageMeter()
         graph.eval()
 
         with torch.no_grad():
