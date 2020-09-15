@@ -290,6 +290,8 @@ class DartsSearchSpace(Graph):
         #
         # Combining operations
         #
+
+        # map the node indices to channel indices
         mapping = {k: 0 for k in range(3, 9)}
         mapping.update({k: 1 for k in range(9, 16)})
         mapping.update({k: 2 for k in range(16, 23)})

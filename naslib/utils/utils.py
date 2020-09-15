@@ -108,7 +108,7 @@ def get_config_from_args():
     print_args(config)
 
     config._save = copy(config.save)
-    config.save = '{}/{}'.format(config.save, config.dataset)
+    config.save = '{}/{}/{}'.format(config.save, config.dataset, config.seed)
 
     create_exp_dir(config.save)
 

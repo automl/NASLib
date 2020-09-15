@@ -5,7 +5,7 @@ from torch.autograd import Variable
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer 
 from naslib.optimizers.core.operations import MixedOp
-from naslib.utils.utils import _concat
+from naslib.utils.utils import _concat, count_parameters_in_MB
 import naslib.search_spaces.core.primitives as ops
 
 logger = logging.getLogger(__name__)
@@ -127,7 +127,6 @@ class DARTSOptimizer(MetaOptimizer):
         self.architectural_weights = self.architectural_weights.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
         
 
-
     def step(self, data_train, data_val):
         input_train, target_train = data_train
         input_val, target_val = data_val
@@ -178,11 +177,12 @@ class DARTSOptimizer(MetaOptimizer):
         return self.graph
 
 
-
     def get_op_optimizer(self):
         return self.op_optimizer.__class__
 
 
+    def get_model_size(self):
+        return count_parameters_in_MB(self.graph)
 
 
 

@@ -47,7 +47,7 @@ class Trainer(object):
         self.val_loss = utils.AvgrageMeter()
 
         n_parameters = optimizer.get_model_size()
-        logging.info("param size = %fMB", n_parameters)
+        logger.info("param size = %fMB", n_parameters)
         self.errors_dict = utils.AttrDict(
             {'train_acc': [],
              'train_loss': [],
