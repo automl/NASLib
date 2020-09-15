@@ -341,10 +341,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Returns:
             Graph: An unparsed copy of the graph.
         """
-        g = Graph()
-        
+        g = self.__class__()
+
         graph_nodes = self.nodes
-        graph_edges = self.edges   
+        graph_edges = self.edges
 
         # unparse possible child graphs
         # be careful with copying/deepcopying here cause of shared edge data
@@ -354,7 +354,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         for u, v, data in graph_edges.data():
             if isinstance(data.op, Graph):
                 data.set('op', data.op.unparse())
-        
+
         # create the new graph
         # Remember to add all members here to update. I know it is ugly but don't know better
         g.add_nodes_from(graph_nodes.data())
@@ -612,7 +612,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         pass
 
 
-    def query(self, metric: str) -> float:
+    def query(self, metric: str, dataset: str, path: str) -> float:
         """
         Can be used to query the performance of the architecture using
         a tabular benchmark.
@@ -621,6 +621,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
         Args:
             metric (str): the name of the metric to query.
+            dataset (str): the name of the dataset to query.
+            path (str): path where the tabular data is located
 
         Returns:
             float: The performance number

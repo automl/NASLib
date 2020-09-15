@@ -83,13 +83,13 @@ class Trainer(object):
 
                 self._store_accuracies(logits_train, data_train[1], 'train')
                 self._store_accuracies(logits_val, data_val[1], 'val')
-                
+
                 log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
                     e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
-                
+
                 self.train_loss.update(float(train_loss.detach().cpu()))
                 self.val_loss.update(float(val_loss.detach().cpu()))
-                
+
             self.scheduler.step()
             end_time = time.time()
 
@@ -159,75 +159,84 @@ class Trainer(object):
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if best_arch.QUERYABLE:
-            result = best_arch.query_performance()
+            # metric should be in ['train_acc1es', 'train_losses',
+            # 'train_times', 'params', 'flop', 'epochs', 'latency',
+            # 'eval_acc1es', 'eval_times', 'eval_losses']
 
-        if retrain:
-            best_arch.reset_weights(inplace=True)
-            optim = self.optimizer.get_op_optimizer()
-            optim = optim(
-                best_arch.parameters(), 
-                self.config.learning_rate,
-                momentum=self.config.momentum,
-                weight_decay=self.config.weight_decay
+            # dataset in ['cifar10-valid', 'cifar10', 'cifar100', 'ImageNet16-120']
+            metric = 'eval_acc1es'
+            result = best_arch.query(
+                metric=metric, dataset='cifar10', path=self.config.data
             )
-            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                optim, float(self.epochs), eta_min=self.config.learning_rate_min)
+            logger.info("Queried results ({}): {}".format(metric, result))
+        else:
+            if retrain:
+                best_arch.reset_weights(inplace=True)
+                optim = self.optimizer.get_op_optimizer()
+                optim = optim(
+                    best_arch.parameters(), 
+                    self.config.learning_rate,
+                    momentum=self.config.momentum,
+                    weight_decay=self.config.weight_decay
+                )
+                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                    optim, float(self.epochs), eta_min=self.config.learning_rate_min)
 
-            grad_clip = self.config.grad_clip
-            loss = torch.nn.CrossEntropyLoss()
+                grad_clip = self.config.grad_clip
+                loss = torch.nn.CrossEntropyLoss()
 
-            best_arch.train()
-            self.train_top1.reset()
-            self.train_top5.reset()
-
-            # train from scratch
-            for e in range(self.epochs):
-                for i, (input_train, target_train) in enumerate(self.train_queue):
-                    input_train = input_train.to(self.device)
-                    target_train = target_train.to(self.device, non_blocking=True)
-
-                    optim.zero_grad()
-                    logits_train = best_arch(input_train)
-                    train_loss = loss(logits_train, target_train)
-                    train_loss.backward()
-                    if grad_clip:
-                        torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
-                    optim.step()
-
-                    self._store_accuracies(logits_train, target_train, 'train')
-                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
-                        e, i, train_loss, scheduler.get_last_lr()), n=5)
-                    
-                scheduler.step()
-
-                logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
-                    self.train_top1.avg, self.train_top5.avg))
+                best_arch.train()
                 self.train_top1.reset()
                 self.train_top5.reset()
 
-        # measure final test accuracy
-        top1 = utils.AvgrageMeter()
-        top5 = utils.AvgrageMeter()
+                # train from scratch
+                for e in range(self.epochs):
+                    for i, (input_train, target_train) in enumerate(self.train_queue):
+                        input_train = input_train.to(self.device)
+                        target_train = target_train.to(self.device, non_blocking=True)
 
-        best_arch.eval()
+                        optim.zero_grad()
+                        logits_train = best_arch(input_train)
+                        train_loss = loss(logits_train, target_train)
+                        train_loss.backward()
+                        if grad_clip:
+                            torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
+                        optim.step()
 
-        for i, data_test in enumerate(self.test_queue):
-            input_test, target_test = data_test
-            input_test = input_test.to(self.device)
-            target_test = target_test.to(self.device, non_blocking=True)
-            
-            n = input_test.size(0)
+                        self._store_accuracies(logits_train, target_train, 'train')
+                        log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
+                            e, i, train_loss, scheduler.get_last_lr()), n=5)
 
-            with torch.no_grad():
-                logits = best_arch(input_test)
+                    scheduler.step()
 
-                prec1, prec5 = utils.accuracy(logits, target_test, topk=(1, 5))
-                top1.update(prec1.data.item(), n)
-                top5.update(prec5.data.item(), n)
-            
-            log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
+                    logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
+                        self.train_top1.avg, self.train_top5.avg))
+                    self.train_top1.reset()
+                    self.train_top5.reset()
 
-        logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
+            # measure final test accuracy
+            top1 = utils.AvgrageMeter()
+            top5 = utils.AvgrageMeter()
+
+            best_arch.eval()
+
+            for i, data_test in enumerate(self.test_queue):
+                input_test, target_test = data_test
+                input_test = input_test.to(self.device)
+                target_test = target_test.to(self.device, non_blocking=True)
+
+                n = input_test.size(0)
+
+                with torch.no_grad():
+                    logits = best_arch(input_test)
+
+                    prec1, prec5 = utils.accuracy(logits, target_test, topk=(1, 5))
+                    top1.update(prec1.data.item(), n)
+                    top5.update(prec5.data.item(), n)
+
+                log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
+
+            logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
 
 
 
