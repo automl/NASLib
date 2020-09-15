@@ -38,8 +38,8 @@ evaluation:
   data: "../../data"
   seed: 10
   batch_size: 256
-  learning_rate: 0.025
-  learning_rate_min: 0.00
+  learning_rate: 0.1
+  learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
   epochs: 32
