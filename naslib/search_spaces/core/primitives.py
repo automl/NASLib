@@ -164,29 +164,6 @@ class Sequential(AbstractPrimitive):
         return list(self.primitives)
 
 
-class FactorizedReduce(AbstractPrimitive):
-    """
-    Whatever this is, it replaces the identity when stride=2
-    """
-
-    def __init__(self, C_in, C_out, affine=False):
-        super(FactorizedReduce, self).__init__()
-        assert C_out % 2 == 0
-        self.relu = nn.ReLU(inplace=False)
-        self.conv_1 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
-        self.conv_2 = nn.Conv2d(C_in, C_out // 2, 1, stride=2, padding=0, bias=False)
-        self.bn = nn.BatchNorm2d(C_out, affine=affine)
-
-    def forward(self, x, edge_data):
-        x = self.relu(x)
-        out = torch.cat([self.conv_1(x), self.conv_2(x[:, :, 1:, 1:])], dim=1)
-        out = self.bn(out)
-        return out
-    
-    def get_embedded_ops(self):
-        return None
-
-
 class MaxPool1x1(AbstractPrimitive):
     """
     Implementation of MaxPool with an optional 1x1 convolution
@@ -265,68 +242,6 @@ class Concat1x1(nn.Module):
 
 ###################################################
 # TODO: what is with the primitives below?
-
-
-
-
-
-
-if __name__ == '__main__':
-    i = Identity()
-    print(issubclass(type(i), AbstractPrimitive))
-    print(isinstance(i, AbstractPrimitive))
-
-
-# Batch Normalization from nasbench
-BN_MOMENTUM = 0.997
-BN_EPSILON = 1e-5
-
-
-class ReLUConvBN(nn.Module):
-
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
-        super(ReLUConvBN, self).__init__()
-        self.op = nn.Sequential(
-            nn.ReLU(inplace=False),
-            nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=padding,
-                      bias=False),
-            nn.BatchNorm2d(C_out, affine=affine)
-        )
-
-    def forward(self, x, *args, **kwargs):
-        return self.op(x)
-
-
-class ConvBnRelu(nn.Module):
-    """
-    Equivalent to conv_bn_relu
-    https://github.com/google-research/nasbench/blob/master/nasbench/lib/base_ops.py#L32
-    """
-
-    def __init__(self, C_in, C_out, kernel_size, stride, padding=1, affine=True):
-        super(ConvBnRelu, self).__init__()
-        self.op = nn.Sequential(
-            # Padding = 1 is for a 3x3 kernel equivalent to tensorflow padding
-            # = same
-            nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=padding,
-                      bias=False),
-            # affine is equivalent to scale in original tensorflow code
-            nn.BatchNorm2d(C_out, affine=affine, momentum=BN_MOMENTUM,
-                           eps=BN_EPSILON),
-            nn.ReLU(inplace=False)
-        )
-
-    def forward(self, x, *args, **kwargs):
-        return self.op(x)
-
-
-
-
-
-
-
-
-
 
 
 class NoiseOp(nn.Module):

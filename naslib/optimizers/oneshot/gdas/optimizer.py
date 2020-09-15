@@ -98,6 +98,8 @@ class GDASOptimizer(DARTSOptimizer):
         self.arch_optimizer.step()
 
         # has to be done again, cause val_loss.backward() frees the gradient from sampled alphas
+        # TODO: this is not how it is intended because the samples are now different. Another 
+        # option would be to set val_loss.backward(retain_graph=True) but that requires more memory.
         self.graph.update_edges(
             update_func=lambda current_edge_data: self.sample_alphas(current_edge_data, self.tau_curr),
             scope=self.scope,

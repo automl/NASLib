@@ -1,12 +1,13 @@
 import numpy as np
-import naslib.search_spaces.core.primitives as ops
-
 from torch import nn
 from copy import deepcopy
 
 from naslib.search_spaces.core.graph import Graph, EdgeData
+from naslib.search_spaces.core import primitives as ops
 
-from .darts import _truncate_input_edges
+from ..darts.graph import _truncate_input_edges
+from ..darts.primitives import FactorizedReduce
+
 
 def _set_cell_ops(current_edge_data, C, stride):
     if current_edge_data.has('final') and current_edge_data.final:
@@ -14,7 +15,7 @@ def _set_cell_ops(current_edge_data, C, stride):
     else:
         C_in = C if stride==1 else C//2
         current_edge_data.set('op', [
-            ops.Identity() if stride==1 else ops.FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
             ops.Zero(stride=stride),
             ops.MaxPool1x1(3, stride, C_in, C),
             ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),

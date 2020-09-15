@@ -3,39 +3,27 @@ import sys
 import naslib as nl
 
 from naslib.optimizers.core.evaluator import Trainer
-from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
-from naslib.optimizers.oneshot.gdas.optimizer import GDASOptimizer
-from naslib.optimizers.discrete.rs.optimizer import RandomSearch
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
 
-from naslib.search_spaces.cell.darts import DartsSearchSpace
-from naslib.search_spaces.cell.simple import SimpleCellSearchSpace
-from naslib.search_spaces.nasbench201.nasbench201 import NasBench201SeachSpace
-from naslib.utils import utils
-from naslib.utils.logging import setup_logger
+from naslib.search_spaces import DartsSearchSpace, SimpleCellSearchSpace, NasBench201SeachSpace, SmallHierarchicalSearchSpace
+from naslib.utils import setup_logger, set_seed, get_config_from_args
 
 logger = setup_logger("test.log")
 logger.setLevel(logging.INFO)
 
-
-import types
-from naslib.search_spaces.core.primitives import *
-
-import networkx as nx
-
 if __name__ == '__main__':
     
-    config = utils.get_config_from_args()
-    utils.set_seed(config.seed)
+    config = get_config_from_args()
+    set_seed(config.seed)
 
     # search_space = DartsSearchSpace()
     # search_space = SimpleCellSearchSpace()
-    search_space = NasBench201SeachSpace()
-
-    
+    # search_space = NasBench201SeachSpace()
+    search_space = SmallHierarchicalSearchSpace()
 
     # optimizer = RandomSearch(sample_size=1)
     optimizer = DARTSOptimizer(config)
-    # optimizer = GDASOptimizer(config.epochs)
+    # optimizer = GDASOptimizer(config)
 
     optimizer.adapt_search_space(search_space)
     

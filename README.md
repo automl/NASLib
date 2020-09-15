@@ -1,6 +1,26 @@
 # NASLib
 NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilitate NAS research for the community by providing interfaces to several state-of-the-art NAS search spaces
 
+> :warning: **This library is under construction** and there is no official release yet. Feel 
+> free to play around and have a look but be aware that the *APIs will be changed* until we have a first release.
+
+It is designed to be modular, extensible and easy to use.
+
+# Usage
+
+```python
+search_space = SimpleCellSearchSpace()
+
+optimizer = DARTSOptimizer(config)
+optimizer.adapt_search_space(search_space)
+
+trainer = Trainer(optimizer, 'cifar10', config)
+trainer.search()        # Search for an architecture
+trainer.evaluate()      # Evaluate the best architecture
+```
+
+For an example file see `examples`.
+
 # Requirements
 
 Make sure you use the latest version of pip. It makes sense to set up a virtual environment, too.
@@ -17,33 +37,13 @@ pip install cython
 
 Clone and install.
 
-If you plan to modify naslib consider adding the `-e` option when installing.
+If you plan to modify naslib consider adding the `-e` option for `python install`.
 
 ```
 git clone ...
 cd naslib
 python install .
 ```
-
-# Usage
-
-```python
-import naslib as nl
-
-config = nl.utils.get_config_from_args()    # use --help so see the options
-nl.utils.set_seed(config.seed)   # First thing to do to make naslib deterministic
-
-search_space = nl.search_spaces.darts.DartsSearchSpace()
-
-optimizer = nl.optimizers.oneshot.darts.DARTSOptimizer()
-optimizer.adapt_search_space(search_space)  # The optimizer is prepating the search space
-
-trainer = nl.optimizers.core.Trainer(optimizer, 'cifar10', config, parser)
-trainer.search()
-trainer.evaluate()
-```
-
-For an example file see `examples`.
 
 
 
