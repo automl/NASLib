@@ -351,7 +351,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         This is done recursively also for child graphs.
 
         Returns:
-            Graph: An unparsed copy of the graph.
+            Graph: An unparsed shallow copy of the graph.
         """
         g = self.__class__()
         g.clear()

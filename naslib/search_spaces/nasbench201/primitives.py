@@ -16,7 +16,7 @@ Code below from NASBench-201 and slighly adapted
 class ReLUConvBN(AbstractPrimitive):
 
     def __init__(self, C_in, C, kernel_size, stride=1, affine=False):
-        super().__init__()
+        super().__init__(locals())
         self.kernel_size = kernel_size
         pad = 0 if stride == 1 and kernel_size == 1 else 1
         self.op = nn.Sequential(
@@ -42,7 +42,7 @@ class ReLUConvBN(AbstractPrimitive):
 class ResNetBasicblock(AbstractPrimitive):
 
     def __init__(self, C_in, C_out, stride, affine=True):
-        super().__init__()
+        super().__init__(locals())
         assert stride == 1 or stride == 2, 'invalid stride {:}'.format(stride)
         self.conv_a = ReLUConvBN(C_in, C_out, 3, stride)
         self.conv_b = ReLUConvBN(C_out, C_out, 3)

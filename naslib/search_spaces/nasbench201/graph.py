@@ -19,37 +19,22 @@ def _set_cell_ops(current_edge_data, C):
     return current_edge_data
 
 
-def _truncate_input_edges(node, in_edges, out_edges):
-    """
-    Discretize the one-shot model.
-    """
-    if any(e.has('alpha') or (e.has('final') and e.final) for _, e in in_edges):
-        # We are in the one-shot case
-        for _, data in in_edges:
-            if data.has('final') and data.final:
-                return  # We are looking at an out node
-            data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
-        sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
-        keep_edges, _ = zip(*sorted_edge_ids[:])
-        for edge_id, edge_data in in_edges:
-            if edge_id not in keep_edges:
-                edge_data.delete()
+def remove_zero_alpha(current_edge_data):
+    if current_edge_data.has('alpha'):
+        current_edge_data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+    return current_edge_data
+
+def remove_zero_op(current_edge_data):
+    if isinstance(current_edge_data.op, list):
+        current_edge_data.op.pop(1)      # Remove the zero op
+        return current_edge_data
     else:
-        # We are in the discrete case (e.g. random search)
-        k = 2
-        for _, data in in_edges:
-            assert isinstance(data.op, list)
-            data.op.pop(1)      # Remove the zero op
-        if any(e.has('final') and e.final for _, e in in_edges):
-            return  # TODO: how about mixed final and non-final?
-        else:
-            for _ in range(len(in_edges) - k): #TODO: this is not correct. Fix it later
-                in_edges[random.randint(0, len(in_edges)-1)][1].delete()
+        raise ValueError("Unknown format of the op: {}".format(current_edge_data.op))
 
 
 class NasBench201SeachSpace(Graph):
     """
-    A simplified version of the DARTS cell search space for playing around.
+    Implementation of the nasbench 201 search space.
     """
 
     OPTIMIZER_SCOPE = [
@@ -57,6 +42,8 @@ class NasBench201SeachSpace(Graph):
         "stage_2",
         "stage_3",
     ]
+
+    QUERYABLE = True
 
     def __init__(self):
         super().__init__()
@@ -139,17 +126,26 @@ class NasBench201SeachSpace(Graph):
             )
 
 
-
     def prepare_discretization(self):
-        self.update_nodes(_truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True)
-        self.QUERYABLE = True
+        if self.get_all_edge_data('alpha'):
+            self.update_edges(remove_zero_alpha, scope=self.OPTIMIZER_SCOPE, private_edge_data=False)
+        else:
+            self.update_edges(remove_zero_op, scope=self.OPTIMIZER_SCOPE, private_edge_data=True)
+        
 
 
-    def query(self, metric='test_acc', dataset='cifar10', path='../../data'):
+    def query(self, metric='eval_acc1es', dataset='cifar10', path='../../data'):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
-        assert self.QUERYABLE == True
+        assert metric in [
+                'train_acc1es', 'train_losses',
+                'train_times', 'params', 'flop', 'epochs', 'latency',
+                'eval_acc1es', 'eval_times', 'eval_losses'
+             ], "Unknown metric: {}".format(metric)
+        
+        assert dataset in ['cifar10-valid', 'cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
+        
         ops_to_nb201 = {
             'AvgPool1x1': 'avg_pool_3x3',
             'ReLUConvBN1x1': 'nor_conv_1x1',
@@ -177,28 +173,3 @@ class NasBench201SeachSpace(Graph):
             return query_results[dataset]
         else:
             return query_results[dataset][metric]
-
-
-
-    # def query_architecture(self, arch_weights):
-    #     arch_weight_idx_to_parent = {0: 0, 1: 0, 2: 1, 3: 0, 4: 1, 5: 2}
-    #     arch_strs = {
-    #         'cell_normal_from_0_to_1': '',
-    #         'cell_normal_from_0_to_2': '',
-    #         'cell_normal_from_1_to_2': '',
-    #         'cell_normal_from_0_to_3': '',
-    #         'cell_normal_from_1_to_3': '',
-    #         'cell_normal_from_2_to_3': '',
-    #     }
-    #     for arch_weight_idx, (edge_key, edge_weights) in enumerate(arch_weights.items()):
-    #         edge_weights_norm = torch.softmax(edge_weights, dim=-1)
-    #         selected_op_str = PRIMITIVES[edge_weights_norm.argmax()]
-    #         arch_strs[edge_key] = '{}~{}'.format(selected_op_str, arch_weight_idx_to_parent[arch_weight_idx])
-
-    #     arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*arch_strs.values())
-    #     if not hasattr(self, 'nasbench_api'):
-    #         self.nasbench_api = API('/home/siemsj/nasbench_201.pth')
-    #     index = self.nasbench_api.query_index_by_arch(arch_str)
-    #     self.nasbench_api.show(index)
-    #     info = self.nasbench_api.query_by_index(index)
-    #     return self.export_nasbench_201_results_to_dict(info)
