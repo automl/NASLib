@@ -33,6 +33,10 @@ search:
   arch_weight_decay: 0.001
   output_weights: True
 
+  # GDAS
+  tau_max: 10
+  tau_min: 0.1
+
 evaluation:
   dataset: cifar10
   data: "../../data"

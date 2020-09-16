@@ -211,7 +211,7 @@ class Trainer(object):
                 self.train_top1.reset()
                 self.train_top5.reset()
 
-                self.save(optim.graph, e, prefix="eval")     # TODO: improve! move to optimizer maybe?
+                self.save(best_arch, e, prefix="eval")     # TODO: improve! move to optimizer maybe?
 
         # measure final test accuracy
         top1 = utils.AverageMeter()
