@@ -63,11 +63,8 @@ Run on single machine:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--config-file", default="../../configs/default.yaml", metavar="FILE", help="path to config file")
-    parser.add_argument(
-        "--resume",
-        action="store_true",
-        help="whether to attempt to resume from the checkpoint directory",
-    )
+    parser.add_argument("--seed", default=1, type=int, help="Seed for the experiment")
+    parser.add_argument("--optimizer", default="na")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument(
         "opts",
@@ -85,18 +82,20 @@ def pairwise(iterable):
     return zip(a, a)
 
 
-def get_config_from_args():
+def get_config_from_args(args=None):
     """
     Parses command line arguments and merges them with the defaults
     from the config file.
 
     Prepares experiment directories.
     """
-    args = default_argument_parser().parse_args()
+    if not args:
+        args = default_argument_parser().parse_args()
     logger.info("Command line args: {}".format(args))
+    
+    # load config file
     with open(args.config_file, 'r') as f:
         config = AttrDict(yaml.safe_load(f))
-
     for k, v in config.items():
         if isinstance(v, dict):
             config[k] = AttrDict(v)
@@ -104,11 +103,14 @@ def get_config_from_args():
     # Override file args with ones from command line
     for arg, value in pairwise(args.opts):
         config[arg] = value
-    
-    print_args(config)
+
+    config.optimizer = args.optimizer
+    config.eval_only = args.eval_only
+    config.seed = args.seed
+    config.search.seed = config.evaluation.seed = config.seed
 
     config._save = copy(config.save)
-    config.save = '{}/{}/{}'.format(config.save, config.dataset, config.seed)
+    config.save = '{}/{}/{}/{}'.format(config.save, config.dataset, config.optimizer, config.seed)
 
     create_exp_dir(config.save)
 
@@ -307,7 +309,7 @@ def save_checkpoint(state, is_best, save):
         shutil.copyfile(filename, best_filename)
 
 
-def print_args(args):
+def log_args(args):
     for arg, val in args.items():
         logger.info(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
 
