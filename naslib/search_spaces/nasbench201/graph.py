@@ -1,3 +1,5 @@
+import os
+import pickle
 import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
@@ -17,6 +19,34 @@ def _set_cell_ops(current_edge_data, C):
     return current_edge_data
 
 
+def _truncate_input_edges(node, in_edges, out_edges):
+    """
+    Discretize the one-shot model.
+    """
+    if any(e.has('alpha') or (e.has('final') and e.final) for _, e in in_edges):
+        # We are in the one-shot case
+        for _, data in in_edges:
+            if data.has('final') and data.final:
+                return  # We are looking at an out node
+            data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+        sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
+        keep_edges, _ = zip(*sorted_edge_ids[:])
+        for edge_id, edge_data in in_edges:
+            if edge_id not in keep_edges:
+                edge_data.delete()
+    else:
+        # We are in the discrete case (e.g. random search)
+        k = 2
+        for _, data in in_edges:
+            assert isinstance(data.op, list)
+            data.op.pop(1)      # Remove the zero op
+        if any(e.has('final') and e.final for _, e in in_edges):
+            return  # TODO: how about mixed final and non-final?
+        else:
+            for _ in range(len(in_edges) - k): #TODO: this is not correct. Fix it later
+                in_edges[random.randint(0, len(in_edges)-1)][1].delete()
+
+
 class NasBench201SeachSpace(Graph):
     """
     A simplified version of the DARTS cell search space for playing around.
@@ -24,13 +54,13 @@ class NasBench201SeachSpace(Graph):
 
     OPTIMIZER_SCOPE = [
         "stage_1",
-        "stage_2",  
+        "stage_2",
         "stage_3",
     ]
 
     def __init__(self):
         super().__init__()
-        
+
         #
         # Cell definition
         #
@@ -110,8 +140,43 @@ class NasBench201SeachSpace(Graph):
 
 
 
+    def prepare_discretization(self):
+        self.update_nodes(_truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True)
+        self.QUERYABLE = True
 
 
+    def query(self, metric='test_acc', dataset='cifar10', path='../../data'):
+        """
+            Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
+        """
+        assert self.QUERYABLE == True
+        ops_to_nb201 = {
+            'AvgPool1x1': 'avg_pool_3x3',
+            'ReLUConvBN1x1': 'nor_conv_1x1',
+            'ReLUConvBN3x3': 'nor_conv_3x3',
+            'Identity': 'skip_connect',
+            'Zero': 'none',
+        }
+
+        # convert the naslib representation to nasbench201
+        cell = self._get_child_graphs(single_instances=True)[0]
+        edge_op_dict = {
+            (i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+        }
+        op_edge_list = [
+            '{}~{}'.format(edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
+        ]
+
+        arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
+
+        # load the nasbench201 data and return the queried data
+        with open(os.path.join(path, 'nb201_all.pickle'), 'rb') as f:
+            nb201_data = pickle.load(f)
+        query_results = nb201_data[arch_str]
+        if metric == 'all':
+            return query_results[dataset]
+        else:
+            return query_results[dataset][metric]
 
 
 

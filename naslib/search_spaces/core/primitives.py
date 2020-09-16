@@ -37,6 +37,10 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
+    @property
+    def get_op_name(self):
+        return type(self).__name__
+
 
 class Identity(AbstractPrimitive):
     """
