@@ -75,6 +75,13 @@ class GDASOptimizer(DARTSOptimizer):
         )
         current_edge_data.set('sampled_arch_weight', sampled_arch_weight, shared=True)
         return current_edge_data
+    
+
+    @staticmethod
+    def remove_sampled_alphas(current_edge_data):
+        if current_edge_data.has('sampled_arch_weight'):
+            current_edge_data.remove('sampled_arch_weight')
+        return current_edge_data
 
     
     def step(self, data_train, data_val):
@@ -114,5 +121,12 @@ class GDASOptimizer(DARTSOptimizer):
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
         self.op_optimizer.step()
+
+        # in order to properly unparse remove the alphas again
+        self.graph.update_edges(
+            update_func=self.remove_sampled_alphas,
+            scope=self.scope,
+            private_edge_data=False
+        )
         
         return logits_train, logits_val, train_loss, val_loss
