@@ -7,7 +7,9 @@ class MetaOptimizer(object, metaclass=ABCMeta):
     """
 
     
-    @abstractmethod
+    using_step_function = True
+
+    
     def step(self, data_train, data_val):
         """
         Run one optimizer step with the batch of training and test data.
@@ -22,7 +24,24 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         Returns:
             dict: A dict containing training statistics (TODO)
         """
-        raise NotImplementedError()
+        if self.using_step_function:
+            raise NotImplementedError()
+
+    
+    def train_statistics(self):
+        """
+        If the step function is not used we need the statistics from
+        the optimizer
+        """
+        if not self.using_step_function:
+            raise NotImplementedError()
+    
+
+    def test_statistics(self):
+        """
+        Return anytime test statistics if provided by the optimizer
+        """
+        pass
 
 
     @abstractmethod
@@ -100,4 +119,4 @@ class MetaOptimizer(object, metaclass=ABCMeta):
 
         This is only used for logging purposes.
         """
-        pass
+        return 0

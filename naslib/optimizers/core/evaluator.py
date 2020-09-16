@@ -35,9 +35,6 @@ class Trainer(object):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self._prepare_dataloaders(config.search)
 
-        self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer.op_optimizer, float(self.epochs), eta_min=self.config.search.learning_rate_min)
-
         # measuring stuff
         self.train_top1 = utils.AverageMeter()
         self.train_top5 = utils.AverageMeter()
@@ -70,52 +67,63 @@ class Trainer(object):
     def search(self):
         logger.info("Start training")
         self.optimizer.before_training()
+        if self.optimizer.using_step_function:
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer.op_optimizer, float(self.epochs), eta_min=self.config.search.learning_rate_min)
         for e in range(self.epochs):
             self.optimizer.new_epoch(e)
             
             start_time = time.time()
-            for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
-                
-                data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
-                data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
+            if self.optimizer.using_step_function:
+                for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
+                    break
+                    data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
+                    data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
 
-                stats = self.optimizer.step(data_train, data_val)
-                logits_train, logits_val, train_loss, val_loss = stats
+                    stats = self.optimizer.step(data_train, data_val)
+                    logits_train, logits_val, train_loss, val_loss = stats
 
-                self._store_accuracies(logits_train, data_train[1], 'train')
-                self._store_accuracies(logits_val, data_val[1], 'val')
+                    self._store_accuracies(logits_train, data_train[1], 'train')
+                    self._store_accuracies(logits_val, data_val[1], 'val')
 
-                log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
-                    e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
-                
-                if torch.cuda.is_available():
-                    log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
+                        e, step, train_loss, val_loss, scheduler.get_last_lr()), n=5)
+                    
+                    if torch.cuda.is_available():
+                        log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
 
-                self.train_loss.update(float(train_loss.detach().cpu()))
-                self.val_loss.update(float(val_loss.detach().cpu()))
-                
-            self.scheduler.step()
-            end_time = time.time()
+                    self.train_loss.update(float(train_loss.detach().cpu()))
+                    self.val_loss.update(float(val_loss.detach().cpu()))
+                    
+                scheduler.step()
+                end_time = time.time()
 
-            self.errors_dict.train_acc.append(self.train_top1.avg)
-            self.errors_dict.train_loss.append(self.train_loss.avg)
-            self.errors_dict.valid_acc.append(self.val_top1.avg)
-            self.errors_dict.valid_loss.append(self.val_loss.avg)
-            self.errors_dict.runtime.append(end_time - start_time)
+                self.errors_dict.train_acc.append(self.train_top1.avg)
+                self.errors_dict.train_loss.append(self.train_loss.avg)
+                self.errors_dict.valid_acc.append(self.val_top1.avg)
+                self.errors_dict.valid_loss.append(self.val_loss.avg)
+                self.errors_dict.runtime.append(end_time - start_time)
+            else:
+                end_time = time.time()
+                train_acc, train_loss, valid_acc, valid_loss = self.optimizer.train_statistics()
+                self.errors_dict.train_acc.append(train_acc)
+                self.errors_dict.train_loss.append(train_loss)
+                self.errors_dict.valid_acc.append(valid_acc)
+                self.errors_dict.valid_loss.append(valid_loss)
+                self.errors_dict.runtime.append(end_time - start_time)
+                self.train_top1.avg = train_acc
+                self.val_top1.avg = valid_acc
 
-            if self.optimizer.graph.QUERYABLE:
+            anytime_results = self.optimizer.test_statistics()
+            if anytime_results:
                 # record anytime performance
-                best_arch = self.optimizer.get_final_architecture()
-                self.errors_dict.test_acc.append(
-                    best_arch.query('eval_acc1es', dataset=self.config.dataset, path=self.config.data)
-                )
-                self.errors_dict.test_loss.append(
-                    best_arch.query('eval_losses', dataset=self.config.dataset, path=self.config.data)
-                )
+                self.errors_dict.test_acc.append(anytime_results[0])
+                self.errors_dict.test_loss.append(anytime_results[1])
                 
 
             self.log_to_json()
-            self.save(self.optimizer.graph, e, prefix="search")     # TODO: improve! move to optimizer maybe?
+            if hasattr(self.optimizer, 'graph'):
+                self.save(self.optimizer.graph, e, prefix="search")     # TODO: improve! move to optimizer maybe?
             self._log_and_reset_accuracies(e)
 
         self.optimizer.after_training()

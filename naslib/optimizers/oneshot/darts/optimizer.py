@@ -185,7 +185,13 @@ class DARTSOptimizer(MetaOptimizer):
         return count_parameters_in_MB(self.graph)
 
 
-
+    def test_statistics(self):
+        if self.graph.QUERYABLE:
+            # record anytime performance
+            best_arch = self.get_final_architecture()
+            acc = best_arch.query('eval_acc1es', dataset=self.config.dataset, path=self.config.data)
+            loss = best_arch.query('eval_losses', dataset=self.config.dataset, path=self.config.data)
+            return acc, loss
 
 
 

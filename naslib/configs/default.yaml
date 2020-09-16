@@ -17,7 +17,7 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 1
+  epochs: 5
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -38,6 +38,9 @@ search:
   tau_min: 0.1
   # PC-DARTS
   channel_divisor: 4
+  # re
+  sample_size: 2 #10
+  population_size: 5 #100
 
 evaluation:
   dataset: cifar10

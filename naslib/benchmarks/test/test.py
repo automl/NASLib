@@ -4,6 +4,7 @@ import naslib as nl
 
 from naslib.optimizers.core.evaluator import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
+from naslib.optimizers.discrete.re.optimizer import RegularizedEvolution
 
 from naslib.search_spaces import DartsSearchSpace, SimpleCellSearchSpace, NasBench201SeachSpace
 from naslib.utils import utils, setup_logger
@@ -29,7 +30,8 @@ supported_optimizers = {
 search_space = NasBench201SeachSpace()
 # search_space = SmallHierarchicalSearchSpace()
 
-optimizer = supported_optimizers[config.optimizer]
+# optimizer = supported_optimizers[config.optimizer]
+optimizer = RegularizedEvolution(config.search)
 optimizer.adapt_search_space(search_space)
     
 trainer = Trainer(optimizer, 'cifar10', config)

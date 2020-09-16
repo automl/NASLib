@@ -3,6 +3,57 @@ import torch
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 
+"""
+These two function discretize the graph.
+"""
+def add_sampled_op_index(current_edge_data):
+    """
+    Function to sample an op for each edge.
+    """
+    if current_edge_data.has('final') and current_edge_data.final:
+        return current_edge_data
+    
+    op_index = np.random.randint(len(current_edge_data.op))
+    current_edge_data.set('op_index', op_index, shared=True)
+    return current_edge_data
+
+
+def update_ops(current_edge_data):
+    """
+    Function to replace the primitive ops at the edges
+    with the sampled one
+    """
+    if current_edge_data.has('final') and current_edge_data.final:
+        return current_edge_data
+    
+    primitives = current_edge_data.op
+    current_edge_data.set('op', primitives[current_edge_data.op_index])
+    current_edge_data.set('primitives', primitives)     # store for later use
+    return current_edge_data
+
+
+def sample_random_architecture(search_space, scope):
+    architecture = search_space.clone()
+
+    # We are discreticing here so
+    architecture.prepare_discretization()
+
+    # 1. add the index first (this is shared!)
+    architecture.update_edges(
+        add_sampled_op_index,
+        scope=scope,
+        private_edge_data=False
+    )
+
+    # 2. replace primitives with respective sampled op
+    architecture.update_edges(
+        update_ops, 
+        scope=scope,
+        private_edge_data=True
+    )
+    return architecture
+    
+
 
 class RandomSearch(MetaOptimizer):
     """
@@ -34,63 +85,16 @@ class RandomSearch(MetaOptimizer):
         self.validation_losses = [0 for _ in range(sample_size)]
 
 
-    """
-    These two function discretize the graph.
-    """
-    @staticmethod
-    def add_sampled_op_index(current_edge_data):
-        """
-        Function to sample an op for each edge.
-        """
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
-        
-        op_index = np.random.randint(len(current_edge_data.op))
-        current_edge_data.set('op_index', op_index, shared=True)
-        return current_edge_data
-
-
-    @staticmethod
-    def update_ops(current_edge_data):
-        """
-        Function to replace the primitive ops at the edges
-        with the sampled one
-        """
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
-        
-        primitives = current_edge_data.op
-        current_edge_data.set('op', primitives[current_edge_data.op_index])
-        return current_edge_data
-
-
     def adapt_search_space(self, search_space, scope=None):
         
         for i in range(self.sample_size):
             # We are going to sample several architectures
-            architecture_i = search_space.clone()
-
             # If there is no scope defined, let's use the search space default one
             if not scope:
                 scope = architecture_i.OPTIMIZER_SCOPE
-
-            # We are discreticing here so
-            architecture_i.prepare_discretization()
-
-            # 1. add the index first (this is shared!)
-            architecture_i.update_edges(
-                self.add_sampled_op_index,
-                scope=scope,
-                private_edge_data=False
-            )
-
-            # 2. replace primitives with respective sampled op
-            architecture_i.update_edges(
-                self.update_ops, 
-                scope=scope,
-                private_edge_data=True
-            )
-
+            
+            architecture_i = sample_random_architecture(search_space, scope)
+            
             architecture_i.parse()
             architecture_i.train()
 
