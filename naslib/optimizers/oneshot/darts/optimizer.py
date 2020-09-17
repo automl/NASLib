@@ -117,7 +117,15 @@ class DARTSOptimizer(MetaOptimizer):
         
         self.graph = graph
         self.scope = scope
-        
+    
+    def get_checkpointables(self):
+        return {
+            "model": self.graph,
+            "op_optimizer": self.op_optimizer,
+            "arch_optimizer": self.arch_optimizer,
+            "arch_weights": self.architectural_weights,
+        }
+
 
     def before_training(self):
         """
@@ -125,7 +133,15 @@ class DARTSOptimizer(MetaOptimizer):
         """
         self.graph = self.graph.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
         self.architectural_weights = self.architectural_weights.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
-        
+    
+
+    def new_epoch(self, epoch):
+        """
+        Just log the architecture weights.
+        """
+        logger.info("Arch weights: {}".format(([a for a in self.architectural_weights])))
+        super().new_epoch(epoch)
+
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train

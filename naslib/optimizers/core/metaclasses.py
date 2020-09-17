@@ -5,7 +5,7 @@ class MetaOptimizer(object, metaclass=ABCMeta):
     """
     Abstract class for all NAS optimizers.
     """
-
+    
     
     using_step_function = True
 
@@ -120,3 +120,15 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         This is only used for logging purposes.
         """
         return 0
+
+
+    def get_checkpointables(self):
+        """
+        Return all objects that should be saved in a checkpoint during training.
+
+        Will be called after `before_training` and must include key "model".
+
+        Returns:
+            (dict): with name as key and object as value. e.g. graph, arch weights, optimizers, ...
+        """
+        pass

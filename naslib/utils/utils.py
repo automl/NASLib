@@ -113,6 +113,8 @@ def get_config_from_args(args=None):
     config.save = '{}/{}/{}/{}'.format(config.save, config.dataset, config.optimizer, config.seed)
 
     create_exp_dir(config.save)
+    create_exp_dir(config.save + "/search")     # required for the checkpoints
+    create_exp_dir(config.save + "/eval")
 
     if config.dataset != 'cifar100':
         config.n_classes = 10
@@ -301,12 +303,6 @@ def count_parameters_in_MB(model):
                   "auxiliary" not in name) / 1e6
 
 
-def save_checkpoint(state, is_best, save):
-    filename = os.path.join(save, 'checkpoint.pth.tar')
-    torch.save(state, filename)
-    if is_best:
-        best_filename = os.path.join(save, 'model_best.pth.tar')
-        shutil.copyfile(filename, best_filename)
 
 
 def log_args(args):

@@ -26,12 +26,12 @@ supported_optimizers = {
 }
 
 # search_space = DartsSearchSpace()
-# search_space = SimpleCellSearchSpace()
-search_space = NasBench201SeachSpace()
+search_space = SimpleCellSearchSpace()
+# search_space = NasBench201SeachSpace()
 # search_space = SmallHierarchicalSearchSpace()
 
-# optimizer = supported_optimizers[config.optimizer]
-optimizer = RegularizedEvolution(config.search)
+optimizer = supported_optimizers[config.optimizer]
+#optimizer = RegularizedEvolution(config.search)
 optimizer.adapt_search_space(search_space)
     
 trainer = Trainer(optimizer, 'cifar10', config)
@@ -39,5 +39,5 @@ trainer = Trainer(optimizer, 'cifar10', config)
 if config.eval_only:
     trainer.evaluate(from_file='run/cifar10/10/model_0.pth')
 else:
-    trainer.search()
-    trainer.evaluate()
+    #trainer.search()
+    trainer.evaluate(search_model='run/cifar10/gdas/1/search/model_final.pth', resume_from="run/cifar10/gdas/1/eval/model_0000004.pth")
