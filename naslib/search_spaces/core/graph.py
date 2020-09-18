@@ -476,7 +476,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
         test.set('op', [True])
 
         try:
-            result = update_func(current_edge_data=test.clone())
+            result = test.clone()
+            update_func(current_edge_data=result)
         except:
             log_first_n(logging.WARN, "Update function could not be veryfied. Be cautious with the "
                 "setting of `private_edge_data` in `update_edges()`", n=5)
@@ -504,6 +505,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
         `update_func(current_edge_data)`. This way optimizers
         can initialize and store necessary information at edges.
 
+        Note that edges marked as 'final' will not be updated here.
+
         Args:
             update_func (callable): Function which accepts one argument called `current_edge_data`.
                 and returns the modified EdgeData object.
@@ -523,7 +526,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
             if scope == 'all' or (graph.scope is not None and graph.scope in scope):
                 logger.debug('Updating edges of graph {}'.format(graph.name))
                 for u, v, edge_data in graph.edges.data():
-                    graph.edges[u, v].update(update_func(current_edge_data=edge_data))
+                    if not edge_data.is_final():
+                        update_func(current_edge_data=edge_data)
         self._delete_flagged_edges()
 
 
@@ -532,6 +536,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Update the nodes of the graph and its incoming and outgoing edges by iterating over the 
         graph and applying `update_func` to each of it. This is the
         preferred way to change the search space once it has been defined.
+
+        Note that edges marked as 'final' will not be updated here.
 
         Args:
             update_func (callable): Function that accepts three incoming parameters named
@@ -559,10 +565,10 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 logger.debug('Updating nodes of graph {}'.format(graph.name))
                 for node_idx in lexicographical_topological_sort(graph):
                     node = (node_idx, self.nodes[node_idx])
-                    in_edges = list(graph.in_edges(node_idx, data=True))        # (v, u, data)
-                    in_edges = [(v, data) for v, u, data in in_edges]           # u is same for all
-                    out_edges = list(graph.out_edges(node_idx, data=True))      # (v, u, data)
-                    out_edges = [(u, data) for v, u, data in out_edges]         # v is same for all
+                    in_edges = list(graph.in_edges(node_idx, data=True))                        # (v, u, data)
+                    in_edges = [(v, data) for v, u, data in in_edges if not data.is_final()]    # u is same for all
+                    out_edges = list(graph.out_edges(node_idx, data=True))                      # (v, u, data)
+                    out_edges = [(u, data) for v, u, data in out_edges if not data.is_final()]  # v is same for all
                     update_func(node=node, in_edges=in_edges, out_edges=out_edges)
         self._delete_flagged_edges()
 
@@ -678,11 +684,15 @@ class EdgeData():
         """
         self._private = {}
         self._shared = {}
+        
+        # set internal attributes
+        self._shared['_deleted'] = False
+        self._private['_final'] = False
+
+        # set defaults and potential input
         self.set('op', Identity(), shared=False)
         for k, v in data.items():
             self.set(k, v, shared=False)
-        
-        self._shared['_deleted'] = False
 
 
     def has(self, key):
@@ -804,6 +814,7 @@ class EdgeData():
         """
         assert isinstance(key, str), "Accepting only string keys, got {}".format(type(key))
         assert not key.startswith("_"), "Access to private keys not allowed!"
+        assert not self.is_final(), "Trying to change finalized edge!"
         if shared:
             if key in self._private:
                 raise ValueError("Key {} alredy defined as non-shared")
@@ -839,3 +850,20 @@ class EdgeData():
         Returns true if the edge is flagged to be deleted
         """
         return self._shared['_deleted']
+
+
+    def finalize(self):
+        """
+        Sets this edge as final. This means it cannot be changed
+        anymore and will also not appear in the update functions
+        of the graph.
+        """
+        self._private['_final'] = True
+    
+
+    def is_final(self):
+        """
+        Returns:
+            bool: True if the edge was finalized, False else
+        """
+        return self._private['_final']

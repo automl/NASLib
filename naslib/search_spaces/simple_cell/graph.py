@@ -11,18 +11,14 @@ from ..darts.primitives import FactorizedReduce
 
 
 def _set_cell_ops(current_edge_data, C, stride):
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    else:
-        C_in = C if stride==1 else C//2
-        current_edge_data.set('op', [
-            ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
-            ops.Zero(stride=stride),
-            ops.MaxPool1x1(3, stride, C_in, C),
-            ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-        ])
-    return current_edge_data
+    C_in = C if stride==1 else C//2
+    current_edge_data.set('op', [
+        ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+        ops.Zero(stride=stride),
+        ops.MaxPool1x1(3, stride, C_in, C),
+        ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+        ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+    ])
 
 
 class SimpleCellSearchSpace(Graph):
@@ -60,7 +56,10 @@ class SimpleCellSearchSpace(Graph):
         normal_cell.add_edges_from([(1, i) for i in range(3, 5)])   # input 1
         normal_cell.add_edges_from([(2, i) for i in range(3, 5)])   # input 2
         normal_cell.add_edges_from([(3, 4)])
-        normal_cell.add_edges_from([(i, 5, EdgeData({'final': True})) for i in range(3, 5)])   # output
+
+        final_edge = EdgeData() # Edges connecting to the output are always the identity
+        final_edge.finalize()
+        normal_cell.add_edges_from([(i, 5, final_edge.clone()) for i in range(3, 5)])   # output
         
 
         reduction_cell = deepcopy(normal_cell)
@@ -107,7 +106,8 @@ class SimpleCellSearchSpace(Graph):
             reduction_cell = self.nodes[n]['subgraph']
             for u, v, data in reduction_cell.edges.data():
                 stride = 2 if u in (1, 2) else 1
-                reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
+                if not data.is_final():
+                    _set_cell_ops(data, c, stride)
         
         # post-processing
         self.edges[5, 6].set('op', ops.Sequential(

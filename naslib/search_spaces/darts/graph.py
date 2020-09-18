@@ -71,7 +71,10 @@ class DartsSearchSpace(Graph):
         normal_cell.add_edges_from([(3, 4), (3, 5), (3, 6)])
         normal_cell.add_edges_from([(4, 5), (4, 6)])
         normal_cell.add_edges_from([(5, 6)])
-        normal_cell.add_edges_from([(i, 7, EdgeData({'final': True})) for i in range(3, 7)])   # output
+
+        final_edge = EdgeData() # Edges connecting to the output are always the identity
+        final_edge.finalize()
+        normal_cell.add_edges_from([(i, 7, final_edge.clone()) for i in range(3, 7)])   # output
         
         # Reduction cell has the same topology
         reduction_cell = deepcopy(normal_cell)
@@ -155,7 +158,8 @@ class DartsSearchSpace(Graph):
             reduction_cell = self.nodes[n]['subgraph']
             for u, v, data in reduction_cell.edges.data():
                 stride = 2 if u in (1, 2) else 1
-                reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
+                if not data.is_final():
+                    reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
 
         #
         # Combining operations
