@@ -66,6 +66,7 @@ Run on single machine:
     parser.add_argument("--seed", default=1, type=int, help="Seed for the experiment")
     parser.add_argument("--optimizer", default="na")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
+    parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -108,6 +109,7 @@ def get_config_from_args(args=None):
     config.eval_only = args.eval_only
     config.seed = args.seed
     config.search.seed = config.evaluation.seed = config.seed
+    config.resume = args.resume
 
     config._save = copy(config.save)
     config.save = '{}/{}/{}/{}'.format(config.save, config.dataset, config.optimizer, config.seed)
@@ -172,6 +174,20 @@ def set_seed(seed):
         torch.backends.cudnn.enabled = True
         torch.backends.cudnn.deterministic = True
         torch.cuda.manual_seed_all(seed)
+
+
+def get_last_checkpoint(config, search=True):
+    try:
+        path = os.path.join(config.save, "search" if search else "eval", "last_checkpoint")
+        with open(path, 'r') as f:
+            checkpoint_name = f.readline()
+        return os.path.join(config.save, "search" if search else "eval", checkpoint_name)
+    except:
+        return ""
+
+
+def get_search_model(config):
+    return 
 
 
 class AttrDict(dict):

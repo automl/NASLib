@@ -197,10 +197,17 @@ class Trainer(object):
             json.dump(self.errors_dict, file, separators=(',', ':'))
 
 
-    def evaluate(self, retrain=True, search_model="", resume_from=""):
+    def evaluate(
+            self, 
+            retrain=True, 
+            search_model="", 
+            resume_from=""
+        ):
         logger.info("Start evaluation")
         self._prepare_dataloaders(self.config.evaluation)
 
+        if not search_model:
+            search_model = os.path.join(self.config.save, "search", "model_final.pth"),
         self._setup_checkpointers(search_model)      # required to load the architecture
 
         best_arch = self.optimizer.get_final_architecture()
