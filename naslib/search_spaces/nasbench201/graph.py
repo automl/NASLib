@@ -6,14 +6,14 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 
-from .primitives import ResNetBasicblock, ReLUConvBN
+from .primitives import ResNetBasicblock
 
 def _set_cell_ops(current_edge_data, C):
     current_edge_data.set('op', [
         ops.Identity(),
         ops.Zero(stride=1),
-        ReLUConvBN(C, C, kernel_size=3),
-        ReLUConvBN(C, C, kernel_size=1),
+        ops.ReLUConvBN(C, C, kernel_size=3),
+        ops.ReLUConvBN(C, C, kernel_size=1),
         ops.AvgPool1x1(kernel_size=3, stride=1),
     ])
     return current_edge_data

@@ -34,20 +34,6 @@ def iter_flatten(iterable):
             yield e
 
 
-def exception(exception_type):
-    def exception_decorator(func):
-        @wraps(func)
-        def function_wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except exception_type:
-                return None
-
-        return function_wrapper
-
-    return exception_decorator
-
-
 # Inspired by the implementation of FAIR's detectron2
 def default_argument_parser():
     """
@@ -326,14 +312,6 @@ def log_args(args):
         logger.info(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
 
 
-def save(model, model_path):
-    torch.save(model.state_dict(), model_path)
-
-
-def load(model, model_path):
-    model.load_state_dict(torch.load(model_path))
-
-
 def drop_path(x, drop_prob):
     if drop_prob > 0.:
         keep_prob = 1. - drop_prob
@@ -341,10 +319,6 @@ def drop_path(x, drop_prob):
         x.div_(keep_prob)
         x.mul_(mask)
     return x
-
-
-def _concat(xs):
-    return torch.cat([x.view(-1) for x in xs])
 
 
 def create_exp_dir(path):

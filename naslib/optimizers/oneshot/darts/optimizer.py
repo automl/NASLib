@@ -5,7 +5,7 @@ from torch.autograd import Variable
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer 
 from naslib.optimizers.core.operations import MixedOp
-from naslib.utils.utils import _concat, count_parameters_in_MB
+from naslib.utils.utils import count_parameters_in_MB
 import naslib.search_spaces.core.primitives as ops
 
 logger = logging.getLogger(__name__)

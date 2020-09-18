@@ -224,6 +224,32 @@ class AvgPool1x1(AbstractPrimitive):
         return None
 
 
+class ReLUConvBN(AbstractPrimitive):
+
+    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=False):
+        super().__init__(locals())
+        self.kernel_size = kernel_size
+        pad = 0 if stride == 1 and kernel_size == 1 else 1
+        self.op = nn.Sequential(
+            nn.ReLU(inplace=False),
+            nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=pad, bias=False),
+            nn.BatchNorm2d(C_out, affine=affine)
+        )
+
+
+    def forward(self, x, edge_data):
+        return self.op(x)
+
+    def get_embedded_ops(self):
+        return None
+
+    @property
+    def get_op_name(self):
+        op_name = super().get_op_name
+        op_name += '{}x{}'.format(self.kernel_size, self.kernel_size)
+        return op_name
+
+
 class Concat1x1(nn.Module):
     """
     Implementation of the channel-wise concatination followed by a 1x1 convolution
@@ -245,22 +271,3 @@ class Concat1x1(nn.Module):
         x = self.bn(x)
         return x
 
-
-###################################################
-# TODO: what is with the primitives below?
-
-
-class NoiseOp(nn.Module):
-    def __init__(self, stride, mean, std):
-        super(NoiseOp, self).__init__()
-        self.stride = stride
-        self.mean = mean
-        self.std = std
-
-    def forward(self, x, *args, **kwargs):
-        if self.stride != 1:
-            x_new = x[:, :, ::self.stride, ::self.stride]
-        else:
-            x_new = x
-        noise = Variable(x_new.data.new(x_new.size()).normal_(self.mean, self.std))
-        return noise

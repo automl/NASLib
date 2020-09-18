@@ -17,7 +17,7 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 5
+  epochs: 1
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5

@@ -1,4 +1,5 @@
 import random
+import torch
 import numpy as np
 import networkx as nx
 from naslib.search_spaces.core import primitives as ops
@@ -69,6 +70,28 @@ def _truncate_input_edges(node, in_edges, out_edges):
             else:
                 for _ in range(len(in_edges) - k):
                     in_edges[random.randint(0, len(in_edges)-1)][1].delete()
+
+
+def channel_concat(tensors):
+    return torch.cat(tensors, dim=1)
+
+
+def channel_maps(reduction_cell_indices, max_index):
+    # calculate the mapping from edge indices to the respective channel
+
+    assert len(reduction_cell_indices) == 2
+    r_1, r_2 = reduction_cell_indices
+    channel_map_from = {}
+    channel_map_from.update({i: 0 for i in range(2, r_1)})
+    channel_map_from.update({i: 1 for i in range(r_1, r_2)})
+    channel_map_from.update({i: 2 for i in range(r_2, max_index)})
+
+    channel_map_to = {}
+    channel_map_to.update({i: 0 for i in range(3, r_1+1)})
+    channel_map_to.update({i: 1 for i in range(r_1+1, r_2+1)})
+    channel_map_to.update({i: 2 for i in range(r_2+1, max_index)})
+
+    return channel_map_from, channel_map_to
 
 
 class DartsSearchSpace(Graph):
@@ -158,21 +181,51 @@ class DartsSearchSpace(Graph):
         self.add_edges_from([(i, i+2) for i in range(2, 9)])
  
         #
-        # Operations at the edges
+        # Operations at the makrograph edges
         #
-        channels = [16, 32, 64]
+        self.channels = [16, 32, 64]
+        self.num_in_edges = 4
+        self.num_classes = 10
+        
+        reduction_cell_indices = [5, 8]
 
+        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
+
+        self._set_makrograph_ops(channel_map_from, channel_map_to)
+
+        self._set_cell_ops(reduction_cell_indices)
+
+
+    def _set_makrograph_ops(self, channel_map_from, channel_map_to):
         # pre-processing
-        self.edges[1, 2].set('op', ops.Stem(channels[0]))
+        self.edges[1, 2].set('op', ops.Stem(self.channels[0]))
 
-        # Replace Identity for normal cells after reductions cells to handle resolution
-        self.edges[4, 6].set('op', FactorizedReduce(channels[0], channels[1]))
-        self.edges[7, 9].set('op', FactorizedReduce(channels[1], channels[2]))
+        # edges connecting cells
+        for u, v, data in sorted(self.edges(data=True)):
+            if u > 1 and v < 11:
+                C_in = self.channels[channel_map_from[u]] 
+                C_out = self.channels[channel_map_to[v]]
+                if C_in == C_out:
+                    C_in = C_in if u == 2 else C_in * self.num_in_edges     # handle Stem
+                    data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1))
+                else:
+                    data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out))
+        
+        # post-processing
 
-        # normal cells
+        _, _, data = sorted(self.edges(data=True))[-1]
+        data.set('op', ops.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(self.channels[-1] * self.num_in_edges, self.num_classes))
+        )
+
+
+    def _set_cell_ops(self, reduction_cell_indices):
+         # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
 
-        for scope, c in zip(stages, channels):
+        for scope, c in zip(stages, self.channels):
             self.update_edges(
                 update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
                 scope=scope,
@@ -181,25 +234,18 @@ class DartsSearchSpace(Graph):
 
         # reduction cells
         # stride=2 is only for some edges, that's why we have to do it this way
-        r_cell_nodes = [5, 8]
-        for n, c in zip(r_cell_nodes, channels[1:]):
+        for n, c in zip(reduction_cell_indices, self.channels[1:]):
             reduction_cell = self.nodes[n]['subgraph']
             for u, v, data in reduction_cell.edges.data():
                 stride = 2 if u in (1, 2) else 1
                 reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
-        
-        # post-processing
-        self.edges[10, 11].set('op', ops.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(channels[-1], 10))
-        )
 
         #
         # Combining operations
         #
-        for n, c in zip(range(3, 11), [16, 16, 32, 32, 32, 64, 64, 64]):
-            self.nodes[n]['subgraph'].nodes[7]['comb_op'] = ops.Concat1x1(num_in_edges=4, C_out=c)
+        for _, cell in sorted(self.nodes('subgraph')):
+            if cell:
+                cell.nodes[7]['comb_op'] = channel_concat
 
 
     def prepare_discretization(self):
@@ -217,7 +263,25 @@ class DartsSearchSpace(Graph):
         and 3 normal cells at each stage.
         """
         # this is called after the optimizer has discretized the graph
+        self._expand()
+        
+        
+        #
+        # Operations at the edges
+        #
 
+        self.channels = [32, 64, 128]
+
+        reduction_cell_indices = [9, 16]
+
+        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
+
+        self._set_makrograph_ops(channel_map_from, channel_map_to)
+
+        self._set_cell_ops(reduction_cell_indices)
+
+
+    def _expand(self):
         # shift the node indices to make space for 4 more nodes
         mapping = {
             5: 9,
@@ -246,61 +310,5 @@ class DartsSearchSpace(Graph):
                     cell.input_node_idxs = [2, 2]
                 else:
                     cell.input_node_idxs = [i-2, i-1]
-
-        
-        #
-        # Operations at the edges
-        #
-
-        channels = [32, 64, 128]
-
-        # Replace Identity for normal cells after reductions cells to handle resolution
-        self.edges[8, 10].set('op', FactorizedReduce(channels[0], channels[1]))
-        self.edges[15, 17].set('op', FactorizedReduce(channels[1], channels[2]))
-
-        def double_channels(current_edge_data):
-            if current_edge_data.has('final') and current_edge_data.final:
-                return current_edge_data
-            else:
-                init_params = current_edge_data.op.init_params
-                if 'C_in' in init_params:
-                    print('c_in', init_params['C_in'], 'class', current_edge_data.op)
-                    init_params['C_in'] *= 2 
-                if 'C_out' in init_params:
-                    init_params['C_out'] *= 2
-                current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
-            return current_edge_data
-
-        # pre-processing
-        self.edges[1, 2].set('op', ops.Stem(channels[0]))
-
-        self.update_edges(
-            update_func=double_channels,
-            scope=self.OPTIMIZER_SCOPE,
-            private_edge_data=True
-        )
-        
-        # post-processing
-        self.edges[22, 23].set('op', ops.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(channels[-1], 10))
-        )
-
-        #
-        # Combining operations
-        #
-
-        # map the node indices to channel indices
-        mapping = {k: 0 for k in range(3, 9)}
-        mapping.update({k: 1 for k in range(9, 16)})
-        mapping.update({k: 2 for k in range(16, 23)})
-
-        for i, cell in sorted(self.nodes('subgraph')):
-            if cell:
-                channel = channels[mapping[i]]
-                cell.nodes[7]['comb_op'] = ops.Concat1x1(num_in_edges=4, C_out=channel)
-                print(i, channel)
-        
 
 

@@ -13,30 +13,6 @@ Code below from NASBench-201 and slighly adapted
   year      = {2020}
 }
 """
-class ReLUConvBN(AbstractPrimitive):
-
-    def __init__(self, C_in, C, kernel_size, stride=1, affine=False):
-        super().__init__(locals())
-        self.kernel_size = kernel_size
-        pad = 0 if stride == 1 and kernel_size == 1 else 1
-        self.op = nn.Sequential(
-            nn.ReLU(inplace=False),
-            nn.Conv2d(C_in, C, kernel_size, stride=stride, padding=pad, bias=False),
-            nn.BatchNorm2d(C, affine=affine)
-        )
-
-
-    def forward(self, x, edge_data):
-        return self.op(x)
-
-    def get_embedded_ops(self):
-        return None
-
-    @property
-    def get_op_name(self):
-        op_name = super().get_op_name
-        op_name += '{}x{}'.format(self.kernel_size, self.kernel_size)
-        return op_name
 
 
 class ResNetBasicblock(AbstractPrimitive):
