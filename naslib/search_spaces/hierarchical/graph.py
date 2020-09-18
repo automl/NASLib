@@ -6,43 +6,13 @@ from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import ConvBNReLU, DepthwiseConv
 
 
-
-def _set_cell_ops(current_edge_data, C, stride):
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    elif isinstance(current_edge_data.op, list) and all(isinstance(op, Graph) for op in current_edge_data.op):
-        return current_edge_data    # We are at the edge of an motif
-    elif isinstance(current_edge_data.op, ops.Identity):
-        current_edge_data.set('op', [
-            ops.Identity() if stride==1 else ops.FactorizedReduce(C, C),
-            ops.Zero(stride=stride),
-            ops.MaxPool1x1(3, stride),
-            ops.AvgPool1x1(3, stride),
-            ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            DepthwiseConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            ConvBNReLU(C, C, kernel_size=1),
-        ])
-        return current_edge_data
-    else:
-        raise ValueError()
-
-
-def _set_motifs(current_edge_data, ops):
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    else:
-        # We have to set the op as shared because the archparameters
-        # of lower level motivs are shared across cells.
-        #current_edge_data.remove('op')
-        current_edge_data.set('op', [m.copy() for m in ops])
-    return current_edge_data
-
-
 class SmallHierarchicalSearchSpace(Graph):
     """
     Hierarchical search space as defined in
 
         Liu et al.: Hierarchical Representations for Efficient Architecture Search
+    
+    The small version which they search for Cifar-10.
     """
 
     OPTIMIZER_SCOPE = [
@@ -87,6 +57,7 @@ class SmallHierarchicalSearchSpace(Graph):
 
             cell_i.set_scope(scope)
 
+            # set the level 1 motifs (i.e. primitives)
             cell_i.update_edges(
                 update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
                 scope=[scope],
@@ -114,4 +85,37 @@ class SmallHierarchicalSearchSpace(Graph):
         )
         
         
-        
+def _set_cell_ops(current_edge_data, C, stride):
+    """
+    Set the primitives for the bottom level motif where we
+    have actual ops at the edges.
+    """
+    if current_edge_data.has('final') and current_edge_data.final:
+        return current_edge_data
+    elif isinstance(current_edge_data.op, list) and all(isinstance(op, Graph) for op in current_edge_data.op):
+        return current_edge_data    # We are at the edge of an motif
+    elif isinstance(current_edge_data.op, ops.Identity):
+        current_edge_data.set('op', [
+            ops.Identity() if stride==1 else ops.FactorizedReduce(C, C),
+            ops.Zero(stride=stride),
+            ops.MaxPool1x1(3, stride),
+            ops.AvgPool1x1(3, stride),
+            ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
+            DepthwiseConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
+            ConvBNReLU(C, C, kernel_size=1),
+        ])
+        return current_edge_data
+    else:
+        raise ValueError()
+
+
+def _set_motifs(current_edge_data, ops):
+    """
+    Set l-1 level motifs as ops at the edges for l level motifs
+    """
+    if current_edge_data.has('final') and current_edge_data.final:
+        return current_edge_data
+    else:
+        # We need copies because they will be set at every edge
+        current_edge_data.set('op', [m.copy() for m in ops])
+    return current_edge_data

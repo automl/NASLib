@@ -3,8 +3,8 @@ import torch
 import logging
 from torch.autograd import Variable
 
+from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.core.metaclasses import MetaOptimizer 
-from naslib.optimizers.core.operations import MixedOp
 from naslib.utils.utils import count_parameters_in_MB
 import naslib.search_spaces.core.primitives as ops
 
@@ -317,69 +317,19 @@ class DARTSOptimizer(MetaOptimizer):
         return criterion(pred, target)
 
 
-
-
-    # def replace_function(self, edge, graph):
-    #     graph.architectural_weights = self.architectural_weights
-
-    #     if 'op_choices' in edge:
-    #         edge_key = 'cell_{}_from_{}_to_{}'.format(graph.cell_type, edge['from_node'], edge['to_node'])
-
-    #         weights = self.architectural_weights[edge_key] if edge_key in self.architectural_weights else \
-    #             torch.nn.Parameter(1e-3 * torch.randn(size=[len(edge['op_choices'])], requires_grad=True))
-
-    #         self.architectural_weights[edge_key] = weights
-    #         edge['arch_weight'] = self.architectural_weights[edge_key]
-    #         edge['op'] = MixedOp(primitives=edge['op_choices'], **edge['op_kwargs'])
-
-    #         if edge_key not in self.edges:
-    #             self.edges[edge_key] = []
-    #         self.edges[edge_key].append(edge)
-    #     return edge
-
-    # def forward_pass_adjustment(self, *args, **kwargs):
-    #     if self.perturb_alphas is None:
-    #         return
-
-    #     for arch_key, arch_weight in self.architectural_weights.items():
-    #         softmaxed_arch_weight = torch.nn.functional.softmax(arch_weight.clone(),
-    #                                                             dim=-1)
-    #         if self.perturb_alphas == 'random':
-    #             perturbation = torch.zeros_like(softmaxed_arch_weight).uniform_(
-    #                 -self.epsilon_alpha, self.epsilon_alpha
-    #             )
-    #             softmaxed_arch_weight.data.add_(perturbation)
-    #             # clipping
-    #             max_index = softmaxed_arch_weight.argmax()
-    #             softmaxed_arch_weight.data.clamp_(0, 1)
-    #             if softmaxed_arch_weight.sum() == 0.0:
-    #                 softmaxed_arch_weight.data[max_index] = 1.0
-    #             softmaxed_arch_weight.data.div_(softmaxed_arch_weight.sum())
-
-    #         for edge in self.edges[arch_key]:
-    #             edge['softmaxed_arch_weight'] = softmaxed_arch_weight
-    #             edge['perturb_alphas'] = True
-
-    # def undo_forward_pass_adjustment(self, *args, **kwargs):
-    #     try:
-    #         for arch_key in self.architectural_weights:
-    #             for edge in self.edges[arch_key]:
-    #                 del edge['softmaxed_arch_weight']
-    #                 del edge['perturb_alphas']
-    #     except KeyError:
-    #         return
-
-    # @classmethod
-    # def from_config(cls, *args, **kwargs):
-    #     nas_opt = cls(*args, **kwargs)
-    #     return nas_opt
-
-    # def new_epoch(self, epoch):
-    #     if self.perturb_alphas is not None:
-    #         self.epsilon_alpha = 0.03 + (self.epsilon - 0.03) * epoch/self.epochs
-
-    # def add_perturbation(self, perturbation=None, epsilon=.3):
-    #     if perturbation == None:
-    #         return
-    #     else:
-    #         self.perturb_alphas = perturbation
+class MixedOp(AbstractPrimitive):
+    """
+    Continous relaxation of the discrete search space.
+    """
+    def __init__(self, primitives):
+        super().__init__(locals())
+        self.primitives = primitives
+        for i, primitive in enumerate(primitives):
+            self.add_module("primitive-{}".format(i), primitive)
+    
+    def forward(self, x, edge_data):
+        normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
+        return sum(w * op(x, None) for w, op in zip(normed_alphas, self.primitives))
+    
+    def get_embedded_ops(self):
+        return self.primitives

@@ -2,10 +2,12 @@ import logging
 
 import torch
 
-from naslib.optimizers.core.operations import GDASMixedOp
+from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 
+
 logger = logging.getLogger(__name__)
+
 
 class GDASOptimizer(DARTSOptimizer):
     """
@@ -140,3 +142,30 @@ class GDASOptimizer(DARTSOptimizer):
         )
         
         return logits_train, logits_val, train_loss, val_loss
+
+
+class GDASMixedOp(AbstractPrimitive):
+
+    def __init__(self, primitives, min_cuda_memory=False):
+        """
+        Initialize the mixed op for GDAS.
+
+        Args:
+            primitives (list): The primitive operations to sample from.
+        """
+        super().__init__(locals())
+        self.primitives = primitives
+        for i, primitive in enumerate(primitives):
+            self.add_module("primitive-{}".format(i), primitive)
+
+
+    def forward(self, x, edge_data):
+        """
+        Applies the gumbel softmax to the architecture weights
+        before forwarding `x` through the graph as in DARTS
+        """
+        sampled_arch_weight = edge_data.sampled_arch_weight
+        return sum(w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives))
+    
+    def get_embedded_ops(self):
+        return self.primitives

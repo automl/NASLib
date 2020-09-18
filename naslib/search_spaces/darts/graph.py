@@ -11,89 +11,6 @@ from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import FactorizedReduce
 
 
-def _set_cell_ops(current_edge_data, C, stride):
-    """
-    Replace the 'op' at the edges with the ones defined here.
-    This function is called by the framework for every edge in
-    the defined scope.
-
-    Args:
-        current_egde_data (EdgeData): The data that currently sits
-            at the edge.
-        C (int): convolutional channels
-        stride (int): stride for the operation
-    
-    Returns:
-        EdgeData: the updated EdgeData object.
-    """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    else:
-        C_in = C if stride==1 else C//2
-        current_edge_data.set('op', [
-            ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
-            ops.Zero(stride=stride),
-            ops.MaxPool1x1(3, stride, C_in, C),
-            ops.AvgPool1x1(3, stride, C_in, C),
-            ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
-            ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-            ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
-        ])
-    return current_edge_data
-
-
-def _truncate_input_edges(node, in_edges, out_edges):
-    """
-    Removes input edges if there are more than k.
-    """
-    k = 2
-    if len(in_edges) >= k:
-        if any(e.has('alpha') or (e.has('final') and e.final) for _, e in in_edges):
-            # We are in the one-shot case
-            for _, data in in_edges:
-                if data.has('final') and data.final:
-                    return  # We are looking at an out node
-                data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
-            sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
-            keep_edges, _ = zip(*sorted_edge_ids[:k])
-            for edge_id, edge_data in in_edges:
-                if edge_id not in keep_edges:
-                    edge_data.delete()
-        else:
-            # We are in the discrete case (e.g. random search)
-            for _, data in in_edges:
-                assert isinstance(data.op, list)
-                data.op.pop(1)      # Remove the zero op
-            if any(e.has('final') and e.final for _, e in in_edges):
-                return  # TODO: how about mixed final and non-final?
-            else:
-                for _ in range(len(in_edges) - k):
-                    in_edges[random.randint(0, len(in_edges)-1)][1].delete()
-
-
-def channel_concat(tensors):
-    return torch.cat(tensors, dim=1)
-
-
-def channel_maps(reduction_cell_indices, max_index):
-    # calculate the mapping from edge indices to the respective channel
-
-    assert len(reduction_cell_indices) == 2
-    r_1, r_2 = reduction_cell_indices
-    channel_map_from = {}
-    channel_map_from.update({i: 0 for i in range(2, r_1)})
-    channel_map_from.update({i: 1 for i in range(r_1, r_2)})
-    channel_map_from.update({i: 2 for i in range(r_2, max_index)})
-
-    channel_map_to = {}
-    channel_map_to.update({i: 0 for i in range(3, r_1+1)})
-    channel_map_to.update({i: 1 for i in range(r_1+1, r_2+1)})
-    channel_map_to.update({i: 2 for i in range(r_2+1, max_index)})
-
-    return channel_map_from, channel_map_to
-
-
 class DartsSearchSpace(Graph):
     """
     The search space for CIFAR-10 as defined in
@@ -265,34 +182,15 @@ class DartsSearchSpace(Graph):
         # this is called after the optimizer has discretized the graph
         self._expand()
         
-        
-        #
         # Operations at the edges
-        #
-
         self.channels = [32, 64, 128]
-
         reduction_cell_indices = [9, 16]
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
-
         self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23)
 
-        def double_channels(current_edge_data):
-            if current_edge_data.has('final') and current_edge_data.final:
-                return current_edge_data
-            else:
-                init_params = current_edge_data.op.init_params
-                if 'C_in' in init_params:
-                    print('c_in', init_params['C_in'], 'class', current_edge_data.op)
-                    init_params['C_in'] *= 2 
-                if 'C_out' in init_params:
-                    init_params['C_out'] *= 2
-                current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
-            return current_edge_data
-
         self.update_edges(
-            update_func=double_channels,
+            update_func=_double_channels,
             scope=self.OPTIMIZER_SCOPE,
             private_edge_data=True
         )
@@ -329,3 +227,99 @@ class DartsSearchSpace(Graph):
                     cell.input_node_idxs = [i-2, i-1]
 
 
+
+def _set_cell_ops(current_edge_data, C, stride):
+    """
+    Replace the 'op' at the edges with the ones defined here.
+    This function is called by the framework for every edge in
+    the defined scope.
+
+    Args:
+        current_egde_data (EdgeData): The data that currently sits
+            at the edge.
+        C (int): convolutional channels
+        stride (int): stride for the operation
+    
+    Returns:
+        EdgeData: the updated EdgeData object.
+    """
+    if current_edge_data.has('final') and current_edge_data.final:
+        return current_edge_data
+    else:
+        C_in = C if stride==1 else C//2
+        current_edge_data.set('op', [
+            ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            ops.Zero(stride=stride),
+            ops.MaxPool1x1(3, stride, C_in, C),
+            ops.AvgPool1x1(3, stride, C_in, C),
+            ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+            ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
+            ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+            ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
+        ])
+    return current_edge_data
+
+
+def _truncate_input_edges(node, in_edges, out_edges):
+    """
+    Removes input edges if there are more than k.
+    """
+    k = 2
+    if len(in_edges) >= k:
+        if any(e.has('alpha') or (e.has('final') and e.final) for _, e in in_edges):
+            # We are in the one-shot case
+            for _, data in in_edges:
+                if data.has('final') and data.final:
+                    return  # We are looking at an out node
+                data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+            sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
+            keep_edges, _ = zip(*sorted_edge_ids[:k])
+            for edge_id, edge_data in in_edges:
+                if edge_id not in keep_edges:
+                    edge_data.delete()
+        else:
+            # We are in the discrete case (e.g. random search)
+            for _, data in in_edges:
+                assert isinstance(data.op, list)
+                data.op.pop(1)      # Remove the zero op
+            if any(e.has('final') and e.final for _, e in in_edges):
+                return  # TODO: how about mixed final and non-final?
+            else:
+                for _ in range(len(in_edges) - k):
+                    in_edges[random.randint(0, len(in_edges)-1)][1].delete()
+
+
+def _double_channels(current_edge_data):
+    if current_edge_data.has('final') and current_edge_data.final:
+        return current_edge_data
+    else:
+        init_params = current_edge_data.op.init_params
+        if 'C_in' in init_params:
+            print('c_in', init_params['C_in'], 'class', current_edge_data.op)
+            init_params['C_in'] *= 2 
+        if 'C_out' in init_params:
+            init_params['C_out'] *= 2
+        current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
+    return current_edge_data
+
+
+def channel_concat(tensors):
+    return torch.cat(tensors, dim=1)
+
+
+def channel_maps(reduction_cell_indices, max_index):
+    # calculate the mapping from edge indices to the respective channel
+
+    assert len(reduction_cell_indices) == 2
+    r_1, r_2 = reduction_cell_indices
+    channel_map_from = {}
+    channel_map_from.update({i: 0 for i in range(2, r_1)})
+    channel_map_from.update({i: 1 for i in range(r_1, r_2)})
+    channel_map_from.update({i: 2 for i in range(r_2, max_index)})
+
+    channel_map_to = {}
+    channel_map_to.update({i: 0 for i in range(3, r_1+1)})
+    channel_map_to.update({i: 1 for i in range(r_1+1, r_2+1)})
+    channel_map_to.update({i: 2 for i in range(r_2+1, max_index)})
+
+    return channel_map_from, channel_map_to

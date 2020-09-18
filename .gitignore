@@ -8,6 +8,7 @@
 
 # Everything stored in runs
 naslib/benchmarks/*/run/
+examples/run/
 
 # IDE related
 .vscode/

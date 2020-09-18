@@ -8,33 +8,11 @@ from naslib.search_spaces.core.primitives import AbstractPrimitive
 
 from .primitives import ResNetBasicblock
 
-def _set_cell_ops(current_edge_data, C):
-    current_edge_data.set('op', [
-        ops.Identity(),
-        ops.Zero(stride=1),
-        ops.ReLUConvBN(C, C, kernel_size=3),
-        ops.ReLUConvBN(C, C, kernel_size=1),
-        ops.AvgPool1x1(kernel_size=3, stride=1),
-    ])
-    return current_edge_data
-
-
-def remove_zero_alpha(current_edge_data):
-    if current_edge_data.has('alpha'):
-        current_edge_data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
-    return current_edge_data
-
-def remove_zero_op(current_edge_data):
-    if isinstance(current_edge_data.op, list):
-        current_edge_data.op.pop(1)      # Remove the zero op
-        return current_edge_data
-    else:
-        raise ValueError("Unknown format of the op: {}".format(current_edge_data.op))
-
 
 class NasBench201SeachSpace(Graph):
     """
     Implementation of the nasbench 201 search space.
+    It also has an interface to the tabular benchmark of nasbench 201.
     """
 
     OPTIMIZER_SCOPE = [
@@ -173,3 +151,28 @@ class NasBench201SeachSpace(Graph):
             return query_results[dataset]
         else:
             return query_results[dataset][metric]
+
+
+def _set_cell_ops(current_edge_data, C):
+    current_edge_data.set('op', [
+        ops.Identity(),
+        ops.Zero(stride=1),
+        ops.ReLUConvBN(C, C, kernel_size=3),
+        ops.ReLUConvBN(C, C, kernel_size=1),
+        ops.AvgPool1x1(kernel_size=3, stride=1),
+    ])
+    return current_edge_data
+
+
+def remove_zero_alpha(current_edge_data):
+    if current_edge_data.has('alpha'):
+        current_edge_data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+    return current_edge_data
+
+
+def remove_zero_op(current_edge_data):
+    if isinstance(current_edge_data.op, list):
+        current_edge_data.op.pop(1)      # Remove the zero op
+        return current_edge_data
+    else:
+        raise ValueError("Unknown format of the op: {}".format(current_edge_data.op))

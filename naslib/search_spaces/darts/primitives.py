@@ -6,7 +6,9 @@ from ..core.primitives import AbstractPrimitive
 
 class FactorizedReduce(AbstractPrimitive):
     """
-    Whatever this is, it replaces the identity when stride=2
+    Factorized reduce as used in ResNet to add some sort
+    of Identity connection even though the resolution does not
+    match.
     """
 
     def __init__(self, C_in, C_out, affine=False):

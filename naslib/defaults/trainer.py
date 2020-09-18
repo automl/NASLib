@@ -3,12 +3,7 @@ import time
 import json
 import logging
 import os
-import random
-
-import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
-import torch.nn as nn
 
 from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
 
@@ -18,19 +13,27 @@ from naslib.utils.logging import log_every_n_seconds, log_first_n
 
 logger = logging.getLogger(__name__)
 
+
 class Trainer(object):
     """
-    Class which handles all the training.
+    Default implementation that handles dataloading and preparing batches, the
+    train loop, gathering statistics, checkpointing and doing the final
+    final evaluation.
 
-    - Data loading and preparing batches
-    - train loop
-    - gather statistics
-    - do the final evaluation
+    If this does not fulfil your needs free do subclass it and implement your
+    required logic.
     """
 
-    def __init__(self, optimizer, dataset, config):
+    def __init__(self, optimizer, config):
+        """
+        Initializes the trainer.
+
+        Args:
+            optimizer: A NASLib optimizer
+            config (AttrDict): The configuration loaded from a yaml file, e.g
+                via  `utils.get_config_from_args()`
+        """
         self.optimizer = optimizer
-        self.dataset = dataset
         self.config = config
         self.epochs = self.config.search.epochs
 
@@ -60,39 +63,16 @@ class Trainer(object):
         )
 
 
-    def _prepare_dataloaders(self, config):
-        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config)
-        self.train_queue = train_queue
-        self.valid_queue = valid_queue
-        self.test_queue = test_queue
-    
-
-    def _setup_checkpointers(self, resume_from="", search=True, **add_checkpointables):
-
-        checkpointables = self.optimizer.get_checkpointables()
-        checkpointables.update(add_checkpointables)
-
-        self.checkpointer = checkpointer = Checkpointer(
-            model=checkpointables.pop('model'),
-            save_dir=self.config.save + "/search" if search else self.config.save + "/eval",
-            **checkpointables
-        )
-
-        self.periodic_checkpointer = PeriodicCheckpointer(
-            self.checkpointer,
-            period=1,
-            max_iter=self.config.search.epochs if search else self.config.evaluation.epochs
-        )
-
-        if resume_from:
-            logger.info("loading model from file {}".format(resume_from))
-            checkpoint = self.checkpointer.resume_or_load(resume_from, resume=True)
-            if self.checkpointer.has_checkpoint():
-                return checkpoint.get("iteration", -1) + 1
-        return 0
-
-
     def search(self, resume_from=""):
+        """
+        Start the architecture search.
+
+        Generates a json file with training statistics.
+
+        Args:
+            resume_from (str): Checkpoint file to resume from. If not given then
+                train from scratch.
+        """
         logger.info("Start training")
         self.optimizer.before_training()
         if self.optimizer.using_step_function:
@@ -152,49 +132,11 @@ class Trainer(object):
                 self.errors_dict.test_acc.append(anytime_results[0])
                 self.errors_dict.test_loss.append(anytime_results[1])
                 
-            self.log_to_json()
+            self._log_to_json()
             self._log_and_reset_accuracies(e)
 
         self.optimizer.after_training()
         logger.info("Training finished")
-    
-
-    def _log_and_reset_accuracies(self, epoch):
-        logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
-                epoch,
-                self.train_top1.avg, self.train_top5.avg,
-                self.val_top1.avg, self.val_top5.avg
-            ))
-        self.train_top1.reset()
-        self.train_top5.reset()
-        self.train_loss.reset()
-        self.val_top1.reset()
-        self.val_top5.reset()
-        self.val_loss.reset()
-
-
-    def _store_accuracies(self, logits, target, split):
-
-        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
-        n = logits.size(0)
-
-        if split == 'train':
-            self.train_top1.update(prec1.data.item(), n)
-            self.train_top5.update(prec5.data.item(), n)
-        elif split == 'val':
-            self.val_top1.update(prec1.data.item(), n)
-            self.val_top5.update(prec5.data.item(), n)
-        else:
-            raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
-
-
-    def log_to_json(self):
-        if not os.path.exists(self.config.save):
-            os.makedirs(self.config.save)
-        with codecs.open(os.path.join(self.config.save,
-                                      'errors_{}.json'.format(self.config.seed)),
-                         'w', encoding='utf-8') as file:
-            json.dump(self.errors_dict, file, separators=(',', ':'))
 
 
     def evaluate(
@@ -203,6 +145,18 @@ class Trainer(object):
             search_model="", 
             resume_from=""
         ):
+        """
+        Evaluate the final architecture as given from the optimizer.
+
+        If the search space has an interface to a benchmark then query that.
+        Otherwise train as defined in the config.
+
+        Args:
+            retrain (bool): Reset the weights from the architecure search
+            search_model (str): Path to checkpoint file that was created during
+                search. If not provided, then try to load 'model_final.pth' from search
+            resume_from (str): Resume retraining from the given checkpoint file.
+        """
         logger.info("Start evaluation")
         self._prepare_dataloaders(self.config.evaluation)
 
@@ -303,3 +257,91 @@ class Trainer(object):
             logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
 
 
+    def _log_and_reset_accuracies(self, epoch):
+        logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
+                epoch,
+                self.train_top1.avg, self.train_top5.avg,
+                self.val_top1.avg, self.val_top5.avg
+            ))
+        self.train_top1.reset()
+        self.train_top5.reset()
+        self.train_loss.reset()
+        self.val_top1.reset()
+        self.val_top5.reset()
+        self.val_loss.reset()
+
+
+    def _store_accuracies(self, logits, target, split):
+        """Update the accuracy counters"""
+        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
+        n = logits.size(0)
+
+        if split == 'train':
+            self.train_top1.update(prec1.data.item(), n)
+            self.train_top5.update(prec5.data.item(), n)
+        elif split == 'val':
+            self.val_top1.update(prec1.data.item(), n)
+            self.val_top5.update(prec5.data.item(), n)
+        else:
+            raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
+
+
+    def _prepare_dataloaders(self, config):
+        """
+        Prepare train, validation, and test dataloaders with the splits defined
+        in the config.
+
+        Args:
+            config (AttrDict): config from config file.
+        """
+        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config)
+        self.train_queue = train_queue
+        self.valid_queue = valid_queue
+        self.test_queue = test_queue
+    
+
+    def _setup_checkpointers(self, resume_from="", search=True, **add_checkpointables):
+        """
+        Sets up a periodic chechkpointer which can be used to save checkpoints
+        at every epoch. It will call optimizer's `get_checkpointables()` as objects
+        to store.
+
+        Args:
+            resume_from (str): A checkpoint file to resume the search or evaluation from.
+            search (bool): Whether search or evaluation phase is checkpointed. This is required
+                because the files are in different folders to not be overridden
+            add_checkpointables (object): Additional things to checkpoint together with the
+                optimizer's checkpointables.
+        """
+        checkpointables = self.optimizer.get_checkpointables()
+        checkpointables.update(add_checkpointables)
+
+        checkpointer = Checkpointer(
+            model=checkpointables.pop('model'),
+            save_dir=self.config.save + "/search" if search else self.config.save + "/eval",
+            **checkpointables
+        )
+
+        self.periodic_checkpointer = PeriodicCheckpointer(
+            checkpointer,
+            period=1,
+            max_iter=self.config.search.epochs if search else self.config.evaluation.epochs
+        )
+
+        if resume_from:
+            logger.info("loading model from file {}".format(resume_from))
+            checkpoint = checkpointer.resume_or_load(resume_from, resume=True)
+            if checkpointer.has_checkpoint():
+                return checkpoint.get("iteration", -1) + 1
+        return 0
+
+
+    def _log_to_json(self):
+        """log training statistics to json file"""
+        if not os.path.exists(self.config.save):
+            os.makedirs(self.config.save)
+        with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
+            json.dump(self.errors_dict, file, separators=(',', ':'))
+
+
+    

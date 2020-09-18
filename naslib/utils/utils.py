@@ -24,6 +24,9 @@ cat_channels = partial(torch.cat, dim=1)
 logger = logging.getLogger(__name__)
 
 def iter_flatten(iterable):
+    """
+    Flatten a potentially deeply nested python list
+    """
     # taken from https://rightfootin.blogspot.com/2006/09/more-on-python-flatten.html
     it = iter(iterable)
     for e in it:
@@ -34,10 +37,11 @@ def iter_flatten(iterable):
             yield e
 
 
-# Inspired by the implementation of FAIR's detectron2
 def default_argument_parser():
     """
-    Returns the argument parser with the available options
+    Returns the argument parser with the default options.
+
+    Inspired by the implementation of FAIR's detectron2
     """
 
     parser = argparse.ArgumentParser(
@@ -48,9 +52,9 @@ Run on single machine:
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default="../../configs/default.yaml", metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file", default="../naslib/defaults/config.yaml", metavar="FILE", help="path to config file")
     parser.add_argument("--seed", default=1, type=int, help="Seed for the experiment")
-    parser.add_argument("--optimizer", default="na")
+    parser.add_argument("--optimizer", default="darts")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
     parser.add_argument(
@@ -62,8 +66,12 @@ Run on single machine:
     return parser
 
 
-# from https://stackoverflow.com/questions/5389507/iterating-over-every-two-elements-in-a-list
 def pairwise(iterable):
+    """
+    Iterate pairwise over list.
+
+    from https://stackoverflow.com/questions/5389507/iterating-over-every-two-elements-in-a-list
+    """
     "s -> (s0, s1), (s2, s3), (s4, s5), ..."
     a = iter(iterable)
     return zip(a, a)
@@ -75,6 +83,9 @@ def get_config_from_args(args=None):
     from the config file.
 
     Prepares experiment directories.
+
+    Args:
+        args: args from a different argument parser than the default one.
     """
     if not args:
         args = default_argument_parser().parse_args()
@@ -151,92 +162,6 @@ def get_train_val_loaders(config):
     return train_queue, valid_queue, test_queue, train_transform, valid_transform
 
 
-def set_seed(seed):
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.enabled = True
-        torch.backends.cudnn.deterministic = True
-        torch.cuda.manual_seed_all(seed)
-
-
-def get_last_checkpoint(config, search=True):
-    try:
-        path = os.path.join(config.save, "search" if search else "eval", "last_checkpoint")
-        with open(path, 'r') as f:
-            checkpoint_name = f.readline()
-        return os.path.join(config.save, "search" if search else "eval", checkpoint_name)
-    except:
-        return ""
-
-
-def get_search_model(config):
-    return 
-
-
-class AttrDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(AttrDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
-
-class AverageMeter(object):
-
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        self.avg = 0
-        self.sum = 0
-        self.cnt = 0
-
-    def update(self, val, n=1):
-        self.sum += val * n
-        self.cnt += n
-        self.avg = self.sum / self.cnt
-
-
-def accuracy(output, target, topk=(1,)):
-    maxk = max(topk)
-    batch_size = target.size(0)
-
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
-
-    res = []
-    for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0)
-        res.append(correct_k.mul_(100.0 / batch_size))
-    return res
-
-
-class Cutout(object):
-    def __init__(self, length, prob=1.0):
-        self.length = length
-        self.prob = prob
-
-    def __call__(self, img):
-        if np.random.binomial(1, self.prob):
-            h, w = img.size(1), img.size(2)
-            mask = np.ones((h, w), np.float32)
-            y = np.random.randint(h)
-            x = np.random.randint(w)
-
-            y1 = np.clip(y - self.length // 2, 0, h)
-            y2 = np.clip(y + self.length // 2, 0, h)
-            x1 = np.clip(x - self.length // 2, 0, w)
-            x2 = np.clip(x + self.length // 2, 0, w)
-
-            mask[y1: y2, x1: x2] = 0.
-            mask = torch.from_numpy(mask)
-            mask = mask.expand_as(img)
-            img *= mask
-        return img
-
-
 def _data_transforms_cifar10(args):
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
@@ -300,14 +225,70 @@ def _data_transforms_cifar100(args):
     return train_transform, valid_transform
 
 
+def set_seed(seed):
+    """
+    Set the seeds for all used libraries.
+    """
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.enabled = True
+        torch.backends.cudnn.deterministic = True
+        torch.cuda.manual_seed_all(seed)
+
+
+def get_last_checkpoint(config, search=True):
+    """
+    Finds the latest checkpoint in the experiment directory.
+
+    Args:
+        config (AttrDict): The config from config file.
+        search (bool): Search or evaluation checkpoint
+    
+    Returns:
+        (str): The path to the latest checkpoint file.
+    """
+    try:
+        path = os.path.join(config.save, "search" if search else "eval", "last_checkpoint")
+        with open(path, 'r') as f:
+            checkpoint_name = f.readline()
+        return os.path.join(config.save, "search" if search else "eval", checkpoint_name)
+    except:
+        return ""
+
+
+def accuracy(output, target, topk=(1,)):
+    """
+    Calculate the accuracy given the softmax output and the target.
+    """
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
 def count_parameters_in_MB(model):
+    """
+    Returns the model parameters in mega byte.
+    """
     return np.sum(np.prod(v.size()) for name, v in model.named_parameters() if
                   "auxiliary" not in name) / 1e6
 
 
-
-
 def log_args(args):
+    """
+    Log the args in a nice way.
+    """
     for arg, val in args.items():
         logger.info(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
 
@@ -322,7 +303,57 @@ def drop_path(x, drop_prob):
 
 
 def create_exp_dir(path):
+    """
+    Create the experiment directories.
+    """
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
     logger.info('Experiment dir : {}'.format(path))
 
+
+
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+
+class AverageMeter(object):
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.avg = 0
+        self.sum = 0
+        self.cnt = 0
+
+    def update(self, val, n=1):
+        self.sum += val * n
+        self.cnt += n
+        self.avg = self.sum / self.cnt
+
+
+
+class Cutout(object):
+    def __init__(self, length, prob=1.0):
+        self.length = length
+        self.prob = prob
+
+    def __call__(self, img):
+        if np.random.binomial(1, self.prob):
+            h, w = img.size(1), img.size(2)
+            mask = np.ones((h, w), np.float32)
+            y = np.random.randint(h)
+            x = np.random.randint(w)
+
+            y1 = np.clip(y - self.length // 2, 0, h)
+            y2 = np.clip(y + self.length // 2, 0, h)
+            x1 = np.clip(x - self.length // 2, 0, w)
+            x2 = np.clip(x + self.length // 2, 0, w)
+
+            mask[y1: y2, x1: x2] = 0.
+            mask = torch.from_numpy(mask)
+            mask = mask.expand_as(img)
+            img *= mask
+        return img

@@ -1,4 +1,4 @@
-data: "../../data"
+data: "../naslib/data"
 dataset: cifar10
 gpu: 0
 seed: 10
@@ -10,7 +10,7 @@ save: run
 
 search:
   dataset: cifar10
-  data: "../../data"
+  data: "../naslib/data"
   seed: 10
   batch_size: 64
   learning_rate: 0.025
@@ -44,7 +44,7 @@ search:
 
 evaluation:
   dataset: cifar10
-  data: "../../data"
+  data: "../naslib/data"
   seed: 10
   batch_size: 96
   learning_rate: 0.025
