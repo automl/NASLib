@@ -37,7 +37,7 @@ optimizer.adapt_search_space(search_space)
 trainer = Trainer(optimizer, 'cifar10', config)
 
 if config.eval_only:
-    trainer.evaluate(from_file='run/cifar10/10/model_0.pth')
+    trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
 else:
-    #trainer.search()
-    trainer.evaluate(search_model='run/cifar10/gdas/1/search/model_final.pth', resume_from="run/cifar10/gdas/1/eval/model_0000004.pth")
+    trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
+    trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
