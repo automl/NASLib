@@ -6,6 +6,9 @@
 # Model files
 *.pth
 
+# Everything stored in runs
+naslib/benchmarks/*/run/
+
 # IDE related
 .vscode/
 .idea/
