@@ -39,7 +39,8 @@ class GDASOptimizer(DARTSOptimizer):
 
         # Linear tau schedule
         self.tau_step = (self.tau_min - self.tau_max) / self.epochs
-        self.tau_curr = self.tau_max
+        self.tau_curr = torch.Tensor([self.tau_max])      # make it checkpointable
+    
     
     @staticmethod
     def update_ops(current_edge_data):
@@ -54,6 +55,15 @@ class GDASOptimizer(DARTSOptimizer):
         return current_edge_data
 
 
+    def adapt_search_space(self, search_space, scope=None):
+        """
+        Same as in darts with a different mixop.
+        Just add tau as buffer so it is checkpointed.
+        """
+        super().adapt_search_space(search_space, scope)
+        self.graph.register_buffer('tau', self.tau_curr)
+
+
     def new_epoch(self, epoch):
         """
         Update the tau softmax parameter at the edges.
@@ -64,14 +74,14 @@ class GDASOptimizer(DARTSOptimizer):
         
         self.tau_curr += self.tau_step
         logger.info("tau {}".format(self.tau_curr))
-    
+        
 
     @staticmethod
     def sample_alphas(current_edge_data, tau):
         if current_edge_data.has('final') and current_edge_data.final:
             return current_edge_data
         sampled_arch_weight = torch.nn.functional.gumbel_softmax(
-            current_edge_data.alpha, tau=tau, hard=True
+            current_edge_data.alpha, tau=float(tau), hard=True
         )
         current_edge_data.set('sampled_arch_weight', sampled_arch_weight, shared=True)
         return current_edge_data
