@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from ..core.primitives import AbstractPrimitive
+from ..core.primitives import AbstractPrimitive, ReLUConvBN
 
 
 """

@@ -27,19 +27,19 @@ supported_optimizers = {
     'darts': DARTSOptimizer(config.search),
     'gdas': GDASOptimizer(config.search),
     'random': RandomSearch(sample_size=1),
+    're': RegularizedEvolution(config.search),
 }
 
 # Changing the search space is one line of code
 
-search_space = SimpleCellSearchSpace()
-# search_space = NasBench201SeachSpace()
+# search_space = SimpleCellSearchSpace()
+search_space = NasBench201SeachSpace()
 # search_space = SmallHierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
 
 # Changing the optimizer is one line of code
 
 optimizer = supported_optimizers[config.optimizer]
-#optimizer = RegularizedEvolution(config.search)
 
 optimizer.adapt_search_space(search_space)
 

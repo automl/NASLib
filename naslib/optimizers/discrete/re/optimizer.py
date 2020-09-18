@@ -5,23 +5,12 @@ import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.discrete.rs.optimizer import sample_random_architecture
+from naslib.optimizers.discrete.rs.optimizer import sample_random_architecture, update_ops
 
 from naslib.utils.utils import AttrDict
 from naslib.utils.logging import log_every_n_seconds
 
 logger = logging.getLogger(__name__)
-
-class Counter():
-
-    def __init__(self, i=0):
-        self.i = i
-
-    def increment(self):
-        self.i += 1
-
-    def decrement(self):
-        self.i -= 1
 
 
 class RegularizedEvolution(MetaOptimizer):
@@ -39,12 +28,11 @@ class RegularizedEvolution(MetaOptimizer):
         self.performance_metric = 'eval_acc1es'
 
         self.population = collections.deque(maxlen=self.population_size)
-        self.history = []
+        self.history = torch.nn.ModuleList()
 
 
     def adapt_search_space(self, search_space, scope=None):
-
-        assert search_space.QUERYABLE
+        assert search_space.QUERYABLE, "Regularized evolution is currently only implemented for benchmarks."
         
         # We sample as many architectures as we need
         logger.info("Start sampling architectures to fill the population")
@@ -59,24 +47,8 @@ class RegularizedEvolution(MetaOptimizer):
             model.accuracy = model.arch.query(self.performance_metric)
             
             self.population.append(model)
-            self.history.append(model)
+            self.history.append(model.arch)
             log_every_n_seconds(logging.INFO, "Population size {}".format(len(self.population)))
-
-    @staticmethod
-    def mutate_op(current_edge_data, mut_counter, seen_counter):
-        seen_counter.decrement()    # keep track to mutate at lest the last one
-        num_mutations = 1
-        if mut_counter.i < num_mutations:
-            if np.random.randint(len(current_edge_data.primitives)) == 0:
-                op_index = np.random.randint(len(current_edge_data.primitives))
-                current_edge_data.set('op_index', op_index, shared=True)
-                mut_counter.increment()
-            elif seen_counter.i == 0:
-                op_index = np.random.randint(len(current_edge_data.primitives))
-                current_edge_data.set('op_index', op_index, shared=True)
-                mut_counter.increment()
-        return current_edge_data
-
 
 
     def _mutate(self, parent_arch):
@@ -86,18 +58,26 @@ class RegularizedEvolution(MetaOptimizer):
         cells = child._get_child_graphs(single_instances=True)
         cell = np.random.choice(cells) if len(cells) > 1 else cells[0]
         
+        edges = [(u, v) for u, v, data in sorted(cell.edges(data=True)) if not data.is_final()]
+
         # sample if op or edge change
-        if True: #np.random.choice(a=[False, True]):
+        if np.random.choice(a=[False, True]):
             # change op
-            mut_c = Counter()    # keep track of the number of mutations
-            seen_c = Counter(len(cell.get_all_edge_data('op_index')))    # keep track of the number of edges we have seen
-            cell.update_edges(
-                lambda current_edge_data: self.mutate_op(current_edge_data, mut_c, seen_c), 
-                private_edge_data=False
-            )
+            random_edge = edges[np.random.choice(len(edges))]
+            data = cell.edges[random_edge]
+            op_index = np.random.randint(len(data.primitives))
+            data.set('op_index', op_index, shared=True)
         else:
-            # change edge
-            pass
+            # change edge by setting it to zero
+            random_edge = edges[np.random.choice(len(edges))]
+            cell.edges[random_edge].set('op_index', 1, shared=True)     # this is search space dependent
+
+            random_edge = edges[np.random.choice(len(edges))]
+            data = cell.edges[random_edge]
+            op_index = np.random.randint(len(data.primitives))
+            cell.edges[random_edge].set('op_index', op_index, shared=True)
+
+        child.update_edges(update_ops, child.OPTIMIZER_SCOPE, private_edge_data=True)
         return child
     
     
@@ -114,7 +94,7 @@ class RegularizedEvolution(MetaOptimizer):
         child.accuracy = child['arch'].query(self.performance_metric)
 
         self.population.append(child)
-        self.history.append(child)
+        self.history.append(child.arch)
         
 
     def train_statistics(self):
@@ -125,8 +105,11 @@ class RegularizedEvolution(MetaOptimizer):
         return 0, 0
 
     def get_final_architecture(self):
-        return max(self.population, key=lambda x: x.accuracy)['arch']
+        return max(self.history, key=lambda x: x.query(self.performance_metric))
     
     def get_op_optimizer(self):
         raise NotImplementedError()
 
+    
+    def get_checkpointables(self):
+        return {'model': self.history}

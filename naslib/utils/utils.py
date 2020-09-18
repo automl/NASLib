@@ -12,6 +12,7 @@ import os
 import os.path
 import shutil
 from functools import wraps, partial
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -310,6 +311,12 @@ def create_exp_dir(path):
         os.makedirs(path, exist_ok=True)
     logger.info('Experiment dir : {}'.format(path))
 
+
+def get_project_root() -> Path:
+    """
+    Returns the root path of the project.
+    """
+    return Path(__file__).parent.parent
 
 
 class AttrDict(dict):

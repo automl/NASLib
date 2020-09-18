@@ -661,6 +661,15 @@ class Graph(nx.DiGraph, torch.nn.Module):
             raise NotImplementedError("This function should not be used if QUERYABLE is False")
 
 
+    def get_dense_edges(self):
+        edges = []
+        nodes = sorted(list(self.nodes()))
+        for i in nodes:
+            for j in nodes:
+                if i != j and j > i:
+                    edges.append((i, j))
+        return edges
+
 class EdgeData():
     """
     Class that holds data for each edge.

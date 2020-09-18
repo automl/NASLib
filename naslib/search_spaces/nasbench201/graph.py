@@ -6,7 +6,13 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 
+from naslib.utils.utils import get_project_root
+
 from .primitives import ResNetBasicblock
+
+# load the nasbench201 data
+with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
+    nb201_data = pickle.load(f)
 
 
 class NasBench201SeachSpace(Graph):
@@ -22,6 +28,7 @@ class NasBench201SeachSpace(Graph):
     ]
 
     QUERYABLE = True
+
 
     def __init__(self):
         super().__init__()
@@ -111,8 +118,7 @@ class NasBench201SeachSpace(Graph):
             self.update_edges(remove_zero_op, scope=self.OPTIMIZER_SCOPE, private_edge_data=True)
         
 
-
-    def query(self, metric='eval_acc1es', dataset='cifar10', path='../../data'):
+    def query(self, metric='eval_acc1es', dataset='cifar10', path=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
@@ -133,7 +139,7 @@ class NasBench201SeachSpace(Graph):
         }
 
         # convert the naslib representation to nasbench201
-        cell = self._get_child_graphs(single_instances=True)[0]
+        cell = self.edges[2, 3].op
         edge_op_dict = {
             (i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
         }
@@ -143,9 +149,7 @@ class NasBench201SeachSpace(Graph):
 
         arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
 
-        # load the nasbench201 data and return the queried data
-        with open(os.path.join(path, 'nb201_all.pickle'), 'rb') as f:
-            nb201_data = pickle.load(f)
+        # query data from nb201
         query_results = nb201_data[arch_str]
         if metric == 'all':
             return query_results[dataset]

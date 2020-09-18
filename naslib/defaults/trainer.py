@@ -79,7 +79,9 @@ class Trainer(object):
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer.op_optimizer, float(self.epochs), eta_min=self.config.search.learning_rate_min)
         
-        start_epoch = self._setup_checkpointers(resume_from, scheduler=self.scheduler)
+            start_epoch = self._setup_checkpointers(resume_from, scheduler=self.scheduler)
+        else:
+            start_epoch = self._setup_checkpointers(resume_from)
         
         for e in range(start_epoch, self.epochs):
             self.optimizer.new_epoch(e)
@@ -106,7 +108,6 @@ class Trainer(object):
                     self.val_loss.update(float(val_loss.detach().cpu()))
                     
                 self.scheduler.step()
-                self.periodic_checkpointer.step(e)
 
                 end_time = time.time()
 
@@ -125,6 +126,8 @@ class Trainer(object):
                 self.errors_dict.runtime.append(end_time - start_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
+            
+            self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
@@ -161,7 +164,7 @@ class Trainer(object):
         self._prepare_dataloaders(self.config.evaluation)
 
         if not search_model:
-            search_model = os.path.join(self.config.save, "search", "model_final.pth"),
+            search_model = os.path.join(self.config.save, "search", "model_final.pth")
         self._setup_checkpointers(search_model)      # required to load the architecture
 
         best_arch = self.optimizer.get_final_architecture()
@@ -170,7 +173,7 @@ class Trainer(object):
         if best_arch.QUERYABLE:
             metric = 'eval_acc1es'
             result = best_arch.query(
-                metric=metric, dataset=self.config.dataset, path=self.config.data
+                metric=metric, dataset=self.config.dataset
             )
             logger.info("Queried results ({}): {}".format(metric, result))
         else:

@@ -26,7 +26,10 @@ def update_ops(current_edge_data):
     if current_edge_data.has('final') and current_edge_data.final:
         return current_edge_data
     
-    primitives = current_edge_data.op
+    if isinstance(current_edge_data.op, list):
+        primitives = current_edge_data.op
+    else:
+        primitives = current_edge_data.primitives
     current_edge_data.set('op', primitives[current_edge_data.op_index])
     current_edge_data.set('primitives', primitives)     # store for later use
     return current_edge_data
