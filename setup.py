@@ -43,8 +43,6 @@ requires = [
     "numpy==1.16.4",
     "torch>=1.2.0",
     "torchvision>=0.4.0",
-    "tensorflow-gpu==1.14.0",
-    "tensorflow-probability==0.7.0",
     "fvcore",
 ]
 

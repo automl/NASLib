@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p ml_gpu-rtx2080     #gpu_tesla-P100     #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
+#SBATCH -p alldlc_gpu-rtx2080 #gpu_tesla-P100     #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH --mem 4000            # memory pool for all cores (4GB)
 #SBATCH -t 4-00:00            # time (D-HH:MM)
 #SBATCH -c 1                  # number of cores

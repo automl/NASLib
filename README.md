@@ -37,12 +37,12 @@ pip install cython
 
 Clone and install.
 
-If you plan to modify naslib consider adding the `-e` option for `python install`.
+If you plan to modify naslib consider adding the `-e` option for `pip install`.
 
 ```
 git clone ...
 cd naslib
-python install .
+pip install .
 ```
 
 
