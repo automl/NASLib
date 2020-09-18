@@ -191,18 +191,18 @@ class DartsSearchSpace(Graph):
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
 
-        self._set_makrograph_ops(channel_map_from, channel_map_to)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=11)
 
         self._set_cell_ops(reduction_cell_indices)
 
 
-    def _set_makrograph_ops(self, channel_map_from, channel_map_to):
+    def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index):
         # pre-processing
         self.edges[1, 2].set('op', ops.Stem(self.channels[0]))
 
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
-            if u > 1 and v < 11:
+            if u > 1 and v < max_index:
                 C_in = self.channels[channel_map_from[u]] 
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
@@ -276,9 +276,26 @@ class DartsSearchSpace(Graph):
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
 
-        self._set_makrograph_ops(channel_map_from, channel_map_to)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23)
 
-        self._set_cell_ops(reduction_cell_indices)
+        def double_channels(current_edge_data):
+            if current_edge_data.has('final') and current_edge_data.final:
+                return current_edge_data
+            else:
+                init_params = current_edge_data.op.init_params
+                if 'C_in' in init_params:
+                    print('c_in', init_params['C_in'], 'class', current_edge_data.op)
+                    init_params['C_in'] *= 2 
+                if 'C_out' in init_params:
+                    init_params['C_out'] *= 2
+                current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
+            return current_edge_data
+
+        self.update_edges(
+            update_func=double_channels,
+            scope=self.OPTIMIZER_SCOPE,
+            private_edge_data=True
+        )
 
 
     def _expand(self):

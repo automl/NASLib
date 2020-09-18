@@ -6,6 +6,7 @@
 #SBATCH --gres=gpu:1          # reserves one GPU
 #SBATCH -o %x.%A.%N.out       # STDOUT  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e %x.%A.%N.err       # STDERR  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
+#SBATCH --mail-type=END,FAIL  # (recive mails about end and timeouts/crashes of your job)
 #SBATCH -J hiera-darts        # sets the job name. 
 
 echo "Workingdir: $PWD";

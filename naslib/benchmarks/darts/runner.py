@@ -4,65 +4,36 @@ import naslib as nl
 
 from naslib.optimizers.core.evaluator import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
+from naslib.optimizers.discrete.re.optimizer import RegularizedEvolution
 
-from naslib.search_spaces import DartsSearchSpace, SimpleCellSearchSpace, NasBench201SeachSpace
-from naslib.utils import setup_logger, set_seed, get_config_from_args
+from naslib.search_spaces import DartsSearchSpace
+from naslib.utils import utils, setup_logger
 
-logger = setup_logger("test.log")
-logger.setLevel(logging.INFO)
+from naslib.search_spaces.hierarchical.graph import SmallHierarchicalSearchSpace
 
-if __name__ == '__main__':
+config = utils.get_config_from_args()
+utils.set_seed(config.seed)
+
+logger = setup_logger(config.save + "/log.log")
+logger.setLevel(logging.INFO)   # default DEBUG is too verbose
+
+utils.log_args(config)
+
+supported_optimizers = {
+    'darts': DARTSOptimizer(config.search),
+    'gdas': GDASOptimizer(config.search),
+    'random': RandomSearch(sample_size=1),
+}
+
+search_space = DartsSearchSpace()
+
+optimizer = supported_optimizers[config.optimizer]
+optimizer.adapt_search_space(search_space)
     
-    config = get_config_from_args()
-    set_seed(config.seed)
+trainer = Trainer(optimizer, 'cifar10', config)
 
-    search_space = DartsSearchSpace()
-    # search_space = SimpleCellSearchSpace()
-
-    # optimizer = RandomSearch(sample_size=1)
-    optimizer = DARTSOptimizer(config.search)
-    # optimizer = GDASOptimizer(config)
-
-    optimizer.adapt_search_space(search_space)
-    
-    trainer = Trainer(optimizer, 'cifar10', config)
-
-    trainer.search()
-    trainer.evaluate()
-
-    # trainer.evaluate(from_file='run/cifar10/model_0.pt')
-
-
-
-
-
-
-
-
-
-# import argparse
-# import logging
-# import os
-# import sys
-
-# from naslib.optimizers.discrete.rs import RandomSearch
-# from naslib.optimizers.core import NASOptimizer, Evaluator
-# from naslib.optimizers.oneshot.darts import Searcher, DARTSOptimizer
-# from naslib.optimizers.oneshot.gdas import GDASOptimizer
-# from naslib.optimizers.oneshot.pc_darts import PCDARTSOptimizer
-# from naslib.search_spaces.darts import MacroGraph, PRIMITIVES, OPS, DartsSearchSpace, SimpleCellSearchSpace
-# from naslib.utils import config_parser
-# from naslib.utils.parser import Parser
-# from naslib.utils.utils import create_exp_dir
-
-# opt_list = [DARTSOptimizer, GDASOptimizer, PCDARTSOptimizer]
-
-# log_format = '%(asctime)s %(message)s'
-# logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-#                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
-
-# parser = argparse.ArgumentParser('nasbench201')
-# parser.add_argument('--optimizer', type=str, default='RandomSearch')    # 'DARTSOptimizer'
-# parser.add_argument('--seed', type=int, default=1)
-# parser.add_argument('--dataset', type=str, default='cifar10')
-# args = parser.parse_args()
+if config.eval_only:
+    trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
+else:
+    trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
+    trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
