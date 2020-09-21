@@ -51,9 +51,7 @@ class NasBench201SeachSpace(Graph):
         cell.add_node(4)
 
         # Edges
-        cell.add_edges_from([(i, i+1) for i in range(1, 4)])
-        cell.add_edges_from([(i, i+2) for i in range(1, 3)])
-        cell.add_edges_from([(1, 4)])
+        cell.add_edges_densly()
 
         #
         # Makrograph definition
@@ -159,4 +157,3 @@ def _set_cell_ops(current_edge_data, C):
         ops.ReLUConvBN(C, C, kernel_size=1),
         ops.AvgPool1x1(kernel_size=3, stride=1),
     ])
-    return current_edge_data

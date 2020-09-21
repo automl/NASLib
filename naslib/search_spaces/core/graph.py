@@ -676,6 +676,14 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
 
     def get_dense_edges(self):
+        """
+        Returns the edge indices (i, j) that would make a fully connected
+        DAG without circles such that i < j and i != j. Assumes nodes are
+        already created.
+
+        Returns:
+            list: list of edge indices.
+        """
         edges = []
         nodes = sorted(list(self.nodes()))
         for i in nodes:
@@ -683,6 +691,14 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 if i != j and j > i:
                     edges.append((i, j))
         return edges
+
+
+    def add_edges_densly(self):
+        """
+        Adds edges to get a fully connected DAG without cycles
+        """
+        self.add_edges_from(self.get_dense_edges())
+
 
 class EdgeData():
     """
