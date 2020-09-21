@@ -41,13 +41,13 @@ class RegularizedEvolution(MetaOptimizer):
             if not scope:
                 scope = search_space.OPTIMIZER_SCOPE
             
-            model = AttrDict()
+            model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             
             model.arch = sample_random_architecture(search_space, scope)
             model.accuracy = model.arch.query(self.performance_metric)
             
             self.population.append(model)
-            self.history.append(model.arch)
+            self.history.append(model)
             log_every_n_seconds(logging.INFO, "Population size {}".format(len(self.population)))
 
 
@@ -89,23 +89,23 @@ class RegularizedEvolution(MetaOptimizer):
         
         parent = max(sample, key=lambda x: x.accuracy)
 
-        child = AttrDict()
+        child = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
         child.arch = self._mutate(parent.arch)
-        child.accuracy = child['arch'].query(self.performance_metric)
+        child.accuracy = child.arch.query(self.performance_metric)
 
         self.population.append(child)
-        self.history.append(child.arch)
+        self.history.append(child)
         
 
     def train_statistics(self):
-        best_arch = max(self.population, key=lambda x: x.accuracy)['arch']
+        best_arch = max(self.population, key=lambda x: x.accuracy).arch
         return best_arch.query('train_acc1es'), best_arch.query('train_losses'), best_arch.query('eval_acc1es'), best_arch.query('eval_losses'), 
     
     def test_statistics(self):
         return 0, 0
 
     def get_final_architecture(self):
-        return max(self.history, key=lambda x: x.query(self.performance_metric))
+        return max(self.history, key=lambda x: x.accuracy).arch
     
     def get_op_optimizer(self):
         raise NotImplementedError()
