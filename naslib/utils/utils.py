@@ -18,7 +18,6 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 import yaml
-from torch.autograd import Variable
 
 cat_channels = partial(torch.cat, dim=1)
 
@@ -292,15 +291,6 @@ def log_args(args):
     """
     for arg, val in args.items():
         logger.info(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
-
-
-def drop_path(x, drop_prob):
-    if drop_prob > 0.:
-        keep_prob = 1. - drop_prob
-        mask = Variable(torch.cuda.FloatTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob))
-        x.div_(keep_prob)
-        x.mul_(mask)
-    return x
 
 
 def create_exp_dir(path):

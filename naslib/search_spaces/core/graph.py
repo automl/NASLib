@@ -430,11 +430,16 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 # maybe it is an embedded op?
                 embedded_ops = edge_data.op.get_embedded_ops()
                 if embedded_ops is not None:
-                    assert isinstance(embedded_ops, list), "Unsupported return of `get_embedded_ops()` of {}. Expected list, got {}".format(edge_data.op, type(embedded_ops))
-                    for child_op in edge_data.op.get_embedded_ops():
-                        if isinstance(child_op, Graph):
-                            graphs.append(child_op)
-                            graphs.append(child_op._get_child_graphs())
+                    if isinstance(embedded_ops, Graph):
+                        graphs.append(embedded_ops)
+                        graphs.append(embedded_ops._get_child_graphs())
+                    elif isinstance(embedded_ops, list):
+                        for child_op in edge_data.op.get_embedded_ops():
+                            if isinstance(child_op, Graph):
+                                graphs.append(child_op)
+                                graphs.append(child_op._get_child_graphs())
+                    else:
+                        logger.debug("Got embedded op, but is neither a graph nor a list: {}".format(embedded_ops))
             else:
                 raise ValueError("Unknown format of op: {}".format(edge_data.op))
         

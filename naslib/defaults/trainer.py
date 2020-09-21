@@ -10,6 +10,7 @@ from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
 from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
 
+from .additional_primitives import DropPathWrapper
 
 logger = logging.getLogger(__name__)
 
@@ -206,8 +207,22 @@ class Trainer(object):
                 self.train_top1.reset()
                 self.train_top5.reset()
 
+                # Enable drop path
+                best_arch.update_edges(
+                    update_func=lambda current_edge_data: current_edge_data.set('op', DropPathWrapper(current_edge_data.op)),
+                    scope=best_arch.OPTIMIZER_SCOPE,
+                    private_edge_data=True
+                )
+
                 # train from scratch
                 for e in range(start_epoch, epochs):
+                    # update drop path probability
+                    drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
+                    best_arch.update_edges(
+                        update_func=lambda current_edge_data: current_edge_data.set('drop_path_prob', drop_path_prob),
+                        scope=best_arch.OPTIMIZER_SCOPE,
+                        private_edge_data=True
+                    )
                     for i, (input_train, target_train) in enumerate(self.train_queue):
                         input_train = input_train.to(self.device)
                         target_train = target_train.to(self.device, non_blocking=True)
@@ -234,6 +249,13 @@ class Trainer(object):
                         self.train_top1.avg, self.train_top5.avg))
                     self.train_top1.reset()
                     self.train_top5.reset()
+
+            # Disable drop path
+            best_arch.update_edges(
+                update_func=lambda current_edge_data: current_edge_data.set('op', current_edge_data.op.get_embedded_ops()),
+                scope=best_arch.OPTIMIZER_SCOPE,
+                private_edge_data=True
+            )
 
             # measure final test accuracy
             top1 = utils.AverageMeter()
