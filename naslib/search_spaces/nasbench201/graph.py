@@ -110,13 +110,6 @@ class NasBench201SeachSpace(Graph):
                 scope=scope,
                 private_edge_data=True
             )
-
-
-    def prepare_discretization(self):
-        if self.get_all_edge_data('alpha'):
-            self.update_edges(remove_zero_alpha, scope=self.OPTIMIZER_SCOPE, private_edge_data=False)
-        else:
-            self.update_edges(remove_zero_op, scope=self.OPTIMIZER_SCOPE, private_edge_data=True)
         
 
     def query(self, metric='eval_acc1es', dataset='cifar10', path=None):
@@ -167,17 +160,3 @@ def _set_cell_ops(current_edge_data, C):
         ops.AvgPool1x1(kernel_size=3, stride=1),
     ])
     return current_edge_data
-
-
-def remove_zero_alpha(current_edge_data):
-    if current_edge_data.has('alpha'):
-        current_edge_data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
-    return current_edge_data
-
-
-def remove_zero_op(current_edge_data):
-    if isinstance(current_edge_data.op, list):
-        current_edge_data.op.pop(1)      # Remove the zero op
-        return current_edge_data
-    else:
-        raise ValueError("Unknown format of the op: {}".format(current_edge_data.op))
