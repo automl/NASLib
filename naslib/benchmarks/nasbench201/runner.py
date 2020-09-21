@@ -30,11 +30,12 @@ optimizer.adapt_search_space(search_space)
     
 trainer = Trainer(optimizer, config)
 
-if config.eval_only:
-    trainer.evaluate(from_file='run/cifar10/10/model_0.pth')
-else:
-    trainer.search()
-    trainer.evaluate()
+if not config.eval_only:
+    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
+    trainer.search(resume_from=checkpoint)
+
+checkpoint = utils.get_last_checkpoint(config, search=False) if config.resume else ""
+trainer.evaluate(resume_from=checkpoint)
 
 
 
