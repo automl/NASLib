@@ -41,9 +41,21 @@ class DartsSearchSpace(Graph):
     def __init__(self):
         """
         Initialize a new instance of the DARTS search space.
+
+        Note:
+            __init__ cannot take any parameters due to the way networkx is implemented.
+            If we want to change the number of classes set a static attribute `NUM_CLASSES`
+            before initializing the class. Default is 10 as for cifar-10.
         """
         super().__init__()
+
+        self.channels = [16, 32, 64]
+
+        self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         
+        """
+        Build the search space with the parameters specified in __init__.
+        """
         #
         # Cell definition
         #
@@ -103,10 +115,7 @@ class DartsSearchSpace(Graph):
         #
         # Operations at the makrograph edges
         #
-        self.channels = [16, 32, 64]
         self.num_in_edges = 4
-        self.num_classes = 10
-        
         reduction_cell_indices = [5, 8]
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)

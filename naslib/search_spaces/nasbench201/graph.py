@@ -32,6 +32,7 @@ class NasBench201SeachSpace(Graph):
 
     def __init__(self):
         super().__init__()
+        self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
 
         #
         # Cell definition
@@ -99,7 +100,7 @@ class NasBench201SeachSpace(Graph):
         self.edges[19, 20].set('op', ops.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(channels[-1], 10)
+            nn.Linear(channels[-1], self.num_classes)
         ))
         
         # set the ops at the cells (channel dependent)

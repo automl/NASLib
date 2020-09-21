@@ -1,16 +1,16 @@
 data: "../../data"
-dataset: cifar10
+dataset: svhn
 gpu: 0
 seed: 10
 report_freq: 1
-num_classes: 10
+num_classes: 120
 criterion: CrossEntropyLoss
 working_dir: run
 save: run
 
 # the defaults from darts
 search:
-  dataset: cifar10
+  dataset: svhn
   data: "../../data"
   seed: 10
   batch_size: 64
@@ -38,9 +38,13 @@ search:
   tau_max: 10
   tau_min: 0.1
 
+  # re
+  sample_size: 10
+  population_size: 2 #100
+
 # this is not used because we query nb201
 evaluation:
-  dataset: cifar10
+  dataset: svhn
   data: "../../data"
   seed: 10
   batch_size: 96

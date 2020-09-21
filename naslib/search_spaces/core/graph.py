@@ -86,6 +86,20 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Initialise a graph. The edges are automatically filled with an EdgeData object
         which defines the default operation as Identity. The default combination operation
         is set as sum.
+
+        Note:
+            When inheriting form `Graph` note that `__init__()` cannot take any parameters.
+            This is due to the way how networkx is implemented, i.e. graphs are reconstructed
+            internally and no parameters for init are considered.
+
+            Our recommended solution is to create static attributes before initialization and
+            then load them dynamically in `__init__()`.
+            
+            >>> def __init__(self):
+            >>>     num_classes = self.NUM_CLASSES
+            >>> MyGraph.NUM_CLASSES = 42
+            >>> my_graph_42_classes = MyGraph()
+
         """
         super().__init__()
         torch.nn.Module.__init__(self)  # nx.DiGraph does not suport multiple inheritance
