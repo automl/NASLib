@@ -41,7 +41,7 @@ evaluation:
   dataset: cifar10
   data: "../../data"
   seed: 10
-  batch_size: 96
+  batch_size: 80
   learning_rate: 0.025
   learning_rate_min: 0.00
   momentum: 0.9

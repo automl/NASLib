@@ -308,20 +308,29 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     x = node['comb_op']([node['input'][k] for k in sorted(node['input'].keys())])
             node['input'] = {}  # clear the input as we have processed it
 
-            # outgoing edges: process all outgoing edges
-            for neigbor_idx in self.neighbors(node_idx):
-                edge_data = self.get_edge_data(node_idx, neigbor_idx)
-                # inject edge data only for AbstractPrimitive, not Graphs
-                if isinstance(edge_data.op, Graph):
-                    edge_output = edge_data.op.forward(x)
-                elif isinstance(edge_data.op, AbstractPrimitive):
-                    logger.debug("Processing op {}".format(edge_data.op))
-                    edge_output = edge_data.op.forward(x, edge_data=edge_data)
-                else:
-                    raise ValueError("Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(
-                            edge_data.op
-                        ))
-                self.nodes[neigbor_idx]['input'].update({node_idx: edge_output})
+            if len(list(self.neighbors(node_idx))) == 0 and node_idx < list(lexicographical_topological_sort(self))[-1]:
+                # We have more than one output node. This is e.g. the case for
+                # auxillary losses. Attach them to the graph, handling must done
+                # by the user.
+                logger.debug("Graph {} has more then one output node. Storing output of non-maximum index node {} at graph dict".format(
+                    self, node_idx
+                ))
+                self.graph['out_from_{}'.format(node_idx)] = x
+            else:
+                # outgoing edges: process all outgoing edges
+                for neigbor_idx in self.neighbors(node_idx):
+                    edge_data = self.get_edge_data(node_idx, neigbor_idx)
+                    # inject edge data only for AbstractPrimitive, not Graphs
+                    if isinstance(edge_data.op, Graph):
+                        edge_output = edge_data.op.forward(x)
+                    elif isinstance(edge_data.op, AbstractPrimitive):
+                        logger.debug("Processing op {}".format(edge_data.op))
+                        edge_output = edge_data.op.forward(x, edge_data=edge_data)
+                    else:
+                        raise ValueError("Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(
+                                edge_data.op
+                            ))
+                    self.nodes[neigbor_idx]['input'].update({node_idx: edge_output})
             
             logger.debug("Node {}-{}, processing done.".format(self.name, node_idx))
 

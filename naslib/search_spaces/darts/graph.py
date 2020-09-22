@@ -202,6 +202,21 @@ class DartsSearchSpace(Graph):
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
         self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23)
 
+        # Taken from DARTS implementation
+        # assuming input size 8x8
+        self.edges[22, 23].set('op', ops.Sequential(
+            nn.ReLU(inplace=True),
+            nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False), # image size = 2 x 2
+            nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 768, 2, bias=False),
+            nn.BatchNorm2d(768),
+            nn.ReLU(inplace=True),
+            nn.Flatten(),
+            nn.Linear(768, self.num_classes))
+        )
+
         self.update_edges(
             update_func=_double_channels,
             scope=self.OPTIMIZER_SCOPE,
@@ -210,7 +225,8 @@ class DartsSearchSpace(Graph):
 
 
     def _expand(self):
-        # shift the node indices to make space for 4 more nodes
+        # shift the node indices to make space for 4 more nodes at each stage
+        # and the auxiliary logits
         mapping = {
             5: 9,
             6: 10,
@@ -218,14 +234,16 @@ class DartsSearchSpace(Graph):
             8: 16,
             9: 17,
             10: 18,
-            11: 23,
+            11: 24,     # 23 is auxiliary
         }
         nx.relabel_nodes(self, mapping, copy=False)
         
         # fix edges
         self.remove_edges_from(list(self.edges()))
-        self.add_edges_from([(i, i+1) for i in range(1, 23)])
+        self.add_edges_from([(i, i+1) for i in range(1, 22)])
         self.add_edges_from([(i, i+2) for i in range(2, 21)])
+        self.add_edge(22, 23)   # auxiliary output
+        self.add_edge(22, 24)   # final output
         
         to_insert = [] + list(range(5, 9)) + list(range(12, 16)) + list(range(19, 23))
         for i in to_insert:
@@ -239,6 +257,9 @@ class DartsSearchSpace(Graph):
                 else:
                     cell.input_node_idxs = [i-2, i-1]
 
+
+    def auxilary_logits(self):
+        return self.graph['out_from_23]
 
 
 def _set_cell_ops(current_edge_data, C, stride):

@@ -230,6 +230,9 @@ class Trainer(object):
                         optim.zero_grad()
                         logits_train = best_arch(input_train)
                         train_loss = loss(logits_train, target_train)
+                        if hasattr(best_arch, 'auxilary_logits'):   # darts specific stuff
+                            auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
+                            train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
                         train_loss.backward()
                         if grad_clip:
                             torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
