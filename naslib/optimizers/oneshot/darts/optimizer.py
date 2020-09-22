@@ -177,7 +177,7 @@ class DARTSOptimizer(MetaOptimizer):
 
     def get_final_architecture(self):
         logger.info("Arch weights before discretization: {}".format([a for a in self.architectural_weights]))
-        graph = self.graph.unparse().clone()
+        graph = self.graph.clone().unparse()
         graph.prepare_discretization()
 
         def discretize_ops(current_edge_data):
