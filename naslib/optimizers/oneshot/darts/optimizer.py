@@ -139,7 +139,9 @@ class DARTSOptimizer(MetaOptimizer):
         """
         Just log the architecture weights.
         """
-        logger.info("Arch weights: {}".format(([a for a in self.architectural_weights])))
+        alpha_str = [", ".join(["{:+.06f}".format(x) for x in a]) + ", {}".format(np.argmax(a.detach().numpy()))
+                        for a in self.architectural_weights]
+        logger.info("Arch weights (alphas, last column argmax): \n{}".format("\n".join(alpha_str)))
         super().new_epoch(epoch)
 
 
