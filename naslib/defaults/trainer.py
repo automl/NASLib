@@ -76,13 +76,14 @@ class Trainer(object):
         """
         logger.info("Start training")
         self.optimizer.before_training()
+        checkpoint_freq = self.config.search.checkpoint_freq
         if self.optimizer.using_step_function:
             self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                 self.optimizer.op_optimizer, float(self.epochs), eta_min=self.config.search.learning_rate_min)
         
-            start_epoch = self._setup_checkpointers(resume_from, scheduler=self.scheduler)
+            start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq, scheduler=self.scheduler)
         else:
-            start_epoch = self._setup_checkpointers(resume_from)
+            start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq)
         
         for e in range(start_epoch, self.epochs):
             self.optimizer.new_epoch(e)
@@ -99,7 +100,7 @@ class Trainer(object):
                     self._store_accuracies(logits_train, data_train[1], 'train')
                     self._store_accuracies(logits_val, data_val[1], 'val')
 
-                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, validation loss: {:.5}, learning rate: {}".format(
+                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}".format(
                         e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
                     
                     if torch.cuda.is_available():
@@ -135,6 +136,9 @@ class Trainer(object):
                 # record anytime performance
                 self.errors_dict.test_acc.append(anytime_results[0])
                 self.errors_dict.test_loss.append(anytime_results[1])
+                log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results. accuracy: {:.5f}, loss: {:.5f}".format(
+                        e, anytime_results[0], anytime_results[1]), n=5)
+                    
                 
             self._log_to_json()
             self._log_and_reset_accuracies(e)
@@ -194,8 +198,10 @@ class Trainer(object):
                 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
                     optim, float(epochs), eta_min=self.config.evaluation.learning_rate_min)
 
-                start_epoch = self._setup_checkpointers(resume_from, search=False, 
-                    model=best_arch,
+                start_epoch = self._setup_checkpointers(resume_from, 
+                    search=False, 
+                    period=self.config.evaluation.checkpoint_freq,
+                    model=best_arch,    # checkpointables start here
                     optim=optim,
                     scheduler=scheduler
                 )
@@ -329,7 +335,7 @@ class Trainer(object):
         self.test_queue = test_queue
     
 
-    def _setup_checkpointers(self, resume_from="", search=True, **add_checkpointables):
+    def _setup_checkpointers(self, resume_from="", search=True, period=1, **add_checkpointables):
         """
         Sets up a periodic chechkpointer which can be used to save checkpoints
         at every epoch. It will call optimizer's `get_checkpointables()` as objects
@@ -353,7 +359,7 @@ class Trainer(object):
 
         self.periodic_checkpointer = PeriodicCheckpointer(
             checkpointer,
-            period=1,
+            period=period,
             max_iter=self.config.search.epochs if search else self.config.evaluation.epochs
         )
 

@@ -11,13 +11,14 @@ save: run
 search:
   dataset: cifar10
   data: "../naslib/data"
+  checkpoint_freq: 10
   seed: 10
   batch_size: 64
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 1
+  epochs: 20
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -39,19 +40,20 @@ search:
   # PC-DARTS
   channel_divisor: 4
   # re
-  sample_size: 2 #10
-  population_size: 5 #100
+  sample_size: 10
+  population_size: 100
 
 evaluation:
   dataset: cifar10
   data: "../naslib/data"
+  checkpoint_freq: 1
   seed: 10
   batch_size: 96
   learning_rate: 0.025
   learning_rate_min: 0.00
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 1
+  epochs: 5
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 1
@@ -60,4 +62,5 @@ evaluation:
   cutout: True
   cutout_length: 16
   cutout_prob: 1.0
-  #drop_path_prob: 0.2
+  drop_path_prob: 0.2
+  auxiliary_weight: 0.4

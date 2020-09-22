@@ -141,7 +141,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
 
     def __repr__(self):
-        return "Graph {}-{}, scope {}, {} nodes".format(self.name, self._id, self.scope, self.number_of_nodes())
+        return "Graph {}-{:.07f}, scope {}, {} nodes".format(self.name, self._id, self.scope, self.number_of_nodes())
 
 
     def modules_str(self):
