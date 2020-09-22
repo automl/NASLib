@@ -84,9 +84,8 @@ class DartsSearchSpace(Graph):
         normal_cell.add_edges_from([(4, 5), (4, 6)])
         normal_cell.add_edges_from([(5, 6)])
 
-        final_edge = EdgeData() # Edges connecting to the output are always the identity
-        final_edge.finalize()
-        normal_cell.add_edges_from([(i, 7, final_edge.clone()) for i in range(3, 7)])   # output
+        # Edges connecting to the output are always the identity
+        normal_cell.add_edges_from([(i, 7, EdgeData().finalize()) for i in range(3, 7)])   # output
         
         # Reduction cell has the same topology
         reduction_cell = deepcopy(normal_cell)
@@ -329,7 +328,6 @@ def _double_channels(current_edge_data):
     else:
         init_params = current_edge_data.op.init_params
         if 'C_in' in init_params:
-            print('c_in', init_params['C_in'], 'class', current_edge_data.op)
             init_params['C_in'] *= 2 
         if 'C_out' in init_params:
             init_params['C_out'] *= 2
