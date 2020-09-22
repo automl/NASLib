@@ -23,7 +23,7 @@ start=`date +%s`
 # Activate virtual env so that run_experiment can load the correct packages
 source /home/ruchtem/dev/venvs/naslib/bin/activate
 
-python runner.py --config-file config.yaml --optimizer gdas --seed 1
+python runner.py --config-file config_gdas.yaml --optimizer gdas --seed 1
 
 
 
