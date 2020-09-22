@@ -259,7 +259,7 @@ class DartsSearchSpace(Graph):
 
 
     def auxilary_logits(self):
-        return self.graph['out_from_23]
+        return self.graph['out_from_23']
 
 
 def _set_cell_ops(current_edge_data, C, stride):

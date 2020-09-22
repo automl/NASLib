@@ -2,7 +2,7 @@ import logging
 import sys
 import naslib as nl
 
-from naslib.optimizers.core.evaluator import Trainer
+from naslib.defaults.trainer import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
 from naslib.optimizers.discrete.re.optimizer import RegularizedEvolution
 
@@ -30,7 +30,7 @@ search_space = DartsSearchSpace()
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
     
-trainer = Trainer(optimizer, 'cifar10', config)
+trainer = Trainer(optimizer, config)
 
 if config.eval_only:
     trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")

@@ -231,6 +231,7 @@ class Trainer(object):
                         logits_train = best_arch(input_train)
                         train_loss = loss(logits_train, target_train)
                         if hasattr(best_arch, 'auxilary_logits'):   # darts specific stuff
+                            log_first_n(logging.INFO, "Auxiliary is used", n=10)
                             auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
                             train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
                         train_loss.backward()
