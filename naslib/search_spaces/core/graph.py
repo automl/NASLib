@@ -912,6 +912,7 @@ class EdgeData():
         of the graph.
         """
         self._private['_final'] = True
+        return self
     
 
     def is_final(self):

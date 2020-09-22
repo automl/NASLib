@@ -7,7 +7,7 @@ import numpy as np
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.rs.optimizer import sample_random_architecture, update_ops
 
-from naslib.utils.utils import AttrDict
+from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
 
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class RegularizedEvolution(MetaOptimizer):
             model.accuracy = model.arch.query(self.performance_metric)
             
             self.population.append(model)
-            self.history.append(model)
+            self._update_history(model)
             log_every_n_seconds(logging.INFO, "Population size {}".format(len(self.population)))
 
 
@@ -94,8 +94,16 @@ class RegularizedEvolution(MetaOptimizer):
         child.accuracy = child.arch.query(self.performance_metric)
 
         self.population.append(child)
-        self.history.append(child)
+        self._update_history(child)
         
+    def _update_history(self, child):
+        if len(self.history) < 100:
+            self.history.append(child)
+        else:
+            for i, p in enumerate(self.history):
+                if child.accuracy > p.accuracy:
+                    self.history[i] = child
+                    break
 
     def train_statistics(self):
         best_arch = max(self.population, key=lambda x: x.accuracy).arch
@@ -113,3 +121,7 @@ class RegularizedEvolution(MetaOptimizer):
     
     def get_checkpointables(self):
         return {'model': self.history}
+    
+
+    def get_model_size(self):
+        return count_parameters_in_MB(self.history)
