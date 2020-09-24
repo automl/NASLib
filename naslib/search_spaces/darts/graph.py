@@ -1,5 +1,6 @@
 import random
 import torch
+import logging
 import numpy as np
 import networkx as nx
 from naslib.search_spaces.core import primitives as ops
@@ -7,8 +8,11 @@ from naslib.search_spaces.core import primitives as ops
 from torch import nn
 from copy import deepcopy
 
+from naslib.utils.utils import get_project_root
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import FactorizedReduce
+
+logger = logging.getLogger(__name__)
 
 
 class DartsSearchSpace(Graph):
@@ -37,6 +41,8 @@ class DartsSearchSpace(Graph):
         "r_stage_1", 
         "r_stage_2",
     ]
+
+    QUERYABLE = True
 
     def __init__(self):
         """
@@ -259,6 +265,38 @@ class DartsSearchSpace(Graph):
 
     def auxilary_logits(self):
         return self.graph['out_from_23']
+
+
+    def query(self, metric=None, dataset=None, path=None):
+        """
+        Query results from nasbench 301. Currently we only provide the 
+        genotype query as list but we will integrate nb301 in the future.
+        """
+        def convert(cell):
+            """convert the naslib representation to nasbench301"""
+            ops_to_nb301 = {
+                'Identity': 'skip_connect',
+                'SepConv3x3': 'sep_conv_3x3',
+                'DilConv3x3': 'dil_conv_3x3',
+                'SepConv5x5': 'sep_conv_5x5',
+                'DilConv5x5': 'dil_conv_5x5',
+                'AvgPool1x1': 'avg_pool_3x3',
+                'MaxPool1x1': 'max_pool_3x3',
+            }
+            edge_op_dict = {
+                (i, j): ops_to_nb301[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+            }
+            op_edge_list = [
+                (edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1]) if j < 7
+            ]
+            return op_edge_list
+
+        normal_cell = self.nodes[5]['subgraph']
+        reduction_cell = self.nodes[9]['subgraph']
+
+        logger.info("Until nasbench 301 is published as a pypi package please use these strings to query the result.")
+        logger.info("normal={}".format(convert(normal_cell)))
+        logger.info("reduce={}".format(convert(reduction_cell)))
 
 
 def _set_cell_ops(current_edge_data, C, stride):

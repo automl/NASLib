@@ -91,6 +91,7 @@ class SepConv(AbstractPrimitive):
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
         super().__init__(locals())
+        self.kernel_size = kernel_size
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, groups=C_in, bias=False),
@@ -107,6 +108,12 @@ class SepConv(AbstractPrimitive):
     
     def get_embedded_ops(self):
         return None
+    
+    @property
+    def get_op_name(self):
+        op_name = super().get_op_name
+        op_name += '{}x{}'.format(self.kernel_size, self.kernel_size)
+        return op_name
 
 
 class DilConv(AbstractPrimitive):
@@ -117,6 +124,7 @@ class DilConv(AbstractPrimitive):
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
         super().__init__(locals())
+        self.kernel_size = kernel_size
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation,
@@ -131,6 +139,12 @@ class DilConv(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return None
+    
+    @property
+    def get_op_name(self):
+        op_name = super().get_op_name
+        op_name += '{}x{}'.format(self.kernel_size, self.kernel_size)
+        return op_name
 
 
 class Stem(AbstractPrimitive):
