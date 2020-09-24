@@ -276,6 +276,7 @@ class DartsSearchSpace(Graph):
             """convert the naslib representation to nasbench301"""
             ops_to_nb301 = {
                 'Identity': 'skip_connect',
+                'FactorizedReduce': 'skip_connect',
                 'SepConv3x3': 'sep_conv_3x3',
                 'DilConv3x3': 'dil_conv_3x3',
                 'SepConv5x5': 'sep_conv_5x5',
