@@ -11,7 +11,7 @@ class FactorizedReduce(AbstractPrimitive):
     match.
     """
 
-    def __init__(self, C_in, C_out, affine=False):
+    def __init__(self, C_in, C_out, affine=true):
         super().__init__(locals())
         assert C_out % 2 == 0
         self.relu = nn.ReLU(inplace=False)

@@ -125,12 +125,12 @@ class DartsSearchSpace(Graph):
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
 
-        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=11)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=11, affine=False)
 
         self._set_cell_ops(reduction_cell_indices)
 
 
-    def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index):
+    def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index, affine=True):
         # pre-processing
         self.edges[1, 2].set('op', ops.Stem(self.channels[0]))
 
@@ -141,12 +141,11 @@ class DartsSearchSpace(Graph):
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
                     C_in = C_in if u == 2 else C_in * self.num_in_edges     # handle Stem
-                    data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1))
+                    data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1, affine=affine))
                 else:
-                    data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out))
+                    data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out, affine=affine))
         
         # post-processing
-
         _, _, data = sorted(self.edges(data=True))[-1]
         data.set('op', ops.Sequential(
             nn.AdaptiveAvgPool2d(1),
@@ -205,7 +204,7 @@ class DartsSearchSpace(Graph):
         reduction_cell_indices = [9, 16]
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
-        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23, affine=True)
 
         # Taken from DARTS implementation
         # assuming input size 8x8
@@ -320,10 +319,10 @@ def _set_cell_ops(current_edge_data, C, stride):
     else:
         C_in = C if stride==1 else C//2
         current_edge_data.set('op', [
-            ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            ops.Identity() if stride==1 else FactorizedReduce(C_in, C, affine=False),
             ops.Zero(stride=stride),
-            ops.MaxPool1x1(3, stride, C_in, C),
-            ops.AvgPool1x1(3, stride, C_in, C),
+            ops.MaxPool1x1(3, stride, C_in, C, affine=False),
+            ops.AvgPool1x1(3, stride, C_in, C, affine=False),
             ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
             ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
             ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
@@ -370,6 +369,8 @@ def _double_channels(current_edge_data):
             init_params['C_in'] *= 2 
         if 'C_out' in init_params:
             init_params['C_out'] *= 2
+        if 'affine' in init_params:
+            init_params['affine'] = True
         current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
     return current_edge_data
 
