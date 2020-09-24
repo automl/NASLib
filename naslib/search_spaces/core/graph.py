@@ -194,6 +194,32 @@ class Graph(nx.DiGraph, torch.nn.Module):
         super().add_node(node_index, **attr)
 
 
+    def copy(self):
+        """
+        Copy as defined in networkx, i.e. a shallow copy.
+
+        Just handling recursively nested graphs seperately.
+        """
+
+        def copy_dict(d):
+            copied_dict = d.copy()
+            for k, v in d.items():
+                if isinstance(v, Graph):
+                    copied_dict[k] = v.copy()
+                elif isinstance(v, list):
+                    copied_dict[k] = [i.copy() if isinstance(i, Graph) else i for i in v]
+            return copied_dict
+        
+        G = self.__class__()
+        G.graph.update(self.graph)
+        G.add_nodes_from((n, copy_dict(d)) for n, d in self._node.items())
+        G.add_edges_from((u, v, datadict.copy())
+                         for u, nbrs in self._adj.items()
+                         for v, datadict in nbrs.items())
+        G.scope = self.scope
+        return G
+
+
     def set_input(self, node_idxs: list):
         """
         Route the input from specific parent edges to the input nodes of 
@@ -851,6 +877,14 @@ class EdgeData():
         new_self = EdgeData()
         new_self._private = copy.deepcopy(self._private)
         new_self._shared = self._shared
+        
+        # we need to handle copy of graphs seperately
+        for k, v in self._private.items():
+            if isinstance(v, Graph):
+                new_self._private[k] = v.copy()
+            elif isinstance(v, list):
+                new_self._private[k] = [i.copy() if isinstance(i, Graph) else i for i in v]
+        
         return new_self
 
 
