@@ -11,13 +11,14 @@ save: run
 search:
   dataset: cifar10
   data: "../../data"
+  checkpoint_freq: 1
   seed: 10
   batch_size: 10
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 5
+  epochs: 10
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -40,13 +41,14 @@ search:
 evaluation:
   dataset: cifar10
   data: "../../data"
+  checkpoint_freq: 5
   seed: 10
-  batch_size: 256
+  batch_size: 32  # 256
   learning_rate: 0.1
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 300
+  epochs: 512
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.8
@@ -55,7 +57,7 @@ evaluation:
   cutout: True
   cutout_length: 16
   cutout_prob: 1.0
-  #drop_path_prob: 0.2
+  drop_path_prob: 0
 
 
 

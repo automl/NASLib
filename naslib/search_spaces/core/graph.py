@@ -208,6 +208,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
                     copied_dict[k] = v.copy()
                 elif isinstance(v, list):
                     copied_dict[k] = [i.copy() if isinstance(i, Graph) else i for i in v]
+                elif isinstance(v, torch.nn.Module) or isinstance(v, AbstractPrimitive):
+                    copied_dict[k] = copy.deepcopy(v)
             return copied_dict
         
         G = self.__class__()

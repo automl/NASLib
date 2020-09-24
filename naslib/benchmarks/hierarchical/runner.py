@@ -1,11 +1,11 @@
 import logging
 import sys
 
-from naslib.optimizers.core.evaluator import Trainer
+from naslib.defaults.trainer import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
 from naslib.utils import utils, setup_logger
 
-from naslib.search_spaces.hierarchical.graph import SmallHierarchicalSearchSpace
+from naslib.search_spaces.hierarchical.graph import HierarchicalSearchSpace
 
 config = utils.get_config_from_args()
 utils.set_seed(config.seed)
@@ -21,12 +21,12 @@ supported_optimizers = {
     'random': RandomSearch(sample_size=1),
 }
 
-search_space = SmallHierarchicalSearchSpace()
+search_space = HierarchicalSearchSpace()
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
-trainer = Trainer(optimizer, 'cifar10', config)
+trainer = Trainer(optimizer, config)
 
 if config.eval_only:
     trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")

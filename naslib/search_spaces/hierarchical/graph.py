@@ -14,6 +14,10 @@ class HierarchicalSearchSpace(Graph):
         Liu et al.: Hierarchical Representations for Efficient Architecture Search
     
     The version which they search for Cifar-10.
+
+    Note that we do not use channel-wise concat as merge operation for
+    intermediate notes for simplicity. Only the output node uses channel-wise
+    concat followed by a 1x1 convolution.
     """
 
     OPTIMIZER_SCOPE = [
@@ -48,13 +52,14 @@ class HierarchicalSearchSpace(Graph):
 
         cells = []
         channels = [16, 32, 64]
-        for scope, c in zip(SmallHierarchicalSearchSpace.OPTIMIZER_SCOPE, channels):
+        for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
             cell_i = cell.copy().set_scope(scope)
 
             cell_i.update_edges(
-                update_func=lambda current_edge_data: _set_motifs(current_edge_data, ops=level2_motifs),
+                update_func=lambda current_edge_data: _set_motifs(current_edge_data, motifs=level2_motifs, c=c),
                 private_edge_data=True
             )
+            
 
             cell_i.set_scope(scope)
 
@@ -99,6 +104,13 @@ class HierarchicalSearchSpace(Graph):
         
         channels = [64, 128, 256]
 
+        for cell, c in zip(cells, channels):
+            for _, _, data in cell.edges.data():
+                data.op.update_nodes(
+                    lambda node, in_edges, out_edges: _set_comb_op_channels(node, in_edges, out_edges, c=c),
+                    single_instances=False
+                )
+
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
         self.edges[2, 3].set('op', cells[0].copy())
         self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[0], kernel_size=3, stride=1, padding=1))
@@ -141,6 +153,11 @@ class HierarchicalSearchSpace(Graph):
         self.add_edges_from([(i, i+1) for i in range(1, 14)])
 
 
+def _set_comb_op_channels(node, in_edges, out_edges, c):
+    print('update node', node)
+    index, n = node
+    if index == 4:
+        n['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
 
         
 def _set_cell_ops(current_edge_data, C, stride):
@@ -167,15 +184,21 @@ def _set_cell_ops(current_edge_data, C, stride):
         raise ValueError()
 
 
-def _set_motifs(current_edge_data, ops):
+def _set_motifs(current_edge_data, motifs, c):
     """
     Set l-1 level motifs as ops at the edges for l level motifs
     """
     if current_edge_data.has('final') and current_edge_data.final:
         return current_edge_data
     else:
-        # We need copies because they will be set at every edge
-        current_edge_data.set('op', [m.copy() for m in ops])
+        op = []
+        for motif in motifs:
+            m = motif.copy()    # We need copies because they will be set at every edge
+            m.nodes[4]['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
+            op.append(m)
+        
+        current_edge_data.set('op', op)
+
     return current_edge_data
 
 
