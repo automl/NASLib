@@ -42,7 +42,7 @@ class DartsSearchSpace(Graph):
         "r_stage_2",
     ]
 
-    QUERYABLE = True
+    QUERYABLE = False
 
     def __init__(self):
         """
@@ -132,12 +132,16 @@ class DartsSearchSpace(Graph):
 
     def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index, affine=True):
         # pre-processing
-        self.edges[1, 2].set('op', ops.Stem(self.channels[0]))
+        # In darts there is a hardcoded multiplier of 3 for the output of the stem
+        stem_multiplier = 3
+        self.edges[1, 2].set('op', ops.Stem(self.channels[0] * stem_multiplier))
 
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
             if u > 1 and v < max_index:
-                C_in = self.channels[channel_map_from[u]] 
+                C_in = self.channels[channel_map_from[u]]
+                if u == 2:
+                    C_in = C_in * stem_multiplier
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
                     C_in = C_in if u == 2 else C_in * self.num_in_edges     # handle Stem
@@ -155,7 +159,7 @@ class DartsSearchSpace(Graph):
 
 
     def _set_cell_ops(self, reduction_cell_indices):
-         # normal cells
+        # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
 
         for scope, c in zip(stages, self.channels):
@@ -200,7 +204,7 @@ class DartsSearchSpace(Graph):
         self._expand()
         
         # Operations at the edges
-        self.channels = [32, 64, 128]
+        self.channels = [36, 72, 144]
         reduction_cell_indices = [9, 16]
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
@@ -366,9 +370,9 @@ def _double_channels(current_edge_data):
     else:
         init_params = current_edge_data.op.init_params
         if 'C_in' in init_params:
-            init_params['C_in'] *= 2 
+            init_params['C_in'] = int(init_params['C_in'] * 2.25) 
         if 'C_out' in init_params:
-            init_params['C_out'] *= 2
+            init_params['C_out'] = int(init_params['C_out'] * 2.25) 
         if 'affine' in init_params:
             init_params['affine'] = True
         current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
