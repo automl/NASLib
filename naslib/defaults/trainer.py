@@ -5,7 +5,7 @@ import logging
 import os
 import torch
 
-from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
+from fvcore.common.checkpoint import PeriodicCheckpointer
 
 from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
@@ -351,7 +351,7 @@ class Trainer(object):
         checkpointables = self.optimizer.get_checkpointables()
         checkpointables.update(add_checkpointables)
 
-        checkpointer = Checkpointer(
+        checkpointer = utils.Checkpointer(
             model=checkpointables.pop('model'),
             save_dir=self.config.save + "/search" if search else self.config.save + "/eval",
             **checkpointables

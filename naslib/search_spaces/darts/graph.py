@@ -140,11 +140,9 @@ class DartsSearchSpace(Graph):
         for u, v, data in sorted(self.edges(data=True)):
             if u > 1 and v < max_index:
                 C_in = self.channels[channel_map_from[u]]
-                if u == 2:
-                    C_in = C_in * stem_multiplier
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
-                    C_in = C_in if u == 2 else C_in * self.num_in_edges     # handle Stem
+                    C_in = C_in * stem_multiplier if u == 2 else C_in * self.num_in_edges     # handle Stem
                     data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1, affine=affine))
                 else:
                     data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out, affine=affine))
