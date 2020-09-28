@@ -22,7 +22,7 @@ start=`date +%s`
 source /home/ruchtem/dev/venvs/naslib/bin/activate
 
 # currently only cifar-10
-python runner.py --config-file config_cifar10.yaml --seed 1 --optimizer gdas --eval-only
+python runner.py --config-file config_cifar10.yaml --seed 1 --optimizer gdas search.epochs 250
 
 
 #

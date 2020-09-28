@@ -110,17 +110,17 @@ class NasBench201SeachSpace(Graph):
             )
         
 
-    def query(self, metric='eval_acc1es', dataset='cifar10', path=None):
+    def query(self, metric=None, dataset=None, path=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
         assert metric in [
                 'train_acc1es', 'train_losses',
                 'train_times', 'params', 'flop', 'epochs', 'latency',
-                'eval_acc1es', 'eval_times', 'eval_losses'
+                'eval_acc1es', 'eval_times', 'eval_losses', None
              ], "Unknown metric: {}".format(metric)
         
-        assert dataset in ['cifar10-valid', 'cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
+        assert dataset in ['cifar10-valid', 'cifar10', 'cifar100', 'ImageNet16-120', None], "Unknown dataset: {}".format(dataset)
         
         ops_to_nb201 = {
             'AvgPool1x1': 'avg_pool_3x3',
@@ -143,10 +143,13 @@ class NasBench201SeachSpace(Graph):
 
         # query data from nb201
         query_results = nb201_data[arch_str]
-        if metric == 'all':
-            return query_results[dataset]
+        if dataset:
+            if metric is None or metric == 'all':
+                return query_results[dataset]
+            else:
+                return query_results[dataset][metric]
         else:
-            return query_results[dataset][metric]
+            return query_results
 
 
 def _set_cell_ops(current_edge_data, C):

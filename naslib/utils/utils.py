@@ -102,7 +102,11 @@ def get_config_from_args(args=None):
 
     # Override file args with ones from command line
     for arg, value in pairwise(args.opts):
-        config[arg] = value
+        if '.' in arg:
+            arg1, arg2 = arg.split('.')
+            config[arg1][arg2] = type(config[arg1][arg2])(value)
+        else:
+            config[arg] = value
 
     config.optimizer = args.optimizer
     config.eval_only = args.eval_only
