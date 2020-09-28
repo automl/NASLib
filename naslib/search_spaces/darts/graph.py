@@ -299,6 +299,7 @@ class DartsSearchSpace(Graph):
         logger.info("Until nasbench 301 is published as a pypi package please use these strings to query the result.")
         logger.info("normal={}".format(convert(normal_cell)))
         logger.info("reduce={}".format(convert(reduction_cell)))
+        return "normal={} | reduction={}".format(convert(normal_cell), convert(reduction_cell))
 
 
 def _set_cell_ops(current_edge_data, C, stride):

@@ -136,8 +136,8 @@ class Trainer(object):
                 # record anytime performance
                 self.errors_dict.test_acc.append(anytime_results[0])
                 self.errors_dict.test_loss.append(anytime_results[1])
-                log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results. accuracy: {:.5f}, loss: {:.5f}".format(
-                        e, anytime_results[0], anytime_results[1]), n=5)
+                #log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results. accuracy: {:.5f}, loss: {:.5f}".format(
+                #        e, anytime_results[0], anytime_results[1]), n=5)
                     
                 
             self._log_to_json()

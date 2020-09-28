@@ -41,7 +41,7 @@ search:
 evaluation:
   dataset: cifar10
   data: "../../data"
-  checkpoint_freq: 1
+  checkpoint_freq: 10
   seed: 10
   batch_size: 96
   learning_rate: 0.025
