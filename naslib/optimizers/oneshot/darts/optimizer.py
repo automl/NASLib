@@ -6,6 +6,8 @@ from torch.autograd import Variable
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.core.metaclasses import MetaOptimizer 
 from naslib.utils.utils import count_parameters_in_MB
+from naslib.search_spaces.core.query_metrics import Metric
+
 import naslib.search_spaces.core.primitives as ops
 
 logger = logging.getLogger(__name__)
@@ -69,6 +71,8 @@ class DARTSOptimizer(MetaOptimizer):
         self.perturb_alphas = None
         self.epsilon = 0
 
+        self.dataset = config.dataset
+
 
     def adapt_search_space(self, search_space, scope=None):
         # We are going to modify the search space
@@ -117,6 +121,7 @@ class DARTSOptimizer(MetaOptimizer):
         
         self.graph = graph
         self.scope = scope
+    
     
     def get_checkpointables(self):
         return {
@@ -209,7 +214,7 @@ class DARTSOptimizer(MetaOptimizer):
         try:
             # record anytime performance
             best_arch = self.get_final_architecture()
-            return best_arch.query()
+            return best_arch.query(Metric.TEST_ACCURACY, self.dataset)
         except:
             return None
 

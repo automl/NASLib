@@ -5,6 +5,7 @@ import torch.nn as nn
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils.utils import get_project_root
 
@@ -114,13 +115,9 @@ class NasBench201SeachSpace(Graph):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
-        assert metric in [
-                'train_acc1es', 'train_losses',
-                'train_times', 'params', 'flop', 'epochs', 'latency',
-                'eval_acc1es', 'eval_times', 'eval_losses', None
-             ], "Unknown metric: {}".format(metric)
-        
-        assert dataset in ['cifar10-valid', 'cifar10', 'cifar100', 'ImageNet16-120', None], "Unknown dataset: {}".format(dataset)
+        assert isinstance(metric, Metric)
+
+        assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120', None], "Unknown dataset: {}".format(dataset)
         
         ops_to_nb201 = {
             'AvgPool1x1': 'avg_pool_3x3',
@@ -143,6 +140,42 @@ class NasBench201SeachSpace(Graph):
 
         # query data from nb201
         query_results = nb201_data[arch_str]
+        
+        metric_to_nb201 = {
+            Metric.TRAIN_ACCURACY: 'train_acc1es',
+            Metric.VAL_ACCURACY: 'train_acc1es',
+            Metric.TEST_ACCURACY: 'eval_acc1es',
+            Metric.TRAIN_LOSS: 'train_losses',
+            Metric.VAL_LOSS: 'train_losses',
+            Metric.TEST_LOSS: 'eval_losses',
+            Metric.TRAIN_TIME: 'train_times',
+            Metric.VAL_TIME: 'train_times',
+            Metric.TEST_TIME: 'eval_times',
+            Metric.FLOPS: 'flop',
+            Metric.LATENCY: 'latency',
+            Metric.PARAMETERS: 'params',
+            Metric.EPOCH: 'epochs'
+        }
+
+        if metric == Metric.RAW:
+            return query_results
+        elif "VAL_" in metric.name and dataset == 'cifar10':
+            dataset = 'cifar10-valid'
+        
+        return query_results[dataset][metric_to_nb201[metric]]
+
+
+
+
+
+#         [
+#                 'train_acc1es', 'train_losses',
+#                 'train_times', 'params', 'flop', 'epochs', 'latency',
+#                 'eval_acc1es', 'eval_times', 'eval_losses', None
+#              ], "Unknown metric: {}".format(metric)
+        
+# 'cifar10-valid', 
+
         if dataset:
             if metric is None or metric == 'all':
                 return query_results[dataset]
