@@ -7,6 +7,8 @@ import numpy as np
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.rs.optimizer import sample_random_architecture, update_ops
 
+from naslib.search_spaces.core.query_metrics import Metric
+
 from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
 
@@ -25,7 +27,8 @@ class RegularizedEvolution(MetaOptimizer):
         self.sample_size = config.sample_size
         self.population_size = config.population_size
 
-        self.performance_metric = 'eval_acc1es'
+        self.performance_metric = Metric.VAL_ACCURACY
+        self.dataset = config.dataset
 
         self.population = collections.deque(maxlen=self.population_size)
         self.history = torch.nn.ModuleList()
@@ -44,7 +47,7 @@ class RegularizedEvolution(MetaOptimizer):
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             
             model.arch = sample_random_architecture(search_space, scope)
-            model.accuracy = model.arch.query(self.performance_metric)
+            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
             
             self.population.append(model)
             self._update_history(model)
@@ -91,7 +94,7 @@ class RegularizedEvolution(MetaOptimizer):
 
         child = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
         child.arch = self._mutate(parent.arch)
-        child.accuracy = child.arch.query(self.performance_metric)
+        child.accuracy = child.arch.query(self.performance_metric, self.dataset)
 
         self.population.append(child)
         self._update_history(child)
@@ -106,14 +109,23 @@ class RegularizedEvolution(MetaOptimizer):
                     break
 
     def train_statistics(self):
-        best_arch = max(self.population, key=lambda x: x.accuracy).arch
-        return best_arch.query('train_acc1es'), best_arch.query('train_losses'), best_arch.query('eval_acc1es'), best_arch.query('eval_losses'), 
+        best_arch = self.get_final_architecture()
+        return (
+            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset), 
+            best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
+            best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
+            best_arch.query(Metric.VAL_LOSS, self.dataset), 
+        )
     
+
     def test_statistics(self):
-        return 0, 0
+        best_arch = self.get_final_architecture()
+        return best_arch.query(Metric.TEST_ACCURACY, self.dataset)
+
 
     def get_final_architecture(self):
         return max(self.history, key=lambda x: x.accuracy).arch
+    
     
     def get_op_optimizer(self):
         raise NotImplementedError()

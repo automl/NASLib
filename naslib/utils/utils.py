@@ -19,6 +19,8 @@ import torch
 import torchvision.transforms as transforms
 import yaml
 
+from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
+
 cat_channels = partial(torch.cat, dim=1)
 
 logger = logging.getLogger(__name__)
@@ -100,7 +102,11 @@ def get_config_from_args(args=None):
 
     # Override file args with ones from command line
     for arg, value in pairwise(args.opts):
-        config[arg] = value
+        if '.' in arg:
+            arg1, arg2 = arg.split('.')
+            config[arg1][arg2] = type(config[arg1][arg2])(value)
+        else:
+            config[arg] = value
 
     config.optimizer = args.optimizer
     config.eval_only = args.eval_only
@@ -354,3 +360,54 @@ class Cutout(object):
             mask = mask.expand_as(img)
             img *= mask
         return img
+
+
+from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple
+from fvcore.common.file_io import PathManager
+import os
+
+class Checkpointer(fvCheckpointer):
+
+
+    def load(self, path: str, checkpointables: Optional[List[str]] = None) -> object:
+        """
+        Load from the given checkpoint. When path points to network file, this
+        function has to be called on all ranks.
+        Args:
+            path (str): path or url to the checkpoint. If empty, will not load
+                anything.
+            checkpointables (list): List of checkpointable names to load. If not
+                specified (None), will load all the possible checkpointables.
+        Returns:
+            dict:
+                extra data loaded from the checkpoint that has not been
+                processed. For example, those saved with
+                :meth:`.save(**extra_data)`.
+        """
+        if not path:
+            # no checkpoint provided
+            self.logger.info("No checkpoint found. Initializing model from scratch")
+            return {}
+        self.logger.info("Loading checkpoint from {}".format(path))
+        if not os.path.isfile(path):
+            path = PathManager.get_local_path(path)
+            assert os.path.isfile(path), "Checkpoint {} not found!".format(path)
+
+        checkpoint = self._load_file(path)
+        incompatible = self._load_model(checkpoint)
+        if (
+            incompatible is not None
+        ):  # handle some existing subclasses that returns None
+            self._log_incompatible_keys(incompatible)
+
+        for key in self.checkpointables if checkpointables is None else checkpointables:
+            if key in checkpoint:  # pyre-ignore
+                self.logger.info("Loading {} from {}".format(key, path))
+                obj = self.checkpointables[key]
+                try:
+                    obj.load_state_dict(checkpoint.pop(key))  # pyre-ignore
+                except:
+                    print("exception loading")
+        
+        # return any further checkpoint data
+        return checkpoint

@@ -1,5 +1,6 @@
 import random
 import torch
+import logging
 import numpy as np
 import networkx as nx
 from naslib.search_spaces.core import primitives as ops
@@ -7,8 +8,11 @@ from naslib.search_spaces.core import primitives as ops
 from torch import nn
 from copy import deepcopy
 
+from naslib.utils.utils import get_project_root
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import FactorizedReduce
+
+logger = logging.getLogger(__name__)
 
 
 class DartsSearchSpace(Graph):
@@ -37,6 +41,8 @@ class DartsSearchSpace(Graph):
         "r_stage_1", 
         "r_stage_2",
     ]
+
+    QUERYABLE = False
 
     def __init__(self):
         """
@@ -119,28 +125,29 @@ class DartsSearchSpace(Graph):
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
 
-        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=11)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=11, affine=False)
 
         self._set_cell_ops(reduction_cell_indices)
 
 
-    def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index):
+    def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index, affine=True):
         # pre-processing
-        self.edges[1, 2].set('op', ops.Stem(self.channels[0]))
+        # In darts there is a hardcoded multiplier of 3 for the output of the stem
+        stem_multiplier = 3
+        self.edges[1, 2].set('op', ops.Stem(self.channels[0] * stem_multiplier))
 
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
             if u > 1 and v < max_index:
-                C_in = self.channels[channel_map_from[u]] 
+                C_in = self.channels[channel_map_from[u]]
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
-                    C_in = C_in if u == 2 else C_in * self.num_in_edges     # handle Stem
-                    data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1))
+                    C_in = C_in * stem_multiplier if u == 2 else C_in * self.num_in_edges     # handle Stem
+                    data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1, affine=affine))
                 else:
-                    data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out))
+                    data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out, affine=affine))
         
         # post-processing
-
         _, _, data = sorted(self.edges(data=True))[-1]
         data.set('op', ops.Sequential(
             nn.AdaptiveAvgPool2d(1),
@@ -150,7 +157,7 @@ class DartsSearchSpace(Graph):
 
 
     def _set_cell_ops(self, reduction_cell_indices):
-         # normal cells
+        # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
 
         for scope, c in zip(stages, self.channels):
@@ -195,11 +202,11 @@ class DartsSearchSpace(Graph):
         self._expand()
         
         # Operations at the edges
-        self.channels = [32, 64, 128]
+        self.channels = [36, 72, 144]
         reduction_cell_indices = [9, 16]
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
-        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23, affine=True)
 
         # Taken from DARTS implementation
         # assuming input size 8x8
@@ -261,6 +268,40 @@ class DartsSearchSpace(Graph):
         return self.graph['out_from_23']
 
 
+    def query(self, metric=None, dataset=None, path=None):
+        """
+        Query results from nasbench 301. Currently we only provide the 
+        genotype query as list but we will integrate nb301 in the future.
+        """
+        def convert(cell):
+            """convert the naslib representation to nasbench301"""
+            ops_to_nb301 = {
+                'Identity': 'skip_connect',
+                'FactorizedReduce': 'skip_connect',
+                'SepConv3x3': 'sep_conv_3x3',
+                'DilConv3x3': 'dil_conv_3x3',
+                'SepConv5x5': 'sep_conv_5x5',
+                'DilConv5x5': 'dil_conv_5x5',
+                'AvgPool1x1': 'avg_pool_3x3',
+                'MaxPool1x1': 'max_pool_3x3',
+            }
+            edge_op_dict = {
+                (i, j): ops_to_nb301[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+            }
+            op_edge_list = [
+                (edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1]) if j < 7
+            ]
+            return op_edge_list
+
+        normal_cell = self.nodes[5]['subgraph']
+        reduction_cell = self.nodes[9]['subgraph']
+
+        logger.info("Until nasbench 301 is published as a pypi package please use these strings to query the result.")
+        logger.info("normal={}".format(convert(normal_cell)))
+        logger.info("reduce={}".format(convert(reduction_cell)))
+        return "normal={} | reduction={}".format(convert(normal_cell), convert(reduction_cell))
+
+
 def _set_cell_ops(current_edge_data, C, stride):
     """
     Replace the 'op' at the edges with the ones defined here.
@@ -281,10 +322,10 @@ def _set_cell_ops(current_edge_data, C, stride):
     else:
         C_in = C if stride==1 else C//2
         current_edge_data.set('op', [
-            ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
+            ops.Identity() if stride==1 else FactorizedReduce(C_in, C, affine=False),
             ops.Zero(stride=stride),
-            ops.MaxPool1x1(3, stride, C_in, C),
-            ops.AvgPool1x1(3, stride, C_in, C),
+            ops.MaxPool1x1(3, stride, C_in, C, affine=False),
+            ops.AvgPool1x1(3, stride, C_in, C, affine=False),
             ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
             ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
             ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
@@ -328,9 +369,11 @@ def _double_channels(current_edge_data):
     else:
         init_params = current_edge_data.op.init_params
         if 'C_in' in init_params:
-            init_params['C_in'] *= 2 
+            init_params['C_in'] = int(init_params['C_in'] * 2.25) 
         if 'C_out' in init_params:
-            init_params['C_out'] *= 2
+            init_params['C_out'] = int(init_params['C_out'] * 2.25) 
+        if 'affine' in init_params:
+            init_params['affine'] = True
         current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
     return current_edge_data
 

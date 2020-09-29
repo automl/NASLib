@@ -1,4 +1,5 @@
 import torch.nn as nn
+import networkx as nx
 
 from naslib.search_spaces.core import primitives as ops
 
@@ -6,13 +7,17 @@ from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import ConvBNReLU, DepthwiseConv
 
 
-class SmallHierarchicalSearchSpace(Graph):
+class HierarchicalSearchSpace(Graph):
     """
     Hierarchical search space as defined in
 
         Liu et al.: Hierarchical Representations for Efficient Architecture Search
     
-    The small version which they search for Cifar-10.
+    The version which they search for Cifar-10.
+
+    Note that we do not use channel-wise concat as merge operation for
+    intermediate notes for simplicity. Only the output node uses channel-wise
+    concat followed by a 1x1 convolution.
     """
 
     OPTIMIZER_SCOPE = [
@@ -47,13 +52,14 @@ class SmallHierarchicalSearchSpace(Graph):
 
         cells = []
         channels = [16, 32, 64]
-        for scope, c in zip(SmallHierarchicalSearchSpace.OPTIMIZER_SCOPE, channels):
+        for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
             cell_i = cell.copy().set_scope(scope)
 
             cell_i.update_edges(
-                update_func=lambda current_edge_data: _set_motifs(current_edge_data, ops=level2_motifs),
+                update_func=lambda current_edge_data: _set_motifs(current_edge_data, motifs=level2_motifs, c=c),
                 private_edge_data=True
             )
+            
 
             cell_i.set_scope(scope)
 
@@ -84,6 +90,75 @@ class SmallHierarchicalSearchSpace(Graph):
             nn.Linear(channels[-1], 10))
         )
         
+
+    def prepare_evaluation(self):
+        """
+        The evaluation model has N=2 cells at each stage and a sepconv with stride 1
+        between them. Initial channels = 64, trained 512 epochs. Learning rate 0.1
+        reduced by 10x after 40K, 60K, and 70K steps.
+        """
+        # this is called after the optimizer has discretized the graph
+        cells = [self.edges[2, 3].op, self.edges[4, 5].op, self.edges[6, 7].op]
+
+        self._expand()
+        
+        channels = [64, 128, 256]
+
+        for cell, c in zip(cells, channels):
+            for _, _, data in cell.edges.data():
+                data.op.update_nodes(
+                    lambda node, in_edges, out_edges: _set_comb_op_channels(node, in_edges, out_edges, c=c),
+                    single_instances=False
+                )
+
+        self.edges[1, 2].set('op', ops.Stem(channels[0]))
+        self.edges[2, 3].set('op', cells[0].copy())
+        self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[0], kernel_size=3, stride=1, padding=1))
+        self.edges[4, 5].set('op', cells[0].copy())
+        self.edges[5, 6].set('op', ops.SepConv(channels[0], channels[1], kernel_size=3, stride=2, padding=1))
+        self.edges[6, 7].set('op', cells[1].copy())
+        self.edges[7, 8].set('op', ops.SepConv(channels[1], channels[1], kernel_size=3, stride=1, padding=1))
+        self.edges[8, 9].set('op', cells[1].copy())
+        self.edges[9, 10].set('op', ops.SepConv(channels[1], channels[2], kernel_size=3, stride=2, padding=1))
+        self.edges[10, 11].set('op', cells[2].copy())
+        self.edges[11, 12].set('op', ops.SepConv(channels[2], channels[2], kernel_size=3, stride=1, padding=1))
+        self.edges[12, 13].set('op', cells[2].copy())
+        self.edges[13, 14].set('op', ops.Sequential(
+            ops.SepConv(channels[-1], channels[-1], kernel_size=3, stride=1, padding=1),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(channels[-1], 10))
+        )
+
+        self.update_edges(
+            update_func=_increase_channels,
+            scope=self.OPTIMIZER_SCOPE,
+            private_edge_data=True
+        )
+
+
+    def _expand(self):
+        # shift the node indices to make space for 2 more edges at each stage
+        mapping = {
+            4: 6,
+            5: 7,
+            6: 10,
+            7: 11,
+            8: 14,
+        }
+        nx.relabel_nodes(self, mapping, copy=False)
+        
+        # fix edges
+        self.remove_edges_from(list(self.edges()))
+        self.add_edges_from([(i, i+1) for i in range(1, 14)])
+
+
+def _set_comb_op_channels(node, in_edges, out_edges, c):
+    print('update node', node)
+    index, n = node
+    if index == 4:
+        n['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
+
         
 def _set_cell_ops(current_edge_data, C, stride):
     """
@@ -109,13 +184,32 @@ def _set_cell_ops(current_edge_data, C, stride):
         raise ValueError()
 
 
-def _set_motifs(current_edge_data, ops):
+def _set_motifs(current_edge_data, motifs, c):
     """
     Set l-1 level motifs as ops at the edges for l level motifs
     """
     if current_edge_data.has('final') and current_edge_data.final:
         return current_edge_data
     else:
-        # We need copies because they will be set at every edge
-        current_edge_data.set('op', [m.copy() for m in ops])
+        op = []
+        for motif in motifs:
+            m = motif.copy()    # We need copies because they will be set at every edge
+            m.nodes[4]['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
+            op.append(m)
+        
+        current_edge_data.set('op', op)
+
+    return current_edge_data
+
+
+def _increase_channels(current_edge_data, factor=4):
+    if isinstance(current_edge_data.op, Graph):
+        return current_edge_data
+    else:
+        init_params = current_edge_data.op.init_params
+        if 'C_in' in init_params and init_params['C_in'] is not None:
+            init_params['C_in'] *= factor 
+        if 'C_out' in init_params and init_params['C_out'] is not None:
+            init_params['C_out'] *= factor
+        current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
     return current_edge_data

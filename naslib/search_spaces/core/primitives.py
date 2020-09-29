@@ -91,6 +91,7 @@ class SepConv(AbstractPrimitive):
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
         super().__init__(locals())
+        self.kernel_size = kernel_size
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, groups=C_in, bias=False),
@@ -107,6 +108,12 @@ class SepConv(AbstractPrimitive):
     
     def get_embedded_ops(self):
         return None
+    
+    @property
+    def get_op_name(self):
+        op_name = super().get_op_name
+        op_name += '{}x{}'.format(self.kernel_size, self.kernel_size)
+        return op_name
 
 
 class DilConv(AbstractPrimitive):
@@ -117,6 +124,7 @@ class DilConv(AbstractPrimitive):
 
     def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
         super().__init__(locals())
+        self.kernel_size = kernel_size
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_in, kernel_size=kernel_size, stride=stride, padding=padding, dilation=dilation,
@@ -131,6 +139,12 @@ class DilConv(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return None
+    
+    @property
+    def get_op_name(self):
+        op_name = super().get_op_name
+        op_name += '{}x{}'.format(self.kernel_size, self.kernel_size)
+        return op_name
 
 
 class Stem(AbstractPrimitive):
@@ -177,7 +191,7 @@ class MaxPool1x1(AbstractPrimitive):
     the number of channels.
     """
 
-    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True):
         super().__init__(locals())
         self.stride = stride
         self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
@@ -204,7 +218,7 @@ class AvgPool1x1(AbstractPrimitive):
     to increase the number of channels if stride > 1.
     """
 
-    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=False):
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True):
         super().__init__(locals())
         self.stride = stride
         self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
@@ -226,7 +240,7 @@ class AvgPool1x1(AbstractPrimitive):
 
 class ReLUConvBN(AbstractPrimitive):
 
-    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=False):
+    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True):
         super().__init__(locals())
         self.kernel_size = kernel_size
         pad = 0 if stride == 1 and kernel_size == 1 else 1
@@ -256,7 +270,7 @@ class Concat1x1(nn.Module):
     to retain the channel dimension.
     """
 
-    def __init__(self, num_in_edges, C_out, affine=False):
+    def __init__(self, num_in_edges, C_out, affine=True):
         super().__init__()
         self.conv = nn.Conv2d(num_in_edges * C_out, C_out, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn = nn.BatchNorm2d(C_out, affine=affine)

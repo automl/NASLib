@@ -18,7 +18,7 @@ search:
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
-  weight_decay: 0.0003
+  weight_decay: 0.0005
   epochs: 50
   warm_start_epochs: 0
   grad_clip: 5
@@ -53,7 +53,7 @@ evaluation:
   learning_rate: 0.025
   learning_rate_min: 0.00
   momentum: 0.9
-  weight_decay: 0.0003
+  weight_decay: 0.0005
   epochs: 600
   warm_start_epochs: 0
   grad_clip: 5

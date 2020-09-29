@@ -6,6 +6,8 @@ from torch.autograd import Variable
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.core.metaclasses import MetaOptimizer 
 from naslib.utils.utils import count_parameters_in_MB
+from naslib.search_spaces.core.query_metrics import Metric
+
 import naslib.search_spaces.core.primitives as ops
 
 logger = logging.getLogger(__name__)
@@ -69,6 +71,8 @@ class DARTSOptimizer(MetaOptimizer):
         self.perturb_alphas = None
         self.epsilon = 0
 
+        self.dataset = config.dataset
+
 
     def adapt_search_space(self, search_space, scope=None):
         # We are going to modify the search space
@@ -118,6 +122,7 @@ class DARTSOptimizer(MetaOptimizer):
         self.graph = graph
         self.scope = scope
     
+    
     def get_checkpointables(self):
         return {
             "model": self.graph,
@@ -139,7 +144,9 @@ class DARTSOptimizer(MetaOptimizer):
         """
         Just log the architecture weights.
         """
-        logger.info("Arch weights: {}".format(([a for a in self.architectural_weights])))
+        alpha_str = [", ".join(["{:+.06f}".format(x) for x in a]) + ", {}".format(np.argmax(a.detach().cpu().numpy()))
+                        for a in self.architectural_weights]
+        logger.info("Arch weights (alphas, last column argmax): \n{}".format("\n".join(alpha_str)))
         super().new_epoch(epoch)
 
 
@@ -202,12 +209,14 @@ class DARTSOptimizer(MetaOptimizer):
 
 
     def test_statistics(self):
-        if self.graph.QUERYABLE:
+        # nb301 is not there but we use it anyways to generate the arch strings.
+        #if self.graph.QUERYABLE:   
+        try:
             # record anytime performance
             best_arch = self.get_final_architecture()
-            acc = best_arch.query('eval_acc1es', dataset=self.config.dataset)
-            loss = best_arch.query('eval_losses', dataset=self.config.dataset)
-            return acc, loss
+            return best_arch.query(Metric.TEST_ACCURACY, self.dataset)
+        except:
+            return None
 
 
 

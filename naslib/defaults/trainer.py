@@ -5,7 +5,9 @@ import logging
 import os
 import torch
 
-from fvcore.common.checkpoint import Checkpointer, PeriodicCheckpointer
+from fvcore.common.checkpoint import PeriodicCheckpointer
+
+from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
@@ -134,12 +136,10 @@ class Trainer(object):
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
                 # record anytime performance
-                self.errors_dict.test_acc.append(anytime_results[0])
-                self.errors_dict.test_loss.append(anytime_results[1])
-                log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results. accuracy: {:.5f}, loss: {:.5f}".format(
-                        e, anytime_results[0], anytime_results[1]), n=5)
+                self.errors_dict.test_acc.append(anytime_results)
+                log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results: {}".format(
+                        e, anytime_results), n=5)
                     
-                
             self._log_to_json()
             self._log_and_reset_accuracies(e)
 
@@ -176,7 +176,7 @@ class Trainer(object):
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if best_arch.QUERYABLE:
-            metric = 'eval_acc1es'
+            metric = Metric.TEST_ACCURACY
             result = best_arch.query(
                 metric=metric, dataset=self.config.dataset
             )
@@ -351,7 +351,7 @@ class Trainer(object):
         checkpointables = self.optimizer.get_checkpointables()
         checkpointables.update(add_checkpointables)
 
-        checkpointer = Checkpointer(
+        checkpointer = utils.Checkpointer(
             model=checkpointables.pop('model'),
             save_dir=self.config.save + "/search" if search else self.config.save + "/eval",
             **checkpointables

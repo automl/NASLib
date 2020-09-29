@@ -9,8 +9,6 @@ from naslib.optimizers.discrete.re.optimizer import RegularizedEvolution
 from naslib.search_spaces import DartsSearchSpace
 from naslib.utils import utils, setup_logger
 
-from naslib.search_spaces.hierarchical.graph import SmallHierarchicalSearchSpace
-
 config = utils.get_config_from_args()
 utils.set_seed(config.seed)
 

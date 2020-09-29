@@ -1,5 +1,9 @@
 import logging
 import sys
+import glob
+import os
+
+from fvcore.common.checkpoint import Checkpointer
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
@@ -27,28 +31,37 @@ supported_optimizers = {
     'darts': DARTSOptimizer(config.search),
     'gdas': GDASOptimizer(config.search),
     'random': RandomSearch(sample_size=1),
-    're': RegularizedEvolution(config.search),
+    #'re': RegularizedEvolution(config.search),
 }
 
-# Changing the search space is one line of code
 
 # search_space = SimpleCellSearchSpace()
-# search_space = NasBench201SeachSpace()
-search_space = HierarchicalSearchSpace()
+search_space = NasBench201SeachSpace()
+# search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
 
-# Changing the optimizer is one line of code
+assert search_space.QUERYABLE
 
 optimizer = supported_optimizers[config.optimizer]
 
 optimizer.adapt_search_space(search_space)
 
-# Start the seach and evaluation
-trainer = Trainer(optimizer, config)
+checkpoint_dir = '/home/moa/dev/python_projects/NASLib/naslib/benchmarks/nasbench201/run/cifar10/{}/4/search/'.format(config.optimizer)
+checkpointables = optimizer.get_checkpointables()
 
-if not config.eval_only:
-    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
-    trainer.search(resume_from=checkpoint)
+checkpointer = Checkpointer(
+    model=checkpointables.pop('model'),
+    save_dir="/tmp/",
+    **checkpointables
+)
 
-checkpoint = utils.get_last_checkpoint(config, search=False) if config.resume else ""
+for checkpoint in sorted(glob.glob(os.path.join(checkpoint_dir, 'model_0*.pth'))):
+
+    checkpoint = checkpointer.resume_or_load(checkpoint, resume=False)
+    epoch = checkpoint.get("iteration", -1)
+    
+    print(optimizer.test_statistics())
+
+
+
 trainer.evaluate(resume_from=checkpoint)
