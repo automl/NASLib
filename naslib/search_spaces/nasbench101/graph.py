@@ -5,46 +5,17 @@ import torch.nn as nn
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils.utils import get_project_root
 
-from .primitives import ResNetBasicblock, ReLUConvBN
-
-def _truncate_input_edges(node, in_edges, out_edges):
-    """
-    Discretize the one-shot model.
-    """
-    if any(e.has('alpha') or (e.has('final') and e.final) for _, e in in_edges):
-        # We are in the one-shot case
-        for _, data in in_edges:
-            if data.has('final') and data.final:
-                return  # We are looking at an out node
-            data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
-        sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
-        keep_edges, _ = zip(*sorted_edge_ids[:])
-        for edge_id, edge_data in in_edges:
-            if edge_id not in keep_edges:
-                edge_data.delete()
-    else:
-        # We are in the discrete case (e.g. random search)
-        k = 2
-        for _, data in in_edges:
-            assert isinstance(data.op, list)
-            data.op.pop(1)      # Remove the zero op
-        if any(e.has('final') and e.final for _, e in in_edges):
-            return  # TODO: how about mixed final and non-final?
-        else:
-            for _ in range(len(in_edges) - k): #TODO: this is not correct. Fix it later
-                in_edges[random.randint(0, len(in_edges)-1)][1].delete()
-
+from .primitives import ReLUConvBN
 
 
 # load the nasbench101 data
-# for querying the nb101 (data in tfrecords) -> through the nasbench api (need to download their repository?)
 from nasbench import api
 
 nb101_datadir = os.path.join(get_project_root(), 'data', 'nasbench_full.tfrecord')
-
 nasbench = api.NASBench(nb101_datadir)
 
 # data = nasbench.query(cell)
@@ -146,46 +117,57 @@ class NasBench101SeachSpace(Graph):
             )
 
 
-    def query(self, metric='test_acc', dataset='cifar10', path=None):
+    def query(self, metric=None, dataset='cifar10', path=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
-
-        assert metric in [
-                'module_adjacency', 'module_operations',
-                'trainable_parameters', 'training_time', 'train_accuracy',
-                'validation_accuracy', 'test_accuracy'
-             ], "Unknown metric: {}".format(metric)
-
-        assert dataset in ['cifar10'], "Unknown dataset: {}".format(dataset)
-
+        assert isinstance(metric, Metric)
+        assert dataset in ['cifar10', None], "Unknown dataset: {}".format(dataset)
+    
         cell = self.edges[2, 3].op
         # convert the naslib representation to nasbench101
         nb101_cell = _convert_cell_to_nb101(cell)
         query_results = nasbench.query(nb101_cell)
 
-        if metric == 'all':
+        metric_to_nb101 = {
+            Metric.TRAIN_ACCURACY: 'train_accuracy',
+            Metric.VAL_ACCURACY: 'validation_accuracy',
+            Metric.TEST_ACCURACY: 'test_accuracy',
+            Metric.TRAIN_TIME: 'training_time',
+            Metric.PARAMETERS: 'trainable_parameters',
+        }
+
+        matrix = np.random.choice(ALLOWED_EDGES, size=(NUM_VERTICES, NUM_VERTICES))
+        matrix = np.triu(matrix, 1)
+        ops = np.random.choice(ALLOWED_OPS, size=(NUM_VERTICES)).tolist()
+        ops[0] = INPUT
+        ops[-1] = OUTPUT
+        spec = api.ModelSpec(matrix=matrix, ops=ops)
+        if nasbench.is_valid(spec):
+            return spec
+
+        if metric == Metric.RAW:
             return query_results
-        else:
-            return query_results[metric]
+            
+        return query_results[metric_to_nb101[metric]]
+
 
 def _set_cell_ops(current_edge_data, C):
     current_edge_data.set('op', [
-        ops.Identity(),
+        ReLUConvBN(C, C, kernel_size=1),
         ops.Zero(stride=1),
         ReLUConvBN(C, C, kernel_size=3),
-        ReLUConvBN(C, C, kernel_size=1),
         ops.MaxPool1x1(kernel_size=3, stride=1),
     ])
 
 
 def _convert_cell_to_nb101(cell):
+    
     ops_to_nb101 = {
             'MaxPool1x1': 'maxpool3x3',
             'ReLUConvBN1x1': 'conv1x1-bn-relu',
             'ReLUConvBN3x3': 'conv3x3-bn-relu',
-            'Identity': 'skip_connect',
             'Zero': 'none',
         }
-        
+
     return
