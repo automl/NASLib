@@ -146,45 +146,28 @@ class NasBench101SeachSpace(Graph):
             )
 
 
-    def query(self, metric='test_acc', dataset='cifar10', path='../../data'):
+    def query(self, metric='test_acc', dataset='cifar10', path=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
+
         assert metric in [
-                'train_acc1es', 'train_losses',
-                'train_times', 'params', 'flop', 'epochs', 'latency',
-                'eval_acc1es', 'eval_times', 'eval_losses'
+                'module_adjacency', 'module_operations',
+                'trainable_parameters', 'training_time', 'train_accuracy',
+                'validation_accuracy', 'test_accuracy'
              ], "Unknown metric: {}".format(metric)
 
-        assert dataset in ['cifar10-valid', 'cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
+        assert dataset in ['cifar10'], "Unknown dataset: {}".format(dataset)
 
-        ops_to_nb101 = {
-            'AvgPool1x1': 'avg_pool_3x3',
-            'ReLUConvBN1x1': 'nor_conv_1x1',
-            'ReLUConvBN3x3': 'nor_conv_3x3',
-            'Identity': 'skip_connect',
-            'Zero': 'none',
-        }
+        cell = self.edges[2, 3].op
+        # convert the naslib representation to nasbench101
+        nb101_cell = _convert_cell_to_nb101(cell)
+        query_results = nasbench.query(nb101_cell)
 
-        # convert the naslib representation to nasbench201
-        cell = self._get_child_graphs(single_instances=True)[0]
-        edge_op_dict = {
-            (i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
-        }
-        op_edge_list = [
-            '{}~{}'.format(edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-        ]
-
-        arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
-
-        # load the nasbench201 data and return the queried data
-        with open(os.path.join(path, 'nb201_all.pickle'), 'rb') as f:
-            nb201_data = pickle.load(f)
-        query_results = nb201_data[arch_str]
         if metric == 'all':
-            return query_results[dataset]
+            return query_results
         else:
-            return query_results[dataset][metric]
+            return query_results[metric]
 
 def _set_cell_ops(current_edge_data, C):
     current_edge_data.set('op', [
@@ -194,3 +177,15 @@ def _set_cell_ops(current_edge_data, C):
         ReLUConvBN(C, C, kernel_size=1),
         ops.MaxPool1x1(kernel_size=3, stride=1),
     ])
+
+
+def _convert_cell_to_nb101(cell):
+    ops_to_nb101 = {
+            'MaxPool1x1': 'maxpool3x3',
+            'ReLUConvBN1x1': 'conv1x1-bn-relu',
+            'ReLUConvBN3x3': 'conv3x3-bn-relu',
+            'Identity': 'skip_connect',
+            'Zero': 'none',
+        }
+        
+    return
