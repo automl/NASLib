@@ -12,10 +12,10 @@ from naslib.utils.utils import get_project_root
 from .primitives import ReLUConvBN
 
 
-# load the nasbench101 data
+# load the nasbench101 data -- requires TF 1.x
 from nasbench import api
 
-nb101_datadir = os.path.join(get_project_root(), 'data', 'nasbench_full.tfrecord')
+nb101_datadir = os.path.join(get_project_root(), 'data', 'nasbench_only108.tfrecord')
 nasbench = api.NASBench(nb101_datadir)
 
 # data = nasbench.query(cell)
@@ -58,6 +58,7 @@ class NasBench101SeachSpace(Graph):
         cell.add_node(7)
 
         # Edges
+        #* note: need to internally change the cell as the operations are on the nodes for NB101?
         cell.add_edges_densly()
 
         #
@@ -116,7 +117,6 @@ class NasBench101SeachSpace(Graph):
                 private_edge_data=True
             )
 
-
     def query(self, metric=None, dataset='cifar10', path=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
@@ -125,10 +125,7 @@ class NasBench101SeachSpace(Graph):
         assert dataset in ['cifar10', None], "Unknown dataset: {}".format(dataset)
     
         cell = self.edges[2, 3].op
-        # convert the naslib representation to nasbench101
-        nb101_cell = _convert_cell_to_nb101(cell)
-        query_results = nasbench.query(nb101_cell)
-
+    
         metric_to_nb101 = {
             Metric.TRAIN_ACCURACY: 'train_accuracy',
             Metric.VAL_ACCURACY: 'validation_accuracy',
@@ -137,14 +134,15 @@ class NasBench101SeachSpace(Graph):
             Metric.PARAMETERS: 'trainable_parameters',
         }
 
-        matrix = np.random.choice(ALLOWED_EDGES, size=(NUM_VERTICES, NUM_VERTICES))
-        matrix = np.triu(matrix, 1)
-        ops = np.random.choice(ALLOWED_OPS, size=(NUM_VERTICES)).tolist()
-        ops[0] = INPUT
-        ops[-1] = OUTPUT
-        spec = api.ModelSpec(matrix=matrix, ops=ops)
-        if nasbench.is_valid(spec):
-            return spec
+        # convert the naslib representation to nasbench101
+        nb101_spec = _convert_cell_to_nb101_spec(cell)        
+    
+        if not nasbench.is_valid(spec): # or count of edges is greater than min edges (not necessarily 9!)
+            return 'invalid' # or throw some form of exception.
+        
+        #* check if we call the cell mutation function from RE here itself until a 'valid' cell is found.
+
+        query_results = nasbench.query(nb101_spec)
 
         if metric == Metric.RAW:
             return query_results
@@ -155,13 +153,17 @@ class NasBench101SeachSpace(Graph):
 def _set_cell_ops(current_edge_data, C):
     current_edge_data.set('op', [
         ReLUConvBN(C, C, kernel_size=1),
-        ops.Zero(stride=1),
+        ops.Zero(stride=1),    #the second operation here always needs to be zero. seems it is hardcoded elsewhere -- this is terrible!
         ReLUConvBN(C, C, kernel_size=3),
         ops.MaxPool1x1(kernel_size=3, stride=1),
     ])
 
 
-def _convert_cell_to_nb101(cell):
+def _convert_cell_to_nb101_spec(cell):
+    # this will now be a full upper triangle matrix since we have a 'densely' connected cell
+    # which is  bad as one will get a 'valid' architecture only after a lot of queries.
+    #* can we give probabilities to the choices for ops so that the 'expected' number of edges in the graph is 9?
+    matrix = nx.adjacency_matrix(cell)
     
     ops_to_nb101 = {
             'MaxPool1x1': 'maxpool3x3',
@@ -170,4 +172,15 @@ def _convert_cell_to_nb101(cell):
             'Zero': 'none',
         }
 
-    return
+    edge_op_dict = {
+            (i, j): ops_to_nb101[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+        }
+
+    #* agggh operations are at the nodes of the cell in NB101!!
+
+    ops = np.random.choice(ALLOWED_OPS, size=(NUM_VERTICES)).tolist()
+    ops[0] = 'input'
+    ops[-1] = 'output'
+    spec = api.ModelSpec(matrix=matrix, ops=ops)
+    
+    return spec
