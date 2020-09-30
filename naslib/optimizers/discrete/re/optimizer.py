@@ -120,7 +120,7 @@ class RegularizedEvolution(MetaOptimizer):
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.TEST_ACCURACY, self.dataset)
+        return best_arch.query(Metric.RAW, self.dataset)
 
 
     def get_final_architecture(self):

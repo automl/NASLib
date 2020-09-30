@@ -8,6 +8,7 @@
 #SBATCH -e %x.%A.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH --mail-type=END,FAIL  # (recive mails about end and timeouts/crashes of your job)
 #SBATCH -J darts-gdas         # search space - algorithm
+#SBATCH -a 1-16 # array size
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
@@ -18,12 +19,21 @@ start=`date +%s`
 ###################
 # commands here
 
-
-
 # Activate virtual env so that run_experiment can load the correct packages
 source /home/ruchtem/dev/venvs/naslib/bin/activate
 
-python runner.py --config-file config.yaml --optimizer gdas --seed 1 evaluation.batch_size 72
+gpu_counter=1
+
+for seed in {1..16}; do
+  # Job to perform
+  if [ $gpu_counter -eq $SLURM_ARRAY_TASK_ID ]; then
+    #echo "Welcome $seed times"
+    #sleep 1
+    python runner.py --config-file config.yaml --optimizer gdas --seed ${seed} evaluation.batch_size 72
+    exit $?
+  fi
+  let gpu_counter+=1
+done
 
 
 

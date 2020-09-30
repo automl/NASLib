@@ -22,7 +22,7 @@ start=`date +%s`
 source /home/ruchtem/dev/venvs/naslib/bin/activate
 
 # currently only cifar-10
-python runner.py --config-file config_cifar10_re.yaml --seed 1 --optimizer re
+python runner.py --config-file config_cifar10.yaml --seed 1 --optimizer re search.checkpoint_freq 20 search.epochs 2000
 
 
 #
