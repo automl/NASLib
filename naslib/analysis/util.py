@@ -130,3 +130,89 @@ def plot_losses(fig, ax, axins, incumbent_trajectories, regret=True,
 
     return (fig, ax)
 
+import networkx as nx
+import matplotlib.pyplot as plt
+from naslib.search_spaces.core.graph import Graph, EdgeData
+from naslib.search_spaces.core.primitives import Identity
+
+def plot_cells():
+    cell = Graph()
+    cell.add_nodes_from(range(1, 8))
+    cell.add_edge(1, 3, op="sep_conv_3x3")
+    cell.add_edge(1, 4, op="identity")
+    cell.add_edge(1, 5, op="identity")
+    cell.add_edge(1, 6, op="identity")
+    cell.add_edge(2, 3, op="sep_conv_3x3")
+    cell.add_edge(2, 6, op="sep_conv_3x3")
+    cell.add_edge(3, 4, op="identity")
+    cell.add_edge(2, 5, op="dil_conv_5x5")
+    cell.add_edges_from([(i, 7) for i in range(3, 7)])
+
+    redu = Graph()
+    redu.add_nodes_from(range(1, 8))
+    redu.add_edge(1, 3, op="max_pool_3x3")
+    redu.add_edge(1, 4, op="max_pool_3x3")
+    redu.add_edge(1, 5, op="max_pool_3x3")
+    redu.add_edge(2, 3, op="max_pool_3x3")
+    redu.add_edge(2, 4, op="max_pool_3x3")
+    redu.add_edge(2, 5, op="identity")
+    redu.add_edge(3, 6, op="identity")
+    redu.add_edge(4, 6, op="identity")
+    redu.add_edges_from([(i, 7) for i in range(3, 7)])
+
+
+    fig, (ax_top, ax_bot) = plt.subplots(nrows=2, ncols=1)
+
+    pos = {
+        1: [-1, .5],
+        2: [-1, -.5],
+        3: [0, .35],
+        4: [.6, .5],
+        5: [0, -.5],
+        6: [.5, 0],
+        7: [1, 0]
+    }
+    nx.draw_networkx_nodes(cell, pos, ax=ax_top, node_color=['g', 'g', 'y', 'y', 'y', 'y', 'm'])
+
+    nx.draw_networkx_labels(cell, pos, {k: str(k) for k in cell.nodes()}, ax=ax_top)
+    nx.draw_networkx_edges(cell, pos, ax=ax_top)
+    nx.draw_networkx_edge_labels(cell, pos, 
+        {(u, v): d.op for u, v, d in cell.edges(data=True) if not isinstance(d.op, Identity)},
+        label_pos=.68, 
+        ax=ax_top,
+        bbox=dict(facecolor='white', alpha=0.4, edgecolor='white'),
+        font_size=10
+        )
+    ax_top.set_title("Normal cell")
+
+
+    pos = {
+        1: [-1, 1],
+        2: [-1, -1],
+        3: [0, 1],
+        4: [0, -.2],
+        5: [0, -1],
+        6: [.55, .1],
+        7: [1, 0]
+    }
+    nx.draw_networkx_nodes(redu, pos, ax=ax_bot, node_color=['g', 'g', 'y', 'y', 'y', 'y', 'm'])
+
+    nx.draw_networkx_labels(redu, pos, {k: str(k) for k in redu.nodes()}, ax=ax_bot)
+    nx.draw_networkx_edges(redu, pos, ax=ax_bot)
+    nx.draw_networkx_edge_labels(redu, pos, 
+        {(u, v): d.op for u, v, d in redu.edges(data=True) if not isinstance(d.op, Identity)},
+        label_pos=.68, 
+        ax=ax_bot,
+        bbox=dict(facecolor='white', alpha=0.4, edgecolor='white'),
+        font_size=10
+    )
+    ax_bot.set_title("Reduction cell")
+    plt.tight_layout()
+    plt.savefig('darts_cells.pdf')
+
+    print()
+
+
+
+if __name__ == '__main__':
+    plot_cells()

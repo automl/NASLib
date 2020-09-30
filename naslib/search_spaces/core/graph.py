@@ -799,6 +799,13 @@ class EdgeData():
         return self.__getattr__(key)
 
     
+    def get(self, key, default):
+        try:
+            return self.__getattr__(key)
+        except AttributeError:
+            return default
+
+    
     def __getattr__(self, key: str):
         if key.startswith("__"):       # Required for deepcoy, not sure why
             raise AttributeError(key)  # 

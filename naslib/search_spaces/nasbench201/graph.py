@@ -165,26 +165,6 @@ class NasBench201SeachSpace(Graph):
         return query_results[dataset][metric_to_nb201[metric]]
 
 
-
-
-
-#         [
-#                 'train_acc1es', 'train_losses',
-#                 'train_times', 'params', 'flop', 'epochs', 'latency',
-#                 'eval_acc1es', 'eval_times', 'eval_losses', None
-#              ], "Unknown metric: {}".format(metric)
-        
-# 'cifar10-valid', 
-
-        if dataset:
-            if metric is None or metric == 'all':
-                return query_results[dataset]
-            else:
-                return query_results[dataset][metric]
-        else:
-            return query_results
-
-
 def _set_cell_ops(current_edge_data, C):
     current_edge_data.set('op', [
         ops.Identity(),
