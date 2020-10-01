@@ -42,7 +42,7 @@ class Trainer(object):
 
         # preparations
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._prepare_dataloaders(config.search)
+        self._prepare_dataloaders(config)
 
         # measuring stuff
         self.train_top1 = utils.AverageMeter()
@@ -185,7 +185,7 @@ class Trainer(object):
             best_arch.to(self.device)
             if retrain:
                 logger.info("Starting retraining from scratch")
-                self._prepare_dataloaders(self.config.evaluation)
+                self._prepare_dataloaders(self.config, mode='val')
                 best_arch.reset_weights(inplace=True)
 
                 epochs = self.config.evaluation.epochs
@@ -322,7 +322,7 @@ class Trainer(object):
             raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
 
 
-    def _prepare_dataloaders(self, config):
+    def _prepare_dataloaders(self, config, mode='train'):
         """
         Prepare train, validation, and test dataloaders with the splits defined
         in the config.
@@ -330,7 +330,7 @@ class Trainer(object):
         Args:
             config (AttrDict): config from config file.
         """
-        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config)
+        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode)
         self.train_queue = train_queue
         self.valid_queue = valid_queue
         self.test_queue = test_queue

@@ -1,24 +1,16 @@
-data: "../naslib/data"
 dataset: cifar10
 gpu: 0
 seed: 10
-report_freq: 1
 num_classes: 10
-criterion: CrossEntropyLoss
-working_dir: run
-save: run
 
 search:
-  dataset: cifar10
-  data: "../naslib/data"
   checkpoint_freq: 10
-  seed: 10
   batch_size: 64
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 20
+  epochs: 5
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -37,17 +29,13 @@ search:
   # GDAS
   tau_max: 10
   tau_min: 0.1
-  # PC-DARTS
-  channel_divisor: 4
-  # re
+
+  # RE
   sample_size: 10
   population_size: 100
 
 evaluation:
-  dataset: cifar10
-  data: "../naslib/data"
   checkpoint_freq: 1
-  seed: 10
   batch_size: 96
   learning_rate: 0.025
   learning_rate_min: 0.00

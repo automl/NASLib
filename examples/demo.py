@@ -19,22 +19,21 @@ config = utils.get_config_from_args()
 utils.set_seed(config.seed)
 
 logger = setup_logger(config.save + "/log.log")
-logger.setLevel(logging.INFO)   # default DEBUG is too verbose
+#logger.setLevel(logging.INFO)   # default DEBUG is very verbose
 
 utils.log_args(config)
 
 supported_optimizers = {
-    'darts': DARTSOptimizer(config.search),
-    'gdas': GDASOptimizer(config.search),
-    'random': RandomSearch(sample_size=1),
-    're': RegularizedEvolution(config.search),
+    'darts': DARTSOptimizer(config),
+    'gdas': GDASOptimizer(config),
+    'rs': RandomSearch(config),
+    're': RegularizedEvolution(config),
 }
 
 # Changing the search space is one line of code
-
 # search_space = SimpleCellSearchSpace()
-# search_space = NasBench201SeachSpace()
-search_space = HierarchicalSearchSpace()
+search_space = NasBench201SeachSpace()
+# search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
 
 # Changing the optimizer is one line of code

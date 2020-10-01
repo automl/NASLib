@@ -35,9 +35,9 @@ class GDASOptimizer(DARTSOptimizer):
         """
         super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
 
-        self.epochs = config.epochs
-        self.tau_max = config.tau_max
-        self.tau_min = config.tau_min
+        self.epochs = config.search.epochs
+        self.tau_max = config.search.tau_max
+        self.tau_min = config.search.tau_min
 
         # Linear tau schedule
         self.tau_step = (self.tau_min - self.tau_max) / self.epochs

@@ -64,7 +64,7 @@ class DARTSOptimizer(MetaOptimizer):
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
         self.loss = loss_criteria
-        self.grad_clip = self.config.grad_clip
+        self.grad_clip = self.config.search.grad_clip
 
         self.architectural_weights = torch.nn.ParameterList()
 
@@ -105,16 +105,16 @@ class DARTSOptimizer(MetaOptimizer):
         # Init optimizers
         self.arch_optimizer = self.arch_optimizer(
             self.architectural_weights.parameters(),
-            lr=self.config.arch_learning_rate,
+            lr=self.config.search.arch_learning_rate,
             betas=(0.5, 0.999),
-            weight_decay=self.config.arch_weight_decay
+            weight_decay=self.config.search.arch_weight_decay
         )
 
         self.op_optimizer = self.op_optimizer(
             graph.parameters(),
-            lr=self.config.learning_rate,
-            momentum=self.config.momentum,
-            weight_decay=self.config.weight_decay
+            lr=self.config.search.learning_rate,
+            momentum=self.config.search.momentum,
+            weight_decay=self.config.search.weight_decay
         )
 
         graph.train()

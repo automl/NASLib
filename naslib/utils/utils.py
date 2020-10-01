@@ -54,7 +54,7 @@ Run on single machine:
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default="../naslib/defaults/config.yaml", metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file", default="{}/defaults/config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
     parser.add_argument("--seed", default=1, type=int, help="Seed for the experiment")
     parser.add_argument("--optimizer", default="darts")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
@@ -114,38 +114,38 @@ def get_config_from_args(args=None):
     config.search.seed = config.evaluation.seed = config.seed
     config.resume = args.resume
 
-    config._save = copy(config.save)
-    config.save = '{}/{}/{}/{}'.format(config.save, config.dataset, config.optimizer, config.seed)
+    config.save = 'run/{}/{}/{}'.format(config.dataset, config.optimizer, config.seed)
+    config.data = "{}/data".format(get_project_root())
 
     create_exp_dir(config.save)
     create_exp_dir(config.save + "/search")     # required for the checkpoints
     create_exp_dir(config.save + "/eval")
 
-    if config.dataset != 'cifar100':
-        config.n_classes = 10
-    else:
-        config.n_classes = 100
     return config
 
 
-def get_train_val_loaders(config):
+def get_train_val_loaders(config, mode):
     """
     Constructs the dataloaders and transforms for training, validation and test data.
     """
-    if config.dataset == 'cifar10':
+    data = config.data
+    dataset = config.dataset
+    seed = config.seed
+    config = config.search if mode=='train' else config.evaluation
+    if dataset == 'cifar10':
         train_transform, valid_transform = _data_transforms_cifar10(config)
-        train_data = dset.CIFAR10(root=config.data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR10(root=config.data, train=False, download=True, transform=valid_transform)
-    elif config.dataset == 'cifar100':
+        train_data = dset.CIFAR10(root=data, train=True, download=True, transform=train_transform)
+        test_data = dset.CIFAR10(root=data, train=False, download=True, transform=valid_transform)
+    elif dataset == 'cifar100':
         train_transform, valid_transform = _data_transforms_cifar100(config)
-        train_data = dset.CIFAR100(root=config.data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR100(root=config.data, train=False, download=True, transform=valid_transform)
-    elif config.dataset == 'svhn':
+        train_data = dset.CIFAR100(root=data, train=True, download=True, transform=train_transform)
+        test_data = dset.CIFAR100(root=data, train=False, download=True, transform=valid_transform)
+    elif dataset == 'svhn':
         train_transform, valid_transform = _data_transforms_svhn(config)
-        train_data = dset.SVHN(root=config.data, split='train', download=True, transform=train_transform)
-        test_data = dset.SVHN(root=config.data, split='test', download=True, transform=valid_transform)
+        train_data = dset.SVHN(root=data, split='train', download=True, transform=train_transform)
+        test_data = dset.SVHN(root=data, split='test', download=True, transform=valid_transform)
     else:
-        raise ValueError("Unknown dataset: {}".format(config.dataset))
+        raise ValueError("Unknown dataset: {}".format(dataset))
 
     num_train = len(train_data)
     indices = list(range(num_train))
@@ -154,16 +154,16 @@ def get_train_val_loaders(config):
     train_queue = torch.utils.data.DataLoader(
         train_data, batch_size=config.batch_size,
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
-        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(config.seed))
+        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(seed))
 
     valid_queue = torch.utils.data.DataLoader(
         train_data, batch_size=config.batch_size,
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
-        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(config.seed))
+        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(seed))
 
     test_queue = torch.utils.data.DataLoader(
         test_data, batch_size=config.batch_size, shuffle=False,
-        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(config.seed))
+        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(seed))
 
     return train_queue, valid_queue, test_queue, train_transform, valid_transform
 

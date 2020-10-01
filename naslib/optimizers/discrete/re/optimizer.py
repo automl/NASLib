@@ -23,9 +23,9 @@ class RegularizedEvolution(MetaOptimizer):
     def __init__(self, config):
         super().__init__()
         self.config = config
-        self.epochs = config.epochs
-        self.sample_size = config.sample_size
-        self.population_size = config.population_size
+        self.epochs = config.search.epochs
+        self.sample_size = config.search.sample_size
+        self.population_size = config.search.population_size
 
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
