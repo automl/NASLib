@@ -37,21 +37,8 @@ class RegularizedEvolution(MetaOptimizer):
     def adapt_search_space(self, search_space, scope=None):
         assert search_space.QUERYABLE, "Regularized evolution is currently only implemented for benchmarks."
         
-        # We sample as many architectures as we need
-        logger.info("Start sampling architectures to fill the population")
-        while len(self.population) < self.population_size:
-            # If there is no scope defined, let's use the search space default one
-            if not scope:
-                scope = search_space.OPTIMIZER_SCOPE
-            
-            model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            
-            model.arch = sample_random_architecture(search_space, scope)
-            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
-            
-            self.population.append(model)
-            self._update_history(model)
-            log_every_n_seconds(logging.INFO, "Population size {}".format(len(self.population)))
+        self.search_space = search_space.clone()
+        self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
 
 
     def _mutate(self, parent_arch):
@@ -85,19 +72,33 @@ class RegularizedEvolution(MetaOptimizer):
     
     
     def new_epoch(self, epoch):
-        sample = []
-        while len(sample) < self.sample_size:
-            candidate = np.random.choice(list(self.population))
-            sample.append(candidate)
-        
-        parent = max(sample, key=lambda x: x.accuracy)
+        # We sample as many architectures as we need 
+        if epoch < self.population_size:
+            logger.info("Start sampling architectures to fill the population")
+            # If there is no scope defined, let's use the search space default one
+            
+            model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
+            
+            model.arch = sample_random_architecture(self.search_space, self.scope)
+            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+            
+            self.population.append(model)
+            self._update_history(model)
+            log_every_n_seconds(logging.INFO, "Population size {}".format(len(self.population)))
+        else:
+            sample = []
+            while len(sample) < self.sample_size:
+                candidate = np.random.choice(list(self.population))
+                sample.append(candidate)
+            
+            parent = max(sample, key=lambda x: x.accuracy)
 
-        child = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-        child.arch = self._mutate(parent.arch)
-        child.accuracy = child.arch.query(self.performance_metric, self.dataset)
+            child = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
+            child.arch = self._mutate(parent.arch)
+            child.accuracy = child.arch.query(self.performance_metric, self.dataset)
 
-        self.population.append(child)
-        self._update_history(child)
+            self.population.append(child)
+            self._update_history(child)
         
     def _update_history(self, child):
         if len(self.history) < 100:

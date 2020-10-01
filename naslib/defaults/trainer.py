@@ -62,6 +62,7 @@ class Trainer(object):
              'test_acc': [],
              'test_loss': [],
              'runtime': [],
+             'arch_eval': [],
              'params': n_parameters}
         )
 
@@ -136,7 +137,7 @@ class Trainer(object):
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
                 # record anytime performance
-                self.errors_dict.test_acc.append(anytime_results)
+                self.errors_dict.arch_eval.append(anytime_results)
                 log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results: {}".format(
                         e, anytime_results), n=5)
                     
@@ -166,7 +167,6 @@ class Trainer(object):
             resume_from (str): Resume retraining from the given checkpoint file.
         """
         logger.info("Start evaluation")
-        self._prepare_dataloaders(self.config.evaluation)
 
         if not search_model:
             search_model = os.path.join(self.config.save, "search", "model_final.pth")
@@ -185,6 +185,7 @@ class Trainer(object):
             best_arch.to(self.device)
             if retrain:
                 logger.info("Starting retraining from scratch")
+                self._prepare_dataloaders(self.config.evaluation)
                 best_arch.reset_weights(inplace=True)
 
                 epochs = self.config.evaluation.epochs
