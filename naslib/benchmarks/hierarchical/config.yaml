@@ -43,7 +43,7 @@ evaluation:
   data: "../../data"
   checkpoint_freq: 5
   seed: 10
-  batch_size: 32  # 256
+  batch_size: 256
   learning_rate: 0.1
   learning_rate_min: 0.001
   momentum: 0.9

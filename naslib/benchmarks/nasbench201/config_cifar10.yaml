@@ -43,27 +43,5 @@ search:
   sample_size: 10
   population_size: 100
 
-# this is not used because we query nb201
 evaluation:
   dataset: cifar10
-  data: "../../data"
-  checkpoint_freq: 1
-  seed: 10
-  batch_size: 96
-  learning_rate: 0.025
-  learning_rate_min: 0.00
-  momentum: 0.9
-  weight_decay: 0.0005
-  epochs: 600
-  warm_start_epochs: 0
-  grad_clip: 5
-  train_portion: 1
-  data_size: 50000
-
-  cutout: True
-  cutout_length: 16
-  cutout_prob: 1.0
-  #drop_path_prob: 0.2
-
-
-
