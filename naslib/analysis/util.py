@@ -42,7 +42,7 @@ markers={
 }
 
 
-def get_trajectories(opt_dict, methods=['RE', 'RS', 'TPE']):
+def get_trajectories(opt_dict, methods=['RE', 'RS']):
     all_trajectories = {}
 
     for m in methods:
@@ -212,7 +212,17 @@ def plot_cells():
 
     print()
 
+from naslib.utils import utils
+from naslib.search_spaces import DartsSearchSpace
+from naslib.optimizers import DARTSOptimizer
+import torch
+
+def params_from_checkpoint():
+
+    model = torch.load('darts/model_final.pth', map_location=torch.device('cpu'))['model']
+    print(np.sum(np.prod(v.size()) for v in model.values()) / 1e6, "M")
 
 
 if __name__ == '__main__':
-    plot_cells()
+    #plot_cells()
+    params_from_checkpoint()

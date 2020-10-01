@@ -2,6 +2,7 @@
 *.out
 *.err
 *.log
+*.json
 
 # Model files
 *.pth
