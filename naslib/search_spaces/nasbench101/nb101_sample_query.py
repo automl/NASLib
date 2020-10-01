@@ -24,19 +24,22 @@ ALLOWED_OPS = [CONV3X3, CONV1X1, MAXPOOL3X3]
 ALLOWED_EDGES = [0, 1]   # Binary adjacency matrix
 
 
-nb101_datadir = os.path.join(get_project_root, 'data', 'nasbench_full.tfrecord')
+nb101_datadir = os.path.join(get_project_root, 'data', 'nasbench_only108.tfrecord')
 
 nasbench = api.NASBench(nb101_datadir)
 
+matrix = np.triu(np.ones((7,7)), 1)
+
 cell = api.ModelSpec(
-  matrix=[[0, 1, 1, 1, 0, 1, 0],    # input layer
-          [0, 0, 0, 0, 0, 0, 1],    # 1x1 conv
-          [0, 0, 0, 0, 0, 0, 1],    # 3x3 conv
-          [0, 0, 0, 0, 1, 0, 0],    # 5x5 conv (replaced by two 3x3's)
-          [0, 0, 0, 0, 0, 0, 1],    # 5x5 conv (replaced by two 3x3's)
-          [0, 0, 0, 0, 0, 0, 1],    # 3x3 max-pool
-          [0, 0, 0, 0, 0, 0, 0]],   # output layer
+  # matrix=[[0, 1, 1, 1, 0, 1, 0],    # input layer
+  #         [0, 0, 0, 0, 0, 0, 1],    # 1x1 conv
+  #         [0, 0, 0, 0, 0, 0, 1],    # 3x3 conv
+  #         [0, 0, 0, 0, 1, 0, 0],    # 5x5 conv (replaced by two 3x3's)
+  #         [0, 0, 0, 0, 0, 0, 1],    # 5x5 conv (replaced by two 3x3's)
+  #         [0, 0, 0, 0, 0, 0, 1],    # 3x3 max-pool
+  #         [0, 0, 0, 0, 0, 0, 0]],   # output layer
   # Operations at the vertices of the module, matches order of matrix.
+  matrix = matrix,
   ops=[INPUT, CONV1X1, CONV3X3, CONV3X3, CONV3X3, MAXPOOL3X3, OUTPUT])
 
 # Querying multiple times may yield different results. Each cell is evaluated 3
