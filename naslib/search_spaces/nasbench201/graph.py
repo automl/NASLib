@@ -116,8 +116,11 @@ class NasBench201SeachSpace(Graph):
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
         assert isinstance(metric, Metric)
+        if metric == Metric.ALL:
+            raise NotImplementedError()
 
-        assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120', None], "Unknown dataset: {}".format(dataset)
+        if metric != Metric.RAW and metric != Metric.ALL:
+            assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
         
         ops_to_nb201 = {
             'AvgPool1x1': 'avg_pool_3x3',
@@ -143,13 +146,13 @@ class NasBench201SeachSpace(Graph):
         
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: 'train_acc1es',
-            Metric.VAL_ACCURACY: 'train_acc1es',
+            Metric.VAL_ACCURACY: 'eval_acc1es',
             Metric.TEST_ACCURACY: 'eval_acc1es',
             Metric.TRAIN_LOSS: 'train_losses',
-            Metric.VAL_LOSS: 'train_losses',
+            Metric.VAL_LOSS: 'eval_losses',
             Metric.TEST_LOSS: 'eval_losses',
             Metric.TRAIN_TIME: 'train_times',
-            Metric.VAL_TIME: 'train_times',
+            Metric.VAL_TIME: 'eval_times',
             Metric.TEST_TIME: 'eval_times',
             Metric.FLOPS: 'flop',
             Metric.LATENCY: 'latency',
@@ -161,6 +164,8 @@ class NasBench201SeachSpace(Graph):
             return query_results
         elif "VAL_" in metric.name and dataset == 'cifar10':
             dataset = 'cifar10-valid'
+        elif "VAL_" in metric.name and dataset != 'cifar10':
+            raise ValueError("nasbench 201 does not have a validation split for other datasets than cifat10.")
         
         return query_results[dataset][metric_to_nb201[metric]]
 
