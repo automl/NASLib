@@ -71,6 +71,10 @@ def analyze(optimizer_dict, dataset):
                      color=color)
         ax_left.fill_between(np.arange(len(mean)), mean - std, mean + std, alpha=0.3)
         lines.append(line[0])    
+    
+    if dataset=='cifar10':
+        line = ax_left.plot([0, 50], [5.77, 5.77], label="RE final performance")
+        lines.append(line[0])
 
     ax_left.set_xlabel('Search Epochs')
     ax_left.set_ylabel('Test Error [%]')
@@ -109,8 +113,8 @@ def analyze(optimizer_dict, dataset):
     plt.tight_layout()
     plt.savefig('optim_{}_{}.pdf'.format(dir, dataset))
 
-dir = 'darts'
-# dir = 'nb201'
+# dir = 'darts'
+dir = 'nb201'
 
 final = {
     'darts': [97.05, 96.99, 96.75, 97.3],

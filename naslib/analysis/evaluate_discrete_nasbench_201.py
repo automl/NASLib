@@ -61,11 +61,11 @@ def analyze(optimizer_dict, dataset):
     trajectories = get_trajectories(parser_dict)
     plot_losses(fig, ax, None, trajectories, regret=False, plot_mean=True)
 
-    ax.set_xlabel('Wallclock time [s]')
+    ax.set_xlabel('Wallclock time [h]')
     ax.set_ylabel('Test Error [%]')
     #ax.set_yscale('log')
-    #ax.set_ylim([6e-1, ])
-    #ax.set_xlim(left=lim[dataset])
+    ax.set_ylim(top=7)
+    ax.set_xlim(left=1000)
     ax.set_xscale('log')
     plt.legend()
     plt.title(dataset)
@@ -98,13 +98,22 @@ re_vali = [91.36, 91.57, 91.38, 91.57]
 rs_test = [94.15, 94.29, 94.36, 93.87]
 rs_vali = [91.36, 91.21, 91.57, 91.02]
 
+#gdas = [96.93, 96.8, 97.0, 96.84]
+
+#hierarchical
+gdas = [95.49, 95.45, 95.35]
+darts = [95.7, 95.57, 95.75]
+
 def test(x):
     mean = np.mean(x)
     std = np.std(x)
     print("{:.02f} {{\\scriptsize $\\pm$ {:.02f}}}".format(mean, std))
 
-test(re_test)
-test(rs_test)
-print()
-test(re_vali)
-test(rs_vali)
+test(darts)
+
+
+#test(re_test)
+#test(rs_test)
+#print()
+#test(re_vali)
+#test(rs_vali)
