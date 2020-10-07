@@ -4,6 +4,7 @@ import naslib as nl
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RegularizedEvolution
+from naslib.optimizers.discrete.rs.optimizer import RandomSearch
 
 from naslib.search_spaces import NasBench201SeachSpace
 from naslib.utils import utils, setup_logger
@@ -20,6 +21,7 @@ supported_optimizers = {
     'darts': DARTSOptimizer(config.search),
     'gdas': GDASOptimizer(config.search),
     're': RegularizedEvolution(config.search),
+    'rs': RandomSearch(config.search),
 }
 
 NasBench201SeachSpace.NUM_CLASSES = config.num_classes
