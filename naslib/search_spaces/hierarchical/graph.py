@@ -56,7 +56,7 @@ class HierarchicalSearchSpace(Graph):
             cell_i = cell.copy().set_scope(scope)
 
             cell_i.update_edges(
-                update_func=lambda current_edge_data: _set_motifs(current_edge_data, motifs=level2_motifs, c=c),
+                update_func=lambda edge: _set_motifs(edge, motifs=level2_motifs, c=c),
                 private_edge_data=True
             )
             
@@ -65,7 +65,7 @@ class HierarchicalSearchSpace(Graph):
 
             # set the level 1 motifs (i.e. primitives)
             cell_i.update_edges(
-                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
+                update_func=lambda edge: _set_cell_ops(edge, c, stride=1),
                 scope=[scope],
                 private_edge_data=True
             )
@@ -117,7 +117,7 @@ class HierarchicalSearchSpace(Graph):
     #     )
 
     #     self.update_edges(
-    #         update_func=lambda current_edge_data: _increase_channels(current_edge_data, factor=2),
+    #         update_func=lambda edge: _increase_channels(edge, factor=2),
     #         scope=self.OPTIMIZER_SCOPE,
     #         private_edge_data=True
     #     )
@@ -167,7 +167,7 @@ class HierarchicalSearchSpace(Graph):
         )
 
         self.update_edges(
-            update_func=lambda current_edge_data: _increase_channels(current_edge_data, factor),
+            update_func=lambda edge: _increase_channels(edge, factor),
             scope=self.OPTIMIZER_SCOPE,
             private_edge_data=True
         )
@@ -195,17 +195,15 @@ def _set_comb_op_channels(node, in_edges, out_edges, c):
         n['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
 
         
-def _set_cell_ops(current_edge_data, C, stride):
+def _set_cell_ops(edge, C, stride):
     """
     Set the primitives for the bottom level motif where we
     have actual ops at the edges.
     """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    elif isinstance(current_edge_data.op, list) and all(isinstance(op, Graph) for op in current_edge_data.op):
-        return current_edge_data    # We are at the edge of an motif
-    elif isinstance(current_edge_data.op, ops.Identity):
-        current_edge_data.set('op', [
+    if isinstance(edge.data.op, list) and all(isinstance(op, Graph) for op in edge.data.op):
+        return   # We are at the edge of an motif
+    elif isinstance(edge.data.op, ops.Identity):
+        edge.data.set('op', [
             ops.Identity() if stride==1 else ops.FactorizedReduce(C, C),
             ops.Zero(stride=stride),
             ops.MaxPool1x1(3, stride),
@@ -214,37 +212,30 @@ def _set_cell_ops(current_edge_data, C, stride):
             DepthwiseConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
             ConvBNReLU(C, C, kernel_size=1),
         ])
-        return current_edge_data
     else:
         raise ValueError()
 
 
-def _set_motifs(current_edge_data, motifs, c):
+def _set_motifs(edge, motifs, c):
     """
     Set l-1 level motifs as ops at the edges for l level motifs
     """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
+    op = []
+    for motif in motifs:
+        m = motif.copy()    # We need copies because they will be set at every edge
+        m.nodes[4]['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
+        op.append(m)
+    
+    edge.data.set('op', op)
+
+
+def _increase_channels(edge, factor=4):
+    if isinstance(edge.data.op, Graph):
+        return
     else:
-        op = []
-        for motif in motifs:
-            m = motif.copy()    # We need copies because they will be set at every edge
-            m.nodes[4]['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
-            op.append(m)
-        
-        current_edge_data.set('op', op)
-
-    return current_edge_data
-
-
-def _increase_channels(current_edge_data, factor=4):
-    if isinstance(current_edge_data.op, Graph):
-        return current_edge_data
-    else:
-        init_params = current_edge_data.op.init_params
+        init_params = edge.data.op.init_params
         if 'C_in' in init_params and init_params['C_in'] is not None:
             init_params['C_in'] *= factor 
         if 'C_out' in init_params and init_params['C_out'] is not None:
             init_params['C_out'] *= factor
-        current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
-    return current_edge_data
+        edge.data.set('op', edge.data.op.__class__(**init_params))

@@ -8,7 +8,7 @@ from naslib.search_spaces.core import primitives as ops
 from torch import nn
 from copy import deepcopy
 
-from naslib.utils.utils import get_project_root
+from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import FactorizedReduce
 
@@ -162,7 +162,7 @@ class DartsSearchSpace(Graph):
 
         for scope, c in zip(stages, self.channels):
             self.update_edges(
-                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
+                update_func=lambda edge: _set_cell_ops(edge, c, stride=1),
                 scope=scope,
                 private_edge_data=True
             )
@@ -174,7 +174,8 @@ class DartsSearchSpace(Graph):
             for u, v, data in reduction_cell.edges.data():
                 stride = 2 if u in (1, 2) else 1
                 if not data.is_final():
-                    reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
+                    edge = AttrDict(data=data)
+                    _set_cell_ops(edge, c, stride)
 
         #
         # Combining operations
@@ -302,7 +303,7 @@ class DartsSearchSpace(Graph):
         return "normal={} | reduction={}".format(convert(normal_cell), convert(reduction_cell))
 
 
-def _set_cell_ops(current_edge_data, C, stride):
+def _set_cell_ops(edge, C, stride):
     """
     Replace the 'op' at the edges with the ones defined here.
     This function is called by the framework for every edge in
@@ -317,21 +318,17 @@ def _set_cell_ops(current_edge_data, C, stride):
     Returns:
         EdgeData: the updated EdgeData object.
     """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    else:
-        C_in = C if stride==1 else C//2
-        current_edge_data.set('op', [
-            ops.Identity() if stride==1 else FactorizedReduce(C_in, C, affine=False),
-            ops.Zero(stride=stride),
-            ops.MaxPool1x1(3, stride, C_in, C, affine=False),
-            ops.AvgPool1x1(3, stride, C_in, C, affine=False),
-            ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
-            ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-            ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
-        ])
-    return current_edge_data
+    C_in = C if stride==1 else C//2
+    edge.data.set('op', [
+        ops.Identity() if stride==1 else FactorizedReduce(C_in, C, affine=False),
+        ops.Zero(stride=stride),
+        ops.MaxPool1x1(3, stride, C_in, C, affine=False),
+        ops.AvgPool1x1(3, stride, C_in, C, affine=False),
+        ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+        ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
+        ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+        ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
+    ])
 
 
 def _truncate_input_edges(node, in_edges, out_edges):
@@ -363,19 +360,15 @@ def _truncate_input_edges(node, in_edges, out_edges):
                     in_edges[random.randint(0, len(in_edges)-1)][1].delete()
 
 
-def _double_channels(current_edge_data):
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    else:
-        init_params = current_edge_data.op.init_params
-        if 'C_in' in init_params:
-            init_params['C_in'] = int(init_params['C_in'] * 2.25) 
-        if 'C_out' in init_params:
-            init_params['C_out'] = int(init_params['C_out'] * 2.25) 
-        if 'affine' in init_params:
-            init_params['affine'] = True
-        current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
-    return current_edge_data
+def _double_channels(edge):
+    init_params = edge.data.op.init_params
+    if 'C_in' in init_params:
+        init_params['C_in'] = int(init_params['C_in'] * 2.25) 
+    if 'C_out' in init_params:
+        init_params['C_out'] = int(init_params['C_out'] * 2.25) 
+    if 'affine' in init_params:
+        init_params['affine'] = True
+    edge.data.set('op', edge.data.op.__class__(**init_params))
 
 
 def channel_concat(tensors):

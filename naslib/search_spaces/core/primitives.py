@@ -47,7 +47,7 @@ class Identity(AbstractPrimitive):
     An implementation of the Identity operation.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__(locals())
 
     def forward(self, x, edge_data):
@@ -63,7 +63,7 @@ class Zero(AbstractPrimitive):
     the connection by multiplying its input with zero.
     """
 
-    def __init__(self, stride):
+    def __init__(self, stride, **kwargs):
         """
         When setting stride > 1 then it is assumed that the
         channels must be doubled.
@@ -89,7 +89,7 @@ class SepConv(AbstractPrimitive):
     in the DARTS paper, i.e. 2 sepconv directly after another.
     """
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
         self.op = nn.Sequential(
@@ -122,7 +122,7 @@ class DilConv(AbstractPrimitive):
     used in the DARTS paper.
     """
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
         self.op = nn.Sequential(
@@ -153,7 +153,7 @@ class Stem(AbstractPrimitive):
     image input.
     """
 
-    def __init__(self, C_out):
+    def __init__(self, C_out, **kwargs):
         super().__init__(locals())
         self.seq = nn.Sequential(
             nn.Conv2d(3, C_out, 3, padding=1, bias=False),
@@ -172,7 +172,7 @@ class Sequential(AbstractPrimitive):
     as op on edges.
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super().__init__(locals())
         self.primitives = args
         self.op = nn.Sequential(*args)
@@ -191,7 +191,7 @@ class MaxPool1x1(AbstractPrimitive):
     the number of channels.
     """
 
-    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True):
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True, **kwargs):
         super().__init__(locals())
         self.stride = stride
         self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
@@ -218,7 +218,7 @@ class AvgPool1x1(AbstractPrimitive):
     to increase the number of channels if stride > 1.
     """
 
-    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True):
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True, **kwargs):
         super().__init__(locals())
         self.stride = stride
         self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
@@ -240,7 +240,7 @@ class AvgPool1x1(AbstractPrimitive):
 
 class ReLUConvBN(AbstractPrimitive):
 
-    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True):
+    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
         pad = 0 if stride == 1 and kernel_size == 1 else 1
@@ -270,7 +270,7 @@ class Concat1x1(nn.Module):
     to retain the channel dimension.
     """
 
-    def __init__(self, num_in_edges, C_out, affine=True):
+    def __init__(self, num_in_edges, C_out, affine=True, **kwargs):
         super().__init__()
         self.conv = nn.Conv2d(num_in_edges * C_out, C_out, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn = nn.BatchNorm2d(C_out, affine=affine)

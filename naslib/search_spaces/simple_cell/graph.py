@@ -41,29 +41,36 @@ class SimpleCellSearchSpace(Graph):
         normal_cell = Graph()
         normal_cell.name = "normal_cell"    # Use the same name for all cells with shared attributes
 
-        # Input nodes
-        normal_cell.add_node(1)
-        normal_cell.add_node(2)
-
-        # Intermediate nodes
-        normal_cell.add_node(3)
-        normal_cell.add_node(4)
-
-        # Output node
-        normal_cell.add_node(5)
+        # Nodes
+        normal_cell.add_nodes_from([1, 2, 3, 4, 5])
         
         # Edges
         normal_cell.add_edges_from([(1, i) for i in range(3, 5)])   # input 1
         normal_cell.add_edges_from([(2, i) for i in range(3, 5)])   # input 2
         normal_cell.add_edges_from([(3, 4)])
+        # Edges connecting to the output are always the identity
+        normal_cell.add_edges_from([(i, 5, EdgeData().finalize()) for i in range(3, 5)])   # output
 
-        final_edge = EdgeData() # Edges connecting to the output are always the identity
-        final_edge.finalize()
-        normal_cell.add_edges_from([(i, 5, final_edge.clone()) for i in range(3, 5)])   # output
-        
+        # set the parameters for the ops at all edges (that are not final)
+        normal_cell.set_at_edges('stride', 1)
+        normal_cell.set_at_edges('kernel_size', 3)
+        normal_cell.set_at_edges('padding', [None, None, None, 1, 2])   # for different values specify full list
+        normal_cell.set_at_edges('dilation', 2)
+        normal_cell.set_at_edges('op', [
+            FactorizedReduce, 
+            ops.Zero, 
+            ops.MaxPool1x1, 
+            ops.SepConv, 
+            ops.DilConv,
+        ])
 
+        # Reduction cell
         reduction_cell = deepcopy(normal_cell)
         reduction_cell.name = "reduction_cell"
+
+        reduction_cell.update_edges(
+            update_func=lambda edge: edge.data.set('stride', 2) if edge.head in [1, 2] else None
+        )
 
         #
         # Makrograph definition
@@ -73,7 +80,7 @@ class SimpleCellSearchSpace(Graph):
         self.add_node(1)    # input node
         self.add_node(2)    # preprocessing
         self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
-        self.add_node(4, subgraph=reduction_cell.set_scope("r_stage_1").set_input([2, 3]))
+        self.add_node(4, subgraph=reduction_cell.set_scope("n_stage_2").set_input([2, 3]))
         self.add_node(5, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 4]))
         self.add_node(6)    # output
 
@@ -89,25 +96,21 @@ class SimpleCellSearchSpace(Graph):
         # pre-processing
         self.edges[1, 2].set('op', ops.Stem(16))
 
+        def set_channels(edge, C):
+            C_in = C if edge.data.stride == 1 else C//2
+            edge.data.set('C_in', C_in)
+            edge.data.set('C_out', C)
+
         # normal cells
         channels = [16, 32]
         stages = ["n_stage_1", "n_stage_2"]
 
         for scope, c in zip(stages, channels):
             self.update_edges(
-                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
+                update_func=lambda edge: set_channels(edge, c),
                 scope=scope,
                 private_edge_data=True
             )
-
-        # reduction cells
-        nodes = [4]
-        for n, c in zip(nodes, channels[1:]):
-            reduction_cell = self.nodes[n]['subgraph']
-            for u, v, data in reduction_cell.edges.data():
-                stride = 2 if u in (1, 2) else 1
-                if not data.is_final():
-                    _set_cell_ops(data, c, stride)
         
         # post-processing
         self.edges[5, 6].set('op', ops.Sequential(
@@ -115,6 +118,8 @@ class SimpleCellSearchSpace(Graph):
             nn.Flatten(),
             nn.Linear(channels[-1], 10))
         )
+
+        self.compile()
 
         #
         # Combining operations

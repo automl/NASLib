@@ -6,7 +6,7 @@ import random
 
 from networkx.algorithms.dag import lexicographical_topological_sort
 
-from naslib.utils.utils import iter_flatten
+from naslib.utils.utils import iter_flatten, AttrDict
 from naslib.utils.logging import log_formats, log_first_n
 from naslib.search_spaces.core.primitives import Identity, AbstractPrimitive
 
@@ -371,10 +371,6 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Convert the graph into a neural network which can then
         be optimized by pytorch.
         """
-        # TODO: handle reparsing of code (del modules does not work easily)
-        # One way would be to store the graph in a file, reload and parse it.
-        # We always train from scratch anyways currently.
-
         for node_idx in lexicographical_topological_sort(self):
             if 'subgraph' in self.nodes[node_idx]:
                 self.nodes[node_idx]['subgraph'].parse()
@@ -513,6 +509,51 @@ class Graph(nx.DiGraph, torch.nn.Module):
         return result
 
 
+    def set_at_edges(self, key, value, shared=False):
+        """
+        Sets the attribute for all edges in this and any child graph
+        """
+        for graph in self._get_child_graphs(single_instances=shared) + [self]:
+            logger.debug('Updating edges of graph {}'.format(graph.name))
+            for _, _, edge_data in graph.edges.data():
+                if not edge_data.is_final():
+                    edge_data.set(key, value, shared)
+
+
+    def compile(self):
+        """
+        Instanciates the ops at the edges using the arguments specified at the edges
+        """
+        import inspect
+        for graph in self._get_child_graphs(single_instances=False) + [self]:
+            logger.debug('Compiling graph {}'.format(graph.name))
+            for u, v, edge_data in graph.edges.data():
+                if not edge_data.is_final():
+                    attr = edge_data.to_dict()
+                    op = attr.pop('op')
+                    
+                    if isinstance(op, list):
+                        compiled_ops = []
+                        for i, o in enumerate(op):
+                            if inspect.isclass(o):
+                                # get the relevant parameter if there are more.
+                                a = {k:v[i] if isinstance(v, list) else v for k, v in attr.items()}
+                                compiled_ops.append(o(**a))
+                            else:
+                                logger.debug("op {} already compiled. Skipping".format(o))
+                        edge_data.set('op', compiled_ops)
+                    elif isinstance(op, AbstractPrimitive):
+                        if inspect.isclass(op):
+                            edge_data.set('op', op(**attr))
+                        else:
+                            logger.debug("op {} already compiled. Skipping".format(op))
+                    elif isinstance(op, Graph):
+                        pass  # This is already covered by _get_child_graphs
+                    else:   
+                        raise ValueError("Unkown format of op: {}".format(op))
+
+
+
     def _verify_update_function(update_func: callable, private_edge_data: bool):
         """
         Verify that the update function actually modifies only
@@ -583,7 +624,8 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 logger.debug('Updating edges of graph {}'.format(graph.name))
                 for u, v, edge_data in graph.edges.data():
                     if not edge_data.is_final():
-                        update_func(current_edge_data=edge_data)
+                        edge = AttrDict(head=u, tail=v, data=edge_data)
+                        update_func(edge=edge)
         self._delete_flagged_edges()
 
 
@@ -964,3 +1006,17 @@ class EdgeData():
             bool: True if the edge was finalized, False else
         """
         return self._private['_final']
+    
+
+    def to_dict(self, subset='all'):
+        if subset == 'shared':
+            return {k: v for k, v in self._shared.items() if not k.startswith('_')}
+        elif subset == 'private':
+            return {k: v for k, v in self._private.items() if not k.startswith('_')}
+        elif subset == 'all':
+            d = self.to_dict('private')
+            d.update(self.to_dict('shared'))
+            return d
+        else:
+            raise ValueError("Unknown subset {}".format(subset))
+        
