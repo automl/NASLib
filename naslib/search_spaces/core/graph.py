@@ -662,7 +662,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
             if scope == 'all' or (graph.scope is not None and graph.scope in scope):
                 logger.debug('Updating nodes of graph {}'.format(graph.name))
                 for node_idx in lexicographical_topological_sort(graph):
-                    node = (node_idx, self.nodes[node_idx])
+                    node = (node_idx, graph.nodes[node_idx])
                     in_edges = list(graph.in_edges(node_idx, data=True))                        # (v, u, data)
                     in_edges = [(v, data) for v, u, data in in_edges if not data.is_final()]    # u is same for all
                     out_edges = list(graph.out_edges(node_idx, data=True))                      # (v, u, data)
