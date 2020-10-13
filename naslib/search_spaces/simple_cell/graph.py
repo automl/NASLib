@@ -29,6 +29,10 @@ edge_attributes = {
 class SimpleCellSearchSpace(Graph):
     """
     A simplified version of the DARTS cell search space for playing around.
+
+    Differences:
+    Two stages, smaller cells, no preprocessing for cells, no stem multiplier, 
+    input edges not cut to 2, same evaluation as search architecture.
     """
 
     OPTIMIZER_SCOPE = [
@@ -36,20 +40,27 @@ class SimpleCellSearchSpace(Graph):
         "stage_2",
     ]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, classes: int = 10, intermediate_nodes: int = 2, cells_per_stage: int = 1, channels: list = [16, 32]):
+        """
+        Initializes the simple cell search space.
 
-        cell_intermediate_nodes=2
-        cells_per_stage=1
-        channels=[16, 32]
+        Args:
+            classes (int): Number of classes. Default: 10.
+            intermediate_nodes (int): Number of intermediate nodes for normal and
+                reduction cells. Default: 2.
+            cells_per_stage (int): Number of normal cells at each stage. Default: 1.
+            channels (list): Channels for each stage. Must have len 2. Default: [16, 32]
+        """
+        assert len(channels) == len(self.OPTIMIZER_SCOPE), \
+            "Expecting a channel for each scope. Expected {}, got {}.".format(len(self.OPTIMIZER_SCOPE), len(channels))
+        super().__init__()
         
 
         # Cell definition
-        normal_cell = Graph()
-        normal_cell.name = "normal_cell"    # Use the same name for all cells with shared attributes
+        normal_cell = Graph(name="normal_cell")     # Use the same name for all cells with shared attributes
 
         # Nodes
-        out_node_idx = cell_intermediate_nodes+3
+        out_node_idx = intermediate_nodes+3
         normal_cell.add_nodes_from(range(1, out_node_idx+1))
         
         # Edges
@@ -111,19 +122,13 @@ class SimpleCellSearchSpace(Graph):
             edge.data.set('C_in', C_in)
             edge.data.set('C_out', C)
 
-        # normal cells
         for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
-            self.update_edges(
-                update_func=lambda edge: set_channels(edge, c),
-                scope=scope,
-                private_edge_data=True
-            )
-        
-        # post-processing
+            self.update_edges(lambda edge: set_channels(edge, c), scope, private_edge_data=True)
+
         self.edges[j-1, j].set('op', ops.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(channels[-1], 10))
+            nn.Linear(channels[-1], classes))
         )
 
         self.compile()
@@ -131,7 +136,7 @@ class SimpleCellSearchSpace(Graph):
         # Combining operations are currently not considered by compile()
         def set_comb_op(node, in_edges, out_edges, C):
             if node[0] == out_node_idx:
-                node[1]['comb_op'] = ops.Concat1x1(num_in_edges=2, C_out=C)
+                node[1]['comb_op'] = ops.Concat1x1(num_in_edges=intermediate_nodes, C_out=C)
 
         for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
             self.update_nodes(
