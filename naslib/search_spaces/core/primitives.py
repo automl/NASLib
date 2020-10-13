@@ -17,7 +17,7 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
         super().__init__()
 
         self.init_params = {k: v for k, v in kwargs.items() if k != 'self' and not k.startswith('_')}
-    
+
     @abstractmethod
     def forward(self, x, edge_data):
         """
@@ -78,7 +78,7 @@ class Zero(AbstractPrimitive):
         else:
             x = x[:, :, ::self.stride, ::self.stride].mul(0.)
             return torch.cat([x, x], dim=1)   # double the channels TODO: ugly as hell
-    
+
     def get_embedded_ops(self):
         return None
 
@@ -105,10 +105,10 @@ class SepConv(AbstractPrimitive):
 
     def forward(self, x, edge_data=None):
         return self.op(x)
-    
+
     def get_embedded_ops(self):
         return None
-    
+
     @property
     def get_op_name(self):
         op_name = super().get_op_name
@@ -139,7 +139,7 @@ class DilConv(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return None
-    
+
     @property
     def get_op_name(self):
         op_name = super().get_op_name
@@ -161,7 +161,7 @@ class Stem(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         return self.seq(x)
-    
+
     def get_embedded_ops(self):
         return None
 
@@ -176,10 +176,10 @@ class Sequential(AbstractPrimitive):
         super().__init__(locals())
         self.primitives = args
         self.op = nn.Sequential(*args)
-    
+
     def forward(self, x, edge_data):
         return self.op(x)
-    
+
     def get_embedded_ops(self):
         return list(self.primitives)
 
@@ -199,7 +199,7 @@ class MaxPool1x1(AbstractPrimitive):
             assert C_in is not None and C_out is not None
             self.conv = nn.Conv2d(C_in, C_out, 1, stride=1, padding=0, bias=False)
             self.bn = nn.BatchNorm2d(C_out, affine=affine)
-    
+
     def forward(self, x, edge_data):
         x = self.maxpool(x)
         if self.stride > 1:
@@ -226,7 +226,7 @@ class AvgPool1x1(AbstractPrimitive):
             assert C_in is not None and C_out is not None
             self.conv = nn.Conv2d(C_in, C_out, 1, stride=1, padding=0, bias=False)
             self.bn = nn.BatchNorm2d(C_out, affine=affine)
-    
+
     def forward(self, x, edge_data):
         x = self.avgpool(x)
         if self.stride > 1:
@@ -274,7 +274,7 @@ class Concat1x1(nn.Module):
         super().__init__()
         self.conv = nn.Conv2d(num_in_edges * C_out, C_out, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn = nn.BatchNorm2d(C_out, affine=affine)
-    
+
     def forward(self, x):
         """
         Expecting a list of input tensors. Stacking them channel-wise

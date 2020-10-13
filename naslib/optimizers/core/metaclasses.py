@@ -5,11 +5,10 @@ class MetaOptimizer(object, metaclass=ABCMeta):
     """
     Abstract class for all NAS optimizers.
     """
-    
-    
+
     using_step_function = True
 
-    
+
     def step(self, data_train, data_val):
         """
         Run one optimizer step with the batch of training and test data.
@@ -27,7 +26,7 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         if self.using_step_function:
             raise NotImplementedError()
 
-    
+
     def train_statistics(self):
         """
         If the step function is not used we need the statistics from
@@ -35,7 +34,7 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         """
         if not self.using_step_function:
             raise NotImplementedError()
-    
+
 
     def test_statistics(self):
         """
@@ -66,7 +65,7 @@ class MetaOptimizer(object, metaclass=ABCMeta):
 
     def new_epoch(self, epoch):
         """
-        Function called at the beginning of each new search epoch. To be 
+        Function called at the beginning of each new search epoch. To be
         used as hook for the optimizer.
 
         Args:
@@ -111,7 +110,7 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         Returns:
             (torch.optim.Optimizer): The optimizer used for the op weights update.
         """
-    
+
     def get_model_size(self):
         """
         Returns the size of the model parameters in mb, e.g. by using
