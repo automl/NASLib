@@ -111,16 +111,16 @@ class Graph(torch.nn.Module):
         # and no parameters for init are considered.
         # Therefore __getattr__ and __iter__ forward the DiGraph methods for straight-forward 
         # usage as if we would inherit.
-        self.nxgraph = nx.DiGraph()
+        self._nxgraph = nx.DiGraph()
         
         # Replace the default dicts at the edges with `EdgeData` objects
         # `EdgeData` can be easily customized and allow shared parameters
         # across different Graph instances.
-        self.nxgraph.edge_attr_dict_factory = lambda: EdgeData()
+        self._nxgraph.edge_attr_dict_factory = lambda: EdgeData()
 
         # Replace the default dicts at the nodes to include `input` from the beginning.
         # `input` is required for storing the results of incoming edges.
-        self.nxgraph.node_attr_dict_factory = lambda: dict({'input': {}, 'comb_op': sum})
+        self._nxgraph.node_attr_dict_factory = lambda: dict({'input': {}, 'comb_op': sum})
 
         # remember to add all members also in `unparse()`
         self.name = name
@@ -157,14 +157,17 @@ class Graph(torch.nn.Module):
         """
         Pass-through networkx functions (instead of inheriting).
         """
-        return self.nxgraph.__getattribute__(name)
+        if name == "_nxgraph":
+            logger.warn("Do not call _nxgraph directly. If you are seeing this message "
+            "it can also mean you forgot to initilize with super().__init__().")
+        return nx.DiGraph.__getattribute__(self._nxgraph, name)
 
 
     def __iter__(self):
         """
         Pass-through networkx `__iter__` function as it is ignored by `__getattr__`
         """
-        return self.nxgraph.__iter__()
+        return self._nxgraph.__iter__()
 
 
     def modules_str(self):
@@ -214,7 +217,7 @@ class Graph(torch.nn.Module):
             **attr: The attributes which can be added in a dict like form.
         """
         assert node_index >= 1, "Expecting the node index to be greater or equal 1"
-        self.nxgraph.add_node(node_index, **attr)
+        self._nxgraph.add_node(node_index, **attr)
 
 
     def copy(self):
@@ -497,6 +500,9 @@ class Graph(torch.nn.Module):
                                 graphs.append(child_op._get_child_graphs())
                     else:
                         logger.debug("Got embedded op, but is neither a graph nor a list: {}".format(embedded_ops))
+            elif inspect.isclass(edge_data.op):
+                assert not issubclass(edge_data.op, Graph), "Found non-initialized graph. Abort."
+                pass    # we look at an uncomiled op
             else:
                 raise ValueError("Unknown format of op: {}".format(edge_data.op))
         
@@ -567,10 +573,10 @@ class Graph(torch.nn.Module):
                                 logger.debug("op {} already compiled. Skipping".format(o))
                         edge_data.set('op', compiled_ops)
                     elif isinstance(op, AbstractPrimitive):
-                        if inspect.isclass(op):
-                            edge_data.set('op', op(**attr))
-                        else:
-                            logger.debug("op {} already compiled. Skipping".format(op))
+                        logger.debug("op {} already compiled. Skipping".format(op))
+                    elif issubclass(op, AbstractPrimitive) and inspect.isclass(op):
+                        # Init the class
+                        edge_data.set('op', op(**attr))
                     elif isinstance(op, Graph):
                         pass  # This is already covered by _get_child_graphs
                     else:   
