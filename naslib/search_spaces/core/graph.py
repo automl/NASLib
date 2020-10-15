@@ -574,7 +574,7 @@ class Graph(torch.nn.Module):
                         edge_data.set('op', compiled_ops)
                     elif isinstance(op, AbstractPrimitive):
                         logger.debug("op {} already compiled. Skipping".format(op))
-                    elif issubclass(op, AbstractPrimitive) and inspect.isclass(op):
+                    elif inspect.isclass(op) and issubclass(op, AbstractPrimitive):
                         # Init the class
                         edge_data.set('op', op(**attr))
                     elif isinstance(op, Graph):

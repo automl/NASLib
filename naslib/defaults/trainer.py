@@ -152,7 +152,8 @@ class Trainer(object):
             self, 
             retrain=True, 
             search_model="", 
-            resume_from=""
+            resume_from="",
+            best_arch=None,
         ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -165,14 +166,17 @@ class Trainer(object):
             search_model (str): Path to checkpoint file that was created during
                 search. If not provided, then try to load 'model_final.pth' from search
             resume_from (str): Resume retraining from the given checkpoint file.
+            best_arch: Parsed model you want to directly evaluate and ignore the final model
+                from the optimizer.
         """
         logger.info("Start evaluation")
+        if not best_arch:
 
-        if not search_model:
-            search_model = os.path.join(self.config.save, "search", "model_final.pth")
-        self._setup_checkpointers(search_model)      # required to load the architecture
+            if not search_model:
+                search_model = os.path.join(self.config.save, "search", "model_final.pth")
+            self._setup_checkpointers(search_model)      # required to load the architecture
 
-        best_arch = self.optimizer.get_final_architecture()
+            best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if best_arch.QUERYABLE:
@@ -211,7 +215,7 @@ class Trainer(object):
 
                 # Enable drop path
                 best_arch.update_edges(
-                    update_func=lambda current_edge_data: current_edge_data.set('op', DropPathWrapper(current_edge_data.op)),
+                    update_func=lambda edge: edge.data.set('op', DropPathWrapper(edge.data.op)),
                     scope=best_arch.OPTIMIZER_SCOPE,
                     private_edge_data=True
                 )
@@ -222,7 +226,7 @@ class Trainer(object):
                     # update drop path probability
                     drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
                     best_arch.update_edges(
-                        update_func=lambda current_edge_data: current_edge_data.set('drop_path_prob', drop_path_prob),
+                        update_func=lambda edge: edge.data.set('drop_path_prob', drop_path_prob),
                         scope=best_arch.OPTIMIZER_SCOPE,
                         private_edge_data=True
                     )
@@ -268,7 +272,7 @@ class Trainer(object):
 
             # Disable drop path
             best_arch.update_edges(
-                update_func=lambda current_edge_data: current_edge_data.set('op', current_edge_data.op.get_embedded_ops()),
+                update_func=lambda edge: edge.data.set('op', edge.data.op.get_embedded_ops()),
                 scope=best_arch.OPTIMIZER_SCOPE,
                 private_edge_data=True
             )
