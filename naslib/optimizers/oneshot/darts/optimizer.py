@@ -20,29 +20,23 @@ class DARTSOptimizer(MetaOptimizer):
     """
 
     @staticmethod
-    def add_alphas(current_edge_data):
+    def add_alphas(edge):
         """
         Function to add the architectural weights to the edges.
         """
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
-        len_primitives = len(current_edge_data.op)
+        len_primitives = len(edge.data.op)
         alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
-        current_edge_data.set('alpha', alpha, shared=True)
-        return current_edge_data
+        edge.data.set('alpha', alpha, shared=True)
 
 
     @staticmethod
-    def update_ops(current_edge_data):
+    def update_ops(edge):
         """
         Function to replace the primitive ops at the edges
         with the DARTS specific MixedOp.
         """
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
-        primitives = current_edge_data.op
-        current_edge_data.set('op', MixedOp(primitives))
-        return current_edge_data
+        primitives = edge.data.op
+        edge.data.set('op', MixedOp(primitives))
 
 
     def __init__(self, config,
@@ -50,8 +44,6 @@ class DARTSOptimizer(MetaOptimizer):
             arch_optimizer=torch.optim.Adam, 
             loss_criteria=torch.nn.CrossEntropyLoss()
         ):
-        # epochs, momentum, weight_decay, arch_learning_rate,
-        # arch_weight_decay, grad_clip, *args, **kwargs
         """
         Initialize a new instance.
 
@@ -187,12 +179,11 @@ class DARTSOptimizer(MetaOptimizer):
         graph = self.graph.clone().unparse()
         graph.prepare_discretization()
 
-        def discretize_ops(current_edge_data):
-            if current_edge_data.has('alpha'):
-                primitives = current_edge_data.op.get_embedded_ops()
-                alphas = current_edge_data.alpha.detach().cpu()
-                current_edge_data.set('op', primitives[np.argmax(alphas)])
-            return current_edge_data
+        def discretize_ops(edge):
+            if edge.data.has('alpha'):
+                primitives = edge.data.op.get_embedded_ops()
+                alphas = edge.data.alpha.detach().cpu()
+                edge.data.set('op', primitives[np.argmax(alphas)])
 
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()

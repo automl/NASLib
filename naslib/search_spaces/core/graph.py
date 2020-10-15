@@ -3,17 +3,19 @@ import copy
 import logging
 import torch
 import random
+import inspect
 
 from networkx.algorithms.dag import lexicographical_topological_sort
 
-from naslib.utils.utils import iter_flatten
+from naslib.utils.utils import iter_flatten, AttrDict
 from naslib.utils.logging import log_formats, log_first_n
-from naslib.search_spaces.core.primitives import Identity, AbstractPrimitive
+from .primitives import Identity, AbstractPrimitive
+from .query_metrics import Metric
 
 logger = logging.getLogger(__name__)
 
 
-class Graph(nx.DiGraph, torch.nn.Module):
+class Graph(torch.nn.Module):
     """
     Base class for defining a search space. Add nodes and edges
     as for a directed acyclic graph in `networkx`. Nodes can contain
@@ -81,7 +83,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
     QUERYABLE = False
 
     
-    def __init__(self):
+    def __init__(self, name: str = None, scope: str = None):
         """
         Initialise a graph. The edges are automatically filled with an EdgeData object
         which defines the default operation as Identity. The default combination operation
@@ -102,20 +104,27 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
         """
         super().__init__()
-        torch.nn.Module.__init__(self)  # nx.DiGraph does not suport multiple inheritance
+
+        # Make DiGraph a member and not inherit. This is because when inheriting from
+        # `Graph` note that `__init__()` cannot take any parameters. This is due to 
+        # the way how networkx is implemented, i.e. graphs are reconstructed internally
+        # and no parameters for init are considered.
+        # Therefore __getattr__ and __iter__ forward the DiGraph methods for straight-forward 
+        # usage as if we would inherit.
+        self.nxgraph = nx.DiGraph()
         
         # Replace the default dicts at the edges with `EdgeData` objects
         # `EdgeData` can be easily customized and allow shared parameters
         # across different Graph instances.
-        self.edge_attr_dict_factory = lambda: EdgeData()
+        self.nxgraph.edge_attr_dict_factory = lambda: EdgeData()
 
         # Replace the default dicts at the nodes to include `input` from the beginning.
         # `input` is required for storing the results of incoming edges.
-        self.node_attr_dict_factory = lambda: dict({'input': {}, 'comb_op': sum})
+        self.nxgraph.node_attr_dict_factory = lambda: dict({'input': {}, 'comb_op': sum})
 
         # remember to add all members also in `unparse()`
-        self.name = None
-        self.scope = None
+        self.name = name
+        self.scope = scope
         self.input_node_idxs = None
         self.is_parsed = False
         self._id = random.random()    # pytorch expects unique modules in `add_module()`
@@ -142,6 +151,20 @@ class Graph(nx.DiGraph, torch.nn.Module):
 
     def __repr__(self):
         return "Graph {}-{:.07f}, scope {}, {} nodes".format(self.name, self._id, self.scope, self.number_of_nodes())
+
+
+    def __getattr__(self, name):
+        """
+        Pass-through networkx functions (instead of inheriting).
+        """
+        return self.nxgraph.__getattribute__(name)
+
+
+    def __iter__(self):
+        """
+        Pass-through networkx `__iter__` function as it is ignored by `__getattr__`
+        """
+        return self.nxgraph.__iter__()
 
 
     def modules_str(self):
@@ -191,7 +214,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
             **attr: The attributes which can be added in a dict like form.
         """
         assert node_index >= 1, "Expecting the node index to be greater or equal 1"
-        super().add_node(node_index, **attr)
+        self.nxgraph.add_node(node_index, **attr)
 
 
     def copy(self):
@@ -219,6 +242,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                          for u, nbrs in self._adj.items()
                          for v, datadict in nbrs.items())
         G.scope = self.scope
+        G.name = self.name
         return G
 
 
@@ -296,7 +320,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 # makro input node). Handle it and log a Info. This should happen only rarly
                 logger.debug("We are using the same x for two inputs in graph {}".format(self.name))
             input_node_iterator = iter(self.input_node_idxs)
-            for node_idx in nx.algorithms.dag.lexicographical_topological_sort(self):
+            for node_idx in lexicographical_topological_sort(self):
                 if self.in_degree(node_idx) == 0:
                     self.nodes[node_idx]['input'] = {0: x[next(input_node_iterator)]}
 
@@ -371,10 +395,6 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Convert the graph into a neural network which can then
         be optimized by pytorch.
         """
-        # TODO: handle reparsing of code (del modules does not work easily)
-        # One way would be to store the graph in a file, reload and parse it.
-        # We always train from scratch anyways currently.
-
         for node_idx in lexicographical_topological_sort(self):
             if 'subgraph' in self.nodes[node_idx]:
                 self.nodes[node_idx]['subgraph'].parse()
@@ -504,13 +524,57 @@ class Graph(nx.DiGraph, torch.nn.Module):
         Returns:
             list: All data in a list.
         """
+        assert scope is not None
         result = []
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
-            if scope == 'all' or (graph.scope is not None and graph.scope in scope):
+            if scope == 'all' or graph.scope == scope or (isinstance(scope, list) and graph.scope in scope):
                 for u, v, edge_data in graph.edges.data():
                     if edge_data.has(key):
                         result.append(edge_data[key])
         return result
+
+
+    def set_at_edges(self, key, value, shared=False):
+        """
+        Sets the attribute for all edges in this and any child graph
+        """
+        for graph in self._get_child_graphs(single_instances=shared) + [self]:
+            logger.debug('Updating edges of graph {}'.format(graph.name))
+            for _, _, edge_data in graph.edges.data():
+                if not edge_data.is_final():
+                    edge_data.set(key, value, shared)
+
+
+    def compile(self):
+        """
+        Instanciates the ops at the edges using the arguments specified at the edges
+        """
+        for graph in self._get_child_graphs(single_instances=False) + [self]:
+            logger.debug('Compiling graph {}'.format(graph.name))
+            for u, v, edge_data in graph.edges.data():
+                if not edge_data.is_final():
+                    attr = edge_data.to_dict()
+                    op = attr.pop('op')
+                    
+                    if isinstance(op, list):
+                        compiled_ops = []
+                        for i, o in enumerate(op):
+                            if inspect.isclass(o):
+                                # get the relevant parameter if there are more.
+                                a = {k:v[i] if isinstance(v, list) else v for k, v in attr.items()}
+                                compiled_ops.append(o(**a))
+                            else:
+                                logger.debug("op {} already compiled. Skipping".format(o))
+                        edge_data.set('op', compiled_ops)
+                    elif isinstance(op, AbstractPrimitive):
+                        if inspect.isclass(op):
+                            edge_data.set('op', op(**attr))
+                        else:
+                            logger.debug("op {} already compiled. Skipping".format(op))
+                    elif isinstance(op, Graph):
+                        pass  # This is already covered by _get_child_graphs
+                    else:   
+                        raise ValueError("Unkown format of op: {}".format(op))
 
 
     def _verify_update_function(update_func: callable, private_edge_data: bool):
@@ -577,13 +641,14 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 with MixedOp or SampleOp)
         """
         Graph._verify_update_function(update_func, private_edge_data)
-
+        assert scope is not None
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [self]:
-            if scope == 'all' or (graph.scope is not None and graph.scope in scope):
+            if scope == 'all' or scope == graph.scope or (isinstance(scope, list) and graph.scope in scope):
                 logger.debug('Updating edges of graph {}'.format(graph.name))
                 for u, v, edge_data in graph.edges.data():
                     if not edge_data.is_final():
-                        update_func(current_edge_data=edge_data)
+                        edge = AttrDict(head=u, tail=v, data=edge_data)
+                        update_func(edge=edge)
         self._delete_flagged_edges()
 
 
@@ -616,11 +681,12 @@ class Graph(nx.DiGraph, torch.nn.Module):
                 `op` during the initialization of the optimizer (e.g. replacing it
                 with MixedOp or SampleOp)
         """
+        assert scope is not None
         for graph in self._get_child_graphs(single_instances) + [self]:
-            if scope == 'all' or (graph.scope is not None and graph.scope in scope):
+            if scope == 'all' or graph.scope == scope or (isinstance(scope, list) and graph.scope in scope):
                 logger.debug('Updating nodes of graph {}'.format(graph.name))
                 for node_idx in lexicographical_topological_sort(graph):
-                    node = (node_idx, self.nodes[node_idx])
+                    node = (node_idx, graph.nodes[node_idx])
                     in_edges = list(graph.in_edges(node_idx, data=True))                        # (v, u, data)
                     in_edges = [(v, data) for v, u, data in in_edges if not data.is_final()]    # u is same for all
                     out_edges = list(graph.out_edges(node_idx, data=True))                      # (v, u, data)
@@ -696,7 +762,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         pass
 
 
-    def query(self, metric: str, dataset: str, path: str) -> float:
+    def query(self, metric: Metric, dataset: str, path: str) -> float:
         """
         Can be used to query the performance of the architecture using
         a tabular benchmark.
@@ -741,7 +807,7 @@ class Graph(nx.DiGraph, torch.nn.Module):
         """
         self.add_edges_from(self.get_dense_edges())
 
-
+    
 class EdgeData():
     """
     Class that holds data for each edge.
@@ -776,7 +842,7 @@ class EdgeData():
             self.set(k, v, shared=False)
 
 
-    def has(self, key):
+    def has(self, key: str):
         """
         Checks whether `key` exists.
 
@@ -794,12 +860,12 @@ class EdgeData():
             return False
 
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str):
         assert not key.startswith("_"), "Access to private keys not allowed!"
         return self.__getattr__(key)
 
     
-    def get(self, key, default):
+    def get(self, key: str, default):
         try:
             return self.__getattr__(key)
         except AttributeError:
@@ -818,7 +884,7 @@ class EdgeData():
             raise AttributeError("Cannot find field '{}' in the given EdgeData!".format(key))
     
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val):
         if name.startswith("_"):
             super().__setattr__(name, val)
         else:
@@ -852,7 +918,7 @@ class EdgeData():
             raise ValueError("Unsupported type {}".format(data))
 
 
-    def remove(self, key):
+    def remove(self, key: str):
         """
         Removes an item from the EdgeData
 
@@ -897,7 +963,7 @@ class EdgeData():
         return new_self
 
 
-    def set(self, key, value, shared=False):
+    def set(self, key: str, value, shared=False):
         """
         Used to assign a new item to the EdgeData object.
 
@@ -964,3 +1030,17 @@ class EdgeData():
             bool: True if the edge was finalized, False else
         """
         return self._private['_final']
+    
+
+    def to_dict(self, subset='all'):
+        if subset == 'shared':
+            return {k: v for k, v in self._shared.items() if not k.startswith('_')}
+        elif subset == 'private':
+            return {k: v for k, v in self._private.items() if not k.startswith('_')}
+        elif subset == 'all':
+            d = self.to_dict('private')
+            d.update(self.to_dict('shared'))
+            return d
+        else:
+            raise ValueError("Unknown subset {}".format(subset))
+        

@@ -74,5 +74,5 @@ if __name__=='__main__':
         packages=find_packages(),
         install_requires=requires,
         keywords=['NAS', 'automl'],
-        #test_suite='tests'
+        test_suite='tests'
     )

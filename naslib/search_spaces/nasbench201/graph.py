@@ -105,7 +105,7 @@ class NasBench201SeachSpace(Graph):
         # set the ops at the cells (channel dependent)
         for c, scope in zip(channels, self.OPTIMIZER_SCOPE):
             self.update_edges(
-                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, C=c),
+                update_func=lambda edge: _set_cell_ops(edge, C=c),
                 scope=scope,
                 private_edge_data=True
             )
@@ -170,8 +170,8 @@ class NasBench201SeachSpace(Graph):
         return query_results[dataset][metric_to_nb201[metric]]
 
 
-def _set_cell_ops(current_edge_data, C):
-    current_edge_data.set('op', [
+def _set_cell_ops(edge, C):
+    edge.data.set('op', [
         ops.Identity(),
         ops.Zero(stride=1),
         ops.ReLUConvBN(C, C, kernel_size=3),
