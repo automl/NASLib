@@ -47,7 +47,6 @@ class Trainer(object):
 
         # preparations
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self._prepare_dataloaders(config)
 
         # measuring stuff
         self.train_top1 = utils.AverageMeter()
@@ -86,13 +85,14 @@ class Trainer(object):
         self.optimizer.before_training()
         checkpoint_freq = self.config.search.checkpoint_freq
         if self.optimizer.using_step_function:
-            self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer.op_optimizer, float(self.epochs), eta_min=self.config.search.learning_rate_min)
+            self.scheduler = self.build_search_scheduler(self.optimizer.op_optimizer, self.config)
         
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq, scheduler=self.scheduler)
         else:
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq)
         
+        self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
+
         for e in range(start_epoch, self.epochs):
             self.optimizer.new_epoch(e)
             
@@ -170,90 +170,95 @@ class Trainer(object):
             dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
                                     world_size=args.world_size, rank=args.rank)
 
+            best_arch.reset_weights(inplace=True)
 
+            self.train_queue, self.valid_queue, self.test_queue = self.build_eval_dataloaders(self.config)
 
-        self._prepare_dataloaders(self.config, mode='val')
-        best_arch.reset_weights(inplace=True)
+            optim = self.build_eval_optimizer(best_arch.parameters(), self.config)
+            scheduler = self.build_eval_scheduler(optim, self.config)
 
-        epochs = self.config.evaluation.epochs
-        optim = self.optimizer.get_op_optimizer()
-        optim = optim(
-            best_arch.parameters(),
-            self.config.evaluation.learning_rate,
-            momentum=self.config.evaluation.momentum,
-            weight_decay=self.config.evaluation.weight_decay
-        )
-        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optim, float(epochs), eta_min=self.config.evaluation.learning_rate_min)
+            start_epoch = self._setup_checkpointers(resume_from, 
+                search=False, 
+                period=self.config.evaluation.checkpoint_freq,
+                model=best_arch,    # checkpointables start here
+                optim=optim,
+                scheduler=scheduler
+            )
 
-        start_epoch = self._setup_checkpointers(resume_from,
-                                                search=False,
-                                                period=self.config.evaluation.checkpoint_freq,
-                                                model=best_arch,  # checkpointables start here
-                                                optim=optim,
-                                                scheduler=scheduler
-                                                )
+            grad_clip = self.config.evaluation.grad_clip
+            loss = torch.nn.CrossEntropyLoss()
 
-        grad_clip = self.config.evaluation.grad_clip
-        loss = torch.nn.CrossEntropyLoss()
+            best_arch.train()
+            self.train_top1.reset()
+            self.train_top5.reset()
+            self.val_top1.reset()
+            self.val_top5.reset()
 
-        best_arch.train()
-        self.train_top1.reset()
-        self.train_top5.reset()
-
-        # Enable drop path
-        best_arch.update_edges(
-            update_func=lambda current_edge_data: current_edge_data.set('op', DropPathWrapper(current_edge_data.op)),
-            scope=best_arch.OPTIMIZER_SCOPE,
-            private_edge_data=True
-        )
-
-        # train from scratch
-        for e in range(start_epoch, epochs):
-            # update drop path probability
-            drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
+            # Enable drop path
             best_arch.update_edges(
-                update_func=lambda current_edge_data: current_edge_data.set('drop_path_prob', drop_path_prob),
+                update_func=lambda edge: edge.data.set('op', DropPathWrapper(edge.data.op)),
                 scope=best_arch.OPTIMIZER_SCOPE,
                 private_edge_data=True
             )
-            for i, (input_train, target_train) in enumerate(self.train_queue):
-                input_train = input_train.to(self.device)
-                target_train = target_train.to(self.device, non_blocking=True)
 
-                optim.zero_grad()
-                logits_train = best_arch(input_train)
-                train_loss = loss(logits_train, target_train)
-                if hasattr(best_arch, 'auxilary_logits'):  # darts specific stuff
-                    log_first_n(logging.INFO, "Auxiliary is used", n=10)
-                    auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
-                    train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
-                train_loss.backward()
-                if grad_clip:
-                    torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
-                optim.step()
+            # train from scratch
+            epochs = self.config.evaluation.epochs
+            for e in range(start_epoch, epochs):
+                # update drop path probability
+                drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
+                best_arch.update_edges(
+                    update_func=lambda edge: edge.data.set('drop_path_prob', drop_path_prob),
+                    scope=best_arch.OPTIMIZER_SCOPE,
+                    private_edge_data=True
+                )
 
-                self._store_accuracies(logits_train, target_train, 'train')
-                log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
-                    e, i, train_loss, scheduler.get_last_lr()), n=5)
+                # Train queue
+                for i, (input_train, target_train) in enumerate(self.train_queue):
+                    input_train = input_train.to(self.device)
+                    target_train = target_train.to(self.device, non_blocking=True)
 
-                if torch.cuda.is_available():
-                    log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+                    optim.zero_grad()
+                    logits_train = best_arch(input_train)
+                    train_loss = loss(logits_train, target_train)
+                    if hasattr(best_arch, 'auxilary_logits'):   # darts specific stuff
+                        log_first_n(logging.INFO, "Auxiliary is used", n=10)
+                        auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
+                        train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
+                    train_loss.backward()
+                    if grad_clip:
+                        torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
+                    optim.step()
 
-            scheduler.step()
-            self.periodic_checkpointer.step(e)
+                    self._store_accuracies(logits_train, target_train, 'train')
+                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
+                        e, i, train_loss, scheduler.get_last_lr()), n=5)
+                    
+                    if torch.cuda.is_available():
+                        log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+                    
+                # Validation queue
+                if self.valid_queue:
+                    for i, (input_valid, target_valid) in enumerate(self.valid_queue):
+                        
+                        input_valid = input_valid.to(self.device).float()
+                        target_valid = target_valid.to(self.device, non_blocking=True).float()
 
-            logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
-                                                                                          self.train_top1.avg,
-                                                                                          self.train_top5.avg))
-            self.train_top1.reset()
-            self.train_top5.reset()
+                        # just log the validation accuracy
+                        logits_valid = best_arch(input_valid)
+                        self._store_accuracies(logits_valid, target_valid, 'val')
+
+                scheduler.step()
+                self.periodic_checkpointer.step(e)
+                self._log_and_reset_accuracies(e)
+
+
 
     def evaluate(
             self,
             retrain=True,
             search_model="",
             resume_from="",
+            best_arch=None,
             multi_gpu=False
     ):
         """
@@ -268,14 +273,17 @@ class Trainer(object):
                 search. If not provided, then try to load 'model_final.pth' from search
             resume_from (str): Resume retraining from the given checkpoint file.
             multi_gpu (bool): Distribute training on multiple gpus.
+            best_arch: Parsed model you want to directly evaluate and ignore the final model
+                from the optimizer.
         """
         logger.info("Start evaluation")
+        if not best_arch:
 
-        if not search_model:
-            search_model = os.path.join(self.config.save, "search", "model_final.pth")
-        self._setup_checkpointers(search_model)      # required to load the architecture
+            if not search_model:
+                search_model = os.path.join(self.config.save, "search", "model_final.pth")
+            self._setup_checkpointers(search_model)      # required to load the architecture
 
-        best_arch = self.optimizer.get_final_architecture()
+            best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if best_arch.QUERYABLE:
@@ -307,7 +315,7 @@ class Trainer(object):
 
             # Disable drop path
             best_arch.update_edges(
-                update_func=lambda current_edge_data: current_edge_data.set('op', current_edge_data.op.get_embedded_ops()),
+                update_func=lambda edge: edge.data.set('op', edge.data.op.get_embedded_ops()),
                 scope=best_arch.OPTIMIZER_SCOPE,
                 private_edge_data=True
             )
@@ -335,6 +343,46 @@ class Trainer(object):
                 log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
 
             logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
+
+
+    @staticmethod
+    def build_search_dataloaders(config):
+        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode='train')
+        return train_queue, valid_queue, _  # test_queue is not used in search currently
+
+
+    @staticmethod
+    def build_eval_dataloaders(config):
+        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode='val')
+        return train_queue, valid_queue, test_queue
+
+
+    @staticmethod
+    def build_eval_optimizer(parameters, config):
+        return torch.optim.SGD(
+            parameters,
+            lr=config.evaluation.learning_rate,
+            momentum=config.evaluation.momentum,
+            weight_decay=config.evaluation.weight_decay,
+        )
+
+
+    @staticmethod
+    def build_search_scheduler(optimizer, config):
+        return torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, 
+            T_max=config.search.epochs, 
+            eta_min=config.search.learning_rate_min
+        )
+
+
+    @staticmethod
+    def build_eval_scheduler(optimizer, config):
+        return torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, 
+            T_max=config.evaluation.epochs, 
+            eta_min=config.evaluation.learning_rate_min
+        )
 
 
     def _log_and_reset_accuracies(self, epoch):

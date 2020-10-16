@@ -1,3 +1,4 @@
+import logging
 import torch.nn as nn
 import networkx as nx
 
@@ -5,6 +6,9 @@ from naslib.search_spaces.core import primitives as ops
 
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import ConvBNReLU, DepthwiseConv
+
+
+logger = logging.getLogger(__name__)
 
 
 class HierarchicalSearchSpace(Graph):
@@ -35,9 +39,7 @@ class HierarchicalSearchSpace(Graph):
             motif = Graph()
             motif.name = "motif{}".format(j)
             motif.add_nodes_from([i for i in range(1, 5)])
-            motif.add_edges_from([(i, i+1) for i in range(1, 4)])
-            motif.add_edges_from([(i, i+2) for i in range(1, 3)])
-            motif.add_edge(1, 4)
+            motif.add_edges_densly()
 
             level2_motifs.append(motif)
         
@@ -45,10 +47,7 @@ class HierarchicalSearchSpace(Graph):
         cell = Graph()
         cell.name = "cell"
         cell.add_nodes_from([i for i in range(1, 6)])
-        cell.add_edges_from([(i, i+1) for i in range(1, 5)])
-        cell.add_edges_from([(i, i+2) for i in range(1, 4)])
-        cell.add_edges_from([(i, i+3) for i in range(1, 3)])
-        cell.add_edge(1, 5)
+        cell.add_edges_densly()
 
         cells = []
         channels = [16, 32, 64]
@@ -56,7 +55,7 @@ class HierarchicalSearchSpace(Graph):
             cell_i = cell.copy().set_scope(scope)
 
             cell_i.update_edges(
-                update_func=lambda current_edge_data: _set_motifs(current_edge_data, motifs=level2_motifs, c=c),
+                update_func=lambda edge: _set_motifs(edge, motifs=level2_motifs, c=c),
                 private_edge_data=True
             )
             
@@ -65,7 +64,7 @@ class HierarchicalSearchSpace(Graph):
 
             # set the level 1 motifs (i.e. primitives)
             cell_i.update_edges(
-                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
+                update_func=lambda edge: _set_cell_ops(edge, c, stride=1),
                 scope=[scope],
                 private_edge_data=True
             )
@@ -117,7 +116,7 @@ class HierarchicalSearchSpace(Graph):
         )
 
         self.update_edges(
-            update_func=lambda current_edge_data: _increase_channels(current_edge_data, factor=2),
+            update_func=lambda edge: _increase_channels(edge, factor=2),
             scope=self.OPTIMIZER_SCOPE,
             private_edge_data=True
         )
@@ -135,7 +134,10 @@ class HierarchicalSearchSpace(Graph):
 
     #     self._expand()
         
-    #     channels = [64, 128, 256]
+    #     # channels = [64, 128, 256]
+    #     # factor = 4
+    #     channels = [32, 64, 128]
+    #     factor = 2
 
     #     for cell, c in zip(cells, channels):
     #         for _, _, data in cell.edges.data():
@@ -164,7 +166,7 @@ class HierarchicalSearchSpace(Graph):
     #     )
 
     #     self.update_edges(
-    #         update_func=_increase_channels,
+    #         update_func=lambda edge: _increase_channels(edge, factor),
     #         scope=self.OPTIMIZER_SCOPE,
     #         private_edge_data=True
     #     )
@@ -187,23 +189,20 @@ class HierarchicalSearchSpace(Graph):
 
 
 def _set_comb_op_channels(node, in_edges, out_edges, c):
-    print('update node', node)
     index, n = node
     if index == 4:
         n['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
 
         
-def _set_cell_ops(current_edge_data, C, stride):
+def _set_cell_ops(edge, C, stride):
     """
     Set the primitives for the bottom level motif where we
     have actual ops at the edges.
     """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    elif isinstance(current_edge_data.op, list) and all(isinstance(op, Graph) for op in current_edge_data.op):
-        return current_edge_data    # We are at the edge of an motif
-    elif isinstance(current_edge_data.op, ops.Identity):
-        current_edge_data.set('op', [
+    if isinstance(edge.data.op, list) and all(isinstance(op, Graph) for op in edge.data.op):
+        return   # We are at the edge of an motif
+    elif isinstance(edge.data.op, ops.Identity):
+        edge.data.set('op', [
             ops.Identity() if stride==1 else ops.FactorizedReduce(C, C),
             ops.Zero(stride=stride),
             ops.MaxPool1x1(3, stride),
@@ -212,37 +211,180 @@ def _set_cell_ops(current_edge_data, C, stride):
             DepthwiseConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
             ConvBNReLU(C, C, kernel_size=1),
         ])
-        return current_edge_data
     else:
         raise ValueError()
 
 
-def _set_motifs(current_edge_data, motifs, c):
+def _set_motifs(edge, motifs, c):
     """
     Set l-1 level motifs as ops at the edges for l level motifs
     """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
+    op = []
+    for motif in motifs:
+        m = motif.copy()    # We need copies because they will be set at every edge
+        m.nodes[4]['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
+        op.append(m)
+    
+    edge.data.set('op', op)
+
+
+def _increase_channels(edge, factor=4):
+    if isinstance(edge.data.op, Graph):
+        return
     else:
-        op = []
-        for motif in motifs:
-            m = motif.copy()    # We need copies because they will be set at every edge
-            m.nodes[4]['comb_op'] = ops.Concat1x1(num_in_edges=3, C_out=c)
-            op.append(m)
-        
-        current_edge_data.set('op', op)
-
-    return current_edge_data
-
-
-def _increase_channels(current_edge_data, factor=4):
-    if isinstance(current_edge_data.op, Graph):
-        return current_edge_data
-    else:
-        init_params = current_edge_data.op.init_params
+        init_params = edge.data.op.init_params
         if 'C_in' in init_params and init_params['C_in'] is not None:
             init_params['C_in'] *= factor 
         if 'C_out' in init_params and init_params['C_out'] is not None:
             init_params['C_out'] *= factor
-        current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
-    return current_edge_data
+        edge.data.set('op', edge.data.op.__class__(**init_params))
+
+
+class LiuFinalArch(HierarchicalSearchSpace):
+    """
+    This is the implementation of the model found by
+
+        Liu et al.: Hierarchical Representations for Efficient Architecture Search
+
+    as they report it in the appendix. It is not a search space
+    but rather the final architecture found by their search.
+    """
+
+    def __init__(self):
+        logger.info("This is not a search space but the final model found by "
+        "Liu et al. For the search space use `HierarchicalSearchSpace()`")
+        # skip the init of HierarchicalSearchSpace
+        Graph.__init__(self)
+
+        separable_3x3 = {
+            'op': ops.SepConv,
+            'kernel_size': 3,
+            'stride': 1,
+            'padding': 1
+        }
+
+        depthwise_3x3 = {
+            'op': DepthwiseConv,
+            'kernel_size': 3,
+            'stride': 1,
+            'padding': 1
+        }
+
+        conv_1x1 = {
+            'op': ConvBNReLU,
+            'kernel_size': 1,
+        }
+
+        motif = Graph()
+        motif.add_nodes_from([1, 2, 3, 4])
+        motif.add_edges_densly()
+
+        # Motif 1
+        motif1 = motif.clone()
+        motif1.name = "motif1"
+        motif1.edges[1, 2].set('op', ops.MaxPool1x1(kernel_size=3, stride=1))
+        motif1.edges[1, 3].update(conv_1x1)
+        motif1.edges[1, 4].update(separable_3x3)
+        motif1.edges[2, 3].update(depthwise_3x3) 
+        motif1.edges[2, 4].update(conv_1x1)
+        motif1.edges[3, 4].set('op', ops.MaxPool1x1(kernel_size=3, stride=1))
+
+        # Motif 2
+        motif2 = motif.clone()
+        motif2.name = "motif2"
+        motif2.edges[1, 2].set('op', ops.MaxPool1x1(kernel_size=3, stride=1))
+        motif2.edges[1, 3].update(depthwise_3x3)
+        motif2.edges[1, 4].update(conv_1x1)
+        motif2.edges[2, 3].update(depthwise_3x3) 
+        motif2.edges[2, 4].update(separable_3x3)
+        motif2.edges[3, 4].update(separable_3x3)
+
+        # Motif 3
+        motif3 = motif.clone()
+        motif3.name = "motif3"
+        motif3.edges[1, 2].update(separable_3x3)
+        motif3.edges[1, 3].update(depthwise_3x3)
+        motif3.edges[1, 4].update(separable_3x3)
+        motif3.edges[2, 3].update(separable_3x3) 
+        motif3.edges[2, 4].set('op', ops.Identity())  # assuming no label is identiy
+        motif3.edges[3, 4].set('op', ops.AvgPool1x1(kernel_size=3, stride=1))
+
+        # Motif 4
+        motif4 = motif.clone()
+        motif4.name = "motif4"
+        motif4.edges[1, 2].set('op', ops.AvgPool1x1(kernel_size=3, stride=1))
+        motif4.edges[1, 3].update(separable_3x3)
+        motif4.edges[1, 4].set('op', ops.Identity())
+        motif4.edges[2, 3].update(separable_3x3) 
+        motif4.edges[2, 4].set('op', ops.MaxPool1x1(kernel_size=3, stride=1))
+        motif4.edges[3, 4].set('op', ops.AvgPool1x1(kernel_size=3, stride=1))
+
+        # Motif 5
+        motif5 = motif.clone()
+        motif5.name = "motif5"
+        motif5.edges[1, 2].set('op', ops.Identity())  # Unclear in paper
+        motif5.edges[1, 3].update(separable_3x3)
+        motif5.edges[1, 4].update(separable_3x3)
+        motif5.edges[2, 3].set('op', ops.Identity())
+        motif5.edges[2, 4].set('op', ops.Identity())
+        motif5.edges[3, 4].update(separable_3x3)
+
+        # Motif 6
+        motif6 = motif.clone()
+        motif6.name = "motif6"
+        motif6.edges[1, 2].update(depthwise_3x3) 
+        motif6.edges[1, 3].set('op', ops.MaxPool1x1(kernel_size=3, stride=1))
+        motif6.edges[1, 4].update(separable_3x3)
+        motif6.edges[2, 3].set('op', ops.MaxPool1x1(kernel_size=3, stride=1))
+        motif6.edges[2, 4].set('op', ops.Identity())
+        motif6.edges[3, 4].set('op', ops.AvgPool1x1(kernel_size=3, stride=1))
+
+        # Cell
+        cell = Graph("cell")
+        cell.add_nodes_from([1, 2, 3, 4, 5])
+        cell.add_edges_densly()
+        cell.edges[1, 2].set('op', motif5.copy())
+        cell.edges[1, 3].set('op', motif3.copy())
+        cell.edges[1, 4].set('op', motif3.copy())
+        cell.edges[1, 5].set('op', motif4.copy())
+        cell.edges[2, 3].set('op', motif3.copy())
+        cell.edges[2, 4].set('op', motif1.copy())
+        cell.edges[2, 5].set('op', motif5.copy())
+        cell.edges[3, 4].set('op', motif3.copy())
+        cell.edges[3, 5].set('op', motif5.copy())
+        cell.edges[4, 5].set('op', motif5.copy())
+
+        cells = []
+        channels = [16, 32, 64]
+        for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
+            cell_i = cell.copy().set_scope(scope)
+
+            # Specify channels
+            cell_i.update_edges(
+                update_func=lambda edge: edge.data.update({'C_in': c, 'C_out': c}),
+                private_edge_data=True
+            )
+            cells.append(cell_i)
+
+        self.name = "makrograph"
+
+        self.add_nodes_from([i for i in range(1, 9)])
+        self.add_edges_from([(i, i+1) for i in range(1, 8)])
+
+        self.edges[1, 2].set('op', ops.Stem(16))
+        self.edges[2, 3].set('op', cells[0])
+        self.edges[3, 4].set('op', ops.SepConv(16, 32, kernel_size=3, stride=2, padding=1))
+        self.edges[4, 5].set('op', cells[1])
+        self.edges[5, 6].set('op', ops.SepConv(32, 64, kernel_size=3, stride=2, padding=1))
+        self.edges[6, 7].set('op', cells[2])
+        self.edges[7, 8].set('op', ops.Sequential(
+            ops.SepConv(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(channels[-1], 10))
+        )
+
+        self.compile()
+
+
+        

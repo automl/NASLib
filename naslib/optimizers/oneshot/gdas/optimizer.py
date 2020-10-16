@@ -45,16 +45,13 @@ class GDASOptimizer(DARTSOptimizer):
     
     
     @staticmethod
-    def update_ops(current_edge_data):
+    def update_ops(edge):
         """
         Function to replace the primitive ops at the edges
         with the GDAS specific GDASMixedOp.
         """
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
-        primitives = current_edge_data.op
-        current_edge_data.set('op', GDASMixedOp(primitives))
-        return current_edge_data
+        primitives = edge.data.op
+        edge.data.set('op', GDASMixedOp(primitives))
 
 
     def adapt_search_space(self, search_space, scope=None):
@@ -79,21 +76,17 @@ class GDASOptimizer(DARTSOptimizer):
         
 
     @staticmethod
-    def sample_alphas(current_edge_data, tau):
-        if current_edge_data.has('final') and current_edge_data.final:
-            return current_edge_data
+    def sample_alphas(edge, tau):
         sampled_arch_weight = torch.nn.functional.gumbel_softmax(
-            current_edge_data.alpha, tau=float(tau), hard=True
+            edge.data.alpha, tau=float(tau), hard=True
         )
-        current_edge_data.set('sampled_arch_weight', sampled_arch_weight, shared=True)
-        return current_edge_data
+        edge.data.set('sampled_arch_weight', sampled_arch_weight, shared=True)
     
 
     @staticmethod
-    def remove_sampled_alphas(current_edge_data):
-        if current_edge_data.has('sampled_arch_weight'):
-            current_edge_data.remove('sampled_arch_weight')
-        return current_edge_data
+    def remove_sampled_alphas(edge):
+        if edge.data.has('sampled_arch_weight'):
+            edge.data.remove('sampled_arch_weight')
 
     
     def step(self, data_train, data_val):
@@ -102,7 +95,7 @@ class GDASOptimizer(DARTSOptimizer):
 
         # sample alphas and set to edges
         self.graph.update_edges(
-            update_func=lambda current_edge_data: self.sample_alphas(current_edge_data, self.tau_curr),
+            update_func=lambda edge: self.sample_alphas(edge, self.tau_curr),
             scope=self.scope,
             private_edge_data=False
         )
@@ -120,7 +113,7 @@ class GDASOptimizer(DARTSOptimizer):
         # TODO: this is not how it is intended because the samples are now different. Another 
         # option would be to set val_loss.backward(retain_graph=True) but that requires more memory.
         self.graph.update_edges(
-            update_func=lambda current_edge_data: self.sample_alphas(current_edge_data, self.tau_curr),
+            update_func=lambda edge: self.sample_alphas(edge, self.tau_curr),
             scope=self.scope,
             private_edge_data=False
         )
