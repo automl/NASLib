@@ -16,7 +16,7 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
     def __init__(self, kwargs):
         super().__init__()
 
-        self.init_params = {k: v for k, v in kwargs.items() if k != 'self' and not k.startswith('_')}
+        self.init_params = {k: v for k, v in kwargs.items() if k != 'self' and not k.startswith('_') and k != 'kwargs'}
 
     @abstractmethod
     def forward(self, x, edge_data):
@@ -76,8 +76,7 @@ class Zero(AbstractPrimitive):
         if self.stride == 1:
             return x.mul(0.)
         else:
-            x = x[:, :, ::self.stride, ::self.stride].mul(0.)
-            return torch.cat([x, x], dim=1)   # double the channels TODO: ugly as hell
+            return x[:, :, ::self.stride, ::self.stride].mul(0.)
 
     def get_embedded_ops(self):
         return None
@@ -184,6 +183,19 @@ class Sequential(AbstractPrimitive):
         return list(self.primitives)
 
 
+class MaxPool(AbstractPrimitive):
+    def __init__(self, kernel_size, stride, **kwargs):
+        super().__init__(locals())
+        self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
+
+    def forward(self, x, edge_data):
+        x = self.maxpool(x)
+        return x
+
+    def get_embedded_ops(self):
+        return None
+
+
 class MaxPool1x1(AbstractPrimitive):
     """
     Implementation of MaxPool with an optional 1x1 convolution
@@ -205,6 +217,23 @@ class MaxPool1x1(AbstractPrimitive):
         if self.stride > 1:
             x = self.conv(x)
             x = self.bn(x)
+        return x
+
+    def get_embedded_ops(self):
+        return None
+
+
+class AvgPool(AbstractPrimitive):
+    """
+    Implementation of Avergae Pooling.
+    """
+
+    def __init__(self, kernel_size, stride, **kwargs):
+        super().__init__(locals())
+        self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
+       
+    def forward(self, x, edge_data):
+        x = self.avgpool(x)
         return x
 
     def get_embedded_ops(self):

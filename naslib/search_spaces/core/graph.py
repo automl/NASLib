@@ -379,7 +379,7 @@ class Graph(torch.nn.Module):
                     if isinstance(edge_data.op, Graph):
                         edge_output = edge_data.op.forward(x)
                     elif isinstance(edge_data.op, AbstractPrimitive):
-                        logger.debug("Processing op {}".format(edge_data.op))
+                        logger.debug("Processing op {} at edge {}-{}".format(edge_data.op, node_idx, neigbor_idx))
                         edge_output = edge_data.op.forward(x, edge_data=edge_data)
                     else:
                         raise ValueError("Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(
