@@ -4,6 +4,11 @@ import json
 import logging
 import os
 import torch
+import torch.nn.parallel
+import torch.backends.cudnn as cudnn
+import torch.distributed as dist
+import torch.multiprocessing as mp
+import torch.utils.data.distributed
 
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
@@ -148,12 +153,109 @@ class Trainer(object):
         logger.info("Training finished")
 
 
+    def main_worker(self, gpu, ngpus_per_node, args):
+        logger.info("Starting retraining from scratch")
+
+        args.gpu = gpu
+        if gpu is not None:
+            logger.info("Use GPU: {} for training".format(args.gpu))
+
+        if args.distributed:
+            if args.dist_url == "env://" and args.rank == -1:
+                args.rank = int(os.environ["RANK"])
+            if args.multiprocessing_distributed:
+                # For multiprocessing distributed training, rank needs to be the
+                # global rank among all processes
+                args.rank = args.rank * ngpus_per_node + gpu
+            dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
+                                    world_size=args.world_size, rank=args.rank)
+
+
+
+        self._prepare_dataloaders(self.config, mode='val')
+        best_arch.reset_weights(inplace=True)
+
+        epochs = self.config.evaluation.epochs
+        optim = self.optimizer.get_op_optimizer()
+        optim = optim(
+            best_arch.parameters(),
+            self.config.evaluation.learning_rate,
+            momentum=self.config.evaluation.momentum,
+            weight_decay=self.config.evaluation.weight_decay
+        )
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optim, float(epochs), eta_min=self.config.evaluation.learning_rate_min)
+
+        start_epoch = self._setup_checkpointers(resume_from,
+                                                search=False,
+                                                period=self.config.evaluation.checkpoint_freq,
+                                                model=best_arch,  # checkpointables start here
+                                                optim=optim,
+                                                scheduler=scheduler
+                                                )
+
+        grad_clip = self.config.evaluation.grad_clip
+        loss = torch.nn.CrossEntropyLoss()
+
+        best_arch.train()
+        self.train_top1.reset()
+        self.train_top5.reset()
+
+        # Enable drop path
+        best_arch.update_edges(
+            update_func=lambda current_edge_data: current_edge_data.set('op', DropPathWrapper(current_edge_data.op)),
+            scope=best_arch.OPTIMIZER_SCOPE,
+            private_edge_data=True
+        )
+
+        # train from scratch
+        for e in range(start_epoch, epochs):
+            # update drop path probability
+            drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
+            best_arch.update_edges(
+                update_func=lambda current_edge_data: current_edge_data.set('drop_path_prob', drop_path_prob),
+                scope=best_arch.OPTIMIZER_SCOPE,
+                private_edge_data=True
+            )
+            for i, (input_train, target_train) in enumerate(self.train_queue):
+                input_train = input_train.to(self.device)
+                target_train = target_train.to(self.device, non_blocking=True)
+
+                optim.zero_grad()
+                logits_train = best_arch(input_train)
+                train_loss = loss(logits_train, target_train)
+                if hasattr(best_arch, 'auxilary_logits'):  # darts specific stuff
+                    log_first_n(logging.INFO, "Auxiliary is used", n=10)
+                    auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
+                    train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
+                train_loss.backward()
+                if grad_clip:
+                    torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
+                optim.step()
+
+                self._store_accuracies(logits_train, target_train, 'train')
+                log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
+                    e, i, train_loss, scheduler.get_last_lr()), n=5)
+
+                if torch.cuda.is_available():
+                    log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+
+            scheduler.step()
+            self.periodic_checkpointer.step(e)
+
+            logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
+                                                                                          self.train_top1.avg,
+                                                                                          self.train_top5.avg))
+            self.train_top1.reset()
+            self.train_top5.reset()
+
     def evaluate(
-            self, 
-            retrain=True, 
-            search_model="", 
-            resume_from=""
-        ):
+            self,
+            retrain=True,
+            search_model="",
+            resume_from="",
+            multi_gpu=False
+    ):
         """
         Evaluate the final architecture as given from the optimizer.
 
@@ -165,6 +267,7 @@ class Trainer(object):
             search_model (str): Path to checkpoint file that was created during
                 search. If not provided, then try to load 'model_final.pth' from search
             resume_from (str): Resume retraining from the given checkpoint file.
+            multi_gpu (bool): Distribute training on multiple gpus.
         """
         logger.info("Start evaluation")
 
@@ -182,84 +285,25 @@ class Trainer(object):
             )
             logger.info("Queried results ({}): {}".format(metric, result))
         else:
-            best_arch.to(self.device)
+            #best_arch.to(self.device)
             if retrain:
-                logger.info("Starting retraining from scratch")
-                self._prepare_dataloaders(self.config, mode='val')
-                best_arch.reset_weights(inplace=True)
+                if self.config.gpu is not None:
+                    logger.warning('You have chosen a specific GPU. This will completely disable data parallelism.')
 
-                epochs = self.config.evaluation.epochs
-                optim = self.optimizer.get_op_optimizer()
-                optim = optim(
-                    best_arch.parameters(), 
-                    self.config.evaluation.learning_rate,
-                    momentum=self.config.evaluation.momentum,
-                    weight_decay=self.config.evaluation.weight_decay
-                )
-                scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-                    optim, float(epochs), eta_min=self.config.evaluation.learning_rate_min)
+                if self.config.dist_url == "env://" and self.config.world_size == -1:
+                    self.config.world_size = int(os.environ["WORLD_SIZE"])
 
-                start_epoch = self._setup_checkpointers(resume_from, 
-                    search=False, 
-                    period=self.config.evaluation.checkpoint_freq,
-                    model=best_arch,    # checkpointables start here
-                    optim=optim,
-                    scheduler=scheduler
-                )
+                self.config.distributed = self.config.world_size > 1 or self.config.multiprocessing_distributed
+                ngpus_per_node = torch.cuda.device_count()
 
-                grad_clip = self.config.evaluation.grad_clip
-                loss = torch.nn.CrossEntropyLoss()
-
-                best_arch.train()
-                self.train_top1.reset()
-                self.train_top5.reset()
-
-                # Enable drop path
-                best_arch.update_edges(
-                    update_func=lambda current_edge_data: current_edge_data.set('op', DropPathWrapper(current_edge_data.op)),
-                    scope=best_arch.OPTIMIZER_SCOPE,
-                    private_edge_data=True
-                )
-
-                # train from scratch
-                for e in range(start_epoch, epochs):
-                    # update drop path probability
-                    drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
-                    best_arch.update_edges(
-                        update_func=lambda current_edge_data: current_edge_data.set('drop_path_prob', drop_path_prob),
-                        scope=best_arch.OPTIMIZER_SCOPE,
-                        private_edge_data=True
-                    )
-                    for i, (input_train, target_train) in enumerate(self.train_queue):
-                        input_train = input_train.to(self.device)
-                        target_train = target_train.to(self.device, non_blocking=True)
-
-                        optim.zero_grad()
-                        logits_train = best_arch(input_train)
-                        train_loss = loss(logits_train, target_train)
-                        if hasattr(best_arch, 'auxilary_logits'):   # darts specific stuff
-                            log_first_n(logging.INFO, "Auxiliary is used", n=10)
-                            auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
-                            train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
-                        train_loss.backward()
-                        if grad_clip:
-                            torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
-                        optim.step()
-
-                        self._store_accuracies(logits_train, target_train, 'train')
-                        log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
-                            e, i, train_loss, scheduler.get_last_lr()), n=5)
-                        
-                        if torch.cuda.is_available():
-                            log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
-                        
-                    scheduler.step()
-                    self.periodic_checkpointer.step(e)
-
-                    logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5}, {:.5}".format(e,
-                        self.train_top1.avg, self.train_top5.avg))
-                    self.train_top1.reset()
-                    self.train_top5.reset()
+                if self.config.multiprocessing_distributed:
+                    # Since we have ngpus_per_node processes per node, the total world_size needs to be adjusted
+                    self.config.world_size = ngpus_per_node * self.config.world_size
+                    # Use torch.multiprocessing.spawn to launch distributed processes: the main_worker process function
+                    mp.spawn(self.main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, self.config, best_arch))
+                else:
+                    # Simply call main_worker function
+                    self.main_worker(self.config.gpu, ngpus_per_node, self.config, best_arch)
 
             # Disable drop path
             best_arch.update_edges(
