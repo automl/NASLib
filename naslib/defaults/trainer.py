@@ -10,6 +10,7 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import torch.utils.data.distributed
 
+from copy import deepcopy
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -85,22 +86,30 @@ class Trainer(object):
         self.optimizer.before_training()
         checkpoint_freq = self.config.search.checkpoint_freq
         if self.optimizer.using_step_function:
-            self.scheduler = self.build_search_scheduler(self.optimizer.op_optimizer, self.config)
-        
-            start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq, scheduler=self.scheduler)
+            self.scheduler = self.build_search_scheduler(
+                self.optimizer.op_optimizer,
+                self.config
+            )
+
+            start_epoch = self._setup_checkpointers(resume_from,
+                                                    period=checkpoint_freq,
+                                                    scheduler=self.scheduler)
         else:
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq)
-        
+
         self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
 
         for e in range(start_epoch, self.epochs):
             self.optimizer.new_epoch(e)
-            
+
             start_time = time.time()
             if self.optimizer.using_step_function:
                 for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
-                    data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
-                    data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
+                    data_train = (data_train[0].to(self.device),
+                                  data_train[1].to(self.device,
+                                                   non_blocking=True))
+                    data_val = (data_val[0].to(self.device),
+                                data_val[1].to(self.device, non_blocking=True))
 
                     stats = self.optimizer.step(data_train, data_val)
                     logits_train, logits_val, train_loss, val_loss = stats
@@ -108,15 +117,24 @@ class Trainer(object):
                     self._store_accuracies(logits_train, data_train[1], 'train')
                     self._store_accuracies(logits_val, data_val[1], 'val')
 
-                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}".format(
-                        e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
-                    
+                    log_every_n_seconds(
+                        logging.INFO,
+                        "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}".format(
+                            e, step, train_loss, val_loss,
+                            self.scheduler.get_last_lr()
+                        ), n=5
+                    )
+
                     if torch.cuda.is_available():
-                        log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+                        log_first_n(
+                            logging.INFO, "cuda consumption\n {}".format(
+                                torch.cuda.memory_summary()
+                            ), n=3
+                        )
 
                     self.train_loss.update(float(train_loss.detach().cpu()))
                     self.val_loss.update(float(val_loss.detach().cpu()))
-                    
+
                 self.scheduler.step()
 
                 end_time = time.time()
@@ -136,16 +154,19 @@ class Trainer(object):
                 self.errors_dict.runtime.append(end_time - start_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
-            
+
             self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
                 # record anytime performance
                 self.errors_dict.arch_eval.append(anytime_results)
-                log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results: {}".format(
-                        e, anytime_results), n=5)
-                    
+                log_every_n_seconds(
+                    logging.INFO, "Epoch {}, Anytime results: {}".format(
+                        e, anytime_results
+                    ), n=5
+                )
+
             self._log_to_json()
             self._log_and_reset_accuracies(e)
 
@@ -153,7 +174,7 @@ class Trainer(object):
         logger.info("Training finished")
 
 
-    def main_worker(self, gpu, ngpus_per_node, args):
+    def main_worker(self, gpu, ngpus_per_node, args, best_arch):
         logger.info("Starting retraining from scratch")
 
         args.gpu = gpu
@@ -170,86 +191,126 @@ class Trainer(object):
             dist.init_process_group(backend=args.dist_backend, init_method=args.dist_url,
                                     world_size=args.world_size, rank=args.rank)
 
-            best_arch.reset_weights(inplace=True)
+        if not torch.cuda.is_available():
+            logger.warning("Using CPU, this will be slow!")
+        elif args.distributed:
+            # For multiprocessing distributed, DistributedDataParallel constructor
+            # should always set the single device scope, otherwise,
+            # DistributedDataParallel will use all available devices
+            if args.gpu is not None:
+                torch.cuda.set_device(args.gpu)
+                best_arch.cuda(args.gpu)
+                # When using a single GPU per process and per
+                # DistributedDataParallel, we need to divide the batch size
+                # ourselves based on the total number of GPUs we have
+                args.batch_size = int(args.batch_size / ngpus_per_node)
+                args.workers = int((args.workers + ngpus_per_node - 1) /
+                                   ngpus_per_node)
+                best_arch = \
+                    torch.nn.parallel.DistributedDataParallel(best_arch,
+                                                              device_ids=[args.gpu])
+            else:
+                best_arch.cuda()
+                # DistributedDataParallel will divide and allocate batch_size to all
+                # available GPUs if device_ids are not set
+                best_arch = torch.nn.parallel.DistributedDataParallel(best_arch)
+        elif args.gpu is not None:
+            torch.cuda.set_device(args.gpu)
+            best_arch = best_arch.cuda(args.gpu)
+        else:
+            # DataParallel will divide and allocate batch_size to all available GPUs
+            best_arch = torch.nn.DataParallel(best_arch).cuda()
 
-            self.train_queue, self.valid_queue, self.test_queue = self.build_eval_dataloaders(self.config)
+        cudnn.benchmark = True
 
-            optim = self.build_eval_optimizer(best_arch.parameters(), self.config)
-            scheduler = self.build_eval_scheduler(optim, self.config)
+        self.train_queue, self.valid_queue, self.test_queue =\
+            self.build_eval_dataloaders(self.config)
 
-            start_epoch = self._setup_checkpointers(resume_from, 
-                search=False, 
-                period=self.config.evaluation.checkpoint_freq,
-                model=best_arch,    # checkpointables start here
-                optim=optim,
-                scheduler=scheduler
-            )
+        optim = self.build_eval_optimizer(best_arch.parameters(), self.config)
+        scheduler = self.build_eval_scheduler(optim, self.config)
 
-            grad_clip = self.config.evaluation.grad_clip
-            loss = torch.nn.CrossEntropyLoss()
+        start_epoch = self._setup_checkpointers(resume_from,
+            search=False,
+            period=self.config.evaluation.checkpoint_freq,
+            model=best_arch,    # checkpointables start here
+            optim=optim,
+            scheduler=scheduler
+        )
 
-            best_arch.train()
-            self.train_top1.reset()
-            self.train_top5.reset()
-            self.val_top1.reset()
-            self.val_top5.reset()
+        grad_clip = self.config.evaluation.grad_clip
+        loss = torch.nn.CrossEntropyLoss()
 
-            # Enable drop path
+        best_arch.train()
+        self.train_top1.reset()
+        self.train_top5.reset()
+        self.val_top1.reset()
+        self.val_top5.reset()
+
+        # Enable drop path
+        best_arch.update_edges(
+            update_func=lambda edge: edge.data.set('op', DropPathWrapper(edge.data.op)),
+            scope=best_arch.OPTIMIZER_SCOPE,
+            private_edge_data=True
+        )
+
+        # train from scratch
+        epochs = self.config.evaluation.epochs
+        for e in range(start_epoch, epochs):
+            # update drop path probability
+            drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
             best_arch.update_edges(
-                update_func=lambda edge: edge.data.set('op', DropPathWrapper(edge.data.op)),
+                update_func=lambda edge: edge.data.set('drop_path_prob', drop_path_prob),
                 scope=best_arch.OPTIMIZER_SCOPE,
                 private_edge_data=True
             )
 
-            # train from scratch
-            epochs = self.config.evaluation.epochs
-            for e in range(start_epoch, epochs):
-                # update drop path probability
-                drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
-                best_arch.update_edges(
-                    update_func=lambda edge: edge.data.set('drop_path_prob', drop_path_prob),
-                    scope=best_arch.OPTIMIZER_SCOPE,
-                    private_edge_data=True
+            # Train queue
+            for i, (input_train, target_train) in enumerate(self.train_queue):
+                input_train = input_train.to(self.device)
+                target_train = target_train.to(self.device, non_blocking=True)
+
+                optim.zero_grad()
+                logits_train = best_arch(input_train)
+                train_loss = loss(logits_train, target_train)
+                if hasattr(best_arch, 'auxilary_logits'):   # darts specific stuff
+                    log_first_n(logging.INFO, "Auxiliary is used", n=10)
+                    auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
+                    train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
+                train_loss.backward()
+                if grad_clip:
+                    torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
+                optim.step()
+
+                self._store_accuracies(logits_train, target_train, 'train')
+                log_every_n_seconds(
+                    logging.INFO,
+                    "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
+                        e, i, train_loss, scheduler.get_last_lr()
+                    ), n=5
                 )
 
-                # Train queue
-                for i, (input_train, target_train) in enumerate(self.train_queue):
-                    input_train = input_train.to(self.device)
-                    target_train = target_train.to(self.device, non_blocking=True)
+                if torch.cuda.is_available():
+                    log_first_n(
+                        logging.INFO,
+                        "cuda consumption\n {}".format(
+                            torch.cuda.memory_summary()
+                        ), n=3
+                    )
 
-                    optim.zero_grad()
-                    logits_train = best_arch(input_train)
-                    train_loss = loss(logits_train, target_train)
-                    if hasattr(best_arch, 'auxilary_logits'):   # darts specific stuff
-                        log_first_n(logging.INFO, "Auxiliary is used", n=10)
-                        auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
-                        train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
-                    train_loss.backward()
-                    if grad_clip:
-                        torch.nn.utils.clip_grad_norm_(best_arch.parameters(), grad_clip)
-                    optim.step()
+            # Validation queue
+            if self.valid_queue:
+                for i, (input_valid, target_valid) in enumerate(self.valid_queue):
 
-                    self._store_accuracies(logits_train, target_train, 'train')
-                    log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
-                        e, i, train_loss, scheduler.get_last_lr()), n=5)
-                    
-                    if torch.cuda.is_available():
-                        log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
-                    
-                # Validation queue
-                if self.valid_queue:
-                    for i, (input_valid, target_valid) in enumerate(self.valid_queue):
-                        
-                        input_valid = input_valid.to(self.device).float()
-                        target_valid = target_valid.to(self.device, non_blocking=True).float()
+                    input_valid = input_valid.to(self.device).float()
+                    target_valid = target_valid.to(self.device, non_blocking=True).float()
 
-                        # just log the validation accuracy
-                        logits_valid = best_arch(input_valid)
-                        self._store_accuracies(logits_valid, target_valid, 'val')
+                    # just log the validation accuracy
+                    logits_valid = best_arch(input_valid)
+                    self._store_accuracies(logits_valid, target_valid, 'val')
 
-                scheduler.step()
-                self.periodic_checkpointer.step(e)
-                self._log_and_reset_accuracies(e)
+            scheduler.step()
+            self.periodic_checkpointer.step(e)
+            self._log_and_reset_accuracies(e)
 
 
 
@@ -278,7 +339,6 @@ class Trainer(object):
         """
         logger.info("Start evaluation")
         if not best_arch:
-
             if not search_model:
                 search_model = os.path.join(self.config.save, "search", "model_final.pth")
             self._setup_checkpointers(search_model)      # required to load the architecture
@@ -295,8 +355,13 @@ class Trainer(object):
         else:
             #best_arch.to(self.device)
             if retrain:
+                best_arch.reset_weights(inplace=True)
+
                 if self.config.gpu is not None:
-                    logger.warning('You have chosen a specific GPU. This will completely disable data parallelism.')
+                    logger.warning(
+                        'You have chosen a specific GPU. This will completely \
+                        disable data parallelism.'
+                    )
 
                 if self.config.dist_url == "env://" and self.config.world_size == -1:
                     self.config.world_size = int(os.environ["WORLD_SIZE"])
@@ -305,13 +370,17 @@ class Trainer(object):
                 ngpus_per_node = torch.cuda.device_count()
 
                 if self.config.multiprocessing_distributed:
-                    # Since we have ngpus_per_node processes per node, the total world_size needs to be adjusted
+                    # Since we have ngpus_per_node processes per node, the
+                    # total world_size needs to be adjusted
                     self.config.world_size = ngpus_per_node * self.config.world_size
-                    # Use torch.multiprocessing.spawn to launch distributed processes: the main_worker process function
-                    mp.spawn(self.main_worker, nprocs=ngpus_per_node, args=(ngpus_per_node, self.config, best_arch))
+                    # Use torch.multiprocessing.spawn to launch distributed
+                    # processes: the main_worker process function
+                    mp.spawn(self.main_worker, nprocs=ngpus_per_node,
+                             args=(ngpus_per_node, self.config, best_arch))
                 else:
                     # Simply call main_worker function
-                    self.main_worker(self.config.gpu, ngpus_per_node, self.config, best_arch)
+                    self.main_worker(self.config.gpu, ngpus_per_node,
+                                     self.config, deepcopy(best_arch))
 
             # Disable drop path
             best_arch.update_edges(
@@ -340,20 +409,28 @@ class Trainer(object):
                     top1.update(prec1.data.item(), n)
                     top5.update(prec5.data.item(), n)
 
-                log_every_n_seconds(logging.INFO, "Inference batch {} of {}.".format(i, len(self.test_queue)), n=5)
+                log_every_n_seconds(
+                    logging.INFO,
+                    "Inference batch {} of {}.".format(
+                        i, len(self.test_queue)
+                    ), n=5
+                )
 
-            logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
+            logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, \
+                        top-5 = {:.5}".format(top1.avg, top5.avg))
 
 
     @staticmethod
     def build_search_dataloaders(config):
-        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode='train')
+        train_queue, valid_queue, test_queue, _, _ = \
+            utils.get_train_val_loaders(config, mode='train')
         return train_queue, valid_queue, _  # test_queue is not used in search currently
 
 
     @staticmethod
     def build_eval_dataloaders(config):
-        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode='val')
+        train_queue, valid_queue, test_queue, _, _ = \
+            utils.get_train_val_loaders(config, mode='val')
         return train_queue, valid_queue, test_queue
 
 
@@ -370,8 +447,8 @@ class Trainer(object):
     @staticmethod
     def build_search_scheduler(optimizer, config):
         return torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, 
-            T_max=config.search.epochs, 
+            optimizer,
+            T_max=config.search.epochs,
             eta_min=config.search.learning_rate_min
         )
 
@@ -379,18 +456,21 @@ class Trainer(object):
     @staticmethod
     def build_eval_scheduler(optimizer, config):
         return torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, 
-            T_max=config.evaluation.epochs, 
+            optimizer,
+            T_max=config.evaluation.epochs,
             eta_min=config.evaluation.learning_rate_min
         )
 
 
     def _log_and_reset_accuracies(self, epoch):
-        logger.info("Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
+        logger.info(
+            "Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, \
+            Validation accuracy: {:.5f}, {:.5f}".format(
                 epoch,
                 self.train_top1.avg, self.train_top5.avg,
                 self.val_top1.avg, self.val_top5.avg
-            ))
+            )
+        )
         self.train_top1.reset()
         self.train_top5.reset()
         self.train_loss.reset()
@@ -422,13 +502,15 @@ class Trainer(object):
         Args:
             config (AttrDict): config from config file.
         """
-        train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode)
+        train_queue, valid_queue, test_queue, _, _ = \
+            utils.get_train_val_loaders(config, mode)
         self.train_queue = train_queue
         self.valid_queue = valid_queue
         self.test_queue = test_queue
-    
 
-    def _setup_checkpointers(self, resume_from="", search=True, period=1, **add_checkpointables):
+
+    def _setup_checkpointers(self, resume_from="", search=True, period=1,
+                             **add_checkpointables):
         """
         Sets up a periodic chechkpointer which can be used to save checkpoints
         at every epoch. It will call optimizer's `get_checkpointables()` as objects
@@ -468,8 +550,8 @@ class Trainer(object):
         """log training statistics to json file"""
         if not os.path.exists(self.config.save):
             os.makedirs(self.config.save)
-        with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
+        with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w',
+                         encoding='utf-8') as file:
             json.dump(self.errors_dict, file, separators=(',', ':'))
 
 
-    
