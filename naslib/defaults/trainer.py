@@ -50,6 +50,7 @@ class Trainer(object):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # measuring stuff
+        self.QUERYABLE = False
         self.train_top1 = utils.AverageMeter()
         self.train_top5 = utils.AverageMeter()
         self.train_loss = utils.AverageMeter()
@@ -174,7 +175,26 @@ class Trainer(object):
         logger.info("Training finished")
 
 
-    def main_worker(self, gpu, ngpus_per_node, args, best_arch):
+    def main_worker(self, gpu, ngpus_per_node, args, search_model, best_arch):
+        logger.info("Start evaluation")
+        if not best_arch:
+            if not search_model:
+                search_model = os.path.join(self.config.save, "search", "model_final.pth")
+            self._setup_checkpointers(search_model)      # required to load the architecture
+
+            best_arch = self.optimizer.get_final_architecture()
+        logger.info("Final architecture:\n" + best_arch.modules_str())
+
+        if best_arch.QUERYABLE:
+            metric = Metric.TEST_ACCURACY
+            result = best_arch.query(
+                metric=metric, dataset=self.config.dataset
+            )
+            logger.info("Queried results ({}): {}".format(metric, result))
+            self.QUERYABLE = True
+            return
+
+        best_arch.reset_weights(inplace=True)
         logger.info("Starting retraining from scratch")
 
         args.gpu = gpu
@@ -229,7 +249,7 @@ class Trainer(object):
         optim = self.build_eval_optimizer(best_arch.parameters(), self.config)
         scheduler = self.build_eval_scheduler(optim, self.config)
 
-        start_epoch = self._setup_checkpointers(resume_from,
+        start_epoch = self._setup_checkpointers(args.resume_from,
             search=False,
             period=self.config.evaluation.checkpoint_freq,
             model=best_arch,    # checkpointables start here
@@ -247,22 +267,36 @@ class Trainer(object):
         self.val_top5.reset()
 
         # Enable drop path
-        best_arch.update_edges(
-            update_func=lambda edge: edge.data.set('op', DropPathWrapper(edge.data.op)),
-            scope=best_arch.OPTIMIZER_SCOPE,
-            private_edge_data=True
-        )
+        if isinstance(best_arch, torch.nn.DataParallel):
+            best_arch.module.update_edges(
+                update_func=lambda edge: edge.data.set('op', DropPathWrapper(edge.data.op)),
+                scope=best_arch.module.OPTIMIZER_SCOPE,
+                private_edge_data=True
+            )
+        else:
+            best_arch.update_edges(
+                update_func=lambda edge: edge.data.set('op', DropPathWrapper(edge.data.op)),
+                scope=best_arch.OPTIMIZER_SCOPE,
+                private_edge_data=True
+            )
 
         # train from scratch
         epochs = self.config.evaluation.epochs
         for e in range(start_epoch, epochs):
             # update drop path probability
             drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
-            best_arch.update_edges(
-                update_func=lambda edge: edge.data.set('drop_path_prob', drop_path_prob),
-                scope=best_arch.OPTIMIZER_SCOPE,
-                private_edge_data=True
-            )
+            if isinstance(best_arch, torch.nn.DataParallel):
+                best_arch.module.update_edges(
+                    update_func=lambda edge: edge.data.set('drop_path_prob', drop_path_prob),
+                    scope=best_arch.module.OPTIMIZER_SCOPE,
+                    private_edge_data=True
+                )
+            else:
+                best_arch.update_edges(
+                    update_func=lambda edge: edge.data.set('drop_path_prob', drop_path_prob),
+                    scope=best_arch.OPTIMIZER_SCOPE,
+                    private_edge_data=True
+                )
 
             # Train queue
             for i, (input_train, target_train) in enumerate(self.train_queue):
@@ -320,7 +354,6 @@ class Trainer(object):
             search_model="",
             resume_from="",
             best_arch=None,
-            multi_gpu=False
     ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -337,51 +370,39 @@ class Trainer(object):
             best_arch: Parsed model you want to directly evaluate and ignore the final model
                 from the optimizer.
         """
-        logger.info("Start evaluation")
-        if not best_arch:
-            if not search_model:
-                search_model = os.path.join(self.config.save, "search", "model_final.pth")
-            self._setup_checkpointers(search_model)      # required to load the architecture
 
-            best_arch = self.optimizer.get_final_architecture()
-        logger.info("Final architecture:\n" + best_arch.modules_str())
+        #best_arch.to(self.device)
+        self.config.evaluation.resume_from = resume_from
+        if retrain:
+            if self.config.gpu is not None:
+                logger.warning(
+                    'You have chosen a specific GPU. This will completely \
+                    disable data parallelism.'
+                )
 
-        if best_arch.QUERYABLE:
-            metric = Metric.TEST_ACCURACY
-            result = best_arch.query(
-                metric=metric, dataset=self.config.dataset
-            )
-            logger.info("Queried results ({}): {}".format(metric, result))
-        else:
-            #best_arch.to(self.device)
-            if retrain:
-                best_arch.reset_weights(inplace=True)
+            if self.config.evaluation.dist_url == "env://" and self.config.evaluation.world_size == -1:
+                self.config.evaluation.world_size = int(os.environ["WORLD_SIZE"])
 
-                if self.config.gpu is not None:
-                    logger.warning(
-                        'You have chosen a specific GPU. This will completely \
-                        disable data parallelism.'
-                    )
+            self.config.evaluation.distributed = \
+                self.config.evaluation.world_size > 1 or self.config.evaluation.multiprocessing_distributed
+            ngpus_per_node = torch.cuda.device_count()
 
-                if self.config.dist_url == "env://" and self.config.world_size == -1:
-                    self.config.world_size = int(os.environ["WORLD_SIZE"])
+            if self.config.evaluation.multiprocessing_distributed:
+                # Since we have ngpus_per_node processes per node, the
+                # total world_size needs to be adjusted
+                self.config.evaluation.world_size = ngpus_per_node * self.config.evaluation.world_size
+                # Use torch.multiprocessing.spawn to launch distributed
+                # processes: the main_worker process function
+                mp.spawn(self.main_worker, nprocs=ngpus_per_node,
+                         args=(ngpus_per_node, self.config.evaluation,
+                               search_model, best_arch))
+            else:
+                # Simply call main_worker function
+                self.main_worker(self.config.gpu, ngpus_per_node,
+                                 self.config.evaluation,
+                                 search_model, best_arch)
 
-                self.config.distributed = self.config.world_size > 1 or self.config.multiprocessing_distributed
-                ngpus_per_node = torch.cuda.device_count()
-
-                if self.config.multiprocessing_distributed:
-                    # Since we have ngpus_per_node processes per node, the
-                    # total world_size needs to be adjusted
-                    self.config.world_size = ngpus_per_node * self.config.world_size
-                    # Use torch.multiprocessing.spawn to launch distributed
-                    # processes: the main_worker process function
-                    mp.spawn(self.main_worker, nprocs=ngpus_per_node,
-                             args=(ngpus_per_node, self.config, best_arch))
-                else:
-                    # Simply call main_worker function
-                    self.main_worker(self.config.gpu, ngpus_per_node,
-                                     self.config, deepcopy(best_arch))
-
+        if not self.QUERYABLE:
             # Disable drop path
             best_arch.update_edges(
                 update_func=lambda edge: edge.data.set('op', edge.data.op.get_embedded_ops()),

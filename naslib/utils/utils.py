@@ -103,7 +103,7 @@ def get_config_from_args(args=None):
     if not args:
         args = default_argument_parser().parse_args()
     logger.info("Command line args: {}".format(args))
-    
+
     # load config file
     with open(args.config_file, 'r') as f:
         config = AttrDict(yaml.safe_load(f))
@@ -124,6 +124,13 @@ def get_config_from_args(args=None):
     config.seed = args.seed
     config.search.seed = config.evaluation.seed = config.seed
     config.resume = args.resume
+
+    config.evaluation.world_size = args.world_size
+    config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
+    config.evaluation.rank = args.rank
+    config.evaluation.dist_url = args.dist_url
+    config.evaluation.dist_backend = args.dist_backend
+    config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
 
     config.save = 'run/{}/{}/{}'.format(config.dataset, config.optimizer, config.seed)
     config.data = "{}/data".format(get_project_root())
