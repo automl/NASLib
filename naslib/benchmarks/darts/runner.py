@@ -18,16 +18,16 @@ logger.setLevel(logging.INFO)   # default DEBUG is too verbose
 utils.log_args(config)
 
 supported_optimizers = {
-    'darts': DARTSOptimizer(config.search),
-    'gdas': GDASOptimizer(config.search),
-    'random': RandomSearch(sample_size=1),
+    'darts': DARTSOptimizer(config),
+    'gdas': GDASOptimizer(config),
+    'random': RandomSearch(config),
 }
 
 search_space = DartsSearchSpace()
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
-    
+
 trainer = Trainer(optimizer, config)
 
 if config.eval_only:
