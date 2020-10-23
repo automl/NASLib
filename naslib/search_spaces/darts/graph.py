@@ -47,7 +47,6 @@ class DartsSearchSpace(Graph):
     def __init__(self):
         """
         Initialize a new instance of the DARTS search space.
-
         Note:
             __init__ cannot take any parameters due to the way networkx is implemented.
             If we want to change the number of classes set a static attribute `NUM_CLASSES`
@@ -125,12 +124,12 @@ class DartsSearchSpace(Graph):
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
 
-        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=11, affine=False)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=11, affine=False)
 
         self._set_cell_ops(reduction_cell_indices)
 
 
-    def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index, affine=True):
+    def _set_makrograph_ops(self, channel_map_from, channel_map_to, reduction_cell_indices, max_index, affine=True):
         # pre-processing
         # In darts there is a hardcoded multiplier of 3 for the output of the stem
         stem_multiplier = 3
@@ -143,6 +142,8 @@ class DartsSearchSpace(Graph):
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
                     C_in = C_in * stem_multiplier if u == 2 else C_in * self.num_in_edges     # handle Stem
+                    if v in reduction_cell_indices:
+                        C_out *= 2
                     data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1, affine=affine))
                 else:
                     data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out, affine=affine))
@@ -162,7 +163,7 @@ class DartsSearchSpace(Graph):
 
         for scope, c in zip(stages, self.channels):
             self.update_edges(
-                update_func=lambda edge: _set_cell_ops(edge, c, stride=1),
+                update_func=lambda edge: _set_ops(edge, c, stride=1),
                 scope=scope,
                 private_edge_data=True
             )
@@ -175,7 +176,7 @@ class DartsSearchSpace(Graph):
                 stride = 2 if u in (1, 2) else 1
                 if not data.is_final():
                     edge = AttrDict(data=data)
-                    _set_cell_ops(edge, c, stride)
+                    _set_ops(edge, c, stride)
 
         #
         # Combining operations
@@ -207,7 +208,7 @@ class DartsSearchSpace(Graph):
         reduction_cell_indices = [9, 16]
 
         channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
-        self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23, affine=True)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=23, affine=True)
 
         # Taken from DARTS implementation
         # assuming input size 8x8
@@ -283,8 +284,8 @@ class DartsSearchSpace(Graph):
                 'DilConv3x3': 'dil_conv_3x3',
                 'SepConv5x5': 'sep_conv_5x5',
                 'DilConv5x5': 'dil_conv_5x5',
-                'AvgPool1x1': 'avg_pool_3x3',
-                'MaxPool1x1': 'max_pool_3x3',
+                'AvgPool': 'avg_pool_3x3',
+                'MaxPool': 'max_pool_3x3',
             }
             edge_op_dict = {
                 (i, j): ops_to_nb301[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
@@ -303,12 +304,11 @@ class DartsSearchSpace(Graph):
         return "normal={} | reduction={}".format(convert(normal_cell), convert(reduction_cell))
 
 
-def _set_cell_ops(edge, C, stride):
+def _set_ops(edge, C, stride):
     """
     Replace the 'op' at the edges with the ones defined here.
     This function is called by the framework for every edge in
     the defined scope.
-
     Args:
         current_egde_data (EdgeData): The data that currently sits
             at the edge.
@@ -318,16 +318,15 @@ def _set_cell_ops(edge, C, stride):
     Returns:
         EdgeData: the updated EdgeData object.
     """
-    C_in = C if stride==1 else C//2
     edge.data.set('op', [
-        ops.Identity() if stride==1 else FactorizedReduce(C_in, C, affine=False),
+        ops.Identity() if stride==1 else FactorizedReduce(C, C, stride, affine=False),
         ops.Zero(stride=stride),
-        ops.MaxPool1x1(3, stride, C_in, C, affine=False),
-        ops.AvgPool1x1(3, stride, C_in, C, affine=False),
-        ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-        ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
-        ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-        ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
+        ops.MaxPool(3, stride),
+        ops.AvgPool(3, stride),
+        ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
+        ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
+        ops.DilConv(C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+        ops.DilConv(C, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
     ])
 
 
