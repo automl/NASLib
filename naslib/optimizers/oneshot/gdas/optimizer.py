@@ -81,15 +81,17 @@ class GDASOptimizer(DARTSOptimizer):
         #     edge.data.alpha, tau=float(tau), hard=True
         # )
         # edge.data.set('sampled_arch_weight', sampled_arch_weight, shared=True)
-        # edge.data.set('tau', tau)
 
         # from gdas repo
         # https://github.com/D-X-Y/AutoDL-Projects/blob/befa6bcb00e0a8fcfba447d2a1348202759f58c9/lib/models/cell_searchs/search_model_gdas.py#L88
         # https://github.com/D-X-Y/AutoDL-Projects/blob/befa6bcb00e0a8fcfba447d2a1348202759f58c9/lib/models/cell_searchs/search_cells.py#L51
-        arch_parameters = torch.nn.Parameter(torch.unsqueeze(edge.data.alpha, dim=0))
+        arch_parameters = torch.unsqueeze(edge.data.alpha, dim=0)
         
         while True:
             gumbels = -torch.empty_like(arch_parameters).exponential_().log()
+            if torch.cuda.is_available():
+                gumbels = gumbels.cuda()
+                tau = tau.cuda()
             logits  = (arch_parameters.log_softmax(dim=1) + gumbels) / tau
             probs   = torch.nn.functional.softmax(logits, dim=1)
             index   = probs.max(-1, keepdim=True)[1]
@@ -100,8 +102,8 @@ class GDASOptimizer(DARTSOptimizer):
             else:
                 break
 
-        weights  = hardwts[0]
-        argmaxs  = index[0].item()
+        weights = hardwts[0]
+        argmaxs = index[0].item()
 
         edge.data.set('sampled_arch_weight', weights, shared=True)
         edge.data.set('argmax', argmaxs, shared=True)
