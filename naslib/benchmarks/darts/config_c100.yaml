@@ -1,5 +1,5 @@
 data: "../../data"
-dataset: cifar10
+dataset: cifar100
 gpu: 0
 seed: 10
 report_freq: 1

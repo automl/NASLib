@@ -122,7 +122,7 @@ def get_config_from_args(args=None):
     config.optimizer = args.optimizer
     config.eval_only = args.eval_only
     config.seed = args.seed
-    config.search.seed = config.evaluation.seed = config.seed
+    config.search.seed = config.seed
     config.resume = args.resume
 
     config.evaluation.world_size = args.world_size

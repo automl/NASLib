@@ -23,6 +23,7 @@ supported_optimizers = {
     'random': RandomSearch(config),
 }
 
+if config.dataset == 'cifar100': DartsSearchSpace.NUM_CLASSES = 100
 search_space = DartsSearchSpace()
 
 optimizer = supported_optimizers[config.optimizer]
