@@ -29,7 +29,7 @@ for seed in {1..16}; do
   if [ $gpu_counter -eq $SLURM_ARRAY_TASK_ID ]; then
     #echo "Welcome $seed times"
     #sleep 1
-    python runner.py --config-file config.yaml --optimizer darts --seed ${seed}
+    python runner.py --config-file config_short_eval.yaml --optimizer darts --seed ${seed}
     exit $?
   fi
   let gpu_counter+=1
