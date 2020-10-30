@@ -89,11 +89,20 @@ class HierarchicalSearchSpace(Graph):
             nn.Linear(channels[-1], 10))
         )
 
-    # just change the channels but the same macro graph as in search.
-    # this is just for some experiments and will likely be removed in the future
+    
     def prepare_evaluation(self):
+        """
+        The evaluation model has N=2 cells at each stage and a sepconv with stride 1
+        between them. Initial channels = 64, trained 512 epochs. Learning rate 0.1
+        reduced by 10x after 40K, 60K, and 70K steps.
+        """
+        # this is called after the optimizer has discretized the graph
         cells = [self.edges[2, 3].op, self.edges[4, 5].op, self.edges[6, 7].op]
-        channels = [32, 64, 128]
+
+        self._expand()
+        
+        channels = [64, 128, 256]
+        factor = 4
 
         for cell, c in zip(cells, channels):
             for _, _, data in cell.edges.data():
@@ -104,72 +113,28 @@ class HierarchicalSearchSpace(Graph):
 
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
         self.edges[2, 3].set('op', cells[0].copy())
-        self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[1], kernel_size=3, stride=2, padding=1))
-        self.edges[4, 5].set('op', cells[1].copy())
-        self.edges[5, 6].set('op', ops.SepConv(channels[1], channels[2], kernel_size=3, stride=2, padding=1))
-        self.edges[6, 7].set('op', cells[2].copy())
-        self.edges[7, 8].set('op', ops.Sequential(
-            ops.SepConv(channels[2], channels[2], kernel_size=3, stride=1, padding=1),
+        self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[0], kernel_size=3, stride=1, padding=1))
+        self.edges[4, 5].set('op', cells[0].copy())
+        self.edges[5, 6].set('op', ops.SepConv(channels[0], channels[1], kernel_size=3, stride=2, padding=1))
+        self.edges[6, 7].set('op', cells[1].copy())
+        self.edges[7, 8].set('op', ops.SepConv(channels[1], channels[1], kernel_size=3, stride=1, padding=1))
+        self.edges[8, 9].set('op', cells[1].copy())
+        self.edges[9, 10].set('op', ops.SepConv(channels[1], channels[2], kernel_size=3, stride=2, padding=1))
+        self.edges[10, 11].set('op', cells[2].copy())
+        self.edges[11, 12].set('op', ops.SepConv(channels[2], channels[2], kernel_size=3, stride=1, padding=1))
+        self.edges[12, 13].set('op', cells[2].copy())
+        self.edges[13, 14].set('op', ops.Sequential(
+            ops.SepConv(channels[-1], channels[-1], kernel_size=3, stride=1, padding=1),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Linear(channels[-1], 10))
         )
 
         self.update_edges(
-            update_func=lambda edge: _increase_channels(edge, factor=2),
+            update_func=lambda edge: _increase_channels(edge, factor),
             scope=self.OPTIMIZER_SCOPE,
             private_edge_data=True
         )
-
-        
-    # The large makro graph is too large and contains too much parameters to be comparable
-    # def prepare_evaluation(self):
-    #     """
-    #     The evaluation model has N=2 cells at each stage and a sepconv with stride 1
-    #     between them. Initial channels = 64, trained 512 epochs. Learning rate 0.1
-    #     reduced by 10x after 40K, 60K, and 70K steps.
-    #     """
-    #     # this is called after the optimizer has discretized the graph
-    #     cells = [self.edges[2, 3].op, self.edges[4, 5].op, self.edges[6, 7].op]
-
-    #     self._expand()
-        
-    #     # channels = [64, 128, 256]
-    #     # factor = 4
-    #     channels = [32, 64, 128]
-    #     factor = 2
-
-    #     for cell, c in zip(cells, channels):
-    #         for _, _, data in cell.edges.data():
-    #             data.op.update_nodes(
-    #                 lambda node, in_edges, out_edges: _set_comb_op_channels(node, in_edges, out_edges, c=c),
-    #                 single_instances=False
-    #             )
-
-    #     self.edges[1, 2].set('op', ops.Stem(channels[0]))
-    #     self.edges[2, 3].set('op', cells[0].copy())
-    #     self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[0], kernel_size=3, stride=1, padding=1))
-    #     self.edges[4, 5].set('op', cells[0].copy())
-    #     self.edges[5, 6].set('op', ops.SepConv(channels[0], channels[1], kernel_size=3, stride=2, padding=1))
-    #     self.edges[6, 7].set('op', cells[1].copy())
-    #     self.edges[7, 8].set('op', ops.SepConv(channels[1], channels[1], kernel_size=3, stride=1, padding=1))
-    #     self.edges[8, 9].set('op', cells[1].copy())
-    #     self.edges[9, 10].set('op', ops.SepConv(channels[1], channels[2], kernel_size=3, stride=2, padding=1))
-    #     self.edges[10, 11].set('op', cells[2].copy())
-    #     self.edges[11, 12].set('op', ops.SepConv(channels[2], channels[2], kernel_size=3, stride=1, padding=1))
-    #     self.edges[12, 13].set('op', cells[2].copy())
-    #     self.edges[13, 14].set('op', ops.Sequential(
-    #         ops.SepConv(channels[-1], channels[-1], kernel_size=3, stride=1, padding=1),
-    #         nn.AdaptiveAvgPool2d(1),
-    #         nn.Flatten(),
-    #         nn.Linear(channels[-1], 10))
-    #     )
-
-    #     self.update_edges(
-    #         update_func=lambda edge: _increase_channels(edge, factor),
-    #         scope=self.OPTIMIZER_SCOPE,
-    #         private_edge_data=True
-    #     )
 
 
     def _expand(self):
@@ -186,6 +151,40 @@ class HierarchicalSearchSpace(Graph):
         # fix edges
         self.remove_edges_from(list(self.edges()))
         self.add_edges_from([(i, i+1) for i in range(1, 14)])
+    
+
+    # just change the channels but the same macro graph as in search.
+    # this is just for some experiments and will likely be removed in the future
+    # 
+    # def prepare_evaluation(self):
+    #     cells = [self.edges[2, 3].op, self.edges[4, 5].op, self.edges[6, 7].op]
+    #     channels = [32, 64, 128]
+
+    #     for cell, c in zip(cells, channels):
+    #         for _, _, data in cell.edges.data():
+    #             data.op.update_nodes(
+    #                 lambda node, in_edges, out_edges: _set_comb_op_channels(node, in_edges, out_edges, c=c),
+    #                 single_instances=False
+    #             )
+
+    #     self.edges[1, 2].set('op', ops.Stem(channels[0]))
+    #     self.edges[2, 3].set('op', cells[0].copy())
+    #     self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[1], kernel_size=3, stride=2, padding=1))
+    #     self.edges[4, 5].set('op', cells[1].copy())
+    #     self.edges[5, 6].set('op', ops.SepConv(channels[1], channels[2], kernel_size=3, stride=2, padding=1))
+    #     self.edges[6, 7].set('op', cells[2].copy())
+    #     self.edges[7, 8].set('op', ops.Sequential(
+    #         ops.SepConv(channels[2], channels[2], kernel_size=3, stride=1, padding=1),
+    #         nn.AdaptiveAvgPool2d(1),
+    #         nn.Flatten(),
+    #         nn.Linear(channels[-1], 10))
+    #     )
+
+    #     self.update_edges(
+    #         update_func=lambda edge: _increase_channels(edge, factor=2),
+    #         scope=self.OPTIMIZER_SCOPE,
+    #         private_edge_data=True
+    #     )
 
 
 def _set_comb_op_channels(node, in_edges, out_edges, c):
