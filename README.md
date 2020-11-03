@@ -6,6 +6,8 @@ NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilita
 
 It is designed to be modular, extensible and easy to use.
 
+![naslib-overview](images/naslib-overview.png)
+
 # Usage
 
 ```python
@@ -14,12 +16,14 @@ search_space = SimpleCellSearchSpace()
 optimizer = DARTSOptimizer(config)
 optimizer.adapt_search_space(search_space)
 
-trainer = Trainer(optimizer, 'cifar10', config)
+trainer = Trainer(optimizer, config)
 trainer.search()        # Search for an architecture
 trainer.evaluate()      # Evaluate the best architecture
 ```
 
-For an example file see `examples`.
+For an example file see [`demo.py`](examples/demo.py).
+
+For more extensive documentation see [docs](docs/).
 
 # Requirements
 
@@ -44,7 +48,5 @@ git clone ...
 cd naslib
 pip install .
 ```
-
-
 
 

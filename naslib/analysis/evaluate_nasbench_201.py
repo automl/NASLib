@@ -14,7 +14,7 @@ rcParams.update({'font.size': 12})
 
 optimizer_dir_name_to_name = {
     'DARTS': 'DARTS', 'GDAS': 'GDAS', 'PCDARTS': 'PC-DARTS', 'SDARTSDARTS': 'Smooth-DARTS',
-    'SDARTSPCDARTS': 'Smooth-PC-DARTS', 'SDARTSGDAS': 'Smooth-GDAS', 'gdas': 'GDAS', 'darts': 'darts', 're': 're'
+    'SDARTSPCDARTS': 'Smooth-PC-DARTS', 'SDARTSGDAS': 'Smooth-GDAS', 'gdas': 'GDAS', 'darts': 'DARTS', 're': 're'
 }
 
 markers={
@@ -65,30 +65,23 @@ def analyze(optimizer_dict, dataset):
         
         print("test! optimizer: {}, {:.02f} {{\\scriptsize $\\pm$ {:.02f}}}".format(optimizer_name, 100-mean[-1], std[-1]))
         line = ax_left.plot(np.arange(len(mean)), mean,
-                     label="{} query".format(optimizer_dir_name_to_name[optimizer_name]),
+                     label="{}".format(optimizer_dir_name_to_name[optimizer_name]),
                      marker=markers.get(optimizer_name, None),
                      markersize=7, markevery=(0.1,0.1),
                      color=color)
         ax_left.fill_between(np.arange(len(mean)), mean - std, mean + std, alpha=0.3)
+        lines.append(line[0])    
+    
+    if dataset=='cifar10':
+        line = ax_left.plot([0, 50], [5.77, 5.77], label="RE final performance")
         lines.append(line[0])
-
-        if dataset == 'darts':
-            test_error = 100 - np.array(final[optimizer_name])
-            mean, std = np.mean(test_error, axis=0), np.std(test_error, axis=0)
-            print("darts test final! optimizer: {}, {:.02f} {{\\scriptsize $\\pm$ {:.02f}}}".format(optimizer_name, mean, std))
-            line = ax_left.errorbar(50, mean, 
-                yerr=std, 
-                fmt='*', 
-                elinewidth=1, 
-                capsize=3, 
-                markersize=7,
-                color=color, 
-                label="{} final test".format(optimizer_dir_name_to_name[optimizer_name]))
-            lines.append(line)
 
     ax_left.set_xlabel('Search Epochs')
     ax_left.set_ylabel('Test Error [%]')
-    plt.title(dataset)
+    if dataset == 'darts':
+        plt.title("Results on Nas-Bench 301")
+    else:
+        plt.title(dataset)
     plt.grid(True, which="both", ls="-", alpha=0.8)
     ax_left.legend()
 
@@ -105,7 +98,7 @@ def analyze(optimizer_dict, dataset):
             mean, std = np.mean(one_shot_valid_error, axis=0), np.std(one_shot_valid_error, axis=0)
             print("validation! optimizer: {}, {:.02f} {{\\scriptsize $\\pm$ {:.02f}}}".format(optimizer_name, 100-mean[-1], std[-1]))
             line = ax_right.plot(np.arange(len(mean)), mean, 
-                label="{} valid".format(optimizer_dir_name_to_name[optimizer_name]),
+                label="{} validation error".format(optimizer_dir_name_to_name[optimizer_name]),
                 linestyle='-.', 
                 alpha=0.3,
                 color=color)
@@ -120,24 +113,67 @@ def analyze(optimizer_dict, dataset):
     plt.tight_layout()
     plt.savefig('optim_{}_{}.pdf'.format(dir, dataset))
 
-dir = 'darts'
-# dir = 'nb201'
+# dir = 'darts'
+dir = 'nb201'
 
 final = {
-    # seeds 4, 5, 10, 15
-    'darts': [97.05, 96.99, 96.94, 97.3],
-    'gdas': [],
+    'darts': [97.05, 96.99, 96.75, 97.3],
+    'gdas': [96.93, 0, 0, 96.84],
 }
+
+# Darts 100 epoch val error
+# 87.544
+# 87.728
+# 84.568
+# 89.028 <- 4
+# -----------
+# 88.12  <- 5
+# 87.328
+# 85.356
+# 87.628
+# -----------
+# 87.052
+# 87.472
+# 86.872
+# 88.02  <- 12
+# -----------
+# 87.344
+# 87.656
+# 88.52  <- 15
+# 86.84
+# -----------
+
+# gdas 100 epoch val error
+# 87.76
+# 88.08  <- 2
+# 87.36
+# 87.824
+# -----------
+# 87.824
+# 88.164
+# 88.484 <- 7
+# 88.12
+# -----------
+# 88.244
+# 88.596 <- 10
+# 88.316
+# 87.948
+# -----------
+# 88.248
+# 87.656
+# 88.364 <- 15
+# 88.068
+# -----------
 
 if __name__ == '__main__':
     # optimizer_dict = {'DARTS': [], 'GDAS': [], 'PCDARTS': []}
-    optimizer_dict = {'gdas': [], 'darts': [], 're': []} 
+    optimizer_dict = {'gdas': [], 'darts': [],} 
     for optimizer in optimizer_dict.keys():
         for res_json_path in glob.glob('{}/{}*.json'.format(dir, optimizer)):
             optimizer_dict[optimizer].append(json.load(open(res_json_path, 'r')))
 
     if dir == 'nb201':
-        for dataset in ['cifar10', 'cifar100']: #, 'ImageNet16-120']:
+        for dataset in ['cifar10', 'cifar100', 'ImageNet16-120']:
             analyze(optimizer_dict, dataset)
     else:
         analyze(optimizer_dict, 'darts')

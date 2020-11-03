@@ -10,119 +10,137 @@ from ..darts.graph import _truncate_input_edges
 from ..darts.primitives import FactorizedReduce
 
 
-def _set_cell_ops(current_edge_data, C, stride):
-    C_in = C if stride==1 else C//2
-    current_edge_data.set('op', [
-        ops.Identity() if stride==1 else FactorizedReduce(C_in, C),    # TODO: what is this and why is it not in the paper?
-        ops.Zero(stride=stride),
-        ops.MaxPool1x1(3, stride, C_in, C),
-        ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
-        ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
-    ])
+edge_attributes = {
+    'op': [
+            FactorizedReduce,   # classes of op, not instances
+            ops.Zero, 
+            ops.MaxPool1x1, 
+            ops.SepConv, 
+            ops.DilConv,
+        ],
+    'stride': 1,        # stride will be adaped later accordingly
+    'kernel_size': 3,
+    'padding': [None, None, None, 1, 2],   # if different for each op specify full list
+    'dilation': 2
+    # C_in and C_out will be specified later
+}
 
 
 class SimpleCellSearchSpace(Graph):
     """
     A simplified version of the DARTS cell search space for playing around.
+
+    Differences:
+    Two stages, smaller cells, no preprocessing for cells, no stem multiplier, 
+    input edges not cut to 2, same evaluation as search architecture.
     """
 
     OPTIMIZER_SCOPE = [
-        "n_stage_1",
-        "n_stage_2",  
-        "r_stage_1",
+        "stage_1",
+        "stage_2",
     ]
 
-    def __init__(self):
+    def __init__(self, classes: int = 10, intermediate_nodes: int = 2, cells_per_stage: int = 1, channels: list = [16, 32]):
+        """
+        Initializes the simple cell search space.
+
+        Args:
+            classes (int): Number of classes. Default: 10.
+            intermediate_nodes (int): Number of intermediate nodes for normal and
+                reduction cells. Default: 2.
+            cells_per_stage (int): Number of normal cells at each stage. Default: 1.
+            channels (list): Channels for each stage. Must have len 2. Default: [16, 32]
+        """
+        assert len(channels) == len(self.OPTIMIZER_SCOPE), \
+            "Expecting a channel for each scope. Expected {}, got {}.".format(len(self.OPTIMIZER_SCOPE), len(channels))
         super().__init__()
         
-        #
+
         # Cell definition
-        #
-        normal_cell = Graph()
-        normal_cell.name = "normal_cell"    # Use the same name for all cells with shared attributes
+        normal_cell = Graph(name="normal_cell")     # Use the same name for all cells with shared attributes
 
-        # Input nodes
-        normal_cell.add_node(1)
-        normal_cell.add_node(2)
-
-        # Intermediate nodes
-        normal_cell.add_node(3)
-        normal_cell.add_node(4)
-
-        # Output node
-        normal_cell.add_node(5)
+        # Nodes
+        out_node_idx = intermediate_nodes+3
+        normal_cell.add_nodes_from(range(1, out_node_idx+1))
         
         # Edges
-        normal_cell.add_edges_from([(1, i) for i in range(3, 5)])   # input 1
-        normal_cell.add_edges_from([(2, i) for i in range(3, 5)])   # input 2
-        normal_cell.add_edges_from([(3, 4)])
+        normal_cell.add_edges_from([(1, i) for i in range(3, out_node_idx)])   # input 1
+        normal_cell.add_edges_from([(2, i) for i in range(3, out_node_idx)])   # input 2
+        normal_cell.add_edges_from([
+            (u, v) for u, v in normal_cell.get_dense_edges() 
+            if u not in [1, 2] and v != out_node_idx
+        ])
+        # Edges connecting to the output are always the identity
+        normal_cell.add_edges_from([(i, out_node_idx, EdgeData().finalize()) for i in range(3, out_node_idx)])   # output
 
-        final_edge = EdgeData() # Edges connecting to the output are always the identity
-        final_edge.finalize()
-        normal_cell.add_edges_from([(i, 5, final_edge.clone()) for i in range(3, 5)])   # output
-        
+        # set the parameters for the ops at all edges (that are not final)
+        for k, v in edge_attributes.items():
+            normal_cell.set_at_edges(k, v)
 
+        # Reduction cell
         reduction_cell = deepcopy(normal_cell)
         reduction_cell.name = "reduction_cell"
 
-        #
+        reduction_cell.update_edges(
+            update_func=lambda edge: edge.data.set('stride', 2) if edge.head in [1, 2] else None
+        )
+
+
         # Makrograph definition
-        #
         self.name = "makrograph"
 
         self.add_node(1)    # input node
         self.add_node(2)    # preprocessing
-        self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
-        self.add_node(4, subgraph=reduction_cell.set_scope("r_stage_1").set_input([2, 3]))
-        self.add_node(5, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 4]))
-        self.add_node(6)    # output
-
         self.add_edge(1, 2)     # pre-processing (stem)
-        self.add_edges_from([(2, 3), (2, 4), (3, 4)])   # first stage
-        self.add_edges_from([(4, 5)])   # second stage
-        self.add_edge(5, 6)   # post-processing (pooling, classifier)
 
-        #
-        # Operations at the edges
-        #
+        j = 3   # index of next node to add
+        for scope in self.OPTIMIZER_SCOPE:
+            # reduction cell (beginning of each stage but first)
+            if j > 3:
+                input = [j-2, j-1]
+                self.add_node(j, subgraph=reduction_cell.copy().set_scope(scope).set_input(input))
+                self.add_edges_from([(input[0], j), (input[1], j)])
+                j += 1
 
-        # pre-processing
-        self.edges[1, 2].set('op', ops.Stem(16))
-
-        # normal cells
-        channels = [16, 32]
-        stages = ["n_stage_1", "n_stage_2"]
-
-        for scope, c in zip(stages, channels):
-            self.update_edges(
-                update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
-                scope=scope,
-                private_edge_data=True
-            )
-
-        # reduction cells
-        nodes = [4]
-        for n, c in zip(nodes, channels[1:]):
-            reduction_cell = self.nodes[n]['subgraph']
-            for u, v, data in reduction_cell.edges.data():
-                stride = 2 if u in (1, 2) else 1
-                if not data.is_final():
-                    _set_cell_ops(data, c, stride)
+            # normal cells
+            for _ in range(cells_per_stage):
+                # single (copied) input if first node or every normal node after reduction cell
+                input = [j-1, j-1] if j == 3 or (j-3) % (cells_per_stage+1) == 0 else [j-2, j-1]
+                self.add_node(j, subgraph=normal_cell.copy().set_scope(scope).set_input(input))
+                self.add_edges_from([(input[0], j), (input[1], j)])
+                j += 1
+            
+        self.add_node(j)    # output
+        self.add_edge(j-1, j)   # post-processing (pooling, classifier)
         
-        # post-processing
-        self.edges[5, 6].set('op', ops.Sequential(
+
+        # Compile the ops
+        self.edges[1, 2].set('op', ops.Stem(channels[0]))    # we can also set a compiled op. Will be ignored by compile()
+
+        def set_channels(edge, C):
+            C_in = C if edge.data.stride == 1 else C//2
+            edge.data.set('C_in', C_in)
+            edge.data.set('C_out', C)
+
+        for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
+            self.update_edges(lambda edge: set_channels(edge, c), scope, private_edge_data=True)
+
+        self.edges[j-1, j].set('op', ops.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
-            nn.Linear(channels[-1], 10))
+            nn.Linear(channels[-1], classes))
         )
 
-        #
-        # Combining operations
-        #
-        self.nodes[3]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, C_out=16)
-        self.nodes[4]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, C_out=32)
-        self.nodes[5]['subgraph'].nodes[5]['comb_op'] = ops.Concat1x1(num_in_edges=2, C_out=32)
+        self.compile()
 
+        # Combining operations are currently not considered by compile()
+        def set_comb_op(node, in_edges, out_edges, C):
+            if node[0] == out_node_idx:
+                node[1]['comb_op'] = ops.Concat1x1(num_in_edges=intermediate_nodes, C_out=C)
 
-    def prepare_discretization(self):
-        self.update_nodes(_truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True)
+        for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
+            self.update_nodes(
+                update_func=lambda node, in_edges, out_edges: set_comb_op(node, in_edges, out_edges, c),
+                scope=scope,
+                single_instances=False
+            )

@@ -2,13 +2,14 @@
 *.out
 *.err
 *.log
+*.json
 
 # Model files
 *.pth
 
-# Everything stored in runs
-naslib/benchmarks/*/run/
-examples/run/
+# Everything stored in subfolders of benchmark
+naslib/benchmarks/*/*/
+examples/*/
 
 # IDE related
 .vscode/

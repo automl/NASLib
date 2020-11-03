@@ -16,8 +16,8 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
     def __init__(self, kwargs):
         super().__init__()
 
-        self.init_params = {k: v for k, v in kwargs.items() if k != 'self' and not k.startswith('_')}
-    
+        self.init_params = {k: v for k, v in kwargs.items() if k != 'self' and not k.startswith('_') and k != 'kwargs'}
+
     @abstractmethod
     def forward(self, x, edge_data):
         """
@@ -47,7 +47,7 @@ class Identity(AbstractPrimitive):
     An implementation of the Identity operation.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__(locals())
 
     def forward(self, x, edge_data):
@@ -63,7 +63,7 @@ class Zero(AbstractPrimitive):
     the connection by multiplying its input with zero.
     """
 
-    def __init__(self, stride):
+    def __init__(self, stride, **kwargs):
         """
         When setting stride > 1 then it is assumed that the
         channels must be doubled.
@@ -76,9 +76,8 @@ class Zero(AbstractPrimitive):
         if self.stride == 1:
             return x.mul(0.)
         else:
-            x = x[:, :, ::self.stride, ::self.stride].mul(0.)
-            return torch.cat([x, x], dim=1)   # double the channels TODO: ugly as hell
-    
+            return x[:, :, ::self.stride, ::self.stride].mul(0.)
+
     def get_embedded_ops(self):
         return None
 
@@ -89,7 +88,7 @@ class SepConv(AbstractPrimitive):
     in the DARTS paper, i.e. 2 sepconv directly after another.
     """
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True):
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
         self.op = nn.Sequential(
@@ -105,10 +104,10 @@ class SepConv(AbstractPrimitive):
 
     def forward(self, x, edge_data=None):
         return self.op(x)
-    
+
     def get_embedded_ops(self):
         return None
-    
+
     @property
     def get_op_name(self):
         op_name = super().get_op_name
@@ -122,7 +121,7 @@ class DilConv(AbstractPrimitive):
     used in the DARTS paper.
     """
 
-    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True):
+    def __init__(self, C_in, C_out, kernel_size, stride, padding, dilation, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
         self.op = nn.Sequential(
@@ -139,7 +138,7 @@ class DilConv(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return None
-    
+
     @property
     def get_op_name(self):
         op_name = super().get_op_name
@@ -153,7 +152,7 @@ class Stem(AbstractPrimitive):
     image input.
     """
 
-    def __init__(self, C_out):
+    def __init__(self, C_out, **kwargs):
         super().__init__(locals())
         self.seq = nn.Sequential(
             nn.Conv2d(3, C_out, 3, padding=1, bias=False),
@@ -161,7 +160,7 @@ class Stem(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         return self.seq(x)
-    
+
     def get_embedded_ops(self):
         return None
 
@@ -172,16 +171,29 @@ class Sequential(AbstractPrimitive):
     as op on edges.
     """
 
-    def __init__(self, *args):
+    def __init__(self, *args, **kwargs):
         super().__init__(locals())
         self.primitives = args
         self.op = nn.Sequential(*args)
-    
+
     def forward(self, x, edge_data):
         return self.op(x)
-    
+
     def get_embedded_ops(self):
         return list(self.primitives)
+
+
+class MaxPool(AbstractPrimitive):
+    def __init__(self, kernel_size, stride, **kwargs):
+        super().__init__(locals())
+        self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
+
+    def forward(self, x, edge_data):
+        x = self.maxpool(x)
+        return x
+
+    def get_embedded_ops(self):
+        return None
 
 
 class MaxPool1x1(AbstractPrimitive):
@@ -191,7 +203,7 @@ class MaxPool1x1(AbstractPrimitive):
     the number of channels.
     """
 
-    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True):
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True, **kwargs):
         super().__init__(locals())
         self.stride = stride
         self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
@@ -199,12 +211,29 @@ class MaxPool1x1(AbstractPrimitive):
             assert C_in is not None and C_out is not None
             self.conv = nn.Conv2d(C_in, C_out, 1, stride=1, padding=0, bias=False)
             self.bn = nn.BatchNorm2d(C_out, affine=affine)
-    
+
     def forward(self, x, edge_data):
         x = self.maxpool(x)
         if self.stride > 1:
             x = self.conv(x)
             x = self.bn(x)
+        return x
+
+    def get_embedded_ops(self):
+        return None
+
+
+class AvgPool(AbstractPrimitive):
+    """
+    Implementation of Avergae Pooling.
+    """
+
+    def __init__(self, kernel_size, stride, **kwargs):
+        super().__init__(locals())
+        self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
+       
+    def forward(self, x, edge_data):
+        x = self.avgpool(x)
         return x
 
     def get_embedded_ops(self):
@@ -218,7 +247,7 @@ class AvgPool1x1(AbstractPrimitive):
     to increase the number of channels if stride > 1.
     """
 
-    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True):
+    def __init__(self, kernel_size, stride, C_in=None, C_out=None, affine=True, **kwargs):
         super().__init__(locals())
         self.stride = stride
         self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
@@ -226,7 +255,7 @@ class AvgPool1x1(AbstractPrimitive):
             assert C_in is not None and C_out is not None
             self.conv = nn.Conv2d(C_in, C_out, 1, stride=1, padding=0, bias=False)
             self.bn = nn.BatchNorm2d(C_out, affine=affine)
-    
+
     def forward(self, x, edge_data):
         x = self.avgpool(x)
         if self.stride > 1:
@@ -240,7 +269,7 @@ class AvgPool1x1(AbstractPrimitive):
 
 class ReLUConvBN(AbstractPrimitive):
 
-    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True):
+    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
         pad = 0 if stride == 1 and kernel_size == 1 else 1
@@ -270,11 +299,11 @@ class Concat1x1(nn.Module):
     to retain the channel dimension.
     """
 
-    def __init__(self, num_in_edges, C_out, affine=True):
+    def __init__(self, num_in_edges, C_out, affine=True, **kwargs):
         super().__init__()
         self.conv = nn.Conv2d(num_in_edges * C_out, C_out, kernel_size=1, stride=1, padding=0, bias=False)
         self.bn = nn.BatchNorm2d(C_out, affine=affine)
-    
+
     def forward(self, x):
         """
         Expecting a list of input tensors. Stacking them channel-wise

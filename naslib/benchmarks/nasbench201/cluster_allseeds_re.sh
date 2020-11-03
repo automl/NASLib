@@ -7,8 +7,8 @@
 #SBATCH -o %x.%A.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e %x.%A.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH --mail-type=END,FAIL  # (recive mails about end and timeouts/crashes of your job)
-#SBATCH -J darts-darts        # search space - algorithm
-#SBATCH -a 1-16 # array size
+#SBATCH -J nb201-re           # search space - algorithm
+#SBATCH -a 1-4 # array size
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
@@ -24,12 +24,12 @@ source /home/ruchtem/dev/venvs/naslib/bin/activate
 
 gpu_counter=1
 
-for seed in {1..16}; do
+for seed in {1..4}; do
   # Job to perform
   if [ $gpu_counter -eq $SLURM_ARRAY_TASK_ID ]; then
     #echo "Welcome $seed times"
     #sleep 1
-    python runner.py --config-file config_short_eval.yaml --optimizer darts --seed ${seed}
+    python runner.py --config-file config_cifar10.yaml --seed ${seed} --optimizer re search.checkpoint_freq 100 search.epochs 1000
     exit $?
   fi
   let gpu_counter+=1
