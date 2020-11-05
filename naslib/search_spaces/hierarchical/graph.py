@@ -203,7 +203,7 @@ def _set_cell_ops(edge, C, stride):
     elif isinstance(edge.data.op, ops.Identity):
         edge.data.set('op', [
             ops.Identity() if stride==1 else ops.FactorizedReduce(C, C),
-            ops.Zero(stride=stride),
+            ops.Zero1x1(stride=stride),
             ops.MaxPool1x1(3, stride),
             ops.AvgPool1x1(3, stride),
             ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
