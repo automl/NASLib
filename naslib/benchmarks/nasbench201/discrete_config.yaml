@@ -1,0 +1,5 @@
+
+
+search:
+  checkpoint_freq: 100 
+  epochs: 2000

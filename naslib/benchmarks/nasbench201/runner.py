@@ -24,7 +24,6 @@ supported_optimizers = {
     'rs': RandomSearch(config),
 }
 
-NasBench201SeachSpace.NUM_CLASSES = config.num_classes
 search_space = NasBench201SeachSpace()
 
 optimizer = supported_optimizers[config.optimizer]

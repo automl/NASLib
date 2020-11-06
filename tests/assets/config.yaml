@@ -1,0 +1,8 @@
+seed: 12
+out_dir: "tmp/test/hallo"
+
+search:
+  batch_size: 300
+
+evaluation:
+  batch_size: 200
