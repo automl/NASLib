@@ -23,8 +23,7 @@ nasbench = api.NASBench(nb101_datadir)
 
 class NasBench101SeachSpace(Graph):
     """
-    ResNet and Inception like search space used in the NB101 paper
-    It also has an interface to the tabular benchmark of nasbench 101.
+    Contains the interface to the tabular benchmark of nasbench 101.
     """
 
     OPTIMIZER_SCOPE = [

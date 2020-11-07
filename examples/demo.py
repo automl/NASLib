@@ -9,6 +9,7 @@ from naslib.search_spaces import (
     DartsSearchSpace, 
     SimpleCellSearchSpace, 
     NasBench201SeachSpace, 
+    NasBench101SeachSpace, 
     HierarchicalSearchSpace,
 )
 
@@ -32,13 +33,14 @@ supported_optimizers = {
 
 # Changing the search space is one line of code
 # search_space = SimpleCellSearchSpace()
-search_space = NasBench201SeachSpace()
+search_space = NasBench101SeachSpace()
 # search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
 
 # Changing the optimizer is one line of code
 
-optimizer = supported_optimizers[config.optimizer]
+# optimizer = supported_optimizers[config.optimizer]
+optimizer = RandomSearch(config)
 
 optimizer.adapt_search_space(search_space)
 
