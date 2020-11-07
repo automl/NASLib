@@ -92,6 +92,7 @@ class GDASOptimizer(DARTSOptimizer):
             if torch.cuda.is_available():
                 gumbels = gumbels.cuda()
                 tau = tau.cuda()
+                arch_parameters = arch_parameters.cuda()
             logits  = (arch_parameters.log_softmax(dim=1) + gumbels) / tau
             probs   = torch.nn.functional.softmax(logits, dim=1)
             index   = probs.max(-1, keepdim=True)[1]
@@ -191,7 +192,7 @@ class GDASMixedOp(AbstractPrimitive):
         weights = edge_data.sampled_arch_weight
         argmax = edge_data.argmax
 
-        weigsum  = sum( weights[_ie] * op(x, None) if _ie == argmax else weights[_ie] for _ie, op in enumerate(self.primitives))
+        weigsum = sum(weights[i] * op(x, None) if i == argmax else weights[i] for i, op in enumerate(self.primitives))
 
         return weigsum
 

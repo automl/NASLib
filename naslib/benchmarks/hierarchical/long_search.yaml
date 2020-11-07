@@ -1,0 +1,7 @@
+_BASE_: config.yaml
+
+out_dir: long_search
+
+search:
+  checkpoint_freq: 10
+  epochs: 50
