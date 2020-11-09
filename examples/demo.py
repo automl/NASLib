@@ -9,9 +9,10 @@ from naslib.search_spaces import (
     DartsSearchSpace, 
     SimpleCellSearchSpace, 
     NasBench201SeachSpace, 
-    NasBench101SeachSpace, 
     HierarchicalSearchSpace,
 )
+
+from naslib.search_spaces.nasbench101 import graph
 
 from naslib.utils import utils, setup_logger
 
@@ -33,7 +34,7 @@ supported_optimizers = {
 
 # Changing the search space is one line of code
 # search_space = SimpleCellSearchSpace()
-search_space = NasBench101SeachSpace()
+search_space = graph.NasBench101SeachSpace()
 # search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
 

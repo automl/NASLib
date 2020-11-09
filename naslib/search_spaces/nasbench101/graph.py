@@ -48,7 +48,7 @@ class NasBench101SeachSpace(Graph):
         # Input node
         node_pair.add_node(1)
         node_pair.add_node(2)
-        node_pair.add_edges_from[(1,2)]
+        node_pair.add_edges_from([(1,2)])
 
         cell = Graph()
         
@@ -69,9 +69,13 @@ class NasBench101SeachSpace(Graph):
         #
         channels = [128, 256, 512]
         self.name = "makrograph"
+
+        total_num_nodes = 3
+        self.add_nodes_from(range(1, total_num_nodes+1))
+        self.add_edges_from([(i, i+1) for i in range(1, total_num_nodes)])
+
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
         self.edges[2, 3].set('op', cell.copy().set_scope('stage_1'))
-        
         
         node_pair.update_edges(
             update_func=lambda current_edge_data: _set_node_ops(current_edge_data, C=channels[0]),
@@ -106,7 +110,7 @@ class NasBench101SeachSpace(Graph):
         nb101_spec = _convert_cell_to_nb101_spec(cell)        
     
         if not nasbench.is_valid(nb101_spec):
-            return 'invalid' # or some negative reward or none
+            return -1 # or some negative reward or none
 
         query_results = nasbench.query(nb101_spec)
 
@@ -137,7 +141,8 @@ def _convert_cell_to_nb101_spec(cell):
     for i in range(1, 6):
         ops[i] = ops_to_nb101[cell.nodes[i+1]['subgraph'].edges[1, 2]['op'].get_op_name]
     
-    matrix[i][j] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+    for i, j in cell.edges:
+        matrix[i][j] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name]
     
     spec = api.ModelSpec(matrix=matrix, ops=ops)
     
