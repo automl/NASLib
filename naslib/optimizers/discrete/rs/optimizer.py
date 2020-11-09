@@ -7,33 +7,25 @@ from naslib.search_spaces.core.query_metrics import Metric
 """
 These two function discretize the graph.
 """
-def add_sampled_op_index(current_edge_data):
+def add_sampled_op_index(edge):
     """
     Function to sample an op for each edge.
     """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    
-    op_index = np.random.randint(len(current_edge_data.op))
-    current_edge_data.set('op_index', op_index, shared=True)
-    return current_edge_data
+    op_index = np.random.randint(len(edge.data.op))
+    edge.data.set('op_index', op_index, shared=True)
 
 
-def update_ops(current_edge_data):
+def update_ops(edge):
     """
     Function to replace the primitive ops at the edges
     with the sampled one
     """
-    if current_edge_data.has('final') and current_edge_data.final:
-        return current_edge_data
-    
-    if isinstance(current_edge_data.op, list):
-        primitives = current_edge_data.op
+    if isinstance(edge.data.op, list):
+        primitives = edge.data.op
     else:
-        primitives = current_edge_data.primitives
-    current_edge_data.set('op', primitives[current_edge_data.op_index])
-    current_edge_data.set('primitives', primitives)     # store for later use
-    return current_edge_data
+        primitives = edge.data.primitives
+    edge.data.set('op', primitives[edge.data.op_index])
+    edge.data.set('primitives', primitives)     # store for later use
 
 
 def sample_random_architecture(search_space, scope):
