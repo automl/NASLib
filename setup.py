@@ -44,10 +44,12 @@ requires = [
     "torch>=1.2.0",
     "torchvision>=0.4.0",
     "fvcore",
-    "coverage",
     "matplotlib",
     "pandas",
     "pytest",
+    "pytest-cov",
+    "codecov",
+    "coverage",
 ]
 
 import subprocess
