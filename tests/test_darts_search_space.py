@@ -7,7 +7,7 @@ from naslib.search_spaces import SimpleCellSearchSpace, DartsSearchSpace, Hierar
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer
 from naslib.utils import utils, setup_logger
 
-logger = setup_logger(os.path.join(utils.get_project_root().parent, "tests", "tmp", "tests.log"))
+logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
 logger.handlers[0].setLevel(logging.FATAL)
 
 config = utils.AttrDict()

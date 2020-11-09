@@ -1,0 +1,30 @@
+language: python
+
+matrix:
+        include:
+                - os: linux
+                  python: 3.8
+                  env:
+                          - REPORT_COVERAGE=1
+
+before_install:
+        - python --version
+        - uname -a
+
+install:
+        - pip install --upgrade pip setuptools wheel
+        - pip install .
+        - python --version
+        - pip list
+
+script:
+        - pytest --cov=naslib tests
+
+after_success:
+        - bash <(curl -s https://codecov.io/bash)
+        - if [[ "${REPORT_COVERAGE}" == 1 ]]; then
+            codecov;
+          fi
+
+notifications:
+        email: false
