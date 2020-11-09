@@ -51,9 +51,9 @@ class NasBench101SeachSpace(Graph):
         node_pair.add_edges_from([(1,2)])
 
         cell = Graph()
-        
+        cell.name = 'cell'
+
         cell.add_node(1)    # input node
-        #* question: what is set_input doing here, when we are defining the edges later?
         cell.add_node(2, subgraph=node_pair.set_scope("stack_1").set_input([1]))
         cell.add_node(3, subgraph=node_pair.copy().set_scope("stack_1"))
         cell.add_node(4, subgraph=node_pair.copy().set_scope("stack_1"))
@@ -68,6 +68,7 @@ class NasBench101SeachSpace(Graph):
         # dummy Makrograph definition for RE for benchmark queries
         #
         channels = [128, 256, 512]
+        
         self.name = "makrograph"
 
         total_num_nodes = 3
@@ -142,17 +143,16 @@ def _convert_cell_to_nb101_spec(cell):
         ops[i] = ops_to_nb101[cell.nodes[i+1]['subgraph'].edges[1, 2]['op'].get_op_name]
     
     for i, j in cell.edges:
-        matrix[i][j] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name]
+        matrix[i-1][j-1] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name]
     
     spec = api.ModelSpec(matrix=matrix, ops=ops)
     
     return spec
 
-
-def _set_pair_ops(current_edge_data, C):
+def _set_node_ops(current_edge_data, C):
     current_edge_data.set('op', [
         ReLUConvBN(C, C, kernel_size=1),
-        # ops.Zero(stride=1),    #! does the second operation here always needs to be zero?
+        # ops.Zero(stride=1),    #! recheck about the hardcoded second operation
         ReLUConvBN(C, C, kernel_size=3),
         ops.MaxPool1x1(kernel_size=3, stride=1),
     ])
