@@ -1,0 +1,15 @@
+language: python
+
+matrix:
+        include:
+                - os: linux
+                  python: 3.8
+
+install:
+        - pip install --upgrade pip setuptools wheel
+        - pip install .
+        - python --version
+        - pip list
+
+script:
+        - pytest

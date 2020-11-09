@@ -1,0 +1,5 @@
+[run]
+source = naslib
+omit = 
+    naslib/analysis/*
+    ../venvs/*
