@@ -1,4 +1,4 @@
-
+# _BASE_ is defaults/darts_defaults.yaml
 
 search:
   checkpoint_freq: 1
@@ -8,7 +8,13 @@ search:
   epochs: 10
 
 evaluation:
-  batch_size: 64
+  # Do not pick a larger batch size as it is very sensible to
+  # the archiceture selected. This works for all architectures
+  # in our experiments.
+  batch_size: 32          # one third of 96
+  learning_rate: 0.0083   # one third of 0.025
+  
+  # We do not have an auxiliary head for the hierarchical space.
   auxiliary_weight: 0.0
 
 
