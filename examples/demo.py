@@ -8,7 +8,7 @@ from naslib.optimizers.discrete.re.optimizer import RegularizedEvolution
 from naslib.search_spaces import (
     DartsSearchSpace, 
     SimpleCellSearchSpace, 
-    NasBench201SeachSpace, 
+    NasBench201SearchSpace, 
     HierarchicalSearchSpace,
 )
 
@@ -34,7 +34,7 @@ supported_optimizers = {
 
 # Changing the search space is one line of code
 # search_space = SimpleCellSearchSpace()
-search_space = graph.NasBench101SeachSpace()
+search_space = graph.NasBench101SearchSpace()
 # search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
 
@@ -45,7 +45,7 @@ optimizer = RandomSearch(config)
 
 optimizer.adapt_search_space(search_space)
 
-# Start the seach and evaluation
+# Start the search and evaluation
 trainer = Trainer(optimizer, config)
 
 if not config.eval_only:

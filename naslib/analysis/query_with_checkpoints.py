@@ -12,7 +12,7 @@ from naslib.optimizers.discrete.re.optimizer import RegularizedEvolution
 from naslib.search_spaces import (
     DartsSearchSpace, 
     SimpleCellSearchSpace, 
-    NasBench201SeachSpace, 
+    NasBench201SearchSpace, 
     HierarchicalSearchSpace,
 )
 
@@ -36,7 +36,7 @@ supported_optimizers = {
 
 
 # search_space = SimpleCellSearchSpace()
-search_space = NasBench201SeachSpace()
+search_space = NasBench201SearchSpace()
 # search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
 

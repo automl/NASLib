@@ -3,7 +3,7 @@ import logging
 import torch
 import os
 
-from naslib.search_spaces import SimpleCellSearchSpace, DartsSearchSpace, HierarchicalSearchSpace, NasBench201SeachSpace
+from naslib.search_spaces import SimpleCellSearchSpace, DartsSearchSpace, HierarchicalSearchSpace, NasBench201SearchSpace
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer
 from naslib.utils import utils, setup_logger
 

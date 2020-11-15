@@ -16,7 +16,7 @@ with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as
     nb201_data = pickle.load(f)
 
 
-class NasBench201SeachSpace(Graph):
+class NasBench201SearchSpace(Graph):
     """
     Implementation of the nasbench 201 search space.
     It also has an interface to the tabular benchmark of nasbench 201.

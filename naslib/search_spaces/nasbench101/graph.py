@@ -21,7 +21,7 @@ nasbench = api.NASBench(nb101_datadir)
 
 # data = nasbench.query(cell)
 
-class NasBench101SeachSpace(Graph):
+class NasBench101SearchSpace(Graph):
     """
     Contains the interface to the tabular benchmark of nasbench 101.
     """
