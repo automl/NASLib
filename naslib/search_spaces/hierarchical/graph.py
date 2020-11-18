@@ -354,7 +354,7 @@ class LiuFinalArch(HierarchicalSearchSpace):
         cell.edges[4, 5].set('op', motif5.copy())
 
         cells = []
-        channels = [16, 32, 64]
+        channels = [64, 128, 256]
         for scope, c in zip(self.OPTIMIZER_SCOPE, channels):
             cell_i = cell.copy().set_scope(scope)
 
@@ -367,17 +367,23 @@ class LiuFinalArch(HierarchicalSearchSpace):
 
         self.name = "makrograph"
 
-        self.add_nodes_from([i for i in range(1, 9)])
-        self.add_edges_from([(i, i+1) for i in range(1, 8)])
+        self.add_nodes_from([i for i in range(1, 15)])
+        self.add_edges_from([(i, i+1) for i in range(1, 14)])
 
-        self.edges[1, 2].set('op', ops.Stem(16))
-        self.edges[2, 3].set('op', cells[0])
-        self.edges[3, 4].set('op', ops.SepConv(16, 32, kernel_size=3, stride=2, padding=1))
-        self.edges[4, 5].set('op', cells[1])
-        self.edges[5, 6].set('op', ops.SepConv(32, 64, kernel_size=3, stride=2, padding=1))
-        self.edges[6, 7].set('op', cells[2])
-        self.edges[7, 8].set('op', ops.Sequential(
-            ops.SepConv(64, 64, kernel_size=3, stride=1, padding=1),
+        self.edges[1, 2].set('op', ops.Stem(channels[0]))
+        self.edges[2, 3].set('op', cells[0].copy())
+        self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[0], kernel_size=3, stride=1, padding=1))
+        self.edges[4, 5].set('op', cells[0].copy())
+        self.edges[5, 6].set('op', ops.SepConv(channels[0], channels[1], kernel_size=3, stride=2, padding=1))
+        self.edges[6, 7].set('op', cells[1].copy())
+        self.edges[7, 8].set('op', ops.SepConv(channels[1], channels[1], kernel_size=3, stride=1, padding=1))
+        self.edges[8, 9].set('op', cells[1].copy())
+        self.edges[9, 10].set('op', ops.SepConv(channels[1], channels[2], kernel_size=3, stride=2, padding=1))
+        self.edges[10, 11].set('op', cells[2].copy())
+        self.edges[11, 12].set('op', ops.SepConv(channels[2], channels[2], kernel_size=3, stride=1, padding=1))
+        self.edges[12, 13].set('op', cells[2].copy())
+        self.edges[13, 14].set('op', ops.Sequential(
+            ops.SepConv(channels[-1], channels[-1], kernel_size=3, stride=1, padding=1),
             nn.AdaptiveAvgPool2d(1),
             nn.Flatten(),
             nn.Linear(channels[-1], 10))
