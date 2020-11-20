@@ -33,6 +33,9 @@ search:
   # RE
   sample_size: 10
   population_size: 100
+  
+  #LS
+  num_init: 1
 
 evaluation:
   checkpoint_freq: 30
