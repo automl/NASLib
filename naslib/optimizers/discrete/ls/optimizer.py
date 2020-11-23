@@ -6,7 +6,7 @@ import random
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.discrete.rs.optimizer import sample_random_architecture, update_ops
+from naslib.optimizers.discrete.utils.utils import sample_random_architecture, update_ops
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.graph import NasBench201SearchSpace
@@ -76,7 +76,6 @@ class LocalSearch(MetaOptimizer):
             # If there is no scope defined, let's use the search space default one
             
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            
             model.arch = sample_random_architecture(self.search_space, self.scope)
             model.accuracy = model.arch.query(self.performance_metric, self.dataset)
 
