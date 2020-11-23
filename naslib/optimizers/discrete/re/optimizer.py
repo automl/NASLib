@@ -50,22 +50,22 @@ class RegularizedEvolution(MetaOptimizer):
         
         edges = [(u, v) for u, v, data in sorted(cell.edges(data=True)) if not data.is_final()]
 
-        # sample if op or edge change
-        if np.random.choice(a=[False, True]):
+        
+        # TODO: add "change edge", which either deletes an edge or adds a new random edge
+        # but for nasbench201 we only need "change op" since all edges are fixed
+        # so currently this is working for nasbench201
+        
+        if True:
             # change op
             random_edge = edges[np.random.choice(len(edges))]
             data = cell.edges[random_edge]
-            op_index = np.random.randint(len(data.primitives))
+            available = [o for o in range(len(data.primitives)) if o != data.op_index]
+            op_index = np.random.choice(available)
             data.set('op_index', op_index, shared=True)
         else:
             # change edge by setting it to zero
             random_edge = edges[np.random.choice(len(edges))]
             cell.edges[random_edge].set('op_index', 1, shared=True)     # this is search space dependent
-
-            random_edge = edges[np.random.choice(len(edges))]
-            data = cell.edges[random_edge]
-            op_index = np.random.randint(len(data.primitives))
-            cell.edges[random_edge].set('op_index', op_index, shared=True)
 
         child.update_edges(update_ops, child.OPTIMIZER_SCOPE, private_edge_data=True)
         return child
