@@ -2,7 +2,7 @@ import logging
 import sys
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch, RegularizedEvolution, LocalSearch
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch, RegularizedEvolution, LocalSearch, Bananas
 
 from naslib.search_spaces import (
     DartsSearchSpace, 
@@ -30,6 +30,7 @@ supported_optimizers = {
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
     'ls': LocalSearch(config),
+    'bananas': Bananas(config)
 }
 
 # Changing the search space is one line of code
