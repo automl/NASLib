@@ -35,15 +35,15 @@ class Bananas(MetaOptimizer):
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
 
-        self.k = 10
-        self.num_init = 10
-        self.num_ensemble = 3
-        self.acq_fn_type = 'its'
-        self.acq_fn_optimization = 'mutation'
-        self.encoding_type = 'path'
-        self.num_arches_to_mutate = 2
-        self.max_mutations = 1
-        self.num_candidates = 100
+        self.k = config.search.k
+        self.num_init = config.search.num_init
+        self.num_ensemble = config.search.num_ensemble
+        self.acq_fn_type = config.search.acq_fn_type
+        self.acq_fn_optimization = config.search.acq_fn_optimization
+        self.encoding_type = config.search.encoding_type
+        self.num_arches_to_mutate = config.search.num_arches_to_mutate
+        self.max_mutations = config.search.max_mutations
+        self.num_candidates = config.search.num_candidates
 
         self.train_data = []
         self.next_batch = []
