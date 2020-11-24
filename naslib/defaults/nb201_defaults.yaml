@@ -10,7 +10,7 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 50
+  epochs: 150
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -32,9 +32,9 @@ search:
 
   # RE
   sample_size: 10
-  population_size: 100
+  population_size: 30
   
-  #LS
+  # LS
   num_init: 10
   
   # BANANAS
