@@ -1,7 +1,7 @@
 dataset: cifar10
 seed: 99
 out_dir: run
-optimizer: darts
+optimizer: re
 
 search:
   checkpoint_freq: 5

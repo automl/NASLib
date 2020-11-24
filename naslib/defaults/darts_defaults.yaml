@@ -46,6 +46,10 @@ search:
   num_arches_to_mutate: 2
   max_mutations: 1
   num_candidates: 100
+  
+  # Predictor
+  predictor_type: feedforward
+  debug_predictor: False
 
 evaluation:
   checkpoint_freq: 30
