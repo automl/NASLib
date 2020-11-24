@@ -3,7 +3,7 @@ import sys
 import naslib as nl
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RegularizedEvolution
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RegularizedEvolution, LocalSearch, Bananas
 from naslib.optimizers.discrete.rs.optimizer import RandomSearch
 
 from naslib.search_spaces import NasBench201SearchSpace
@@ -22,6 +22,8 @@ supported_optimizers = {
     'gdas': GDASOptimizer(config),
     're': RegularizedEvolution(config),
     'rs': RandomSearch(config),
+    'ls': RandomSearch(config),
+    'bananas': Bananas(config)
 }
 
 search_space = NasBench201SearchSpace()
