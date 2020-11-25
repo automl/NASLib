@@ -1,6 +1,6 @@
 
 seed: 0
-optimizer: re
+optimizer: rs
 dataset: cifar10
 out_dir: run
 
@@ -29,3 +29,7 @@ search:
   num_arches_to_mutate: 2
   max_mutations: 1
   num_candidates: 100
+  
+  # Predictor
+  predictor_type: gbdt
+  debug_predictor: True

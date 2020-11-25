@@ -7,7 +7,7 @@ import numpy as np
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.utils.utils import sample_random_architecture
 from naslib.optimizers.discrete.utils.encodings import encode
-from naslib.optimizers.discrete.predictor.predictors import Ensemble
+from naslib.optimizers.discrete.predictor.ensemble import Ensemble
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -36,7 +36,7 @@ class Predictor(MetaOptimizer):
         self.num_init = self.epochs - self.k
         self.test_size = 2 * self.epochs
         
-        self.predictor_type = config.search.predictor_type
+        self.predictor_type = 'feedforward'
         self.num_ensemble = config.search.num_ensemble 
         self.debug_predictor = config.search.debug_predictor
         

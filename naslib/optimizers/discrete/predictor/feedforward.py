@@ -1,13 +1,6 @@
-import itertools
-import os
-import random
-import sys
-
 import numpy as np
-from matplotlib import pyplot as plt
 from tensorflow import keras
 import tensorflow as tf
-from tensorflow.keras import backend as K
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 
@@ -99,44 +92,3 @@ class FeedforwardPredictor:
     def predict(self, xtest):
         xtest = np.array(xtest)
         return self.model.predict(xtest)
-    
-    
-class Ensemble:
-    
-    def __init__(self, 
-                 num_ensemble=1, 
-                 predictor_type='feedforward'):
-        self.num_ensemble = num_ensemble
-        self.predictor_type = predictor_type
-    
-    def get_ensemble(self):
-        ensemble = []
-        for _ in range(self.num_ensemble):
-            if self.predictor_type == 'feedforward':
-                predictor = FeedforwardPredictor()
-            else:
-                print('{} predictor not implemented'.format(self.predictor_type))
-                raise NotImplementedError()
-            ensemble.append(predictor)
-        return ensemble
-
-    def fit(self, xtrain, ytrain):
-        
-        self.ensemble = self.get_ensemble()
-        train_errors = []
-        for i in range(self.num_ensemble):
-            train_error = self.ensemble[i].fit(xtrain, ytrain)
-            train_errors.append(train_error)
-        
-        return train_errors
-
-    def predict(self, xtest):
-        predictions = []
-        for i in range(self.num_ensemble):
-            prediction = self.ensemble[i].predict(xtest)
-            predictions.append(prediction)
-            
-        return np.array(predictions)
-    
-    
-    

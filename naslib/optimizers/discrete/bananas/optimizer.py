@@ -7,7 +7,7 @@ import numpy as np
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.utils.utils import sample_random_architecture, mutate, get_op_indices
 from naslib.optimizers.discrete.utils.encodings import encode
-from naslib.optimizers.discrete.predictor.predictors import Ensemble
+from naslib.optimizers.discrete.predictor.ensemble import Ensemble
 from naslib.optimizers.discrete.bananas.acquisition_functions import acquisition_function
 
 
