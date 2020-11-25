@@ -112,7 +112,7 @@ class NasBench101SeachSpace(Graph):
             return -1 # or some negative reward or none
 
         query_results = nasbench.query(nb101_spec)
-
+        
         if metric == Metric.RAW:
             return query_results
             
@@ -143,8 +143,8 @@ def _convert_cell_to_nb101_spec(cell):
     for i, j in cell.edges:
         matrix[i-1][j-1] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name]
     
+    matrix = matrix.astype(int)
     spec = api.ModelSpec(matrix=matrix, ops=ops)
-    
     return spec
 
 def _set_node_ops(edge, C):
