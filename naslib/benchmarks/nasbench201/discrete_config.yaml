@@ -5,8 +5,9 @@ dataset: cifar10
 out_dir: run
 
 search:
-  checkpoint_freq: 100
-  epochs: 2000
+  checkpoint_freq: 10
+  epochs: 50
+  fidelity: 5
 
   # GDAS
   tau_max: 10

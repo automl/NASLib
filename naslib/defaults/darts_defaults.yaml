@@ -25,6 +25,8 @@ search:
   arch_learning_rate: 0.0003
   arch_weight_decay: 0.001
   output_weights: True
+  
+  fidelity: 200
 
   # GDAS
   tau_max: 10
