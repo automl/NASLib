@@ -6,17 +6,14 @@ import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.utils.utils import sample_random_architecture, mutate, get_op_indices
-from naslib.optimizers.discrete.utils.encodings import encode
-from naslib.optimizers.discrete.predictor.ensemble import Ensemble
 from naslib.optimizers.discrete.bananas.acquisition_functions import acquisition_function
 
-
+from naslib.predictors.ensemble import Ensemble
 
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
-
 
 
 logger = logging.getLogger(__name__)
@@ -49,8 +46,6 @@ class Bananas(MetaOptimizer):
         self.next_batch = []
         self.history = torch.nn.ModuleList()
 
-
-
     def adapt_search_space(self, search_space, scope=None):
         assert search_space.QUERYABLE, "Bananas is currently only implemented for benchmarks."
         
@@ -75,9 +70,10 @@ class Bananas(MetaOptimizer):
         else:
             if len(self.next_batch) == 0:
                 # train a neural predictor
-                xtrain = [encode(m.arch, encoding_type=self.encoding_type) for m in self.train_data]
+                xtrain = [m.arch for m in self.train_data]
                 ytrain = [m.accuracy for m in self.train_data]
-                ensemble = Ensemble(self.num_ensemble)
+                ensemble = Ensemble(encoding_type=self.encoding_type,
+                                    num_ensemble=self.num_ensemble)
                 train_error = ensemble.fit(xtrain, ytrain)
 
                 # define an acquisition function
@@ -109,8 +105,7 @@ class Bananas(MetaOptimizer):
                     logging.info('{} is not yet supported as a acq fn optimizer'.format(encoding_type))
                     raise NotImplementedError()
 
-                candidate_encodings = [encode(arch, encoding_type=self.encoding_type) for arch in candidates]
-                values = [acq_fn(encoding) for encoding in candidate_encodings]
+                values = [acq_fn(encoding) for encoding in candidates]
                 sorted_indices = np.argsort(values)
                 choices = [candidates[i] for i in sorted_indices[-self.k:]]                        
                 self.next_batch = [*choices]

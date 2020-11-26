@@ -6,8 +6,8 @@ import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.utils.utils import sample_random_architecture
-from naslib.optimizers.discrete.utils.encodings import encode
-from naslib.optimizers.discrete.predictor.ensemble import Ensemble
+
+from naslib.predictors.ensemble import Ensemble
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -18,7 +18,7 @@ from naslib.utils.logging import log_every_n_seconds
 logger = logging.getLogger(__name__)
 
 
-class Predictor(MetaOptimizer):
+class BasePredictor(MetaOptimizer):
     
     # training the models is not implemented
     using_step_function = False
@@ -37,7 +37,8 @@ class Predictor(MetaOptimizer):
         self.test_size = 2 * self.epochs
         
         self.predictor_type = 'feedforward'
-        self.num_ensemble = config.search.num_ensemble 
+        self.num_ensemble = config.search.num_ensemble
+        self.encoding_type = 'adjacency_one_hot'
         self.debug_predictor = config.search.debug_predictor
         
         self.train_data = []
@@ -69,37 +70,31 @@ class Predictor(MetaOptimizer):
             if epoch == self.num_init:
                 # train the neural predictor and use it to predict arches in test_data
                 
-                test_data = []
-                for i in range(self.test_size):
-                    model = torch.nn.Module()
-                    model.arch = sample_random_architecture(self.search_space, self.scope)
-                    test_data.append(model)
-                                        
-                xtrain = [encode(m.arch) for m in self.train_data]
+                xtrain = [m.arch for m in self.train_data]
                 ytrain = [m.accuracy for m in self.train_data]
-                xtest = [encode(m.arch) for m in test_data]
                 
-                predictor = Ensemble(predictor_type=self.predictor_type,
-                                     num_ensemble=self.num_ensemble)
-                predictor.fit(xtrain, ytrain)                
-                train_pred = np.squeeze(predictor.predict(xtrain))
-                test_pred = np.squeeze(predictor.predict(xtest))  
+                ensemble = Ensemble(encoding_type=self.encoding_type,
+                                    num_ensemble=self.num_ensemble,
+                                    predictor_type=self.predictor_type)
+                train_error = ensemble.fit(xtrain, ytrain)
+                
+                xtest = []
+                for i in range(self.test_size):
+                    arch = sample_random_architecture(self.search_space, self.scope)
+                    xtest.append(arch)
 
-                if self.num_ensemble > 1:
-                    train_pred = np.mean(train_pred, axis=0)
-                    test_pred = np.mean(test_pred, axis=0)
+                test_pred = np.squeeze(ensemble.query(xtest))  
+                test_pred = np.mean(test_pred, axis=0)
 
                 if self.debug_predictor:
                     self.evaluate_predictor(xtrain=xtrain, 
                                             ytrain=ytrain, 
                                             xtest=xtest, 
-                                            train_pred=train_pred,
-                                            test_pred=test_pred,
-                                            test_data=test_data)
+                                            test_pred=test_pred)
                 
                 sorted_indices = np.argsort(test_pred)[-self.k:]
                 for i in sorted_indices:
-                    self.choices.append(test_data[i].arch)                
+                    self.choices.append(xtest[i])                
 
             # train the next chosen architecture
             choice = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
@@ -110,9 +105,7 @@ class Predictor(MetaOptimizer):
     def evaluate_predictor(self, xtrain, 
                            ytrain, 
                            xtest, 
-                           train_pred, 
                            test_pred, 
-                           test_data, 
                            slice_size=4):
         """
         This method is only used for debugging purposes.
@@ -120,23 +113,19 @@ class Predictor(MetaOptimizer):
         the performance of the predictor.
         """
         ytest = []
-        for model in test_data:
-            ytest.append(model.arch.query(self.performance_metric, self.dataset))
+        for arch in xtest:
+            ytest.append(arch.query(self.performance_metric, self.dataset))
 
         print('ytrain shape', np.array(ytrain).shape)
-        print('train_pred shape', np.array(train_pred).shape)
         print('ytest shape', np.array(ytest).shape)
         print('test_pred shape', np.array(test_pred).shape)
-        train_error = np.mean(abs(train_pred-ytrain))
         test_error = np.mean(abs(test_pred-ytest))
         correlation = np.corrcoef(np.array(ytest), np.array(test_pred))[1,0]
-        print('train error', train_error)
         print('test error', test_error)
         print('correlation', correlation)
         print()
         print('xtrain slice', xtrain[:slice_size])                
         print('ytrain slice', ytrain[:slice_size])                
-        print('train_pred slice', train_pred[:slice_size])
         print()
         print('xtest slice', xtest[:slice_size])
         print('ytest slice', ytest[:slice_size])

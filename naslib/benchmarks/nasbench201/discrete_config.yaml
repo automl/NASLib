@@ -1,6 +1,6 @@
 
 seed: 0
-optimizer: rs
+optimizer: bp
 dataset: cifar10
 out_dir: run
 
@@ -30,6 +30,6 @@ search:
   max_mutations: 1
   num_candidates: 100
   
-  # Predictor
+  # BP
   predictor_type: gbdt
   debug_predictor: True

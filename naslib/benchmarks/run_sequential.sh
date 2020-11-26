@@ -1,5 +1,5 @@
 
-#optimizers=(rs re ls predictor bananas)
+#optimizers=(rs re ls bp bananas)
 optimizers=(rs re)
 epochs=50
 out_dir=run

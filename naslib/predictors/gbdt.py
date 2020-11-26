@@ -9,6 +9,9 @@ import sys
 import numpy as np
 import lightgbm as lgb
 
+from naslib.predictors.utils.encodings import encode
+from naslib.predictors.predictor import Predictor
+
 
 # Nasbench101 has 3 candidate operations + 1 output per node
 one_hot_nasbench101 = [[1,0,0,0],
@@ -91,8 +94,13 @@ def get_feature_name_nasbench201():
         feature_name.append('node {} is op5'.format(col+1))
     return feature_name
 
-class GBDTPredictor:
-    def get_model(self, params=None):
+
+class GBDTPredictor(Predictor):
+    
+    def __init__(self, encoding_type='adjacency_one_hot'):
+        self.encoding_type = encoding_type
+        
+    def get_params(self, params=None):
         if params is None:
             # default parameters used in Luo et al. 2020
             params = {
@@ -115,20 +123,24 @@ class GBDTPredictor:
         # normalize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
-        xtrain = np.array(xtrain)
+        
+        xtrain = np.array([encode(arch, encoding_type=self.encoding_type) 
+                           for arch in xtrain])
+        ytrain = np.array(ytrain)
+
         # convert to lgb dataset
         lgb_train = lgb.Dataset(xtrain, ((ytrain-self.mean)/self.std))
-        # get model
-        params = self.get_model()
+        # get params
+        params = self.get_params()
         # get feature names (optional)
         feature_name = None #get_feature_name_nasbench201()
         # default 100 round of boosing from Luo et al. 2020
         self.model = lgb.train(params, lgb_train, feature_name=feature_name, num_boost_round=100)
-        #gbm.save_model(os.path.join(args.output_dir, 'model.txt'))        
         train_pred = np.squeeze(self.model.predict(xtrain,num_iteration=self.model.best_iteration))
         train_error = np.mean(abs(train_pred-ytrain))
         return train_error
 
-    def predict(self, xtest):
-        xtest = np.array(xtest)
+    def query(self, xtest):
+        xtest = np.array([encode(arch, encoding_type=self.encoding_type) 
+                          for arch in xtest])
         return np.squeeze(self.model.predict(xtest)) * self.std + self.mean

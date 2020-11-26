@@ -1,16 +1,19 @@
 import numpy as np
 
-from naslib.optimizers.discrete.predictor.feedforward import FeedforwardPredictor
-from naslib.optimizers.discrete.predictor.gbdt import GBDTPredictor
+from naslib.predictors.feedforward import FeedforwardPredictor
+from naslib.predictors.gbdt import GBDTPredictor
+from naslib.predictors.predictor import Predictor
 
 
-class Ensemble:
+class Ensemble(Predictor):
     
     def __init__(self, 
+                 encoding_type='adjacency_one_hot',
                  num_ensemble=1, 
                  predictor_type='feedforward'):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
+        self.encoding_type = encoding_type
     
     def get_ensemble(self):
         ensemble = []
@@ -35,13 +38,10 @@ class Ensemble:
         
         return train_errors
 
-    def predict(self, xtest):
+    def query(self, xtest):
         predictions = []
         for i in range(self.num_ensemble):
-            prediction = self.ensemble[i].predict(xtest)
+            prediction = self.ensemble[i].query(xtest)
             predictions.append(prediction)
             
         return np.array(predictions)
-    
-    
-    

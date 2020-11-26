@@ -49,7 +49,7 @@ search:
   max_mutations: 1
   num_candidates: 100
   
-  # Predictor
+  # BasePredictor
   predictor_type: feedforward
   debug_predictor: False
 
