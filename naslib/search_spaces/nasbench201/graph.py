@@ -181,7 +181,7 @@ class NasBench201SearchSpace(Graph):
             assert metric in [Metric.TRAIN_ACCURACY, Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_LOSS]
             
             query_results = cifar10_full_data[arch_str]
-            return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch]
+            return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
 
 
 def _set_cell_ops(edge, C):

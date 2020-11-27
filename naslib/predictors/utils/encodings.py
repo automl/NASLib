@@ -1,7 +1,5 @@
 import numpy as np
 
-from naslib.optimizers.discrete.utils.utils import get_op_indices
-
 """
 Currently only implemented for NAS-Bench-201.
 The plan is to make this work more broadly.
@@ -14,6 +12,19 @@ one_hot_nasbench201 = [[1,0,0,0,0],
                        [0,0,0,0,1]]
 OPS = ['avg_pool_3x3', 'nor_conv_1x1', 'nor_conv_3x3', 'none', 'skip_connect']
 NUM_OPS = len(OPS)
+
+
+def get_op_indices(arch):
+
+    cells = arch._get_child_graphs(single_instances=True)
+    op_indices = []
+    for cell in cells:
+        edges = [(u, v) for u, v, data in sorted(cell.edges(data=True)) if not data.is_final()]
+    for edge in edges:
+        op_indices.append(cell.edges[edge].op_index)
+        
+    return op_indices
+
 
 def get_paths(arch):
     """ 

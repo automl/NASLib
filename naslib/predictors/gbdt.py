@@ -140,7 +140,7 @@ class GBDTPredictor(Predictor):
         train_error = np.mean(abs(train_pred-ytrain))
         return train_error
 
-    def query(self, xtest):
+    def query(self, xtest, info=None):
         xtest = np.array([encode(arch, encoding_type=self.encoding_type) 
                           for arch in xtest])
         return np.squeeze(self.model.predict(xtest)) * self.std + self.mean

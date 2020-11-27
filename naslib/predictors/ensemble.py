@@ -9,7 +9,7 @@ class Ensemble(Predictor):
     
     def __init__(self, 
                  encoding_type='adjacency_one_hot',
-                 num_ensemble=1, 
+                 num_ensemble=3, 
                  predictor_type='feedforward'):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
@@ -38,7 +38,7 @@ class Ensemble(Predictor):
         
         return train_errors
 
-    def query(self, xtest):
+    def query(self, xtest, info=None):
         predictions = []
         for i in range(self.num_ensemble):
             prediction = self.ensemble[i].query(xtest)

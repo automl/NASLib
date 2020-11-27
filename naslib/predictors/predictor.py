@@ -29,3 +29,9 @@ class Predictor:
         """
         pass
     
+    def requires_partial_training(self):
+        """
+        Does the predictor require training the architecture partially?
+        E.g., learning curve extrapolators.
+        """
+        pass
