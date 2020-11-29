@@ -40,11 +40,12 @@ supported_optimizers = {
 # search_space = graph.NasBench101SearchSpace()
 # search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
-# search_space = NasBench201SearchSpace()
+search_space = NasBench201SearchSpace()
 
 # Changing the optimizer is one line of code
 
-optimizer = supported_optimizers['rs']
+optimizer = supported_optimizers[config.optimizer]
+optimizer.adapt_search_space(search_space)
 
 # Start the search and evaluation
 trainer = Trainer(optimizer, config)
