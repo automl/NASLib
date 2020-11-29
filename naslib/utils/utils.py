@@ -6,6 +6,7 @@ import argparse
 import torchvision.datasets as dset
 
 from copy import copy
+from collections import OrderedDict
 
 import random
 import os
@@ -316,7 +317,7 @@ class AttrDict(dict):
         self.__dict__ = self
 
 
-lass AverageMeterGroup:
+class AverageMeterGroup:
     """Average meter group for multiple average meters, ported from Naszilla repo."""
 
     def __init__(self):
