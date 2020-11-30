@@ -6,7 +6,7 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 import os
 
-from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping
+from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor
 
 from naslib.search_spaces import NasBench201SearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -32,6 +32,7 @@ supported_predictors = {
                         predictor_type='feedforward'),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot'),
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
+    'gcn': GCNPredictor(encoding_type='gcn'),
     'sovl_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
     'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS)    
 }

@@ -13,31 +13,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from naslib.utils import AverageMeterGroup
+from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
 
-# Nasbench101 has 3 candidate operations + 1 output per node
-one_hot_nasbench101 = [[1,0,0,0],
-                       [0,1,0,0],
-                       [0,0,1,0],
-                       [0,0,0,1]]
-
-# Nasbench 201 cells have the same adjacency matrix
-adjacency_matrix_nasbench201 = [[0,1,1,1],
-                                [0,0,1,1],
-                                [0,0,0,1],
-                                [0,0,0,0]]
-
-# 5 types of operations in Nasbench201                                
-one_hot_nasbench201 = [[1,0,0,0,0],
-                       [0,1,0,0,0],
-                       [0,0,1,0,0],
-                       [0,0,0,1,0],
-                       [0,0,0,0,1]]
 def normalize_adj(adj):
     # Row-normalize matrix
     last_dim = adj.size(-1)
@@ -49,8 +31,8 @@ def graph_pooling(inputs, num_vertices):
     return torch.div(out, num_vertices.unsqueeze(-1).expand_as(out))
 
 def accuracy_mse(prediction, target, scale=100.):
-    prediction = denormalize(prediction.detach()) * scale
-    target = denormalize(target) * scale
+    prediction = prediction.detach() * scale
+    target = (target) * scale
     return F.mse_loss(prediction, target)
 
 class DirectedGraphConvolution(nn.Module):
@@ -81,9 +63,10 @@ class DirectedGraphConvolution(nn.Module):
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
 
+
 # if nasbench-101: initial_hidden=5. if nasbench-201: initial_hidden=7
 class NeuralPredictorModel(nn.Module):
-    def __init__(self, initial_hidden=5, gcn_hidden=144, gcn_layers=4, linear_hidden=128):
+    def __init__(self, initial_hidden=7, gcn_hidden=144, gcn_layers=4, linear_hidden=128):
         super().__init__()
         self.gcn = [DirectedGraphConvolution(initial_hidden if i == 0 else gcn_hidden, gcn_hidden)
                     for i in range(gcn_layers)]
@@ -106,7 +89,7 @@ class NeuralPredictorModel(nn.Module):
         return out
 
 
-class NeuralPredictor:
+class GCNPredictor(Predictor):
     def __init__(self, encoding_type='gcn'):
         self.encoding_type = encoding_type
 
@@ -118,22 +101,20 @@ class NeuralPredictor:
             gcn_hidden=144,seed=0,batch_size=7,
             epochs=300,lr=1e-4,wd=3e-4):
 
-        # normlize y
+        # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         ytrain_normed = (ytrain - self.mean)/self.std
-        # encode data in gc format
+        # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
             encoded = encode(arch, encoding_type=self.encoding_type)
-            encoded['val_acc'] = ytrain_normed[i]
+            encoded['val_acc'] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
 
-        print("gcn encoded data:")
-        print(train_data[0])
         self.model = self.get_model(gcn_hidden=gcn_hidden)
-        data_loader = DataLoader(xtrain, batch_size=batch_size, shuffle=True, drop_last=True)
+        data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True)
 
         self.model.to(device)
         criterion = nn.MSELoss()
@@ -146,7 +127,7 @@ class NeuralPredictor:
             meters = AverageMeterGroup()
             lr = optimizer.param_groups[0]["lr"]
             for _, batch in enumerate(data_loader):
-                target = batch["val_acc"]
+                target = batch["val_acc"].float()
                 prediction = self.model(batch)
                 loss = criterion(prediction, target)
                 loss.backward()
@@ -155,14 +136,14 @@ class NeuralPredictor:
                 meters.update({"loss": loss.item(), "mse": mse.item()}, n=target.size(0))
 
             lr_scheduler.step()
-
-        train_pred = np.squeeze(self.model.predict(xtrain,num_iteration=self.model.best_iteration))
+        train_pred = np.squeeze(self.query(xtrain))
         train_error = np.mean(abs(train_pred-ytrain))
         return train_error
 
-    def predict(self, xtest, eval_batch_size=1000):
-
-        test_data_loader = DataLoader(xtest, batch_size=eval_batch_size)
+    def query(self, xtest, info=None, eval_batch_size=1000):
+        test_data = np.array([encode(arch,encoding_type=self.encoding_type)
+                            for arch in xtest])
+        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
 
         self.model.eval()
         pred = []

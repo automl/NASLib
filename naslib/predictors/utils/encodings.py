@@ -75,6 +75,7 @@ def encode_gcn_nasbench201(ops):
     # offset ops list by one, add input and output to ops list
     ops = [op+1 for op in ops]
     ops = [0, *ops, 6]
+    #print(ops)
     ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
     matrix = np.array(
             [[0, 1, 1, 1, 0, 0, 0, 0],
@@ -84,7 +85,7 @@ def encode_gcn_nasbench201(ops):
             [0, 0, 0, 0, 0, 0, 1, 0],
             [0, 0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0]])
+            [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
 
     dic = {
         'num_vertices': 8,
@@ -119,7 +120,7 @@ def encode(arch, encoding_type='adjacency_one_hot'):
         return encode_paths(arch)
 
     elif encoding_type == 'gcn':
-        return encode_gcn_nasbench201(arch)
+        return encode_gcn_nasbench201(encoding)
 
     else:
         logging.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
