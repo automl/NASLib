@@ -1,7 +1,5 @@
 # Author: Yang Liu @ Abacus.ai
-# This is an implementation of GBDT predictor for NAS from the paper:
-# Luo, Renqian, et al. "Neural architecture search with gbdt." arXiv preprint arXiv:2007.04785 (2020).
-
+# This is an implementation of gcn predictor for NAS.
 import itertools
 import os
 import random
