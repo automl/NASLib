@@ -1,13 +1,15 @@
+import os
 import random
 import torch
 import logging
 import numpy as np
 import networkx as nx
-from naslib.search_spaces.core import primitives as ops
 
 from torch import nn
 from copy import deepcopy
+from ConfigSpace.read_and_write import json as config_space_json_r_w
 
+from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from .primitives import FactorizedReduce
@@ -302,6 +304,24 @@ class DartsSearchSpace(Graph):
         logger.info("normal={}".format(convert(normal_cell)))
         logger.info("reduce={}".format(convert(reduction_cell)))
         return "normal={} | reduction={}".format(convert(normal_cell), convert(reduction_cell))
+
+    @staticmethod
+    def get_configspace(path_to_configspace_obj=os.path.join(
+        get_project_root(), "search_spaces/darts/configspace.json"
+    )):
+        """
+        Returns the ConfigSpace object for the search space
+
+        Args:
+            path_to_configspace_obj: path to ConfigSpace json encoding
+
+        Returns:
+            ConfigSpace.ConfigutationSpace: a ConfigSpace object
+        """
+        with open(path_to_configspace_obj, 'r') as fh:
+            json_string = fh.read()
+            config_space = config_space_json_r_w.read(json_string)
+        return config_space
 
 
 def _set_ops(edge, C, stride):
