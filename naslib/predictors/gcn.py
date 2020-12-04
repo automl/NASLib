@@ -1,5 +1,6 @@
 # Author: Yang Liu @ Abacus.ai
-# This is an implementation of gcn predictor for NAS.
+# This is an implementation of gcn predictor for NAS from the paper:
+# Wen et al., 2019. Neural Predictor for Neural Architecture Search
 import itertools
 import os
 import random
