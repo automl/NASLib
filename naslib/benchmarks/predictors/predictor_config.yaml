@@ -1,9 +1,10 @@
 
 seed: 0
-predictor: gcn #gbdt # feedforward
+predictor: gbdt
 dataset: cifar10
 out_dir: run
 
-train_size: 50
-test_size: 50
+train_size: 20
+test_size: 20
 dataset: cifar10
+
