@@ -20,6 +20,7 @@ def main(args):
             'optimizer': args.optimizer,
             'search': {'checkpoint_freq': args.checkpoint_freq,
                        'epochs': args.epochs,
+                       'fidelity': 200,
                        'sample_size': 10,
                        'population_size': 30,
                        'num_init': 10,
@@ -30,7 +31,9 @@ def main(args):
                        'encoding_type': 'path',
                        'num_arches_to_mutate': 2,
                        'max_mutations': 1,
-                       'num_candidates': 100
+                       'num_candidates': 100,
+                       'predictor_type':'feedforward',
+                       'debug_predictor': False
                       }
         }
 
@@ -47,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default='rs', help="which optimizer")    
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")
     parser.add_argument("--out_dir", type=str, default='run', help="Output directory")    
-    parser.add_argument("--checkpoint_freq", type=int, default=5, help="How often to checkpoint")
+    parser.add_argument("--checkpoint_freq", type=int, default=5000, help="How often to checkpoint")
     parser.add_argument("--epochs", type=int, default=150, help="How many search epochs")
     
     args = parser.parse_args()

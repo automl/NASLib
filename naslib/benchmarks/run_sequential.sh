@@ -1,12 +1,11 @@
 
-#optimizers=(rs re ls bp bananas)
-optimizers=(rs re)
-epochs=50
+optimizers=(rs re ls bp bananas)
+epochs=150
 out_dir=run
 dataset=cifar10
 
 start_seed=0
-trials=2
+trials=200
 end_seed=$(($start_seed + $trials - 1))
 
 # create config files
