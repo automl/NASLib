@@ -126,7 +126,7 @@ def get_config_from_args(args=None, config_type='nas'):
     if config_type == 'nas':
         config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
     elif config_type == 'predictor':
-        config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+        config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
     else:
         print('invalid config type in utils/utils.py')
         

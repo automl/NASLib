@@ -35,8 +35,7 @@ supported_predictors = {
     'bonas_mlp': BonasMLPPredictor(encoding_type='bonas_mlp'),
     'bonas_lstm': BonasLSTMPredictor(encoding_type='bonas_lstm'),
     'sovl_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
-    'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS),
-    'oracle': EarlyStopping(fidelity=200, metric=Metric.VAL_ACCURACY)
+    'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS)
 }
 
 # set up the search space

@@ -1,6 +1,5 @@
 
-#predictors=(bananas feedforward gbdt gcn sovl_50 sotl_50 oracle)
-predictors=(bananas feedforward gbdt gcn)
+predictors=(sovl_50 sotl_50 bananas feedforward gbdt gcn)
 
 out_dir=run
 dataset=cifar10
