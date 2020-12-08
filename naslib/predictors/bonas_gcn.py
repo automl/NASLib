@@ -154,7 +154,7 @@ class GCN(nn.Module):
         x = F.relu(self.bn4(self.gc4(x, adj).transpose(2, 1)))
         x = x.transpose(1, 2)
         embeddings = x[:, x.size()[1] - 1, :]
-        x = self.fc(embeddings)
+        x = self.fc(embeddings).view(-1)
         if extract_embedding:
             return embeddings
         if self.ifsigmoid:
@@ -192,7 +192,7 @@ class BonasGCNPredictor(Predictor):
         self.model.to(device)
         criterion = nn.MSELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
-        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=lr)
 
         self.model.train()
 
@@ -203,7 +203,6 @@ class BonasGCNPredictor(Predictor):
                 feat, adjmat, target =  batch["operations"], batch["adjacency"], batch["val_acc"].float()
                 prediction = self.model(feat, adjmat)
                 loss = criterion(prediction, target)
-                #print("prediction: {}, target: {}".format(prediction, target))
                 loss.backward()
                 optimizer.step()
                 mse = accuracy_mse(prediction, target)
