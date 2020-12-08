@@ -43,8 +43,10 @@ supported_optimizers = {
 search_space = NasBench201SearchSpace()
 
 # Changing the optimizer is one line of code
-
 optimizer = supported_optimizers[config.optimizer]
+optimizer.adapt_search_space(search_space)
+
+
 optimizer.adapt_search_space(search_space)
 
 # Start the search and evaluation

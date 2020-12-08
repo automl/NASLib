@@ -91,7 +91,7 @@ def pairwise(iterable):
     return zip(a, a)
 
 
-def get_config_from_args(args=None):
+def get_config_from_args(args=None, config_type='nas'):
     """
     Parses command line arguments and merges them with the defaults
     from the config file.
@@ -101,9 +101,15 @@ def get_config_from_args(args=None):
     Args:
         args: args from a different argument parser than the default one.
     """
-    # load the default base
-    with open(os.path.join(get_project_root(), 'defaults', 'darts_defaults.yaml')) as f:
-        config = CfgNode.load_cfg(f)
+    
+    if config_type == 'nas':
+        # load the default base
+        with open(os.path.join(get_project_root(), 'defaults', 'darts_defaults.yaml')) as f:
+            config = CfgNode.load_cfg(f)        
+    elif config_type == 'predictor':
+        # load the default base
+        with open(os.path.join(get_project_root(), 'benchmarks/predictors', 'predictor_config.yaml')) as f:
+            config = CfgNode.load_cfg(f)  
     
     if not args:
         args = parse_args()
@@ -115,9 +121,15 @@ def get_config_from_args(args=None):
     # load config file
     config.merge_from_file(args.config_file)
     config.merge_from_list(args.opts)
-
+    
     # prepare the output directories
-    config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
+    if config_type == 'nas':
+        config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
+    elif config_type == 'predictor':
+        config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+    else:
+        print('invalid config type in utils/utils.py')
+        
     config.data = "{}/data".format(get_project_root())
 
     create_exp_dir(config.save)

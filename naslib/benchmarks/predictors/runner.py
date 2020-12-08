@@ -16,16 +16,14 @@ from naslib.utils.utils import get_project_root
 
 from fvcore.common.config import CfgNode
 
-# TODO: pass in a config to the seed, predictors, and PredictionEvaluator
 
-# load the default base
-with open(os.path.join(get_project_root(), 'benchmarks/predictors/', 'predictor_config.yaml')) as f:
-    config = CfgNode.load_cfg(f)
+config = utils.get_config_from_args(config_type='predictor')
 
-config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.predictor, config.seed)
-utils.set_seed(0)
+utils.set_seed(config.seed)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
+
+utils.log_args(config)
 
 supported_predictors = {
     'bananas': Ensemble(encoding_type='path',
@@ -37,7 +35,8 @@ supported_predictors = {
     'bonas_mlp': BonasMLPPredictor(encoding_type='bonas_mlp'),
     'bonas_lstm': BonasLSTMPredictor(encoding_type='bonas_lstm'),
     'sovl_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
-    'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS)    
+    'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS),
+    'oracle': EarlyStopping(fidelity=200, metric=Metric.VAL_ACCURACY)
 }
 
 # set up the search space
