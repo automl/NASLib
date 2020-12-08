@@ -1,9 +1,13 @@
 import numpy as np
+import logging
 
 """
 Currently only implemented for NAS-Bench-201.
 The plan is to make this work more broadly.
 """
+
+logger = logging.getLogger(__name__)
+
 
 one_hot_nasbench201 = [[1,0,0,0,0],
                        [0,1,0,0,0],
@@ -155,5 +159,5 @@ def encode(arch, encoding_type='adjacency_one_hot'):
         return encode_bonas_gcn_nasbench201(encoding)
 
     else:
-        logging.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
+        logger.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
         raise NotImplementedError()
