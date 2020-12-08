@@ -78,15 +78,15 @@ def encode_gcn_nasbench201(ops):
     #print(ops)
     ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
     matrix = np.array(
-            [[0, 1, 1, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
-
+            [[1, 1, 1, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 1, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 0, 1, 0],
+            [0, 0, 0, 0, 0, 1, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1]],dtype=np.float32)
+    matrix = np.transpose(matrix)
     dic = {
         'num_vertices': 8,
         'adjacency': matrix,
@@ -95,6 +95,38 @@ def encode_gcn_nasbench201(ops):
         'val_acc': 0.0
     }
 
+    return dic
+
+def encode_bonas_mlp_nasbench201(ops):
+    '''
+    Input:
+    a list of categorical ops starting from 0
+    '''
+
+    # offset ops list by one, add input and output to ops list
+    ops = [op+1 for op in ops]
+    ops = [0, *ops, 6]
+    #print(ops)
+    ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
+    matrix = np.array(
+            [[0, 1, 1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
+    flat_adj_matrix = np.reshape(matrix,(-1,1))
+    #print(flat_adj_matrix)
+    ops = np.array(ops_onehot,dtype=np.float32).reshape(-1,1)
+    #print(ops)
+    flat_feature = np.reshape(np.concatenate((flat_adj_matrix,ops)),(1,-1))
+    
+    dic = {
+        'feature': flat_feature,
+        'val_acc': 0.0
+    }
     return dic
 
 
@@ -121,6 +153,9 @@ def encode(arch, encoding_type='adjacency_one_hot'):
 
     elif encoding_type == 'gcn':
         return encode_gcn_nasbench201(encoding)
+    
+    elif encoding_type == 'bonas_mlp':
+        return encode_bonas_mlp_nasbench201(encoding)
 
     else:
         logging.info('{} is not yet supported as a predictor encoding'.format(encoding_type))

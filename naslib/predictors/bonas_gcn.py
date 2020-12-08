@@ -22,6 +22,21 @@ from naslib.predictors.predictor import Predictor
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
 
+def normalize(mx):
+    """Row-normalize sparse matrix"""
+    rowsum = np.array(mx.sum(1))
+    r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_mat_inv = np.diag(r_inv)
+    mx = np.dot(r_mat_inv,mx)
+    return mx
+
+def normalize_adj(adj):
+    # Row-normalize matrix
+    last_dim = adj.size(-1)
+    rowsum = adj.sum(2, keepdim=True).repeat(1, 1, last_dim)
+    return torch.div(adj, rowsum)
+
 def accuracy_mse(prediction, target, scale=100.):
     prediction = prediction.detach() * scale
     target = (target) * scale
@@ -105,8 +120,9 @@ class GraphConvolution(nn.Module):
                + str(self.in_features) + ' -> ' \
                + str(self.out_features) + ')'
 
+# nfeat=7 for nasbench 201
 class GCN(nn.Module):
-    def __init__(self, nfeat, ifsigmoid, layer_size = 64):
+    def __init__(self, nfeat=7, ifsigmoid=False, layer_size = 64):
         super(GCN, self).__init__()
         self.ifsigmoid = ifsigmoid
         self.size = layer_size
@@ -148,16 +164,16 @@ class GCN(nn.Module):
 
 
 class BonasGCNPredictor(Predictor):
-    def __init__(self, encoding_type='gcn'):
+    def __init__(self, encoding_type='bonas_gcn'):
         self.encoding_type = encoding_type
 
     def get_model(self, **kwargs):
-        predictor = GCN(**kwargs)
+        predictor = GCN()
         return predictor
 
     def fit(self,xtrain,ytrain, 
-            gcn_hidden=144,seed=0,batch_size=7,
-            epochs=300,lr=1e-4,wd=3e-4):
+            gcn_hidden=64,seed=0,batch_size=32,
+            epochs=100,lr=1e-3,wd=0):
 
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
@@ -170,10 +186,9 @@ class BonasGCNPredictor(Predictor):
             encoded['val_acc'] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
-
-        self.model = self.get_model(gcn_hidden=gcn_hidden)
+        nfeat = 7
+        self.model = self.get_model(gcn_hidden=gcn_hidden,nfeat=nfeat)
         data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True)
-
         self.model.to(device)
         criterion = nn.MSELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
@@ -188,6 +203,7 @@ class BonasGCNPredictor(Predictor):
                 feat, adjmat, target =  batch["operations"], batch["adjacency"], batch["val_acc"].float()
                 prediction = self.model(feat, adjmat)
                 loss = criterion(prediction, target)
+                #print("prediction: {}, target: {}".format(prediction, target))
                 loss.backward()
                 optimizer.step()
                 mse = accuracy_mse(prediction, target)
