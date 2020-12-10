@@ -165,11 +165,14 @@ class NasBench201SearchSpace(Graph):
         if not epoch or epoch == 200:
         
             # query data from nb201
-            query_results = nb201_data[arch_str]
+            if dataset == 'cifar10':
+                query_results = cifar10_full_data[arch_str]
+            else:
+                query_results = nb201_data[arch_str]
         
             if metric == Metric.RAW:
                 return query_results
-            elif "VAL_" in metric.name and dataset == 'cifar10':
+            elif ("VAL_" in metric.name or "TRAIN_" in metric.name) and dataset == 'cifar10':
                 dataset = 'cifar10-valid'
             elif "VAL_" in metric.name and dataset != 'cifar10':
                 raise ValueError("nasbench 201 does not have a validation split for other datasets than cifar10.")

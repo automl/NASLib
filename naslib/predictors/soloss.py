@@ -18,11 +18,11 @@ class SoLosspredictor(Predictor):
         output: predictions for the architectures
         """
         test_set_scores = []
-        for test_arch, past_loss in xtest, info:
+        for test_arch, past_loss in zip(xtest, info):
             # assume we have the training loss for each preceding epoch: past_loss is a list
             
             if self.sum_option == 'SoTLE' or self.sum_option == 'SoVLE':
-                score = - past_loss[-1]
+                score = past_loss[-1]
             elif 'EMASo' in self.sum_option:
                 EMA_SoTL = []
                 mu = 0.99
@@ -32,9 +32,9 @@ class SoLosspredictor(Predictor):
                     else:
                         ema = ema * (1 - mu) + mu * past_loss[se]
                     EMA_SoTL.append(ema)
-                score = - np.sum(EMA_SoTL)
+                score = np.sum(EMA_SoTL)
             else:
-                score = - np.sum(past_loss)
+                score = np.sum(past_loss)
             test_set_scores.append(score)
             
         return np.array(test_set_scores)

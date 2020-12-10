@@ -50,7 +50,7 @@ class PredictorEvaluator(object):
         ydata = []
         for _ in range(self.train_size):
             arch = sample_random_architecture(self.search_space, self.scope)
-            accuracy = arch.query(metric=self.metric, dataset=self.dataset)
+            accuracy = arch.query(metric=self.metric, dataset=self.dataset)[-1]
             xdata.append(arch)
             ydata.append(accuracy)
         return xdata, ydata
@@ -98,7 +98,7 @@ class PredictorEvaluator(object):
         # else:
         #     info = None
 
-        info = self.predictor.requires_partial_training(xtest, self.dataset)
+        info = self.predictor.requires_partial_training(xtest)
 
         # query each architecture in the test set
         test_pred = self.predictor.query(xtest, info)

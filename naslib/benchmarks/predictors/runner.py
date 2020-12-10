@@ -6,7 +6,7 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 import os
 
-from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor, BonasGCNPredictor, BonasMLPPredictor, BonasLSTMPredictor
+from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor, BonasGCNPredictor, BonasMLPPredictor, BonasLSTMPredictor, jacobian_cov, SoLosspredictor, SVR_Estimator
 
 from naslib.search_spaces import NasBench201SearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -34,8 +34,11 @@ supported_predictors = {
     'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
     'bonas_mlp': BonasMLPPredictor(encoding_type='bonas_mlp'),
     'bonas_lstm': BonasLSTMPredictor(encoding_type='bonas_lstm'),
-    'sovl_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
-    'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS)
+    'valloss_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
+    'valacc_50': EarlyStopping(fidelity=50, metric=Metric.VAL_ACCURACY),
+    'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size = 256, seed=1),
+    'sotl_50': SoLosspredictor(dataset=config.dataset, fidelity=50, metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
+    'lcsvr_50': SVR_Estimator(dataset=config.dataset, fidelity=50, metric=Metric.VAL_ACCURACY),
 }
 
 # set up the search space

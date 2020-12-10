@@ -1,28 +1,13 @@
-import os
-import time
-import argparse
 import random
+
 import numpy as np
-from tqdm import trange
-from statistics import mean
-import sys
-sys.path.append('../nas-without-training/')
-
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-import torchvision.datasets as datasets
-import torch.optim as optim
 
-from models import get_cell_based_tiny_net
-import torchvision.transforms as transforms
-from datasets import get_datasets
-from naslib.utils import utils
-from naslib.utils.utils import get_project_root
-from config_utils import load_config
-from nas_201_api import NASBench201API as API
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.utils.build_nets import get_cell_based_tiny_net
+from naslib.utils import utils
+from naslib.utils.utils import get_project_root
+
 
 def get_batch_jacobian(net, x, target):
     net.zero_grad()
@@ -61,8 +46,8 @@ class jacobian_cov(Predictor):
 
         if 'nas201' in self.task_name:
             self.dataset = self.task_name.split('_')[1]
-            api_loc = './data/NAS-Bench-201-v1_1-096897.pth'
-            self.api = API(api_loc)
+            # api_loc = './data/NAS-Bench-201-v1_1-096897.pth'
+            # self.api = API(api_loc)
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
     def query(self, xtest, info=None):
