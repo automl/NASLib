@@ -1,9 +1,10 @@
 import numpy as np
 from tensorflow import keras
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
-
+from keras.models import Sequential
+from keras.optimizers import Adam
+# from tensorflow.keras.models import Sequential
+# from tensorflow.keras.optimizers import Adam
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 

@@ -7,7 +7,6 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 import os
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor
-
 from naslib.search_spaces import NasBench201SearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
