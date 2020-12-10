@@ -1,9 +1,13 @@
 import numpy as np
+import logging
 
 """
 Currently only implemented for NAS-Bench-201.
 The plan is to make this work more broadly.
 """
+
+logger = logging.getLogger(__name__)
+
 
 one_hot_nasbench201 = [[1,0,0,0,0],
                        [0,1,0,0,0],
@@ -86,7 +90,7 @@ def encode_gcn_nasbench201(ops):
             [0, 0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
-
+    #matrix = np.transpose(matrix)
     dic = {
         'num_vertices': 8,
         'adjacency': matrix,
@@ -95,6 +99,35 @@ def encode_gcn_nasbench201(ops):
         'val_acc': 0.0
     }
 
+    return dic
+
+def encode_bonas_gcn_nasbench201(ops):
+    '''
+    Input:
+    a list of categorical ops starting from 0
+    '''
+
+    # offset ops list by one, add input and output to ops list
+    ops = [op+1 for op in ops]
+    ops = [0, *ops, 6]
+    #print(ops)
+    ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
+    matrix = np.array(
+            [[1, 1, 1, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 1, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0, 1, 0],
+            [0, 0, 0, 1, 0, 0, 0, 1],
+            [0, 0, 0, 0, 1, 0, 1, 0],
+            [0, 0, 0, 0, 0, 1, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1]],dtype=np.float32)
+    matrix = np.transpose(matrix)
+    
+    dic = {
+        'adjacency': matrix,
+        'operations': ops_onehot,
+        'val_acc': 0.0
+    }
     return dic
 
 
@@ -121,7 +154,10 @@ def encode(arch, encoding_type='adjacency_one_hot'):
 
     elif encoding_type == 'gcn':
         return encode_gcn_nasbench201(encoding)
+    
+    elif encoding_type == 'bonas_gcn':
+        return encode_bonas_gcn_nasbench201(encoding)
 
     else:
-        logging.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
+        logger.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
         raise NotImplementedError()

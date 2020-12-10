@@ -36,9 +36,9 @@ class BasePredictor(MetaOptimizer):
         self.num_init = self.epochs - self.k
         self.test_size = 2 * self.epochs
         
-        self.predictor_type = 'feedforward'
+        self.predictor_type = config.search.predictor_type
         self.num_ensemble = config.search.num_ensemble
-        self.encoding_type = 'adjacency_one_hot'
+        self.encoding_type = config.search.encoding_type
         self.debug_predictor = config.search.debug_predictor
         
         self.train_data = []

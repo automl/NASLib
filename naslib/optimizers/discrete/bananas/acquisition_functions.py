@@ -1,6 +1,10 @@
 import numpy as np
 from scipy.stats import norm
 import sys
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def acquisition_function(ensemble, 
@@ -55,7 +59,7 @@ def acquisition_function(ensemble,
         return ei
 
     else:
-        logging.info('{} is not a valid exploration type'.format(acq_fn_type))
+        logger.info('{} is not a valid exploration type'.format(acq_fn_type))
         raise NotImplementedError()
 
     return sorted_indices

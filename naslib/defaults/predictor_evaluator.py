@@ -1,3 +1,4 @@
+import codecs
 import time
 import json
 import logging
@@ -32,6 +33,11 @@ class PredictorEvaluator(object):
         
         self.metric = Metric.VAL_LOSS
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.results_dict = utils.AttrDict(
+            {'test_error': [],
+             'correlation': [],
+             'runtime': []}
+        )
         
     def adapt_search_space(self, search_space, scope=None):
         assert search_space.QUERYABLE, "PredictorEvaluator is currently only implemented for benchmarks."
@@ -105,27 +111,27 @@ class PredictorEvaluator(object):
         logger.info("Compute evaluation metrics")
         test_error, correlation = self.compare(ytest, test_pred)
         logger.info("test error: {}, correlation: {}".format(test_error, correlation))
+        self.results_dict['correlation'].append(correlation)
+        self.results_dict['test_error'].append(test_error)
+        self._log_to_json()
         """
         TODO: also return timing information
         (for preprocessing, training train set, and querying test set).
         start_time = time.time()
-        TODO: log results to json
         """
         
     def compare(self, ytest, test_pred):
         
         test_error = np.mean(abs(test_pred-ytest))
         correlation = np.corrcoef(np.array(ytest), np.array(test_pred))[1,0]
-        #self.errors_dict.valid_acc.append(valid_acc)
         return test_error, correlation
         
-    # TODO: log results
     def _log_to_json(self):
         """log statistics to json file"""
         if not os.path.exists(self.config.save):
             os.makedirs(self.config.save)
         with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
-            json.dump(self.errors_dict, file, separators=(',', ':'))
+            json.dump(self.results_dict, file, separators=(',', ':'))
 
 
     

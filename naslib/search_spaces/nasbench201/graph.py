@@ -12,6 +12,15 @@ from naslib.utils.utils import get_project_root
 from .primitives import ResNetBasicblock
 
 
+# load the nasbench201 data
+with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
+    nb201_data = pickle.load(f)
+
+# load nasbench201 full training data for cifar10
+with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
+    cifar10_full_data = pickle.load(f)
+
+
 class NasBench201SearchSpace(Graph):
     """
     Implementation of the nasbench 201 search space.
@@ -30,14 +39,6 @@ class NasBench201SearchSpace(Graph):
     def __init__(self):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
-
-        # load the nasbench201 data
-        with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
-            self.nb201_data = pickle.load(f)
-
-        # load nasbench201 full training data for cifar10
-        with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
-            self.cifar10_full_data = pickle.load(f)
 
         #
         # Cell definition
@@ -164,7 +165,7 @@ class NasBench201SearchSpace(Graph):
         if not epoch or epoch == 200:
         
             # query data from nb201
-            query_results = self.nb201_data[arch_str]
+            query_results = nb201_data[arch_str]
         
             if metric == Metric.RAW:
                 return query_results
@@ -180,7 +181,7 @@ class NasBench201SearchSpace(Graph):
             implemented for cifar10: {}".format(dataset)
             assert metric in [Metric.TRAIN_ACCURACY, Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_LOSS]
             
-            query_results = self.cifar10_full_data[arch_str]
+            query_results = cifar10_full_data[arch_str]
             return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
 
 

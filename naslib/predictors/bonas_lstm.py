@@ -1,10 +1,13 @@
 # Author: Yang Liu @ Abacus.ai
 # This is an implementation of gcn predictor for NAS from the paper:
-# Wen et al., 2019. Neural Predictor for Neural Architecture Search
+# Shi et al., 2020. Bridging the Gap between Sample-based and
+# One-shot Neural Architecture Search with BONAS
+
 import itertools
 import os
 import random
 import sys
+import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -19,86 +22,47 @@ from naslib.predictors.predictor import Predictor
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
 
-def normalize_adj(adj):
-    # Row-normalize matrix
-    last_dim = adj.size(-1)
-    rowsum = adj.sum(2, keepdim=True).repeat(1, 1, last_dim)
-    return torch.div(adj, rowsum)
-
-def graph_pooling(inputs, num_vertices):
-    out = inputs.sum(1)
-    return torch.div(out, num_vertices.unsqueeze(-1).expand_as(out))
-
 def accuracy_mse(prediction, target, scale=100.):
     prediction = prediction.detach() * scale
     target = (target) * scale
     return F.mse_loss(prediction, target)
 
-class DirectedGraphConvolution(nn.Module):
-    def __init__(self, in_features, out_features):
-        super().__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        self.weight1 = nn.Parameter(torch.zeros((in_features, out_features)))
-        self.weight2 = nn.Parameter(torch.zeros((in_features, out_features)))
-        self.dropout = nn.Dropout(0.1)
-        self.reset_parameters()
 
-    def reset_parameters(self):
-        nn.init.xavier_uniform_(self.weight1.data)
-        nn.init.xavier_uniform_(self.weight2.data)
+class LSTM(nn.Module):
+    def __init__(self, nfeat, timestep):
+        self.emb_dim = 100
+        self.hidden_dim = 100
+        self.timestep = timestep
+        super(LSTM, self).__init__()
+        self.adj_emb = nn.Embedding(2, embedding_dim=self.emb_dim)
+        nn.init.uniform_(self.adj_emb.weight, a=-0.1, b=0.1)
+        self.op_emb = nn.Embedding(nfeat, embedding_dim=self.emb_dim)
+        nn.init.uniform_(self.op_emb.weight, a=-0.1, b=0.1)
+        self.rnn = nn.LSTM(input_size=self.emb_dim, hidden_size=self.hidden_dim, batch_first=True)
+        self.fc = nn.Linear(self.hidden_dim * self.timestep, 1)
 
-    def forward(self, inputs, adj):
-        norm_adj = normalize_adj(adj)
-        output1 = F.relu(torch.matmul(norm_adj, torch.matmul(inputs, self.weight1)))
-        inv_norm_adj = normalize_adj(adj.transpose(1, 2))
-        output2 = F.relu(torch.matmul(inv_norm_adj, torch.matmul(inputs, self.weight2)))
-        out = (output1 + output2) / 2
-        out = self.dropout(out)
-        return out
-
-    def __repr__(self):
-        return self.__class__.__name__ + ' (' \
-               + str(self.in_features) + ' -> ' \
-               + str(self.out_features) + ')'
-
-
-# if nasbench-101: initial_hidden=5. if nasbench-201: initial_hidden=7
-class NeuralPredictorModel(nn.Module):
-    def __init__(self, initial_hidden=7, gcn_hidden=144, gcn_layers=4, linear_hidden=128):
-        super().__init__()
-        self.gcn = [DirectedGraphConvolution(initial_hidden if i == 0 else gcn_hidden, gcn_hidden)
-                    for i in range(gcn_layers)]
-        self.gcn = nn.ModuleList(self.gcn)
-        self.dropout = nn.Dropout(0.1)
-        self.fc1 = nn.Linear(gcn_hidden, linear_hidden, bias=False)
-        self.fc2 = nn.Linear(linear_hidden, 1, bias=False)
-
-    def forward(self, inputs):
-        numv, adj, out = inputs["num_vertices"], inputs["adjacency"], inputs["operations"]
-        gs = adj.size(1)  # graph node number
-
-        adj_with_diag = normalize_adj(adj + torch.eye(gs, device=adj.device))  # assuming diagonal is not 1
-        for layer in self.gcn:
-            out = layer(out, adj_with_diag)
-        out = graph_pooling(out, numv)
-        out = self.fc1(out)
-        out = self.dropout(out)
-        out = self.fc2(out).view(-1)
+    def forward(self, x, adj):
+        op = x
+        adj_embed = self.adj_emb(adj)
+        op_embed = self.op_emb(op)
+        embed = torch.cat((adj_embed, op_embed), 1)
+        out, (h_n, c_n) = self.rnn(embed)
+        out = out.contiguous().view(-1, out.shape[1] * out.shape[2])
+        out = self.fc(out)
         return out
 
 
-class GCNPredictor(Predictor):
+class BonasLSTMPredictor(Predictor):
     def __init__(self, encoding_type='gcn'):
         self.encoding_type = encoding_type
 
     def get_model(self, **kwargs):
-        predictor = NeuralPredictorModel()
+        predictor = LSTM()
         return predictor
 
     def fit(self,xtrain,ytrain, 
             gcn_hidden=144,seed=0,batch_size=7,
-            epochs=300,lr=1e-4,wd=3e-4):
+            epochs=100,lr=1e-3,wd=0):
 
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
@@ -126,9 +90,11 @@ class GCNPredictor(Predictor):
             meters = AverageMeterGroup()
             lr = optimizer.param_groups[0]["lr"]
             for _, batch in enumerate(data_loader):
-                target = batch["val_acc"].float()
-                prediction = self.model(batch)
+                feat, adjmat, target =  batch["operations"], batch["adjacency"], batch["val_acc"].float()
+                arch = np.concatenate(adjmat,feat)
+                prediction = self.model(arch)
                 loss = criterion(prediction, target)
+                print("prediction: {}, target: {}".format(prediction, target))
                 loss.backward()
                 optimizer.step()
                 mse = accuracy_mse(prediction, target)
@@ -148,7 +114,9 @@ class GCNPredictor(Predictor):
         pred = []
         with torch.no_grad():
             for _, batch in enumerate(test_data_loader):
-                prediction = self.model(batch)
+                feat, adjmat =  batch["operations"], batch["adjacency"]
+                arch = np.concatenate(adjmat,feat)
+                prediction = self.model(arch)
                 pred.append(prediction.cpu().numpy())
 
         pred = np.concatenate(pred)

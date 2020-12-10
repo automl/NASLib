@@ -102,7 +102,7 @@ class Bananas(MetaOptimizer):
                             candidates.append(candidate)
 
                 else:
-                    logging.info('{} is not yet supported as a acq fn optimizer'.format(encoding_type))
+                    logger.info('{} is not yet supported as a acq fn optimizer'.format(encoding_type))
                     raise NotImplementedError()
 
                 values = [acq_fn(encoding) for encoding in candidates]
