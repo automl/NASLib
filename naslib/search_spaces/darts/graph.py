@@ -4,7 +4,9 @@ import torch
 import logging
 import numpy as np
 import networkx as nx
+import pickle
 
+from collections import namedtuple
 from torch import nn
 from copy import deepcopy
 from ConfigSpace.read_and_write import json as config_space_json_r_w
@@ -12,11 +14,18 @@ from ConfigSpace.read_and_write import json as config_space_json_r_w
 from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
+from naslib.search_spaces.darts.conversions import convert_naslib_to_genotype, convert_genotype_to_compact
+from naslib.search_spaces.core.query_metrics import Metric
 from .primitives import FactorizedReduce
 
 logger = logging.getLogger(__name__)
+Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
 
+# load the darts architectures that have full training data (nasbench301 training data)
+with open(os.path.join(get_project_root(), 'data', 'nb301_full_training.pickle'), 'rb') as f:
+    nb301_data = pickle.load(f)
 
+    
 class DartsSearchSpace(Graph):
     """
     The search space for CIFAR-10 as defined in
@@ -57,7 +66,7 @@ class DartsSearchSpace(Graph):
         super().__init__()
 
         self.channels = [16, 32, 64]
-
+        self.compact = None
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         
         """
@@ -271,40 +280,44 @@ class DartsSearchSpace(Graph):
     def auxilary_logits(self):
         return self.graph['out_from_23']
 
-
-    def query(self, metric=None, dataset=None, path=None):
+    def load_labeled_architecture(self):
+        arches = list(nb301_data.keys())
+        index = np.random.choice(len(arches))
+        compact = arches[index]
+        self.compact = compact
+        accuracy = nb301_data[compact]['val_accuracies'][-1] / 100.0
+        return accuracy
+    
+    def get_compact(self):
+        if self.compact:
+            return self.compact
+        else:
+            genotype = convert_naslib_to_genotype([self.nodes[5]['subgraph'], self.nodes[9]['subgraph']])
+            return convert_genotype_to_compact()
+    
+    def query(self, metric=None, dataset=None, path=None, epoch=None):
         """
         Query results from nasbench 301. Currently we only provide the 
         genotype query as list but we will integrate nb301 in the future.
         """
-        def convert(cell):
-            """convert the naslib representation to nasbench301"""
-            ops_to_nb301 = {
-                'Identity': 'skip_connect',
-                'FactorizedReduce': 'skip_connect',
-                'SepConv3x3': 'sep_conv_3x3',
-                'DilConv3x3': 'dil_conv_3x3',
-                'SepConv5x5': 'sep_conv_5x5',
-                'DilConv5x5': 'dil_conv_5x5',
-                'AvgPool': 'avg_pool_3x3',
-                'MaxPool': 'max_pool_3x3',
-                'Zero': 'zero'
-            }
-            edge_op_dict = {
-                (i, j): ops_to_nb301[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
-            }
-            op_edge_list = [
-                (edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1]) if j < 7
-            ]
-            return op_edge_list
-            
-        normal_cell = self.nodes[5]['subgraph']
-        reduction_cell = self.nodes[9]['subgraph']
+        metric_to_nb301 = {
+            Metric.TRAIN_LOSS: 'train_losses',
+            Metric.VAL_ACCURACY: 'val_accuracies'
+        }
+        
+        if epoch:
+            assert self.compact is not None
+            assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS]
+
+            query_results = nb301_data[self.compact]
+            return query_results[metric_to_nb301[metric]][epoch] / 100.0
+        
+        genotype = convert_naslib_to_genotype([self.nodes[5]['subgraph'], self.nodes[9]['subgraph']])
 
         logger.info("Until nasbench 301 is published as a pypi package please use these strings to query the result.")
-        logger.info("normal={}".format(convert(normal_cell)))
-        logger.info("reduce={}".format(convert(reduction_cell)))
-        return "normal={} | reduction={}".format(convert(normal_cell), convert(reduction_cell))
+        logger.info("normal={}".format(genotype.normal))
+        logger.info("reduce={}".format(genotype.reduce))
+        return "normal={} | reduction={}".format(genotype.normal, genotype.reduce)
 
     @staticmethod
     def get_configspace(path_to_configspace_obj=os.path.join(
@@ -324,6 +337,8 @@ class DartsSearchSpace(Graph):
             config_space = config_space_json_r_w.read(json_string)
         return config_space
 
+    def get_type(self):
+        return 'darts'
 
 def _set_ops(edge, C, stride):
     """

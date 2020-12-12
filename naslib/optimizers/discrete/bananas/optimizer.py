@@ -73,7 +73,8 @@ class Bananas(MetaOptimizer):
                 xtrain = [m.arch for m in self.train_data]
                 ytrain = [m.accuracy for m in self.train_data]
                 ensemble = Ensemble(encoding_type=self.encoding_type,
-                                    num_ensemble=self.num_ensemble)
+                                    num_ensemble=self.num_ensemble,
+                                    ss_type=self.search_space.get_type())
                 train_error = ensemble.fit(xtrain, ytrain)
 
                 # define an acquisition function

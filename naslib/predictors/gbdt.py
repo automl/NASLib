@@ -97,8 +97,9 @@ def get_feature_name_nasbench201():
 
 class GBDTPredictor(Predictor):
     
-    def __init__(self, encoding_type='adjacency_one_hot'):
+    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
         self.encoding_type = encoding_type
+        self.ss_type = ss_type
         
     def get_params(self, params=None):
         if params is None:
@@ -124,8 +125,8 @@ class GBDTPredictor(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         
-        xtrain = np.array([encode(arch, encoding_type=self.encoding_type) 
-                           for arch in xtrain])
+        xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
+                                  ss_type=self.ss_type) for arch in xtrain])
         ytrain = np.array(ytrain)
 
         # convert to lgb dataset
@@ -141,6 +142,6 @@ class GBDTPredictor(Predictor):
         return train_error
 
     def query(self, xtest, info=None):
-        xtest = np.array([encode(arch, encoding_type=self.encoding_type) 
-                          for arch in xtest])
+        xtest = np.array([encode(arch, encoding_type=self.encoding_type, 
+                                 ss_type=self.ss_type) for arch in xtest])
         return np.squeeze(self.model.predict(xtest)) * self.std + self.mean

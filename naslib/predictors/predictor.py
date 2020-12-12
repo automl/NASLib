@@ -4,6 +4,10 @@ class Predictor:
         self.encoding = None
         self.metric = None
         self.fidelity = None
+        self.ss_type = None
+        
+    def set_ss_type(self, ss_type):
+        self.ss_type = ss_type
         
     def pre_process(self):
         """

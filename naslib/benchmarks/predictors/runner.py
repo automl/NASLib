@@ -38,12 +38,14 @@ supported_predictors = {
     'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS)
 }
 
-# set up the search space
-#search_space = NasBench201SearchSpace()
-search_space = DartsSearchSpace()
+supported_search_spaces = {
+    'nasbench201': NasBench201SearchSpace(),
+    'darts': DartsSearchSpace()
+}
 
-# choose a predictor
+# set up the search space and predictor
 predictor = supported_predictors[config.predictor]
+search_space = supported_search_spaces[config.search_space]
 predictor_evaluator = PredictorEvaluator(predictor, config=config)
 predictor_evaluator.adapt_search_space(search_space)
 

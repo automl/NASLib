@@ -25,8 +25,9 @@ def mape_loss(y_true, y_pred):
 
 class FeedforwardPredictor(Predictor):
 
-    def __init__(self, encoding_type='adjacency_one_hot'):
+    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
         self.encoding_type = encoding_type
+        self.ss_type = ss_type
     
     def get_model(self,
                   input_dims,
@@ -65,9 +66,9 @@ class FeedforwardPredictor(Predictor):
             lr=.001,
             verbose=0,
             regularization=0.2):
-        
-        xtrain = np.array([encode(arch, encoding_type=self.encoding_type) 
-                           for arch in xtrain])
+
+        xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
+                                  ss_type=self.ss_type) for arch in xtrain])
         ytrain = np.array(ytrain)
 
         if loss == 'mle':
@@ -96,7 +97,7 @@ class FeedforwardPredictor(Predictor):
         return train_error
     
     def query(self, xtest, info=None):
-        xtest = np.array([encode(arch, encoding_type=self.encoding_type) 
-                          for arch in xtest])
+        xtest = np.array([encode(arch, encoding_type=self.encoding_type, 
+                                 ss_type=self.ss_type) for arch in xtest])
         xtest = np.array(xtest)
         return self.model.predict(xtest)
