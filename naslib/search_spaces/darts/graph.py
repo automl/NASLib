@@ -288,6 +288,7 @@ class DartsSearchSpace(Graph):
                 'DilConv5x5': 'dil_conv_5x5',
                 'AvgPool': 'avg_pool_3x3',
                 'MaxPool': 'max_pool_3x3',
+                'Zero': 'zero'
             }
             edge_op_dict = {
                 (i, j): ops_to_nb301[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
@@ -296,7 +297,7 @@ class DartsSearchSpace(Graph):
                 (edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1]) if j < 7
             ]
             return op_edge_list
-
+            
         normal_cell = self.nodes[5]['subgraph']
         reduction_cell = self.nodes[9]['subgraph']
 

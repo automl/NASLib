@@ -40,7 +40,7 @@ class PredictorEvaluator(object):
         )
         
     def adapt_search_space(self, search_space, scope=None):
-        assert search_space.QUERYABLE, "PredictorEvaluator is currently only implemented for benchmarks."
+        #assert search_space.QUERYABLE, "PredictorEvaluator is currently only implemented for benchmarks."
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         
