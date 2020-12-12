@@ -8,7 +8,7 @@ import os
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor, BonasGCNPredictor, BonasMLPPredictor, BonasLSTMPredictor
 
-from naslib.search_spaces import NasBench201SearchSpace
+from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils, setup_logger
@@ -39,7 +39,8 @@ supported_predictors = {
 }
 
 # set up the search space
-search_space = NasBench201SearchSpace()
+#search_space = NasBench201SearchSpace()
+search_space = DartsSearchSpace()
 
 # choose a predictor
 predictor = supported_predictors[config.predictor]
