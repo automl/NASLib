@@ -92,26 +92,6 @@ class PredictorEvaluator(object):
         Note that Predictors cannot train architectures themselves,
         so the partial training must be passed in as an argument.
         """
-        # if self.predictor.requires_partial_training():
-        #     logger.info("Perform partial training")
-        #     fidelity = self.predictor.get_fidelity()
-        #     metric = self.predictor.get_metric()
-        #     if self.predictor.name in 'SoLoss':
-        #         info = [arch.query(metric, self.dataset, epoch=200)[:fidelity] for arch in xtest]
-        #     elif self.predictor.name == 'LcSVR':
-        #         val_acc_curve = []
-        #         arch_params = []
-        #         for arch in xtest:
-        #             acc_metric = arch.query(metric, self.dataset, epoch=200)[:fidelity]
-        #             arch_hp = [arch.query(Metric.RAW, self.dataset)['cifar10-valid'][metric_hp]
-        #                         for metric_hp in ['flop', 'latency', 'params', 'epochs']]
-        #             val_acc_curve.append(acc_metric)
-        #             arch_params.append(arch_hp)
-        #         info = {'val_acc': val_acc_curve, 'arch_param': arch_params}
-        #     else:
-        #         info = [arch.query(metric, self.dataset, epoch=fidelity) for arch in xtest]
-        # else:
-        #     info = None
 
         info = self.predictor.requires_partial_training(xtest)
 
