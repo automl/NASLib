@@ -1,21 +1,21 @@
 
-predictors=(sovl_50 sotl_50 bananas feedforward gbdt gcn)
+predictors=(sovl sotl bananas feedforward gbdt gcn bonas_gcn)
 
 out_dir=run
+search_space=nasbench201
 dataset=cifar10
 
 start_seed=0
 trials=200
 end_seed=$(($start_seed + $trials - 1))
-train_size=50
 test_size=100
 
 # create config files
 for predictor in ${predictors[@]}
 do
-    python naslib/utils/create_configs.py --predictor $predictor --train_size $train_size \
+    python naslib/utils/create_configs.py --predictor $predictor \
     --test_size $test_size --start_seed $start_seed --trials $trials --out_dir $out_dir \
-    --dataset=$dataset --config_type predictor
+    --dataset=$dataset --config_type predictor --search_space $search_space
 done
 
 # run experiments
@@ -28,4 +28,3 @@ do
         python naslib/benchmarks/predictors/runner.py --config-file $config_file
     done
 done
-

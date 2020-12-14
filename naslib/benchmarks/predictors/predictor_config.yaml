@@ -1,13 +1,21 @@
 
-# set load_labeled to True for darts, and False for nasbench201
 search_space: darts
-load_labeled: True
+predictor: sotl
+test_size: 1000
 seed: 0
-predictor: feedforward
+
 dataset: cifar10
 out_dir: run
+single_run: True
 
-train_size: 100
-test_size: 300
-dataset: cifar10
+trainable:
+    train_size_single: 50
+    train_size_start: 10
+    train_size_end: 200
+    train_size_increment: 10
 
+learning_curve:
+    fidelity_single: 50
+    fidelity_start: 10
+    fidelity_end: 200
+    fidelity_increment: 10

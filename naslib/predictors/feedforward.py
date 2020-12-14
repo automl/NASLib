@@ -101,3 +101,6 @@ class FeedforwardPredictor(Predictor):
                                  ss_type=self.ss_type) for arch in xtest])
         xtest = np.array(xtest)
         return self.model.predict(xtest)
+    
+    def get_type(self):
+        return 'trainable'

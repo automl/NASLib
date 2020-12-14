@@ -39,3 +39,6 @@ class Predictor:
         E.g., learning curve extrapolators.
         """
         pass
+        
+    def get_type(self):
+        pass

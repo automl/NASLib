@@ -34,8 +34,8 @@ supported_predictors = {
     'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
     'bonas_mlp': BonasMLPPredictor(encoding_type='bonas_mlp'),
     'bonas_lstm': BonasLSTMPredictor(encoding_type='bonas_lstm'),
-    'sovl_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
-    'sotl_50': EarlyStopping(fidelity=50, metric=Metric.TRAIN_LOSS)
+    'sovl': EarlyStopping(metric=Metric.VAL_LOSS),
+    'sotl': EarlyStopping(metric=Metric.TRAIN_LOSS)
 }
 
 supported_search_spaces = {
@@ -43,11 +43,15 @@ supported_search_spaces = {
     'darts': DartsSearchSpace()
 }
 
+load_labeled = (False if config.search_space == 'nasbench201' else True)
+if config.search_space == 'darts':
+    config.learning_curve.fidelity_end = min(100, config.learning_curve.fidelity_end)
+
 # set up the search space and predictor
 predictor = supported_predictors[config.predictor]
 search_space = supported_search_spaces[config.search_space]
 predictor_evaluator = PredictorEvaluator(predictor, config=config)
-predictor_evaluator.adapt_search_space(search_space)
+predictor_evaluator.adapt_search_space(search_space, load_labeled=load_labeled)
 
 # evaluate the predictor
 predictor_evaluator.evaluate()

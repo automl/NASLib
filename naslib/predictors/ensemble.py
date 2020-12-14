@@ -47,3 +47,6 @@ class Ensemble(Predictor):
             predictions.append(prediction)
             
         return np.array(predictions)
+
+    def get_type(self):
+        return 'trainable'

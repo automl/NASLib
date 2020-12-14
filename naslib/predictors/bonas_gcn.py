@@ -228,3 +228,6 @@ class BonasGCNPredictor(Predictor):
 
         pred = np.concatenate(pred)
         return pred * self.std + self.mean
+    
+    def get_type(self):
+        return 'trainable'

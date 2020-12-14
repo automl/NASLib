@@ -145,3 +145,6 @@ class GBDTPredictor(Predictor):
         xtest = np.array([encode(arch, encoding_type=self.encoding_type, 
                                  ss_type=self.ss_type) for arch in xtest])
         return np.squeeze(self.model.predict(xtest)) * self.std + self.mean
+    
+    def get_type(self):
+        return 'trainable'
