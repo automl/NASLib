@@ -10,18 +10,20 @@ class Ensemble(Predictor):
     def __init__(self, 
                  encoding_type='adjacency_one_hot',
                  num_ensemble=3, 
-                 predictor_type='feedforward'):
+                 predictor_type='feedforward',
+                 ss_type='nasbench201'):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
         self.encoding_type = encoding_type
+        self.ss_type = ss_type
     
     def get_ensemble(self):
         ensemble = []
         for _ in range(self.num_ensemble):
             if self.predictor_type == 'feedforward':
-                predictor = FeedforwardPredictor()
+                predictor = FeedforwardPredictor(ss_type=self.ss_type)
             elif self.predictor_type == 'gbdt':
-                predictor = GBDTPredictor()
+                predictor = GBDTPredictor(ss_type=self.ss_type)
             else:
                 print('{} predictor not implemented'.format(self.predictor_type))
                 raise NotImplementedError()

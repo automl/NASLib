@@ -31,7 +31,8 @@ class PredictorEvaluator(object):
         self.train_size = config.train_size
         self.test_size = config.test_size
         self.dataset = config.dataset
-        
+        self.load_labeled = config.load_labeled
+
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results_dict = utils.AttrDict(
@@ -42,17 +43,28 @@ class PredictorEvaluator(object):
         )
         
     def adapt_search_space(self, search_space, scope=None):
-        assert search_space.QUERYABLE, "PredictorEvaluator is currently only implemented for benchmarks."
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
-        
-    def load_dataset(self):
-        
+        self.predictor.set_ss_type(self.search_space.get_type())
+
+    def load_dataset(self, load_labeled=False):
+        """
+        There are two ways to load a dataset.
+        load_labeled=False: sample random architectures and then query the architectures.
+        This works on NAS benchmarks where we can query any architecture.
+        load_labeled=True: load a dataset of architectures where we have the training info
+        (for example, load the set of 5k DARTS architectures which have the full training info)
+        """
+        # Note: currently ydata consists of the val_accs at the final training epoch
         xdata = []
         ydata = []
         for _ in range(self.train_size):
-            arch = sample_random_architecture(self.search_space, self.scope)
-            accuracy = arch.query(metric=self.metric, dataset=self.dataset)[-1]
+            if not load_labeled:
+                arch = sample_random_architecture(self.search_space, self.scope)
+                accuracy = arch.query(metric=self.metric, dataset=self.dataset)[-1]
+            else:
+                arch = self.search_space.clone()
+                accuracy = arch.load_labeled_architecture()
             xdata.append(arch)
             ydata.append(accuracy)
         return xdata, ydata
@@ -63,15 +75,16 @@ class PredictorEvaluator(object):
         self.predictor.pre_process()
         
         logger.info("Load the training set")
-        xtrain, ytrain = self.load_dataset()
+        xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled)
 
         # fit the predictor (for model-based methods)
+        # Note: currently we must pass in the search space type in order to
+        # properly encode the training data
         logger.info("Fit the predictor")
-
         self.predictor.fit(xtrain, ytrain)
         
         logger.info("Load the test set")
-        xtest, ytest = self.load_dataset()
+        xtest, ytest = self.load_dataset(load_labeled=self.load_labeled)
         
         """
         Train the architectures in the test set partially

@@ -115,7 +115,6 @@ class NasBench201SearchSpace(Graph):
                 private_edge_data=True
             )
         
-
     def query(self, metric=None, dataset=None, path=None, epoch=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
@@ -186,8 +185,11 @@ class NasBench201SearchSpace(Graph):
             
             query_results = cifar10_full_data[arch_str]
             return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
+        
+    def get_type(self):
+        return 'nasbench201'
 
-
+    
 def _set_cell_ops(edge, C):
     edge.data.set('op', [
         ops.Identity(),
@@ -196,3 +198,6 @@ def _set_cell_ops(edge, C):
         ops.ReLUConvBN(C, C, kernel_size=1),
         ops.AvgPool1x1(kernel_size=3, stride=1),
     ])
+    
+    
+

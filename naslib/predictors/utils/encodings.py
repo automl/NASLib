@@ -1,9 +1,13 @@
 import numpy as np
 import logging
 
+from naslib.predictors.utils.encodings_darts import encode_darts
+
 """
-Currently only implemented for NAS-Bench-201.
-The plan is to make this work more broadly.
+Currently we need search space specific methods.
+The plan is to unify encodings across all search spaces.
+nasbench201 and darts are implemented so far.
+TODO: clean up this file.
 """
 
 logger = logging.getLogger(__name__)
@@ -131,7 +135,7 @@ def encode_bonas_gcn_nasbench201(ops):
     return dic
 
 
-def encode(arch, encoding_type='adjacency_one_hot'):
+def encode_201(arch, encoding_type='adjacency_one_hot'):
         
     encoding = []
     cells = arch._get_child_graphs(single_instances=True)
@@ -149,6 +153,7 @@ def encode(arch, encoding_type='adjacency_one_hot'):
         for e in encoding:
             one_hot = [*one_hot, *one_hot_nasbench201[e]]
         return one_hot
+    
     elif encoding_type == 'path':
         return encode_paths(arch)
 
@@ -160,4 +165,15 @@ def encode(arch, encoding_type='adjacency_one_hot'):
 
     else:
         logger.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
+        raise NotImplementedError()
+
+        
+def encode(arch, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
+
+    if ss_type == 'nasbench201':
+        return encode_201(arch, encoding_type=encoding_type)
+    elif ss_type == 'darts':
+        return encode_darts(arch, encoding_type=encoding_type)
+    else:
+        logger.info('{} is not yet supported for encodings'.format(ss_type))
         raise NotImplementedError()

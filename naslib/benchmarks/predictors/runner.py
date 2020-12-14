@@ -8,7 +8,7 @@ import os
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor, BonasGCNPredictor, BonasMLPPredictor, BonasLSTMPredictor, jacobian_cov, SoLosspredictor, SVR_Estimator
 
-from naslib.search_spaces import NasBench201SearchSpace
+from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils, setup_logger
@@ -41,11 +41,14 @@ supported_predictors = {
     'lcsvr_50': SVR_Estimator(dataset=config.dataset, fidelity=50, metric=Metric.VAL_ACCURACY),
 }
 
-# set up the search space
-search_space = NasBench201SearchSpace()
+supported_search_spaces = {
+    'nasbench201': NasBench201SearchSpace(),
+    'darts': DartsSearchSpace()
+}
 
-# choose a predictor
+# set up the search space and predictor
 predictor = supported_predictors[config.predictor]
+search_space = supported_search_spaces[config.search_space]
 predictor_evaluator = PredictorEvaluator(predictor, config=config)
 predictor_evaluator.adapt_search_space(search_space)
 

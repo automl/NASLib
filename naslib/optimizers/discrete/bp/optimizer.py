@@ -75,7 +75,8 @@ class BasePredictor(MetaOptimizer):
                 
                 ensemble = Ensemble(encoding_type=self.encoding_type,
                                     num_ensemble=self.num_ensemble,
-                                    predictor_type=self.predictor_type)
+                                    predictor_type=self.predictor_type,
+                                    ss_type=self.search_space.get_type())
                 train_error = ensemble.fit(xtrain, ytrain)
                 
                 xtest = []
