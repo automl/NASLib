@@ -35,7 +35,7 @@ class SoLosspredictor(Predictor):
                 score = np.sum(EMA_SoTL)
             else:
                 score = np.sum(past_loss)
-            test_set_scores.append(score)
+            test_set_scores.append(-score)
             
         return np.array(test_set_scores)
     

@@ -5,6 +5,7 @@ import logging
 import os
 import numpy as np
 import torch
+from scipy import stats
 
 from naslib.optimizers.discrete.utils.utils import sample_random_architecture
 
@@ -31,11 +32,12 @@ class PredictorEvaluator(object):
         self.test_size = config.test_size
         self.dataset = config.dataset
         
-        self.metric = Metric.VAL_LOSS
+        self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results_dict = utils.AttrDict(
             {'test_error': [],
              'correlation': [],
+             'rank_correlation': [],
              'runtime': []}
         )
         
@@ -109,9 +111,10 @@ class PredictorEvaluator(object):
             test_pred = np.mean(test_pred, axis=0)
         
         logger.info("Compute evaluation metrics")
-        test_error, correlation = self.compare(ytest, test_pred)
-        logger.info("test error: {}, correlation: {}".format(test_error, correlation))
+        test_error, correlation, rank_correlation = self.compare(ytest, test_pred)
+        logger.info("test error: {}, correlation: {}, rank_correlation: {}".format(test_error, correlation, rank_correlation))
         self.results_dict['correlation'].append(correlation)
+        self.results_dict['rank_correlation'].append(rank_correlation)
         self.results_dict['test_error'].append(test_error)
         self._log_to_json()
         """
@@ -124,7 +127,8 @@ class PredictorEvaluator(object):
         
         test_error = np.mean(abs(test_pred-ytest))
         correlation = np.corrcoef(np.array(ytest), np.array(test_pred))[1,0]
-        return test_error, correlation
+        rank_correlation, _ = stats.spearmanr(ytest, test_pred)
+        return test_error, correlation, rank_correlation
         
     def _log_to_json(self):
         """log statistics to json file"""

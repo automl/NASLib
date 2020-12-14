@@ -1,6 +1,6 @@
 
 seed: 0
-predictor: gcn #gbdt # feedforward
+predictor: sotl_50 #gbdt # feedforward
 dataset: cifar10
 out_dir: run
 
