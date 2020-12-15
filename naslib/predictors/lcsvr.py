@@ -18,24 +18,23 @@ def loguniform(low=0, high=1, size=None):
 
 class SVR_Estimator(Predictor):
 
-    def __init__(self, dataset, fidelity=30, metric='eval_acc1es', seed=0, all_curve=False, model_name='svr',best_hyper=None, n_hypers=1000):
+    def __init__(self, dataset, metric='eval_acc1es', seed=0, all_curve=False, model_name='svr',best_hyper=None, n_hypers=1000):
 
         self.n_hypers = n_hypers
         self.all_curve = all_curve
         self.seed = seed
         self.model_name = model_name
         self.best_hyper = best_hyper
-        self.fidelity = fidelity
         self.metric = metric
         self.name = 'LcSVR'
         self.dataset = dataset
 
 
-    def fit(self, xtrain, ytrain,learn_hyper=True):
+    def fit(self, xtrain, ytrain, learn_hyper=True):
 
         np.random.seed(self.seed)
         # prepare training data
-        xtrain_data = self.requires_partial_training(xtrain)
+        xtrain_data = self.requires_partial_training(xtrain, fidelity)
         y_train = np.array(ytrain)
 
         # learn hyperparameters of the extrapolator by cross validation
@@ -137,13 +136,14 @@ class SVR_Estimator(Predictor):
 
         return pred_on_test_set
 
-    def requires_partial_training(self, xtest):
+    def requires_partial_training(self, xtest, fidelity):
         from naslib.search_spaces.core.query_metrics import Metric
 
+        self.fidelity = fidelity
         val_acc_curve = []
         arch_params = []
         for arch in xtest:
-            acc_metric = arch.query(self.metric, self.dataset, epoch=200)[:self.fidelity]
+            acc_metric = arch.query(self.metric, self.dataset, epoch=200)[:fidelity]
             arch_hp = [arch.query(Metric.RAW, self.dataset)['cifar10-valid']['cost_info'][metric_hp]
                        for metric_hp in ['flops', 'latency', 'params']]
             val_acc_curve.append(acc_metric)

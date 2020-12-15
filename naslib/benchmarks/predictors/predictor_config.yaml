@@ -1,14 +1,21 @@
 
-# set load_labeled to True for darts, and False for nasbench201
-search_space: darts
-load_labeled: True
-seed: 0
+# experiment types: single, vary_train_size, vary_fidelity
+experiment_type: vary_train_size
+search_space: nasbench201
 predictor: feedforward
+test_size: 100
+seed: 0
+
+dataset: cifar10
 out_dir: run
 
-train_size: 100
-test_size: 300
-dataset: cifar10
+train_size_start: 10
+train_size_end: 210
+train_size_increment: 10
+
+fidelity_start: 10
+fidelity_end: 190
+fidelity_increment: 10
 
 # Used by Jacobian_cov from NAS without training from DARTS for data loader
 search:
@@ -18,3 +25,4 @@ search:
   cutout_length: 16
   cutout_prob: 1.0
   train_portion: 0.7
+

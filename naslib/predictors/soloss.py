@@ -3,8 +3,7 @@ import numpy as np
 
 class SoLosspredictor(Predictor):
     
-    def __init__(self, dataset, fidelity=10, metric='train_loss', sum_option='SoTL'):
-        self.fidelity = fidelity
+    def __init__(self, dataset, metric='train_loss', sum_option='SoTL'):
         self.metric = metric
         self.sum_option = sum_option
         self.name = 'SoLoss'
@@ -26,7 +25,7 @@ class SoLosspredictor(Predictor):
             elif 'EMASo' in self.sum_option:
                 EMA_SoTL = []
                 mu = 0.99
-                for se in range(self.fidelity):
+                for se in range(np.array(info).shape[1]):
                     if se <= 0:
                         ema = past_loss[se]
                     else:
@@ -39,6 +38,6 @@ class SoLosspredictor(Predictor):
             
         return np.array(test_set_scores)
     
-    def requires_partial_training(self, xtest):
-        info = [arch.query(self.metric, self.dataset, epoch=200)[:self.fidelity] for arch in xtest]
+    def requires_partial_training(self, xtest, fidelity):
+        info = [arch.query(self.metric, self.dataset, epoch=200)[:fidelity] for arch in xtest]
         return info
