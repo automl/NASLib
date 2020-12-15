@@ -55,15 +55,13 @@ def main(args):
                 'dataset': args.dataset,
                 'predictor': args.predictor,
                 'test_size': args.test_size,
-                'single_run': args.single_run,
-                'trainable': {'train_size_single': args.train_size_single,
-                              'train_size_start': args.train_size_start,
-                              'train_size_end': args.train_size_end,
-                              'train_size_increment': args.train_size_increment},
-                'learning_curve': {'fidelity_single': args.train_size_single,
-                              'fidelity_start': args.fidelity_start,
-                              'fidelity_end': args.fidelity_end,
-                              'fidelity_increment': args.fidelity_increment}
+                'experiment_type': args.experiment_type,
+                'train_size_start': args.train_size_start,
+                'train_size_end': args.train_size_end,
+                'train_size_increment': args.train_size_increment,
+                'fidelity_start': args.fidelity_start,
+                'fidelity_end': args.fidelity_end,
+                'fidelity_increment': args.fidelity_increment
             }
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
@@ -90,16 +88,13 @@ if __name__ == "__main__":
     parser.add_argument("--config_type", type=str, default='nas', help="nas or predictor?")
     parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench201 or darts?")    
 
-    parser.add_argument("--single_run", type=bool, default=False, help="do a single number of train_size/fidelity?")    
-    parser.add_argument("--train_size_single", type=int, default=50, help="Train_size if doing a single run")
     parser.add_argument("--train_size_start", type=int, default=10, help="Starting train size")
-    parser.add_argument("--train_size_end", type=int, default=70, help="Ending train size")
+    parser.add_argument("--train_size_end", type=int, default=150, help="Ending train size")
     parser.add_argument("--train_size_increment", type=int, default=10, help="train size increment")
-    parser.add_argument("--fidelity_single", type=int, default=50, help="fidelity if doing a single run")
     parser.add_argument("--fidelity_start", type=int, default=10, help="Starting fidelity")
-    parser.add_argument("--fidelity_end", type=int, default=70, help="Ending fidelity")
+    parser.add_argument("--fidelity_end", type=int, default=180, help="Ending fidelity")
     parser.add_argument("--fidelity_increment", type=int, default=10, help="fidelity increment")
-
+    parser.add_argument("--experiment_type", type=str, default='single', help="type of experiment")
     
     args = parser.parse_args()
 
