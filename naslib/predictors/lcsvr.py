@@ -34,7 +34,7 @@ class SVR_Estimator(Predictor):
 
         np.random.seed(self.seed)
         # prepare training data
-        xtrain_data = self.requires_partial_training(xtrain, fidelity)
+        xtrain_data = self.requires_partial_training(xtrain, self.fidelity)
         y_train = np.array(ytrain)
 
         # learn hyperparameters of the extrapolator by cross validation
