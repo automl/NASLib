@@ -6,7 +6,7 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 import os
 
-from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor, BonasGCNPredictor, BonasMLPPredictor, BonasLSTMPredictor, jacobian_cov, SoLosspredictor, SVR_Estimator
+from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, SVR_Estimator
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -32,8 +32,6 @@ supported_predictors = {
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
     'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
-    'bonas_mlp': BonasMLPPredictor(encoding_type='bonas_mlp'),
-    'bonas_lstm': BonasLSTMPredictor(encoding_type='bonas_lstm'),
     'valloss_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
     'valacc_50': EarlyStopping(fidelity=50, metric=Metric.VAL_ACCURACY),
     'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size = 256, seed=1),
