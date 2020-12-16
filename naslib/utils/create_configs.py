@@ -17,6 +17,7 @@ def main(args):
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
                 'seed': i,
+                'search_space': args.search_space,
                 'dataset': args.dataset,
                 'optimizer': args.optimizer,
                 'search': {'checkpoint_freq': args.checkpoint_freq,
@@ -50,10 +51,17 @@ def main(args):
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
                 'seed': i,
+                'search_space': args.search_space,
                 'dataset': args.dataset,
                 'predictor': args.predictor,
-                'train_size': args.train_size,
-                'test_size': args.test_size
+                'test_size': args.test_size,
+                'experiment_type': args.experiment_type,
+                'train_size_start': args.train_size_start,
+                'train_size_end': args.train_size_end,
+                'train_size_increment': args.train_size_increment,
+                'fidelity_start': args.fidelity_start,
+                'fidelity_end': args.fidelity_end,
+                'fidelity_increment': args.fidelity_increment
             }
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
@@ -78,10 +86,17 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint_freq", type=int, default=5000, help="How often to checkpoint")
     parser.add_argument("--epochs", type=int, default=150, help="How many search epochs")
     parser.add_argument("--config_type", type=str, default='nas', help="nas or predictor?")
-    
+    parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench201 or darts?")    
+
+    parser.add_argument("--train_size_start", type=int, default=10, help="Starting train size")
+    parser.add_argument("--train_size_end", type=int, default=150, help="Ending train size")
+    parser.add_argument("--train_size_increment", type=int, default=10, help="train size increment")
+    parser.add_argument("--fidelity_start", type=int, default=10, help="Starting fidelity")
+    parser.add_argument("--fidelity_end", type=int, default=180, help="Ending fidelity")
+    parser.add_argument("--fidelity_increment", type=int, default=10, help="fidelity increment")
+    parser.add_argument("--experiment_type", type=str, default='single', help="type of experiment")
     
     args = parser.parse_args()
 
     main(args)
-    
     

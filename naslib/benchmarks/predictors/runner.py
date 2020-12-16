@@ -44,11 +44,15 @@ supported_search_spaces = {
     'darts': DartsSearchSpace()
 }
 
+load_labeled = (False if config.search_space == 'nasbench201' else True)
+if config.search_space == 'darts':
+    config.fidelity_end = min(110, config.fidelity_end)
+
 # set up the search space and predictor
 predictor = supported_predictors[config.predictor]
 search_space = supported_search_spaces[config.search_space]
 predictor_evaluator = PredictorEvaluator(predictor, config=config)
-predictor_evaluator.adapt_search_space(search_space)
+predictor_evaluator.adapt_search_space(search_space, load_labeled=load_labeled)
 
 # evaluate the predictor
 predictor_evaluator.evaluate()
