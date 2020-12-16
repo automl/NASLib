@@ -114,7 +114,7 @@ class GBDTPredictor(Predictor):
                 'feature_fraction': 0.9,
                 'bagging_fraction': 0.8,
                 'bagging_freq': 5,
-                'verbose': 0
+                'verbose': -1
             }
         return params
 
