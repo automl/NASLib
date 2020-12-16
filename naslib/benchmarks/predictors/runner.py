@@ -32,11 +32,11 @@ supported_predictors = {
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
     'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
-    'valloss_50': EarlyStopping(fidelity=50, metric=Metric.VAL_LOSS),
-    'valacc_50': EarlyStopping(fidelity=50, metric=Metric.VAL_ACCURACY),
-    'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size = 256, seed=1),
-    'sotl_50': SoLosspredictor(dataset=config.dataset, fidelity=50, metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
-    'lcsvr_50': SVR_Estimator(dataset=config.dataset, fidelity=50, metric=Metric.VAL_ACCURACY),
+    'valloss': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_LOSS),
+    'valacc': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_ACCURACY),
+    'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size=256, seed=1),
+    'sotl': SoLosspredictor(dataset=config.dataset, metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
+    'lcsvr': SVR_Estimator(dataset=config.dataset, metric=Metric.VAL_ACCURACY)
 }
 
 supported_search_spaces = {
