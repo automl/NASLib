@@ -39,5 +39,5 @@ class SoLosspredictor(Predictor):
         return np.array(test_set_scores)
     
     def requires_partial_training(self, xtest, fidelity):
-        info = [arch.query(self.metric, self.dataset, epoch=200)[:fidelity] for arch in xtest]
+        info = [arch.query(self.metric, self.dataset, epoch=fidelity) for arch in xtest]
         return info
