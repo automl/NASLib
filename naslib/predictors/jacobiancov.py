@@ -29,15 +29,11 @@ def eval_score(jacob, labels=None):
 
 class jacobian_cov(Predictor):
 
-    def __init__(self, config, task_name='nas201_cifar10', batch_size = 256, seed=1):
+    def __init__(self, config, task_name='nas201_cifar10', batch_size = 256):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
         self.batch_size = batch_size
         self.task_name = task_name
-        self.seed = seed
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         config.data = "{}/data".format(get_project_root())
         self.config = config

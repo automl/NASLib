@@ -19,6 +19,7 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 import yaml
+import tensorflow as tf
 
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
@@ -253,6 +254,7 @@ def set_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
+    tf.random.set_random_seed(seed)
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.enabled = True

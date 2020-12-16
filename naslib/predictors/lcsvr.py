@@ -18,11 +18,10 @@ def loguniform(low=0, high=1, size=None):
 
 class SVR_Estimator(Predictor):
 
-    def __init__(self, dataset, metric='eval_acc1es', seed=0, all_curve=False, model_name='svr',best_hyper=None, n_hypers=1000):
+    def __init__(self, dataset, metric='eval_acc1es', all_curve=False, model_name='svr',best_hyper=None, n_hypers=1000):
 
         self.n_hypers = n_hypers
         self.all_curve = all_curve
-        self.seed = seed
         self.model_name = model_name
         self.best_hyper = best_hyper
         self.metric = metric
@@ -32,7 +31,6 @@ class SVR_Estimator(Predictor):
 
     def fit(self, xtrain, ytrain, learn_hyper=True):
 
-        np.random.seed(self.seed)
         # prepare training data
         xtrain_data = self.requires_partial_training(xtrain, self.fidelity)
         y_train = np.array(ytrain)
