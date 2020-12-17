@@ -127,7 +127,12 @@ def get_config_from_args(args=None, config_type='nas'):
     if config_type == 'nas':
         config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
     elif config_type == 'predictor':
-        config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+        if config.predictor == 'lcsvr' and config.experiment_type == 'vary_train_size':
+            config.save = '{}/{}/{}/{}_train/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+        elif config.predictor == 'lcsvr' and config.experiment_type == 'vary_fidelity':
+            config.save = '{}/{}/{}/{}_fidelity/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+        else:
+            config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
     else:
         print('invalid config type in utils/utils.py')
         

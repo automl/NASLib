@@ -34,7 +34,7 @@ supported_predictors = {
     'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
     'valloss': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_LOSS),
     'valacc': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_ACCURACY),
-    'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size=256, seed=1),
+    'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size=256),
     'sotl': SoLosspredictor(dataset=config.dataset, metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'lcsvr': SVR_Estimator(dataset=config.dataset, metric=Metric.VAL_ACCURACY)
 }
