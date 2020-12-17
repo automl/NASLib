@@ -77,7 +77,7 @@ class SVR_Estimator(Predictor):
             best_hyper = hyper[best_hyper_idx]
             max_score = np.max(mean_score_list)
             time_taken = t_end - t_start
-            print(f'{self.model_name} on {self.seed}: '
+            print(f'{self.model_name}'
                   f'best_hyper={best_hyper}, score={max_score}, time={time_taken}')
             self.best_hyper = best_hyper
 
