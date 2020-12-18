@@ -1,6 +1,6 @@
 
-predictors=(valloss valacc sotl bananas feedforward gbdt gcn bonas_gcn jacov)
-experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size single)
+predictors=(valloss valacc sotl bananas feedforward gbdt gcn bonas_gcn xgb jacov)
+experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size single)
 
 out_dir=run
 search_space=nasbench201
@@ -22,12 +22,12 @@ do
 done
 
 # run experiments
-for t in $(seq $start_seed $end_seed)
-do
-    for predictor in ${predictors[@]}
-    do
-        config_file=$out_dir/$dataset/configs/predictors/config\_$predictor\_$t.yaml
-        echo ================running $predictor trial: $t =====================
-        python naslib/benchmarks/predictors/runner.py --config-file $config_file
-    done
-done
+ for t in $(seq $start_seed $end_seed)
+ do
+     for predictor in ${predictors[@]}
+     do
+         config_file=$out_dir/$dataset/configs/predictors/config\_$predictor\_$t.yaml
+         echo ================running $predictor trial: $t =====================
+         python naslib/benchmarks/predictors/runner.py --config-file $config_file
+     done
+ done

@@ -6,7 +6,9 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 import os
 
-from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, SVR_Estimator
+from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
+EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \
+SVR_Estimator, XGBoost
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -36,7 +38,8 @@ supported_predictors = {
     'valacc': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_ACCURACY),
     'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size=256),
     'sotl': SoLosspredictor(dataset=config.dataset, metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
-    'lcsvr': SVR_Estimator(dataset=config.dataset, metric=Metric.VAL_ACCURACY)
+    'lcsvr': SVR_Estimator(dataset=config.dataset, metric=Metric.VAL_ACCURACY),
+    'xgb': XGBoost(encoding_type='adjacency_one_hot'),
 }
 
 supported_search_spaces = {

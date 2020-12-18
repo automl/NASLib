@@ -66,8 +66,8 @@ Run on single machine:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
-    parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
-    parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
+    parser.add_argument("--eval-only", action="store_true", default=False, help="perform evaluation only")
+    parser.add_argument("--resume", action="store_true", default=False, help="Resume from last checkpoint")
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -102,27 +102,27 @@ def get_config_from_args(args=None, config_type='nas'):
     Args:
         args: args from a different argument parser than the default one.
     """
-    
+
     if config_type == 'nas':
         # load the default base
         with open(os.path.join(get_project_root(), 'defaults', 'darts_defaults.yaml')) as f:
-            config = CfgNode.load_cfg(f)        
+            config = CfgNode.load_cfg(f)
     elif config_type == 'predictor':
         # load the default base
         with open(os.path.join(get_project_root(), 'benchmarks/predictors', 'predictor_config.yaml')) as f:
-            config = CfgNode.load_cfg(f)  
-    
+            config = CfgNode.load_cfg(f)
+
     if not args:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
-    
+
     config.eval_only = args.eval_only
     config.resume = args.resume
-    
+
     # load config file
     config.merge_from_file(args.config_file)
     config.merge_from_list(args.opts)
-    
+
     # prepare the output directories
     if config_type == 'nas':
         config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
@@ -135,7 +135,7 @@ def get_config_from_args(args=None, config_type='nas'):
             config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
     else:
         print('invalid config type in utils/utils.py')
-        
+
     config.data = "{}/data".format(get_project_root())
 
     create_exp_dir(config.save)
@@ -259,7 +259,7 @@ def set_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
-    tf.random.set_random_seed(seed)
+    #tf.random.set_random_seed(seed)
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.enabled = True

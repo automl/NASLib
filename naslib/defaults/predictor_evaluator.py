@@ -26,28 +26,28 @@ class PredictorEvaluator(object):
         self.predictor = predictor
         self.config = config
         self.experiment_type = config.experiment_type
-  
+
         self.test_size = config.test_size
 
         self.train_size_start = config.train_size_start
         self.train_size_end = config.train_size_end
         self.train_size_increment = config.train_size_increment
-        
+
         self.fidelity_start = config.fidelity_start
         self.fidelity_end = config.fidelity_end
         self.fidelity_increment = config.fidelity_increment
-                
+
         self.dataset = config.dataset
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results = []
-        
+
     def adapt_search_space(self, search_space, load_labeled, scope=None):
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.predictor.set_ss_type(self.search_space.get_type())
         self.load_labeled = load_labeled
-        
+
     def load_dataset(self, load_labeled=False, data_size=10):
         """
         There are two ways to load a dataset.
@@ -72,7 +72,7 @@ class PredictorEvaluator(object):
 
     def single_evaluate(self, xtrain, ytrain, xtest, ytest, fidelity):
         info = self.predictor.requires_partial_training(xtest, fidelity)
-        
+
         logger.info("Fit the predictor")
         self.predictor.fit(xtrain, ytrain)
 
@@ -86,23 +86,23 @@ class PredictorEvaluator(object):
 
         logger.info("Compute evaluation metrics")
         return self.compare(ytest, test_pred)
-    
+
     def evaluate(self):
 
         # pre-process the predictor
         self.predictor.pre_process()
-                
+
         logger.info("Load the test set")
         xtest, ytest = self.load_dataset(load_labeled=self.load_labeled, data_size=self.test_size)
 
         if self.experiment_type == 'single':
             train_size = self.train_size_start
             fidelity = self.fidelity_start
-            
+
             logger.info("Load the training set")
-            xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled, 
+            xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
                                                data_size=train_size)
-            
+
             metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
             test_error, correlation, rank_correlation = metrics
             logger.info("test error: {}, correlation: {}, rank correlation {}"
@@ -112,18 +112,18 @@ class PredictorEvaluator(object):
                                  'test_error': test_error,
                                  'correlation': correlation,
                                  'rank_correlation': rank_correlation})
-            
+
         elif self.experiment_type == 'vary_train_size':
-            
+
             logger.info("Load the training set")
-            xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled, 
+            xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled,
                                                          data_size=self.train_size_end)
             fidelity = self.fidelity_start
 
-            for train_size in range(self.train_size_start, self.train_size_end, 
+            for train_size in range(self.train_size_start, self.train_size_end,
                                     self.train_size_increment):
                 xtrain, ytrain = xtrain_full[:train_size], ytrain_full[:train_size]
-                
+
                 metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
                 test_error, correlation, rank_correlation = metrics
                 logger.info("train_size: {}, test error: {}, correlation: {}, rank correlation {}"
@@ -135,16 +135,16 @@ class PredictorEvaluator(object):
                                      'rank_correlation': rank_correlation})
 
         elif self.experiment_type == 'vary_fidelity':
-            
+
             train_size = self.train_size_start
-            
+
             logger.info("Load the training set")
-            xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled, 
+            xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
                                                data_size=self.train_size_start)
-            
+
             for fidelity in range(self.fidelity_start, self.fidelity_end,
-                                  self.fidelity_increment):  
-                
+                                  self.fidelity_increment):
+
                 metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
                 test_error, correlation, rank_correlation = metrics
                 logger.info("fidelity: {}, test error: {}, correlation: {}, rank correlation {}"
@@ -157,16 +157,15 @@ class PredictorEvaluator(object):
         else:
             raise NotImplementedError()
 
-        
+
         """
         TODO: also return timing information
         (for preprocessing, training train set, and querying test set).
         start_time = time.time()
         """
         self._log_to_json()
-        
+
     def compare(self, ytest, test_pred):
-        
         test_error = np.mean(abs(test_pred-ytest))
         correlation = np.abs(np.corrcoef(np.array(ytest), np.array(test_pred))[1,0])
         rank_correlation, _ = stats.spearmanr(ytest, test_pred)
@@ -179,5 +178,3 @@ class PredictorEvaluator(object):
         with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
             json.dump(self.results, file, separators=(',', ':'))
 
-
-    

@@ -7,3 +7,4 @@ from .bonas_gcn import BonasGCNPredictor
 from .soloss import SoLosspredictor
 from .lcsvr import SVR_Estimator
 from .jacobiancov import jacobian_cov
+from .xgb import XGBoost
