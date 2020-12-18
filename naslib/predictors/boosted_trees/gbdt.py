@@ -2,17 +2,12 @@
 # This is an implementation of GBDT predictor for NAS from the paper:
 # Luo, Renqian, et al. "Neural architecture search with gbdt." arXiv preprint arXiv:2007.04785 (2020).
 
-import itertools
-import os
-import random
-import sys
 import numpy as np
 import lightgbm as lgb
 
-from naslib.predictors.utils.encodings import encode
-from naslib.predictors.predictor import Predictor
+from naslib.predictors.boosted_trees import BaseTree
 
-
+"""
 # Nasbench101 has 3 candidate operations + 1 output per node
 one_hot_nasbench101 = [[1,0,0,0],
                        [0,1,0,0],
@@ -25,12 +20,13 @@ adjacency_matrix_nasbench201 = [[0,1,1,1],
                                 [0,0,0,1],
                                 [0,0,0,0]]
 
-# 5 types of operations in Nasbench201                                
+# 5 types of operations in Nasbench201
 one_hot_nasbench201 = [[1,0,0,0,0],
                        [0,1,0,0,0],
                        [0,0,1,0,0],
                        [0,0,0,1,0],
                        [0,0,0,0,1]]
+"""
 
 def convert_arch_to_seq_nasbench101(matrix, ops, max_n=7):
     """
@@ -95,13 +91,10 @@ def get_feature_name_nasbench201():
     return feature_name
 
 
-class GBDTPredictor(Predictor):
-    
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
-        self.encoding_type = encoding_type
-        self.ss_type = ss_type
-        
-    def get_params(self, params=None):
+class GBDTPredictor(BaseTree):
+
+    @property
+    def parameters(self, params=None):
         if params is None:
             # default parameters used in Luo et al. 2020
             params = {
@@ -118,30 +111,23 @@ class GBDTPredictor(Predictor):
             }
         return params
 
-    def fit(self, xtrain, ytrain, 
-            params=None,
-            **kwargs):
-        # normalize accuracies
-        self.mean = np.mean(ytrain)
-        self.std = np.std(ytrain)
-        
-        xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
-                                  ss_type=self.ss_type) for arch in xtrain])
-        ytrain = np.array(ytrain)
 
-        # convert to lgb dataset
-        lgb_train = lgb.Dataset(xtrain, ((ytrain-self.mean)/self.std))
-        # get params
-        params = self.get_params()
-        # get feature names (optional)
+    def get_dataset(self, encodings, labels=None):
+        if labels is None:
+            return encodings
+        else:
+            return lgb.Dataset(encodings, label=((labels-self.mean)/self.std))
+
+
+    def train(self, train_data):
         feature_name = None #get_feature_name_nasbench201()
-        # default 100 round of boosing from Luo et al. 2020
-        self.model = lgb.train(params, lgb_train, feature_name=feature_name, num_boost_round=100)
-        train_pred = np.squeeze(self.model.predict(xtrain,num_iteration=self.model.best_iteration))
-        train_error = np.mean(abs(train_pred-ytrain))
-        return train_error
+        return lgb.train(self.parameters, train_data,
+                         feature_name=feature_name, num_boost_round=100)
 
-    def query(self, xtest, info=None):
-        xtest = np.array([encode(arch, encoding_type=self.encoding_type, 
-                                 ss_type=self.ss_type) for arch in xtest])
-        return np.squeeze(self.model.predict(xtest)) * self.std + self.mean
+    def predict(self, data):
+        return self.model.predict(data,
+                                  num_iteration=self.model.best_iteration)
+
+    def fit(self, xtrain, ytrain, params=None, **kwargs):
+        return super(GBDTPredictor, self).fit(xtrain, ytrain, params, **kwargs)
+
