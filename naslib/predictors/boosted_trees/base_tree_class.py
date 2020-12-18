@@ -12,7 +12,7 @@ class BaseTree(Predictor):
         self.ss_type = ss_type
 
     @property
-    def parameters(self, params=None):
+    def parameters(self):
         return {}
 
     def get_dataset(self, encodings, labels=None):

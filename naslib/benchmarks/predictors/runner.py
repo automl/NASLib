@@ -8,7 +8,7 @@ import os
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \
-SVR_Estimator, XGBoost
+SVR_Estimator, XGBoost, NGBoost
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -40,6 +40,7 @@ supported_predictors = {
     'sotl': SoLosspredictor(dataset=config.dataset, metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'lcsvr': SVR_Estimator(dataset=config.dataset, metric=Metric.VAL_ACCURACY),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
+    'ngb': NGBoost(encoding_type='adjacency_one_hot'),
 }
 
 supported_search_spaces = {
