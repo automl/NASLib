@@ -27,7 +27,6 @@ class Evaluator(object):
             self.config = kwargs.get('config', graph.config)
         except:
             raise ('No configuration specified in graph or kwargs')
-
         np.random.seed(self.config.seed)
         random.seed(self.config.seed)
         if torch.cuda.is_available():
@@ -41,11 +40,11 @@ class Evaluator(object):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # TODO: move all the data loading and preproces inside another method
-        train_transform, valid_transform = utils._data_transforms_cifar10(config)
+        train_transform, valid_transform = utils._data_transforms_cifar10(self.config)
         self.train_transform = train_transform
         self.valid_transform = valid_transform
-        train_data = dset.CIFAR10(root=config.data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR10(root=config.data, train=False, download=True, transform=valid_transform)
+        train_data = dset.CIFAR10(root=self.config.data, train=True, download=True, transform=train_transform)
+        test_data = dset.CIFAR10(root=self.config.data, train=False, download=True, transform=valid_transform)
 
         num_train = len(train_data)
         indices = list(range(num_train))
@@ -86,6 +85,7 @@ class Evaluator(object):
             optimizer, float(self.config.epochs), eta_min=self.config.learning_rate_min)
 
         logging.info('Args: {}'.format(self.config))
+        self.run_kwargs = {}
 
     def run(self, *args, **kwargs):
         if 'epochs' not in kwargs:
@@ -102,12 +102,10 @@ class Evaluator(object):
             logging.info('train_acc %f', train_acc)
 
             if len(self.valid_queue) != 0:
-                valid_acc, valid_obj = Evaluator.infer(self.model, self.criterion, self.valid_queue,
-                                                       self.arch_optimizer, device=self.device)
+                valid_acc, valid_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
                 logging.info('valid_acc %f', valid_acc)
 
-            test_acc, test_obj = Evaluator.infer(self.model, self.criterion, self.test_queue, self.arch_optimizer,
-                                                 device=self.device)
+            test_acc, test_obj = self.infer(self.model, self.criterion, self.valid_queue, device=self.device)
             logging.info('test_acc %f', test_acc)
 
             Evaluator.save(self.config.save, self.model, epoch)
@@ -139,22 +137,6 @@ class Evaluator(object):
             loss = criterion(logits_valid, target_valid)
             arch_optimizer.step(loss)
 
-            # if architect in kwargs:
-            # get a minibatch from the search queue with replacement
-
-            #    input_search = input_search.cuda()
-            #    target_search = target_search.cuda(non_blocking=True)
-
-            # Allow for warm starting of the one-shot model for more reliable architecture updates.
-            #    if epoch >= self.args.warm_start_epochs:
-            #        architect.step(input_train=input,
-            #                       target_train=target,
-            #                       input_valid=input_search,
-            #                       target_valid=target_search,
-            #                       eta=lr,
-            #                       network_optimizer=self.optimizer,
-            #                       unrolled=self.args.unrolled)
-
             optimizer.zero_grad()
             logits = graph(input)
             loss = criterion(logits, target)
@@ -178,8 +160,7 @@ class Evaluator(object):
 
         return top1.avg, objs.avg
 
-    @staticmethod
-    def infer(graph, criterion, valid_queue, *args, **kwargs):
+    def infer(self, graph, criterion, valid_queue, *args, **kwargs):
         try:
             config = kwargs.get('config', graph.config)
             device = kwargs['device']
@@ -217,17 +198,16 @@ class Evaluator(object):
 
 
 if __name__ == '__main__':
-    import yaml
-    from naslib.search_spaces.core.graph_darts import DARTSMacroGraph
+    from naslib.search_spaces.darts import MacroGraph, PRIMITIVES
     from naslib.optimizers.optimizer import DARTSOptimizer
-    from naslib.utils import AttrDict
-
-    with open('../configs/default.yaml') as f:
-        config = yaml.safe_load(f)
-        config = AttrDict(config)
+    from naslib.utils import config_parser
 
     one_shot_optimizer = DARTSOptimizer()
-    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer, config=config)
-    one_shot_optimizer.create_optimizer(**config)
-    evaluator = Evaluator(search_space, arch_optimizer=one_shot_optimizer)
+    search_space = MacroGraph.from_optimizer_op(
+        one_shot_optimizer,
+        config=config_parser('../../configs/default.yaml'),
+        primitives=PRIMITIVES
+    )
+
+    evaluator = Evaluator(search_space)
     evaluator.run()

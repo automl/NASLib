@@ -1,35 +1,23 @@
 from functools import partial
 
 import torch
-import yaml
 from torch import nn
 
-from naslib.optimizers.optimizer import OneShotOptimizer
-from naslib.search_spaces.core.graphs import EdgeOpGraph, NodeOpGraph
-from naslib.search_spaces.core.operations import Identity
-from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem
-from naslib.utils import AttrDict
-
-PRIMITIVES = [
-    # 'none',
-    'max_pool_3x3',
-    'avg_pool_3x3',
-    'skip_connect',
-    'sep_conv_3x3',
-    'sep_conv_5x5',
-    'dil_conv_3x3',
-    'dil_conv_5x5'
-]
+from naslib.optimizers.optimizer import DARTSOptimizer
+from naslib.search_spaces.core import EdgeOpGraph, NodeOpGraph
+from naslib.search_spaces.core.primitives import FactorizedReduce, ReLUConvBN, Stem, Identity
+from naslib.utils import config_parser
 
 
-class DARTSCell(EdgeOpGraph):
-    def __init__(self, cell_type, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
+class Cell(EdgeOpGraph):
+    def __init__(self, primitives, cell_type, C_prev_prev, C_prev, C, reduction_prev, *args, **kwargs):
+        self.primitives = primitives
         self.cell_type = cell_type
         self.C_prev_prev = C_prev_prev
         self.C_prev = C_prev
         self.C = C
         self.reduction_prev = reduction_prev
-        super(DARTSCell, self).__init__(*args, **kwargs)
+        super(Cell, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
         # Input Nodes: Previous / Previous-Previous cell
@@ -54,7 +42,8 @@ class DARTSCell(EdgeOpGraph):
             for from_node in range(to_node):
                 stride = 2 if self.cell_type == 'reduction' and from_node < 2 else 1
                 self.add_edge(
-                    from_node, to_node, op=None, op_choices=PRIMITIVES, op_kwargs={'C': self.C, 'stride': stride},
+                    from_node, to_node, op=None, op_choices=self.primitives,
+                    op_kwargs={'C': self.C, 'stride': stride, 'out_node_op': sum},
                     to_node=to_node, from_node=from_node)
 
         # Edges: inter-output
@@ -64,10 +53,11 @@ class DARTSCell(EdgeOpGraph):
         self.add_edge(5, 6, op=Identity())
 
 
-class DARTSMacroGraph(NodeOpGraph):
-    def __init__(self, config, *args, **kwargs):
+class MacroGraph(NodeOpGraph):
+    def __init__(self, config, primitives, *args, **kwargs):
         self.config = config
-        super(DARTSMacroGraph, self).__init__(*args, **kwargs)
+        self.primitives = primitives
+        super(MacroGraph, self).__init__(*args, **kwargs)
 
     def _build_graph(self):
         num_layers = self.config['layers']
@@ -90,11 +80,13 @@ class DARTSMacroGraph(NodeOpGraph):
             else:
                 reduction = False
 
-            self.add_node(cell_num + 2, op=DARTSCell(C_prev_prev=C_prev_prev,
-                                                     C_prev=C_prev, C=C_curr,
-                                                     reduction_prev=reduction_prev,
-                                                     cell_type='reduction' if
-                                                     reduction else 'normal'),
+            self.add_node(cell_num + 2,
+                          op=Cell(primitives=self.primitives,
+                                  C_prev_prev=C_prev_prev,
+                                  C_prev=C_prev, C=C_curr,
+                                  reduction_prev=reduction_prev,
+                                  cell_type='reduction' if
+                                  reduction else 'normal'),
                           type='reduction' if reduction else 'normal')
             reduction_prev = reduction
             C_prev_prev, C_prev = C_prev, self.config['channel_multiplier'] * C_curr
@@ -125,12 +117,14 @@ class DARTSMacroGraph(NodeOpGraph):
 
 
 if __name__ == '__main__':
-    with open('../../configs/default.yaml') as f:
-        config = yaml.safe_load(f)
-        config = AttrDict(config)
+    from naslib.search_spaces.darts import PRIMITIVES
 
-    one_shot_optimizer = OneShotOptimizer()
-    search_space = DARTSMacroGraph.from_optimizer_op(one_shot_optimizer, config=config)
+    one_shot_optimizer = DARTSOptimizer()
+    search_space = MacroGraph.from_optimizer_op(
+        one_shot_optimizer,
+        config=config_parser('../../configs/default.yaml'),
+        primitives=PRIMITIVES
+    )
 
     # Attempt forward pass
     res = search_space(torch.randn(size=[1, 3, 32, 32], dtype=torch.float, requires_grad=False))

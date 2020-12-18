@@ -1,7 +1,7 @@
 data: "data"
 gpu: 0
-seed: 2
-report_freq: 10
+seed: 10
+report_freq: 1
 
 init_channels: 16
 channel_multiplier: 4

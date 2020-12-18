@@ -9,7 +9,20 @@ import shutil
 import torch
 import torchvision.transforms as transforms
 
+from functools import wraps
 from torch.autograd import Variable
+
+
+def exception(exception_type):
+    def exception_decorator(func):
+        @wraps(func)
+        def function_wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exception_type:
+                return None
+        return function_wrapper
+    return exception_decorator
 
 
 class AttrDict(dict):
