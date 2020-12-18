@@ -1,4 +1,7 @@
 # NASLib
+[![Build Status](https://travis-ci.com/automl/NASLib.svg?branch=master)](https://travis-ci.com/automl/NASLib)
+[![codecov](https://codecov.io/gh/automl/NASLib/branch/master/graph/badge.svg?token=RNqATqVvnV)](https://codecov.io/gh/automl/NASLib)
+
 NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilitate NAS research for the community by providing interfaces to several state-of-the-art NAS search spaces
 
 > :warning: **This library is under construction** and there is no official release yet. Feel 
@@ -49,4 +52,24 @@ cd naslib
 pip install .
 ```
 
+To validate the installation, you can run tests:
 
+```
+cd tests
+coverage run -m unittest discover
+```
+
+The test coverage can be seen with `coverage report`.
+
+
+## Cite
+
+If you use this code in your own work, please cite NASLib using the following bibtex entry:
+
+```
+@misc{naslib-2020, 
+  title={NASLib: A Modular and Flexible Neural Architecture Search Library}, 
+  author={Ruchte, Michael and Zela, Arber and Siems, Julien and Grabocka, Josif and Hutter, Frank}, 
+  year={2020}, publisher={GitHub}, 
+  howpublished={\url{https://github.com/automl/NASLib}} }
+```

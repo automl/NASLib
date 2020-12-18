@@ -1,24 +1,16 @@
-data: "../../data"
 dataset: cifar10
-gpu: 0
-seed: 10
-report_freq: 1
-num_classes: 10
-criterion: CrossEntropyLoss
-working_dir: run
-save: run
+seed: 99
+out_dir: run
+optimizer: darts
 
 search:
-  dataset: cifar10
-  data: "../../data"
-  checkpoint_freq: 1
-  seed: 10
+  checkpoint_freq: 5
   batch_size: 64
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 50
+  epochs: 150
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -38,27 +30,38 @@ search:
   tau_max: 10
   tau_min: 0.1
 
+  # RE
+  sample_size: 10
+  population_size: 30
+  
+  # LS
+  num_init: 10
+  
+  # BANANAS
+  k: 10
+  num_ensemble: 3
+  acq_fn_type: its
+  acq_fn_optimization: mutation
+  encoding_type: path
+  num_arches_to_mutate: 2
+  max_mutations: 1
+  num_candidates: 100
+
 evaluation:
-  dataset: cifar10
-  data: "../../data"
-  checkpoint_freq: 10
-  seed: 10
-  batch_size: 64
+  checkpoint_freq: 30
+  batch_size: 96
   learning_rate: 0.025
   learning_rate_min: 0.00
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 100
+  epochs: 600
   warm_start_epochs: 0
   grad_clip: 5
-  train_portion: 0.5
-  data_size: 25000
+  train_portion: 1.
+  data_size: 50000
 
-  cutout: False
+  cutout: True
   cutout_length: 16
   cutout_prob: 1.0
-  drop_path_prob: 0.0
-  auxiliary_weight: 0.0
-
-
-
+  drop_path_prob: 0.2
+  auxiliary_weight: 0.4

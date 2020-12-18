@@ -20,10 +20,19 @@ import torchvision.transforms as transforms
 import yaml
 
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
+from fvcore.common.config import CfgNode
 
 cat_channels = partial(torch.cat, dim=1)
 
 logger = logging.getLogger(__name__)
+
+
+def get_project_root() -> Path:
+    """
+    Returns the root path of the project.
+    """
+    return Path(__file__).parent.parent
+
 
 def iter_flatten(iterable):
     """
@@ -54,9 +63,7 @@ Run on single machine:
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default="{}/defaults/config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
-    parser.add_argument("--seed", default=1, type=int, help="Seed for the experiment")
-    parser.add_argument("--optimizer", default="darts")
+    parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
     parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
@@ -77,6 +84,10 @@ Run on single machine:
         nargs=argparse.REMAINDER,
     )
     return parser
+
+
+def parse_args(parser=default_argument_parser(), args=sys.argv[1:]):
+    return parser.parse_args(args)
 
 
 def pairwise(iterable):
@@ -100,8 +111,12 @@ def get_config_from_args(args=None):
     Args:
         args: args from a different argument parser than the default one.
     """
+    # load the default base
+    with open(os.path.join(get_project_root(), 'defaults', 'darts_defaults.yaml')) as f:
+        config = CfgNode.load_cfg(f)
+    
     if not args:
-        args = default_argument_parser().parse_args()
+        args = parse_args()
     logger.info("Command line args: {}".format(args))
 
     # load config file
@@ -124,6 +139,10 @@ def get_config_from_args(args=None):
     config.seed = args.seed
     config.search.seed = config.seed
     config.resume = args.resume
+    
+    # load config file
+    config.merge_from_file(args.config_file)
+    config.merge_from_list(args.opts)
 
     config.evaluation.world_size = args.world_size
     config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
@@ -296,7 +315,7 @@ def accuracy(output, target, topk=(1,)):
 
     res = []
     for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0)
+        correct_k = correct[:k].reshape(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
@@ -324,13 +343,6 @@ def create_exp_dir(path):
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
     logger.info('Experiment dir : {}'.format(path))
-
-
-def get_project_root() -> Path:
-    """
-    Returns the root path of the project.
-    """
-    return Path(__file__).parent.parent
 
 
 class AttrDict(dict):

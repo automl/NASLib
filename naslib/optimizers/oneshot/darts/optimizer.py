@@ -188,6 +188,7 @@ class DARTSOptimizer(MetaOptimizer):
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
         graph.parse()
+        graph = graph.cuda() if torch.cuda.is_available() else graph.cpu()
         return graph
 
 

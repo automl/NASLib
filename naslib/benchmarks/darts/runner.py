@@ -20,7 +20,7 @@ utils.log_args(config)
 supported_optimizers = {
     'darts': DARTSOptimizer(config),
     'gdas': GDASOptimizer(config),
-    'random': RandomSearch(config),
+    #'random': RandomSearch(sample_size=1),
 }
 
 if config.dataset == 'cifar100': DartsSearchSpace.NUM_CLASSES = 100

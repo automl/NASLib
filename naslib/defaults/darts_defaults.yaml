@@ -1,16 +1,16 @@
 dataset: cifar10
-gpu: 0
-seed: 10
-num_classes: 10
+seed: 99
+out_dir: run
+optimizer: darts
 
 search:
-  checkpoint_freq: 10
+  checkpoint_freq: 5
   batch_size: 64
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 5
+  epochs: 50
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -33,18 +33,31 @@ search:
   # RE
   sample_size: 10
   population_size: 100
+  
+  #LS
+  num_init: 10
+  
+  # BANANAS
+  k: 10
+  num_ensemble: 3
+  acq_fn_type: its
+  acq_fn_optimization: mutation
+  encoding_type: path
+  num_arches_to_mutate: 2
+  max_mutations: 1
+  num_candidates: 100
 
 evaluation:
-  checkpoint_freq: 1
+  checkpoint_freq: 30
   batch_size: 96
   learning_rate: 0.025
   learning_rate_min: 0.00
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 5
+  epochs: 600
   warm_start_epochs: 0
   grad_clip: 5
-  train_portion: 1
+  train_portion: 1.
   data_size: 50000
 
   cutout: True

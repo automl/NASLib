@@ -13,7 +13,7 @@ from ..darts.primitives import FactorizedReduce
 edge_attributes = {
     'op': [
             FactorizedReduce,   # classes of op, not instances
-            ops.Zero, 
+            ops.Zero1x1, 
             ops.MaxPool1x1, 
             ops.SepConv, 
             ops.DilConv,

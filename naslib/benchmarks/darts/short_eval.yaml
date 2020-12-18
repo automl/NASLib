@@ -1,0 +1,14 @@
+_BASE_: ../../defaults/darts_defaults.yaml
+
+evaluation:
+  batch_size: 64
+  epochs: 100
+  train_portion: 0.5
+  data_size: 25000
+
+  cutout: False
+  drop_path_prob: 0.0
+  auxiliary_weight: 0.0
+
+
+

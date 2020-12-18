@@ -77,10 +77,39 @@ class GDASOptimizer(DARTSOptimizer):
 
     @staticmethod
     def sample_alphas(edge, tau):
-        sampled_arch_weight = torch.nn.functional.gumbel_softmax(
-            edge.data.alpha, tau=float(tau), hard=True
-        )
-        edge.data.set('sampled_arch_weight', sampled_arch_weight, shared=True)
+        # sampled_arch_weight = torch.nn.functional.gumbel_softmax(
+        #     edge.data.alpha, tau=float(tau), hard=True
+        # )
+        # edge.data.set('sampled_arch_weight', sampled_arch_weight, shared=True)
+
+        # from gdas repo
+        # https://github.com/D-X-Y/AutoDL-Projects/blob/befa6bcb00e0a8fcfba447d2a1348202759f58c9/lib/models/cell_searchs/search_model_gdas.py#L88
+        # https://github.com/D-X-Y/AutoDL-Projects/blob/befa6bcb00e0a8fcfba447d2a1348202759f58c9/lib/models/cell_searchs/search_cells.py#L51
+        arch_parameters = torch.unsqueeze(edge.data.alpha, dim=0)
+        
+        while True:
+            gumbels = -torch.empty_like(arch_parameters).exponential_().log()
+            if torch.cuda.is_available():
+                gumbels = gumbels.cuda()
+                tau = tau.cuda()
+                arch_parameters = arch_parameters.cuda()
+            logits  = (arch_parameters.log_softmax(dim=1) + gumbels) / tau
+            probs   = torch.nn.functional.softmax(logits, dim=1)
+            index   = probs.max(-1, keepdim=True)[1]
+            one_h   = torch.zeros_like(logits).scatter_(-1, index, 1.0)
+            hardwts = one_h - probs.detach() + probs
+            if (torch.isinf(gumbels).any()) or (torch.isinf(probs).any()) or (torch.isnan(probs).any()):
+                continue
+            else:
+                break
+
+        weights = hardwts[0]
+        argmaxs = index[0].item()
+
+        edge.data.set('sampled_arch_weight', weights, shared=True)
+        edge.data.set('argmax', argmaxs, shared=True)
+
+        
     
 
     @staticmethod
@@ -157,8 +186,20 @@ class GDASMixedOp(AbstractPrimitive):
         Applies the gumbel softmax to the architecture weights
         before forwarding `x` through the graph as in DARTS
         """
-        sampled_arch_weight = edge_data.sampled_arch_weight
-        return sum(w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives))
+        # sampled_arch_weight = edge_data.sampled_arch_weight
+        # result1 = sum(w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives))
+
+        weights = edge_data.sampled_arch_weight
+        argmax = edge_data.argmax
+
+        weigsum = sum(weights[i] * op(x, None) if i == argmax else weights[i] for i, op in enumerate(self.primitives))
+
+        return weigsum
+
+
+
+
+
     
     def get_embedded_ops(self):
         return self.primitives

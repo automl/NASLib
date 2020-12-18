@@ -81,6 +81,38 @@ class Zero(AbstractPrimitive):
     def get_embedded_ops(self):
         return None
 
+    def __repr__(self):
+        return "Zero (stride={})".format(self.stride)
+
+
+class Zero1x1(AbstractPrimitive):
+    """
+    Implementation of the zero operation. It removes
+    the connection by multiplying its input with zero.
+    """
+
+    def __init__(self, stride, **kwargs):
+        """
+        When setting stride > 1 then it is assumed that the
+        channels must be doubled.
+        """
+        super().__init__(locals())
+        self.stride = stride
+
+
+    def forward(self, x, edge_data):
+        if self.stride == 1:
+            return x.mul(0.)
+        else:
+            x = x[:, :, ::self.stride, ::self.stride].mul(0.)
+            return torch.cat([x, x], dim=1)   # double the channels TODO: ugly as hell
+
+    def get_embedded_ops(self):
+        return None
+
+    def __repr__(self):
+        return "Zero1x1 (stride={})".format(self.stride)
+
 
 class SepConv(AbstractPrimitive):
     """

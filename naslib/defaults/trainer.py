@@ -223,6 +223,9 @@ class Trainer(object):
                 # train from scratch
                 epochs = self.config.evaluation.epochs
                 for e in range(start_epoch, epochs):
+                    if torch.cuda.is_available():
+                        log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=20)
+
                     # update drop path probability
                     drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
                     best_arch.update_edges(
@@ -252,19 +255,18 @@ class Trainer(object):
                         log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
                             e, i, train_loss, scheduler.get_last_lr()), n=5)
                         
-                        if torch.cuda.is_available():
-                            log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
                         
                     # Validation queue
                     if self.valid_queue:
                         for i, (input_valid, target_valid) in enumerate(self.valid_queue):
                             
-                            input_valid = input_valid.to(self.device).float()
-                            target_valid = target_valid.to(self.device, non_blocking=True).float()
+                            input_valid = input_valid.cuda().float()
+                            target_valid = target_valid.cuda().float()
 
                             # just log the validation accuracy
-                            logits_valid = best_arch(input_valid)
-                            self._store_accuracies(logits_valid, target_valid, 'val')
+                            with torch.no_grad():
+                                logits_valid = best_arch(input_valid)
+                                self._store_accuracies(logits_valid, target_valid, 'val')
 
                     scheduler.step()
                     self.periodic_checkpointer.step(e)
@@ -358,6 +360,8 @@ class Trainer(object):
 
     def _store_accuracies(self, logits, target, split):
         """Update the accuracy counters"""
+        logits = logits.clone().detach().cpu()
+        target = target.clone().detach().cpu()
         prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
         n = logits.size(0)
 

@@ -1,0 +1,45 @@
+language: python
+os: linux
+
+jobs:
+        include:
+                - python: 3.6
+                  env:
+                          - REPORT_COVERAGE=1
+                - python: 3.7
+                  env:
+                          - REPORT_COVERAGE=1
+                - python: 3.8
+                  env:
+                          - REPORT_COVERAGE=1
+
+branches:
+        only:
+                - master
+
+cache:
+        directories:
+                - $HOME/.cache/pip
+        pip: true
+
+before_install:
+        - python --version
+        - uname -a
+
+install:
+        - pip install --upgrade pip setuptools wheel
+        - pip install .
+        - python --version
+        - pip list
+
+script:
+        - pytest --cov=naslib tests
+
+after_success:
+        - if [[ "${REPORT_COVERAGE}" == 1 ]]; then
+            codecov;
+            coverage report;
+          fi
+
+notifications:
+        email: false
