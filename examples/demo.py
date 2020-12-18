@@ -2,7 +2,8 @@ import logging
 import sys
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch, RegularizedEvolution, LocalSearch, Bananas
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch, \
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
 from naslib.search_spaces import (
     DartsSearchSpace, 
@@ -11,7 +12,7 @@ from naslib.search_spaces import (
     HierarchicalSearchSpace,
 )
 
-from naslib.search_spaces.nasbench101 import graph
+# from naslib.search_spaces.nasbench101 import graph
 
 from naslib.utils import utils, setup_logger
 
@@ -30,18 +31,21 @@ supported_optimizers = {
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
     'ls': LocalSearch(config),
-    'bananas': Bananas(config)
+    'bananas': Bananas(config),
+    'bp': BasePredictor(config)
 }
 
 # Changing the search space is one line of code
 # search_space = SimpleCellSearchSpace()
-search_space = graph.NasBench101SearchSpace()
+# search_space = graph.NasBench101SearchSpace()
 # search_space = HierarchicalSearchSpace()
 # search_space = DartsSearchSpace()
-# search_space = NasBench201SearchSpace()
+search_space = NasBench201SearchSpace()
 
 # Changing the optimizer is one line of code
-optimizer = supported_optimizers['rs']
+optimizer = supported_optimizers[config.optimizer]
+optimizer.adapt_search_space(search_space)
+
 
 optimizer.adapt_search_space(search_space)
 

@@ -35,6 +35,8 @@ class RandomSearch(MetaOptimizer):
 
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
+        self.fidelity = config.search.fidelity
+
         
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
@@ -53,7 +55,7 @@ class RandomSearch(MetaOptimizer):
 
         model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
         model.arch = sample_random_architecture(self.search_space, self.scope)
-        model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+        model.accuracy = model.arch.query(self.performance_metric, self.dataset, epoch=self.fidelity)
 
         self.sampled_archs.append(model)
         self._update_history(model)

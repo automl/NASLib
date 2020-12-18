@@ -11,9 +11,14 @@ from naslib.utils.utils import get_project_root
 
 from .primitives import ResNetBasicblock
 
+
 # load the nasbench201 data
 with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
     nb201_data = pickle.load(f)
+
+# load nasbench201 full training data for cifar10
+with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
+    cifar10_full_data = pickle.load(f)
 
 
 class NasBench201SearchSpace(Graph):
@@ -110,8 +115,7 @@ class NasBench201SearchSpace(Graph):
                 private_edge_data=True
             )
         
-
-    def query(self, metric=None, dataset=None, path=None):
+    def query(self, metric=None, dataset=None, path=None, epoch=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
@@ -140,9 +144,6 @@ class NasBench201SearchSpace(Graph):
         ]
 
         arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
-
-        # query data from nb201
-        query_results = nb201_data[arch_str]
         
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: 'train_acc1es',
@@ -160,16 +161,35 @@ class NasBench201SearchSpace(Graph):
             Metric.EPOCH: 'epochs'
         }
 
-        if metric == Metric.RAW:
-            return query_results
-        elif "VAL_" in metric.name and dataset == 'cifar10':
-            dataset = 'cifar10-valid'
-        elif "VAL_" in metric.name and dataset != 'cifar10':
-            raise ValueError("nasbench 201 does not have a validation split for other datasets than cifat10.")
+        if not epoch or epoch == 200:
         
-        return query_results[dataset][metric_to_nb201[metric]]
+            # query data from nb201
+            if dataset == 'cifar10':
+                query_results = cifar10_full_data[arch_str]
+            else:
+                query_results = nb201_data[arch_str]
+        
+            if metric == Metric.RAW:
+                return query_results
+            elif ("VAL_" in metric.name or "TRAIN_" in metric.name) and dataset == 'cifar10':
+                dataset = 'cifar10-valid'
+            elif "VAL_" in metric.name and dataset != 'cifar10':
+                raise ValueError("nasbench 201 does not have a validation split for other datasets than cifar10.")
 
+            return query_results[dataset][metric_to_nb201[metric]]
+        
+        else:
+            assert dataset in ['cifar10', 'cifar10-valid'], "Multi-fidelity is only \
+            implemented for cifar10: {}".format(dataset)
+            assert metric in [Metric.TRAIN_ACCURACY, Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_LOSS]
+            
+            query_results = cifar10_full_data[arch_str]
+            return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
+        
+    def get_type(self):
+        return 'nasbench201'
 
+    
 def _set_cell_ops(edge, C):
     edge.data.set('op', [
         ops.Identity(),
@@ -178,3 +198,6 @@ def _set_cell_ops(edge, C):
         ops.ReLUConvBN(C, C, kernel_size=1),
         ops.AvgPool1x1(kernel_size=3, stride=1),
     ])
+    
+    
+

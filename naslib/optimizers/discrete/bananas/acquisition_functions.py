@@ -1,6 +1,10 @@
 import numpy as np
 from scipy.stats import norm
 import sys
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def acquisition_function(ensemble, 
@@ -22,7 +26,7 @@ def acquisition_function(ensemble,
         # Independent Thompson sampling (ITS) acquisition function
         
         def its(arch_encoding):
-            predictions = ensemble.predict(np.array([arch_encoding]))
+            predictions = ensemble.query(np.array([arch_encoding]))
             predictions = np.squeeze(predictions)
             mean = np.mean(predictions)
             std = np.std(predictions)
@@ -34,7 +38,7 @@ def acquisition_function(ensemble,
         # Upper confidence bound (UCB) acquisition function
         
         def ucb(arch_encoding):
-            predictions = ensemble.predict(np.array([arch_encoding]))
+            predictions = ensemble.query(np.array([arch_encoding]))
             mean = np.mean(predictions)
             std = np.std(predictions)
             return mean + explore_factor * std
@@ -44,7 +48,7 @@ def acquisition_function(ensemble,
         # Expected improvement (EI) acquisition function
         
         def ei(arch_encoding):
-            predictions = ensemble.predict(np.array([arch_encoding]))
+            predictions = ensemble.query(np.array([arch_encoding]))
             mean = np.mean(predictions)
             std = np.std(predictions)
             factored_std = std / ei_calibration_factor
@@ -55,7 +59,7 @@ def acquisition_function(ensemble,
         return ei
 
     else:
-        logging.info('{} is not a valid exploration type'.format(acq_fn_type))
+        logger.info('{} is not a valid exploration type'.format(acq_fn_type))
         raise NotImplementedError()
 
     return sorted_indices

@@ -48,7 +48,7 @@ def sample_random_architecture(search_space, scope):
 
 
 def get_op_indices(arch):
-    # used for debugging
+
     cells = arch._get_child_graphs(single_instances=True)
     op_indices = []
     for cell in cells:
