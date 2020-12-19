@@ -79,7 +79,8 @@ class FeedforwardPredictor(Predictor):
         _ytrain = np.array(ytrain)
 
         train_data = TensorDataset(torch.FloatTensor(_xtrain),
-                                   torch.FloatTensor((_ytrain-self.mean)/self.std))
+                                   torch.FloatTensor(_ytrain))
+                                   #torch.FloatTensor((_ytrain-self.mean)/self.std))
         data_loader = DataLoader(train_data, batch_size=batch_size,
                                  shuffle=True, drop_last=False)
 
@@ -118,6 +119,7 @@ class FeedforwardPredictor(Predictor):
             if e%100 == 0:
                 print('Epoch {}, loss {}'.format(e, loss_fn.item()))
 
+        print(self.query(xtrain))
         train_pred = np.squeeze(self.query(xtrain))
         train_error = np.mean(abs(train_pred-ytrain))
         return train_error
@@ -138,5 +140,6 @@ class FeedforwardPredictor(Predictor):
                 pred.append(prediction.cpu().numpy())
 
         pred = np.concatenate(pred)
-        return np.squeeze(pred * self.std + self.mean)
+        #return np.squeeze(pred * self.std + self.mean)
+        return np.squeeze(pred)
 
