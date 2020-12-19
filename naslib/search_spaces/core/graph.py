@@ -160,23 +160,6 @@ class Graph(torch.nn.Module, nx.DiGraph):
         return "Graph {}-{:.07f}, scope {}, {} nodes".format(self.name, self._id, self.scope, self.number_of_nodes())
 
 
-     #def __getattr__(self, name):
-         #"""
-         #Pass-through networkx functions (instead of inheriting).
-         #"""
-         #if name == "_nxgraph":
-             #logger.warn("Do not call _nxgraph directly. If you are seeing this message "
-             #"it can also mean you forgot to initilize with super().__init__().")
-         #return nx.DiGraph.__getattribute__(self._nxgraph, name)
-
-
-     #def __iter__(self):
-         #"""
-         #Pass-through networkx `__iter__` function as it is ignored by `__getattr__`
-         #"""
-         #return self._nxgraph.__iter__()
-
-
     def modules_str(self):
         """
         Once the graph has been parsed, prints the modules as they appear in pytorch.
@@ -212,20 +195,19 @@ class Graph(torch.nn.Module, nx.DiGraph):
         return self
 
 
-     def add_node(self, node_index, **attr):
-         """
-         Adds a node to the graph.
+    def add_node(self, node_index, **attr):
+        """
+        Adds a node to the graph.
 
-         Note that adding a node using an index that has been used already
-         will override its attributes.
+        Note that adding a node using an index that has been used already
+        will override its attributes.
 
-         Args:
-             node_index (int): The index for the node. Expect to be >= 1.
-             **attr: The attributes which can be added in a dict like form.
-         """
-         assert node_index >= 1, "Expecting the node index to be greater or equal 1"
-         ##self._nxgraph.add_node(node_index, **attr)
-         nx.DiGraph.add_node(self, node_index, **attr)
+        Args:
+            node_index (int): The index for the node. Expect to be >= 1.
+            **attr: The attributes which can be added in a dict like form.
+        """
+        assert node_index >= 1, "Expecting the node index to be greater or equal 1"
+        nx.DiGraph.add_node(self, node_index, **attr)
 
 
     def copy(self):

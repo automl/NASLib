@@ -128,11 +128,11 @@ def get_config_from_args(args=None, config_type='nas'):
     logger.info("Command line args: {}".format(args))
 
     # load config file
-    with open(args.config_file, 'r') as f:
-        config = AttrDict(yaml.safe_load(f))
-    for k, v in config.items():
-        if isinstance(v, dict):
-            config[k] = AttrDict(v)
+     #with open(args.config_file, 'r') as f:
+         #config = AttrDict(yaml.safe_load(f))
+     #for k, v in config.items():
+         #if isinstance(v, dict):
+             #config[k] = AttrDict(v)
 
     # Override file args with ones from command line
     for arg, value in pairwise(args.opts):
@@ -142,25 +142,24 @@ def get_config_from_args(args=None, config_type='nas'):
         else:
             config[arg] = value
 
-    config.optimizer = args.optimizer
     config.eval_only = args.eval_only
-    config.seed = args.seed
-    config.search.seed = config.seed
     config.resume = args.resume
 
     # load config file
     config.merge_from_file(args.config_file)
     config.merge_from_list(args.opts)
 
-    config.evaluation.world_size = args.world_size
-    config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
-    config.evaluation.rank = args.rank
-    config.evaluation.dist_url = args.dist_url
-    config.evaluation.dist_backend = args.dist_backend
-    config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
-
     # prepare the output directories
     if config_type == 'nas':
+        config.seed = args.seed
+        config.search.seed = config.seed
+        config.optimizer = args.optimizer
+        config.evaluation.world_size = args.world_size
+        config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
+        config.evaluation.rank = args.rank
+        config.evaluation.dist_url = args.dist_url
+        config.evaluation.dist_backend = args.dist_backend
+        config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
         config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
     elif config_type == 'predictor':
         if config.predictor == 'lcsvr' and config.experiment_type == 'vary_train_size':
