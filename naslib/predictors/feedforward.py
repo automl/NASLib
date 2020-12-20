@@ -3,19 +3,44 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, Dataset
 
 from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device('cpu') #NOTE: faster on CPU
 print('device:', device)
 
 def accuracy_mse(prediction, target, scale=100.):
     prediction = prediction.detach() * scale
     target = (target) * scale
     return F.mse_loss(prediction, target)
+
+
+class TensorDatasetWithTrans(Dataset):
+    """
+    TensorDataset with support of transforms.
+    """
+
+    def __init__(self, tensors, transform=None):
+        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
+        self.tensors = tensors
+        self.transform = transform
+
+    def __getitem__(self, index):
+        x = self.tensors[0][index]
+
+        if self.transform:
+            x = self.transform(x)
+
+        y = self.tensors[1][index]
+
+        return x, y
+
+    def __len__(self):
+        return self.tensors[0].size(0)
 
 
 class FeedforwardNet(nn.Module):
@@ -78,11 +103,13 @@ class FeedforwardPredictor(Predictor):
                                   ss_type=self.ss_type) for arch in xtrain])
         _ytrain = np.array(ytrain)
 
-        train_data = TensorDataset(torch.FloatTensor(_xtrain),
-                                   torch.FloatTensor(_ytrain))
-                                   #torch.FloatTensor((_ytrain-self.mean)/self.std))
+        X_tensor = torch.FloatTensor(_xtrain).to(device)
+        y_tensor = torch.FloatTensor(_ytrain).to(device)
+
+        train_data = TensorDataset(X_tensor, y_tensor)
         data_loader = DataLoader(train_data, batch_size=batch_size,
-                                 shuffle=True, drop_last=False)
+                                 shuffle=True, drop_last=False,
+                                 pin_memory=False)
 
         self.model = self.get_model(input_dims=_xtrain.shape[1],
                                     num_layers=num_layers,
@@ -91,9 +118,9 @@ class FeedforwardPredictor(Predictor):
         optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.99))
 
         if loss == 'mse':
-            criterion = nn.MSELoss()
+            criterion = nn.MSELoss().to(device)
         elif loss == 'mae':
-            criterion = nn.L1Loss()
+            criterion = nn.L1Loss().to(device)
 
         self.model.train()
 
@@ -117,7 +144,7 @@ class FeedforwardPredictor(Predictor):
                 meters.update({"loss": loss_fn.item(), "mse": mse.item()}, n=target.size(0))
 
             if e%100 == 0:
-                print('Epoch {}, loss {}'.format(e, loss_fn.item()))
+                print('Epoch {}, {}, {}'.format(e, meters['loss'], meters['mse']))
 
         train_pred = np.squeeze(self.query(xtrain))
         train_error = np.mean(abs(train_pred-ytrain))
@@ -126,10 +153,12 @@ class FeedforwardPredictor(Predictor):
     def query(self, xtest, info=None, eval_batch_size=None):
         xtest = np.array([encode(arch, encoding_type=self.encoding_type,
                           ss_type=self.ss_type) for arch in xtest])
-        test_data = TensorDataset(torch.FloatTensor(xtest))
+        X_tensor = torch.FloatTensor(xtest).to(device)
+        test_data = TensorDataset(X_tensor)
 
         eval_batch_size = len(xtest) if eval_batch_size is None else eval_batch_size
-        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
+        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size,
+                                      pin_memory=False)
 
         self.model.eval()
         pred = []
@@ -139,6 +168,5 @@ class FeedforwardPredictor(Predictor):
                 pred.append(prediction.cpu().numpy())
 
         pred = np.concatenate(pred)
-        #return np.squeeze(pred * self.std + self.mean)
         return np.squeeze(pred)
 
