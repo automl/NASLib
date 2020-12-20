@@ -1,5 +1,6 @@
 import xgboost as xgb
-from naslib.predictors.boosted_trees import BaseTree
+
+from naslib.predictors.trees import BaseTree
 
 
 class XGBoost(BaseTree):
