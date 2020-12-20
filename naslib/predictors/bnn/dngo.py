@@ -1,27 +1,14 @@
 # This is an implementation of the DNGO predictor from the paper:
 # Snoek et al., 2015. Scalable Bayesian Optimization using DNNs
-import numpy as np
+from pybnn.dngo import DNGO
 
-from naslib.predictors.bnn.dngo_model import DNGO
-from naslib.predictors.utils.encodings import encode
-from naslib.predictors.predictor import Predictor
+from naslib.predictors.bnn.bnn_base import BNN
 
 
-class DNGOPredictor(Predictor):
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
-        self.encoding_type = encoding_type
-        self.ss_type = ss_type
+class DNGOPredictor(BNN):
 
     def get_model(self, **kwargs):
-        predictor = DNGO(**kwargs)
-        return predictor
-
-    def fit(self, xtrain, ytrain):
-        _xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                  ss_type=self.ss_type) for arch in xtrain])
-        _ytrain = np.array(ytrain)
-
-        self.model = self.get_model(
+        predictor = DNGO(
             batch_size=10,
             num_epochs=500,
             learning_rate=0.01,
@@ -39,15 +26,8 @@ class DNGOPredictor(Predictor):
             normalize_input=False,
             normalize_output=True
         )
-        self.model.train(_xtrain, _ytrain, do_optimize=True)
+        return predictor
 
-        train_pred = self.query(xtrain)
-        train_error = np.mean(abs(train_pred - _ytrain))
-        return train_error
+    def train_model(self, xtrain, ytrain):
+        self.model.train(xtrain, ytrain, do_optimize=True)
 
-    def query(self, xtest, info=None):
-        test_data = np.array([encode(arch,encoding_type=self.encoding_type,
-                              ss_type=self.ss_type) for arch in xtest])
-
-        m, v = self.model.predict(test_data)
-        return np.squeeze(m)
