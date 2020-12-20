@@ -1,14 +1,18 @@
-predictors=(valloss valacc sotl bananas feedforward gbdt gcn bonas_gcn xgb ngb jacov)
-#experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size single)
+predictors=(lcsvr valloss valacc sotl bananas feedforward gbdt gcn bonas_gcn xgb ngb jacov)
+experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size single)
 
-experiment_types=(single single single single single single single single single single single)
+#experiment_types=(single single single single single single single single single single single single)
+
+#predictors=(feedforward)
+#experiment_types=(vary_train_size)
 
 out_dir=run
 search_space=nasbench201
 dataset=cifar10
 
 start_seed=$1
-trials=1
+trials=50
+
 end_seed=$(($start_seed + $trials - 1))
 test_size=200
 

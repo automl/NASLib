@@ -37,7 +37,14 @@ def main(args):
                           }
             }
 
-            with open(folder + f'/config_{args.optimizer}_{i}.yaml', 'w') as fh:
+            if args.optimizer == 'lcsvr' and args.experiment_type == 'vary_fidelity':
+                path = folder + f'/config_{args.optimizer}_train_{i}.yaml'
+            if args.optimizer == 'lcsvr' and args.experiment_type == 'vary_train_size':
+                path = folder + f'/config_{args.optimizer}_fidelity_{i}.yaml'
+            else:
+                path = folder + f'/config_{args.optimizer}_{i}.yaml'
+
+            with open(path, 'w') as fh:
                 yaml.dump(config, fh)
 
     elif args.config_type == 'predictor':
@@ -45,7 +52,6 @@ def main(args):
         os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
-
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
                 'seed': i,
@@ -54,9 +60,8 @@ def main(args):
                 'predictor': args.predictor,
                 'test_size': args.test_size,
                 'experiment_type': args.experiment_type,
+                'train_size_list': args.train_size_list,
                 'train_size_start': args.train_size_start,
-                'train_size_end': args.train_size_end,
-                'train_size_increment': args.train_size_increment,
                 'fidelity_start': args.fidelity_start,
                 'fidelity_end': args.fidelity_end,
                 'fidelity_increment': args.fidelity_increment
@@ -84,10 +89,8 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=150, help="How many search epochs")
     parser.add_argument("--config_type", type=str, default='nas', help="nas or predictor?")
     parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench201 or darts?")
-
-    parser.add_argument("--train_size_start", type=int, default=10, help="Starting train size")
-    parser.add_argument("--train_size_end", type=int, default=150, help="Ending train size")
-    parser.add_argument("--train_size_increment", type=int, default=10, help="train size increment")
+    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512], help="train size list")
+    parser.add_argument("--train_size_start", type=int, default=100, help="Starting train size")
     parser.add_argument("--fidelity_start", type=int, default=10, help="Starting fidelity")
     parser.add_argument("--fidelity_end", type=int, default=180, help="Ending fidelity")
     parser.add_argument("--fidelity_increment", type=int, default=10, help="fidelity increment")

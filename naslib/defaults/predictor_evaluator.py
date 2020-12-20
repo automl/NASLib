@@ -30,9 +30,8 @@ class PredictorEvaluator(object):
         self.test_size = config.test_size
 
         self.train_size_start = config.train_size_start
-        self.train_size_end = config.train_size_end
-        self.train_size_increment = config.train_size_increment
-
+        self.train_size_list = config.train_size_list
+        
         self.fidelity_start = config.fidelity_start
         self.fidelity_end = config.fidelity_end
         self.fidelity_increment = config.fidelity_increment
@@ -117,11 +116,11 @@ class PredictorEvaluator(object):
 
             logger.info("Load the training set")
             xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled,
-                                                         data_size=self.train_size_end)
+                                                         data_size=self.train_size_list[-1])
             fidelity = self.fidelity_start
 
-            for train_size in range(self.train_size_start, self.train_size_end,
-                                    self.train_size_increment):
+            for train_size in self.train_size_list:
+                
                 xtrain, ytrain = xtrain_full[:train_size], ytrain_full[:train_size]
 
                 metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
