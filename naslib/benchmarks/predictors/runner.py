@@ -8,7 +8,7 @@ import os
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \
-SVR_Estimator, XGBoost, NGBoost, DNGOPredictor, BOHAMIANN
+SVR_Estimator, XGBoost, NGBoost, DNGOPredictor, BOHAMIANN, BayesianLinearRegression
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -43,6 +43,7 @@ supported_predictors = {
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),
     'dngo': DNGOPredictor(encoding_type='adjacency_one_hot'),
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
+    'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
 }
 
 supported_search_spaces = {

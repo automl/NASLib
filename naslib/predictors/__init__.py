@@ -7,4 +7,4 @@ from .soloss import SoLosspredictor
 from .lcsvr import SVR_Estimator
 from .jacobiancov import jacobian_cov
 from .boosted_trees import XGBoost, NGBoost, GBDTPredictor
-from .bnn import DNGOPredictor, BOHAMIANN
+from .bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression

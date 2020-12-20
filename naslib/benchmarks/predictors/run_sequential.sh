@@ -1,5 +1,8 @@
-predictors=(valloss valacc sotl bananas feedforward gbdt gcn bonas_gcn xgb ngb jacov dngo bohamiann)
-experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size single vary_train_size vary_train_size)
+predictors=(valloss valacc sotl bananas feedforward gbdt gcn bonas_gcn xgb \
+ngb jacov dngo bohamiann bayes_lin_reg)
+experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size \
+vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
+vary_train_size single vary_train_size vary_train_size vary_train_size)
 
 out_dir=run
 search_space=nasbench201
