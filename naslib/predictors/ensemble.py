@@ -1,7 +1,7 @@
 import numpy as np
 
 from naslib.predictors.feedforward import FeedforwardPredictor
-from naslib.predictors.boosted_trees import GBDTPredictor
+from naslib.predictors.trees import GBDTPredictor
 from naslib.predictors.predictor import Predictor
 
 

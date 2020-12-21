@@ -5,7 +5,7 @@ from ngboost.distns import Normal
 from ngboost.scores import LogScore
 from sklearn.tree import DecisionTreeRegressor
 
-from naslib.predictors.boosted_trees import BaseTree
+from naslib.predictors.trees import BaseTree
 
 
 def parse_params(func):
@@ -40,7 +40,7 @@ class NGBoost(BaseTree):
         if labels is None:
             return encodings
         else:
-            return (encodings, labels)
+            return (encodings, (labels-self.mean)/self.std)
 
 
     def train(self, train_data):

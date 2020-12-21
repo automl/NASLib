@@ -5,7 +5,7 @@
 import numpy as np
 import lightgbm as lgb
 
-from naslib.predictors.boosted_trees import BaseTree
+from naslib.predictors.trees import BaseTree
 
 """
 # Nasbench101 has 3 candidate operations + 1 output per node
