@@ -29,12 +29,11 @@ class PredictorEvaluator(object):
 
         self.test_size = config.test_size
 
-        self.train_size_start = config.train_size_start
+        self.train_size_single = config.train_size_single
         self.train_size_list = config.train_size_list
         
-        self.fidelity_start = config.fidelity_start
-        self.fidelity_end = config.fidelity_end
-        self.fidelity_increment = config.fidelity_increment
+        self.fidelity_single = config.fidelity_single
+        self.fidelity_list = config.fidelity_list
 
         self.dataset = config.dataset
         self.metric = Metric.VAL_ACCURACY
@@ -95,8 +94,8 @@ class PredictorEvaluator(object):
         xtest, ytest = self.load_dataset(load_labeled=self.load_labeled, data_size=self.test_size)
 
         if self.experiment_type == 'single':
-            train_size = self.train_size_start
-            fidelity = self.fidelity_start
+            train_size = self.train_size_single
+            fidelity = self.fidelity_single
 
             logger.info("Load the training set")
             xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
@@ -117,7 +116,7 @@ class PredictorEvaluator(object):
             logger.info("Load the training set")
             xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled,
                                                          data_size=self.train_size_list[-1])
-            fidelity = self.fidelity_start
+            fidelity = self.fidelity_single
 
             for train_size in self.train_size_list:
                 
@@ -135,14 +134,13 @@ class PredictorEvaluator(object):
 
         elif self.experiment_type == 'vary_fidelity':
 
-            train_size = self.train_size_start
+            train_size = self.train_size_single
 
             logger.info("Load the training set")
             xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
-                                               data_size=self.train_size_start)
+                                               data_size=self.train_size_single)
 
-            for fidelity in range(self.fidelity_start, self.fidelity_end,
-                                  self.fidelity_increment):
+            for fidelity in self.fidelity_list:
 
                 metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
                 test_error, correlation, rank_correlation = metrics

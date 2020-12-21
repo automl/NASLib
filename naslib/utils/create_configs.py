@@ -61,10 +61,9 @@ def main(args):
                 'test_size': args.test_size,
                 'experiment_type': args.experiment_type,
                 'train_size_list': args.train_size_list,
-                'train_size_start': args.train_size_start,
-                'fidelity_start': args.fidelity_start,
-                'fidelity_end': args.fidelity_end,
-                'fidelity_increment': args.fidelity_increment
+                'train_size_single': args.train_size_single,
+                'fidelity_single': args.fidelity_single,
+                'fidelity_list': args.fidelity_list,
             }
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
@@ -88,11 +87,11 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=150, help="How many search epochs")
     parser.add_argument("--config_type", type=str, default='nas', help="nas or predictor?")
     parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench201 or darts?")
-    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512], help="train size list")
-    parser.add_argument("--train_size_start", type=int, default=100, help="Starting train size")
-    parser.add_argument("--fidelity_start", type=int, default=100, help="Starting fidelity")
-    parser.add_argument("--fidelity_end", type=int, default=180, help="Ending fidelity")
-    parser.add_argument("--fidelity_increment", type=int, default=10, help="fidelity increment")
+    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512, 1000], help="train size list")
+    parser.add_argument("--train_size_single", type=int, default=100, help="Train size for single and vary_fidelity")
+    parser.add_argument("--fidelity_single", type=int, default=100, help="Fidelity for single and vary_train_size")
+    parser.add_argument("--fidelity_list", type=list, default=[5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, \
+                                                               110, 120, 130, 140, 150, 160, 170, 180, 190], help="train size list")
     parser.add_argument("--experiment_type", type=str, default='single', help="type of experiment")
 
     args = parser.parse_args()
