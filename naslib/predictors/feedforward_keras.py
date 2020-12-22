@@ -24,7 +24,7 @@ def mape_loss(y_true, y_pred):
     return tf.abs(tf.subtract(fraction, 1))
 
 
-class FeedforwardPredictor(Predictor):
+class FeedforwardKerasPredictor(Predictor):
 
     def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
         self.encoding_type = encoding_type
@@ -68,6 +68,12 @@ class FeedforwardPredictor(Predictor):
             verbose=0,
             regularization=0.2):
 
+        #print('encodings')
+        #print('gcn')
+        #print(encode(xtrain[0], encoding_type='gcn'))
+        #print('gcn')
+        #print(encode(xtrain[0], encoding_type='bonas_gcn'))
+        
         xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
                                   ss_type=self.ss_type) for arch in xtrain])
         ytrain = np.array(ytrain)

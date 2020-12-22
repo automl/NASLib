@@ -1,21 +1,19 @@
 
 # experiment types: single, vary_train_size, vary_fidelity
-experiment_type: vary_train_size
+experiment_type: single
 search_space: nasbench201
-predictor: feedforward
+predictor: dngo
 test_size: 100
-seed: 0
+seed: 1000
 
 dataset: cifar10
 out_dir: run
 
-train_size_start: 10
-train_size_end: 210
-train_size_increment: 10
+train_size_list: [8, 12, 20, 32, 50, 80, 128, 203, 322, 512]
+train_size_single: 100
 
-fidelity_start: 10
-fidelity_end: 190
-fidelity_increment: 10
+fidelity_list: [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
+fidelity_single: 5
 
 # Used by Jacobian_cov from NAS without training from DARTS for data loader
 search:

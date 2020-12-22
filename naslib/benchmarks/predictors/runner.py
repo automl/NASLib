@@ -9,7 +9,7 @@ import os
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
-BOHAMIANN, BayesianLinearRegression, LCNetPredictor
+BOHAMIANN, BayesianLinearRegression, LCNetPredictor, FeedforwardKerasPredictor
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -32,6 +32,7 @@ supported_predictors = {
     'bananas': Ensemble(encoding_type='path',
                         predictor_type='feedforward'),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot'),
+    'ff_keras': FeedforwardKerasPredictor(encoding_type='adjacency_one_hot'),
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
     'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
