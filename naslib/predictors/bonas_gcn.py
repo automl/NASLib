@@ -172,7 +172,7 @@ class BonasGCNPredictor(Predictor):
         return predictor
 
     def fit(self,xtrain,ytrain, 
-            gcn_hidden=64,seed=0,batch_size=32,
+            gcn_hidden=64,seed=0,batch_size=128,
             epochs=100,lr=1e-3,wd=0):
 
         # get mean and std, normlize accuracies
@@ -188,7 +188,7 @@ class BonasGCNPredictor(Predictor):
         train_data = np.array(train_data)
         nfeat = 7
         self.model = self.get_model(gcn_hidden=gcn_hidden,nfeat=nfeat)
-        data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True)
+        data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=False)
         self.model.to(device)
         criterion = nn.MSELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
@@ -213,7 +213,7 @@ class BonasGCNPredictor(Predictor):
         train_error = np.mean(abs(train_pred-ytrain))
         return train_error
 
-    def query(self, xtest, info=None, eval_batch_size=1000):
+    def query(self, xtest, info=None, eval_batch_size=100):
         test_data = np.array([encode(arch,encoding_type=self.encoding_type)
                             for arch in xtest])
         test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
