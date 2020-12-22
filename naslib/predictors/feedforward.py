@@ -99,7 +99,7 @@ class FeedforwardPredictor(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         
-        xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
+        _xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
                                   ss_type=self.ss_type) for arch in xtrain])
         _ytrain = np.array(ytrain)
 

@@ -185,15 +185,15 @@ def encode_bonas_gcn_darts(arch):
 def encode_darts(arch, encoding_type='path'):
     
     compact = arch.get_compact()
-    from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
-    genotype = convert_compact_to_genotype(compact)
-    print(compact)
-    print()
-    print(genotype)
-    print()
-    print(encode_adj(arch=compact))
-    print()
-    print(encode_gcn_darts(arch=compact))
+    #from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
+    #genotype = convert_compact_to_genotype(compact)
+    #print(compact)
+    #print()
+    #print(genotype)
+    #print()
+    #print(encode_adj(arch=compact))
+    #print()
+    #print(encode_gcn_darts(arch=compact))
 
     if encoding_type == 'path':
         return encode_paths(arch=compact)

@@ -56,8 +56,6 @@ supported_search_spaces = {
 }
 
 load_labeled = (False if config.search_space == 'nasbench201' else True)
-if config.search_space == 'darts':
-    config.fidelity_end = min(110, config.fidelity_end)
 
 # set up the search space and predictor
 predictor = supported_predictors[config.predictor]
