@@ -30,7 +30,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-use_cuda = False
 # default parameters from the paper
 n = 1100
 m = 10000
@@ -50,10 +49,10 @@ l2_reg = 1e-4
 vocab_size = 9 # 7 original
 max_step_size = 100
 trade_off = 0.8  
-pretrain_epochs = 10 #1000
-epochs = 10 #1000
+pretrain_epochs = 1000
+epochs = 1000
 up_sample_ratio = 10
-batch_size = 10 #100
+batch_size = 100 
 lr = 0.001
 optimizer = 'adam'
 grad_bound = 5.0  
@@ -498,8 +497,8 @@ class SemiNASPredictor(Predictor):
         return predictor
 
     def fit(self,xtrain,ytrain, 
-            gcn_hidden=64,seed=0,batch_size=32,
-            epochs=10,lr=1e-3,wd=0):
+            gcn_hidden=64,seed=0,batch_size=100,
+            epochs=1000,lr=1e-3,wd=0):
         up_sample_ratio = 10
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
