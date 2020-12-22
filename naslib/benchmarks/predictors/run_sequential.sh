@@ -17,8 +17,8 @@ search_space=nasbench201
 dataset=cifar10
 
 start_seed=$1
-trials=1
-base_file=naslib
+trials=50
+base_file=NASLib/naslib
 
 end_seed=$(($start_seed + $trials - 1))
 test_size=100
