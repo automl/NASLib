@@ -1,10 +1,10 @@
 import logging
 import sys
+import os
 import naslib as nl
 
-from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
-import os
+from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \

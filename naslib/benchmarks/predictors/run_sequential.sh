@@ -18,7 +18,7 @@ dataset=cifar10
 
 start_seed=$1
 trials=50
-base_file=NASLib/naslib
+base_file=naslib
 
 end_seed=$(($start_seed + $trials - 1))
 test_size=100
