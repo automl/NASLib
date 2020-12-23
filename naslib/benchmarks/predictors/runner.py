@@ -10,7 +10,7 @@ from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, FeedforwardKerasPredictor, \
-SemiNASPredictor
+SemiNASPredictor, GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -49,7 +49,10 @@ supported_predictors = {
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
     'lcnet': LCNetPredictor(encoding_type='adjacency_one_hot'),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
-    'seminas': SemiNASPredictor(encoding_type='seminas')
+    'seminas': SemiNASPredictor(encoding_type='seminas'),
+    'gp': GPPredictor(encoding_type='adjacency_one_hot'),
+    'sparse_gp': SparseGPPredictor(encoding_type='adjacency_one_hot'),
+    'var_sparse_gp': VarSparseGPPredictor(encoding_type='adjacency_one_hot'),
 }
 
 supported_search_spaces = {

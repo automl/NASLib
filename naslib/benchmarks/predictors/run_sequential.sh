@@ -1,12 +1,14 @@
 predictors=(valloss valacc sotl bananas \
 feedforward gbdt gcn bonas_gcn xgb \
 ngb rf jacov dngo bohamiann \
-bayes_lin_reg ff_keras lcsvr) # lcnet
+bayes_lin_reg ff_keras lcsvr gp \
+sparse_gp var_sparse_gp) # lcnet
 
 experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size \
 vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size single vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_fidelity) # vary_train_size
+vary_train_size vary_train_size vary_fidelity vary_train_size \
+vary_train_size vary_train_size) # vary_train_size
 
 # for testing:
 #experiment_types=(single single single single single single single single single \
