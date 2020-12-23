@@ -51,8 +51,10 @@ supported_predictors = {
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
     'seminas': SemiNASPredictor(encoding_type='seminas'),
     'gp': GPPredictor(encoding_type='adjacency_one_hot'),
-    'sparse_gp': SparseGPPredictor(encoding_type='adjacency_one_hot'),
-    'var_sparse_gp': VarSparseGPPredictor(encoding_type='adjacency_one_hot'),
+    'sparse_gp': SparseGPPredictor(encoding_type='adjacency_one_hot',
+                                   optimize_gp_hyper=True, num_steps=100),
+    'var_sparse_gp': VarSparseGPPredictor(encoding_type='adjacency_one_hot',
+                                          optimize_gp_hyper=True, num_steps=200),
 }
 
 supported_search_spaces = {

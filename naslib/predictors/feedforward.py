@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader, TensorDataset, Dataset
+from torch.utils.data import DataLoader
 
-from naslib.utils.utils import AverageMeterGroup
+from naslib.utils.utils import AverageMeterGroup, TensorDatasetWithTrans
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
@@ -18,29 +18,6 @@ def accuracy_mse(prediction, target, scale=100.):
     target = (target) * scale
     return F.mse_loss(prediction, target)
 
-
-class TensorDatasetWithTrans(Dataset):
-    """
-    TensorDataset with support of transforms.
-    """
-
-    def __init__(self, tensors, transform=None):
-        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
-        self.tensors = tensors
-        self.transform = transform
-
-    def __getitem__(self, index):
-        x = self.tensors[0][index]
-
-        if self.transform:
-            x = self.transform(x)
-
-        y = self.tensors[1][index]
-
-        return x, y
-
-    def __len__(self):
-        return self.tensors[0].size(0)
 
 
 class FeedforwardNet(nn.Module):
