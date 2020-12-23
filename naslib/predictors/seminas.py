@@ -49,14 +49,17 @@ l2_reg = 1e-4
 vocab_size = 9 # 7 original
 max_step_size = 100
 trade_off = 0.8  
-pretrain_epochs = 1000
-epochs = 1000
 up_sample_ratio = 10
 batch_size = 100 
 lr = 0.001
 optimizer = 'adam'
 grad_bound = 5.0  
 iteration = 3 #3
+
+use_cuda = True
+# decreasing the number of epochs to reduce training time
+pretrain_epochs = 200
+epochs = 200
 
 nb201_adj_matrix = np.array(
             [[0, 1, 1, 1, 0, 0, 0, 0],
@@ -452,7 +455,8 @@ def train_controller(model, train_input, train_target, epochs):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_reg)
     for epoch in range(1, epochs + 1):
         loss, mse, ce = controller_train(controller_train_queue, model, optimizer)
-        print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
+        if epoch % 10 == 0:
+            print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
 
 # currently only works for nb201 
 def generate_synthetic_controller_data(model, base_arch=None, random_arch=0):
