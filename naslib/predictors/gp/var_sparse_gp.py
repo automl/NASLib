@@ -7,9 +7,9 @@ import numpy as np
 from naslib.predictors.gp import GPPredictor
 
 
-class SparseGPPredictor(GPPredictor):
+class VarSparseGPPredictor(GPPredictor):
 
-    def train(self, train_data, optimize_gp_hyper=True):
+    def train(self, train_data, optimize_gp_hyper=False):
         X_train, y_train = train_data
         # initialize the kernel and model
         pyro.clear_param_store()
@@ -17,12 +17,12 @@ class SparseGPPredictor(GPPredictor):
         Xu = torch.arange(10.) / 2.0
         Xu.unsqueeze_(-1)
         Xu = Xu.expand(10, X_train.shape[1]).double()
-        self.gpr = gp.models.SparseGPRegression(X_train, y_train, kernel,
-                                                Xu=Xu, jitter=1.0e-5)
+        likelihood = gp.likelihoods.Gaussian()
+        self.gpr = gp.models.VariationalSparseGP(X_train, y_train, kernel,
+                                                 Xu=Xu, likelihood=likelihood,
+                                                 whiten=True)
 
-        # optional: fit the model using MAP
-        #self.gpr.kernel.lengthscale = pyro.nn.PyroSample(dist.LogNormal(0.0, 1.0))
-        #self.gpr.kernel.variance = pyro.nn.PyroSample(dist.LogNormal(0.0, 1.0))
+        gp.util.train(self.gpr, num_steps=1000)
 
         return self.gpr
 
