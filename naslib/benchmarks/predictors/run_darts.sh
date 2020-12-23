@@ -14,7 +14,7 @@ vary_train_size vary_train_size)
 
 # folders:
 out_dir=run
-base_file=naslib
+base_file=NASLib/naslib
 
 # search space / data:
 search_space=darts
