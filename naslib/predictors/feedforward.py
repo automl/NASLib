@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, TensorDataset
 
-from naslib.utils.utils import AverageMeterGroup, TensorDatasetWithTrans
+from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
@@ -75,8 +75,8 @@ class FeedforwardPredictor(Predictor):
 
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
-        
-        _xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
+
+        _xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
                                   ss_type=self.ss_type) for arch in xtrain])
         _ytrain = np.array(ytrain)
 
