@@ -12,14 +12,20 @@ from naslib.utils.utils import get_project_root
 from .primitives import ResNetBasicblock
 
 
+# TODO: Trainer and PredictorEvaluator should load these data files and pass them into SearchSpace objects
+
 # load the nasbench201 data
 with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
     nb201_data = pickle.load(f)
 
-# load nasbench201 full training data for cifar10
+# load nasbench201 full training data
 with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
     cifar10_full_data = pickle.load(f)
-
+with open(os.path.join(get_project_root(), 'data', 'nb201_cifar100_full_training.pickle'), 'rb') as f:
+    cifar100_full_data = pickle.load(f)    
+with open(os.path.join(get_project_root(), 'data', 'nb201_ImageNet16_full_training.pickle'), 'rb') as f:
+    imagenet_full_data = pickle.load(f)
+    
 
 class NasBench201SearchSpace(Graph):
     """
@@ -162,29 +168,41 @@ class NasBench201SearchSpace(Graph):
         }
 
         if not epoch or epoch == 200:
-        
             # query data from nb201
             if dataset == 'cifar10':
                 query_results = cifar10_full_data[arch_str]
+            elif dataset == 'cifar100':
+                query_results = cifar100_full_data[arch_str]
+            elif dataset == 'ImageNet16-120':
+                query_results = imagenet_full_data[arch_str]
             else:
-                query_results = nb201_data[arch_str]
+                raise NotImplementedError('Invalid dataset')
         
             if metric == Metric.RAW:
                 return query_results
             elif ("VAL_" in metric.name or "TRAIN_" in metric.name) and dataset == 'cifar10':
                 dataset = 'cifar10-valid'
-            elif "VAL_" in metric.name and dataset != 'cifar10':
-                raise ValueError("nasbench 201 does not have a validation split for other datasets than cifar10.")
 
             return query_results[dataset][metric_to_nb201[metric]]
         
         else:
-            assert dataset in ['cifar10', 'cifar10-valid'], "Multi-fidelity is only \
-            implemented for cifar10: {}".format(dataset)
+            #TODO: do any algorithms still use this? We could remove the code that loads nb201_data and delete this
             assert metric in [Metric.TRAIN_ACCURACY, Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_LOSS]
+                        
+            if dataset in ['cifar10', 'cifar10-valid']:
+                query_results = cifar10_full_data[arch_str]
+                return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
+            elif dataset == 'cifar100':
+                query_results = cifar100_full_data[arch_str]
+                return query_results['cifar100'][metric_to_nb201[metric]][epoch] / 100.0
+            elif dataset == 'ImageNet16-120':
+                query_results = imagenet_full_data[arch_str]
+                return query_results['ImageNet16-120'][metric_to_nb201[metric]][epoch] / 100.0
+                
+
+                
+
             
-            query_results = cifar10_full_data[arch_str]
-            return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
         
     def get_type(self):
         return 'nasbench201'
