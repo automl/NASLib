@@ -1,6 +1,7 @@
 import torch
 import pyro.contrib.gp as gp
 import pyro.distributions as dist
+import pyro
 import numpy as np
 
 from naslib.predictors.gp import GPPredictor
