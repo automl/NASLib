@@ -10,11 +10,14 @@ from naslib.predictors.predictor import Predictor
 class BaseGPModel(Predictor):
 
     def __init__(self, encoding_type='adjacency_one_hot',
-                 ss_type='nasbench201', kernel_type=None):
+                 ss_type='nasbench201', kernel_type=None,
+                 optimize_gp_hyper=False, num_steps=200):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
         self.ss_type = ss_type
         self.kernel_type = kernel_type
+        self.optimize_gp_hyper = optimize_gp_hyper
+        self.num_steps = num_steps
 
     def get_dataset(self, encodings, labels=None):
         if labels is None:
@@ -23,24 +26,26 @@ class BaseGPModel(Predictor):
             return (torch.tensor(encodings).double(),
                     torch.tensor((labels-self.mean)/self.std).double())
 
-    def train(self, train_data, **kwargs):
+    def get_model(self, train_data, **kwargs):
         return NotImplementedError
+
+    def train(self, train_data, **kwargs):
+        pass
 
     def predict(self, input_data, **kwargs):
         return NotImplementedError
 
     def optimize_GP_hyperparameters(self, gp_model):
-        if type(self.gpr) == gp.models.GPRegression:
+        if type(gp_model) == gp.models.GPRegression:
             optimizer = torch.optim.Adam(gp_model.parameters(), lr=0.005)
             loss_fn = pyro.infer.Trace_ELBO().differentiable_loss
         else:
             optimizer = torch.optim.Adam(gp_model.parameters(), lr=0.01)
             loss_fn = pyro.infer.TraceMeanField_ELBO().differentiable_loss
-        losses = gp.util.train(gp_model, num_steps=1000)
+        losses = gp.util.train(gp_model, num_steps=self.num_steps)
         return losses
 
-    def fit(self, xtrain, ytrain, params=None,
-            optimize_gp_hyper=False, **kwargs):
+    def fit(self, xtrain, ytrain, params=None, **kwargs):
 
         # normalize accuracies
         self.mean = np.mean(ytrain)
@@ -53,11 +58,12 @@ class BaseGPModel(Predictor):
         # convert to the right representation
         train_data = self.get_dataset(xtrain, ytrain)
 
-        # fit to the training data
-        self.model = self.train(train_data, optimize_gp_hyper=False)
+        # instantiate model and fit to the training data
+        self.model = self.get_model(train_data, **kwargs)
+        self.train(train_data, **kwargs)
         print('Finished fitting GP')
 
-        if optimize_gp_hyper:
+        if self.optimize_gp_hyper:
             losses = self.optimize_GP_hyperparameters(self.model)
             print('Finished tuning GP hyperparameters')
 
