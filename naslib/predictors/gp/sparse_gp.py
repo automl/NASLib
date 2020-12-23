@@ -20,9 +20,5 @@ class SparseGPPredictor(GPPredictor):
         self.gpr = gp.models.SparseGPRegression(X_train, y_train, kernel,
                                                 Xu=Xu, jitter=1.0e-5)
 
-        # optional: fit the model using MAP
-        #self.gpr.kernel.lengthscale = pyro.nn.PyroSample(dist.LogNormal(0.0, 1.0))
-        #self.gpr.kernel.variance = pyro.nn.PyroSample(dist.LogNormal(0.0, 1.0))
-
         return self.gpr
 

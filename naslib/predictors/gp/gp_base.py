@@ -1,5 +1,7 @@
 import numpy as np
 import torch
+import pyro
+import pyro.contrib.gp as gp
 
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
@@ -28,14 +30,14 @@ class BaseGPModel(Predictor):
         return NotImplementedError
 
     def optimize_GP_hyperparameters(self, gp_model):
-        optimizer = torch.optim.Adam(gp_model.parameters(), lr=0.005)
-        loss_fn = pyro.infer.Trace_ELBO().differentiable_loss
-        num_steps = 1000
-        for i in range(num_steps):
-            optimizer.zero_grad()
-            loss = loss_fn(gp_model.model, gp_model.guide)
-            loss.backward()
-            optimizer.step()
+        if type(self.gpr) == gp.models.GPRegression:
+            optimizer = torch.optim.Adam(gp_model.parameters(), lr=0.005)
+            loss_fn = pyro.infer.Trace_ELBO().differentiable_loss
+        else:
+            optimizer = torch.optim.Adam(gp_model.parameters(), lr=0.01)
+            loss_fn = pyro.infer.TraceMeanField_ELBO().differentiable_loss
+        losses = gp.util.train(gp_model, num_steps=1000)
+        return losses
 
     def fit(self, xtrain, ytrain, params=None,
             optimize_gp_hyper=False, **kwargs):
@@ -56,7 +58,7 @@ class BaseGPModel(Predictor):
         print('Finished fitting GP')
 
         if optimize_gp_hyper:
-            self.optimize_GP_hyperparameters(self.model)
+            losses = self.optimize_GP_hyperparameters(self.model)
             print('Finished tuning GP hyperparameters')
 
         # predict
