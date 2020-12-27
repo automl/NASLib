@@ -121,7 +121,7 @@ class NasBench201SearchSpace(Graph):
                 private_edge_data=True
             )
         
-    def query(self, metric=None, dataset=None, path=None, epoch=None):
+    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
@@ -167,46 +167,33 @@ class NasBench201SearchSpace(Graph):
             Metric.EPOCH: 'epochs'
         }
 
-        if not epoch or epoch == 200:
-            # query data from nb201
-            if dataset == 'cifar10':
-                query_results = cifar10_full_data[arch_str]
-            elif dataset == 'cifar100':
-                query_results = cifar100_full_data[arch_str]
-            elif dataset == 'ImageNet16-120':
-                query_results = imagenet_full_data[arch_str]
-            else:
-                raise NotImplementedError('Invalid dataset')
+        if metric == Metric.RAW:
+            # return all data
+            return nb201_data[arch_str]
         
-            if metric == Metric.RAW:
-                return query_results
-            elif ("VAL_" in metric.name or "TRAIN_" in metric.name) and dataset == 'cifar10':
-                dataset = 'cifar10-valid'
-
-            return query_results[dataset][metric_to_nb201[metric]]
-        
+        if dataset == 'cifar10':
+            query_results = cifar10_full_data[arch_str]
+        elif dataset == 'cifar100':
+            query_results = cifar100_full_data[arch_str]
+        elif dataset == 'ImageNet16-120':
+            query_results = imagenet_full_data[arch_str]
         else:
-            #TODO: do any algorithms still use this? We could remove the code that loads nb201_data and delete this
-            assert metric in [Metric.TRAIN_ACCURACY, Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_LOSS]
-                        
-            if dataset in ['cifar10', 'cifar10-valid']:
-                query_results = cifar10_full_data[arch_str]
-                return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
-            elif dataset == 'cifar100':
-                query_results = cifar100_full_data[arch_str]
-                return query_results['cifar100'][metric_to_nb201[metric]][epoch] / 100.0
-            elif dataset == 'ImageNet16-120':
-                query_results = imagenet_full_data[arch_str]
-                return query_results['ImageNet16-120'][metric_to_nb201[metric]][epoch] / 100.0
-                
+            raise NotImplementedError('Invalid dataset')
 
-                
+        if dataset == 'cifar10':
+            # set correct cifar10 dataset
+            dataset = 'cifar10-valid'
 
-            
-        
+        if metric == Metric.HP:
+            return query_results[dataset]['cost_info']
+    
+        if full_lc:
+            return query_results[dataset][metric_to_nb201[metric]][:epoch]
+        else:
+            return query_results[dataset][metric_to_nb201[metric]][epoch]
+
     def get_type(self):
         return 'nasbench201'
-
     
 def _set_cell_ops(edge, C):
     edge.data.set('op', [

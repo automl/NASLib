@@ -20,3 +20,4 @@ class Metric(Enum):
     LATENCY = auto()
     PARAMETERS = auto()
     EPOCH = auto()
+    HP = auto()
