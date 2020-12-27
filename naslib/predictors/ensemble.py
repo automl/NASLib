@@ -21,9 +21,11 @@ class Ensemble(Predictor):
         ensemble = []
         for _ in range(self.num_ensemble):
             if self.predictor_type == 'feedforward':
-                predictor = FeedforwardPredictor(ss_type=self.ss_type)
+                predictor = FeedforwardPredictor(ss_type=self.ss_type, 
+                                                 encoding_type=self.encoding_type)
             elif self.predictor_type == 'gbdt':
-                predictor = GBDTPredictor(ss_type=self.ss_type)
+                predictor = GBDTPredictor(ss_type=self.ss_type, 
+                                          encoding_type=self.encoding_type)
             else:
                 print('{} predictor not implemented'.format(self.predictor_type))
                 raise NotImplementedError()
