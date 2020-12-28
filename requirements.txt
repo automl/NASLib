@@ -18,3 +18,4 @@ lightgbm
 ngboost==0.3.7
 xgboost
 -e git://github.com/automl/pybnn.git@master#egg=pybnn
+pyro-ppl

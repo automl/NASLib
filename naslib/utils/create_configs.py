@@ -68,6 +68,42 @@ def main(args):
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
                 yaml.dump(config, fh)
+                
+    elif args.config_type == 'nas_predictor':
+        folder = f'{args.out_dir}/{args.dataset}/configs/nas_predictors'
+        os.makedirs(folder, exist_ok=True)
+        args.start_seed = int(args.start_seed)
+        args.trials = int(args.trials)
+
+        for i in range(args.start_seed, args.start_seed + args.trials):
+            config = {
+                'seed': i,
+                'search_space': args.search_space,
+                'dataset': args.dataset,
+                'optimizer': args.optimizer,
+                'search': {'predictor_type': args.predictor,
+                           'epochs': args.epochs,
+                           'checkpoint_freq': args.checkpoint_freq,
+                           'fidelity': 200,
+                           'sample_size': 10,
+                           'population_size': 30,
+                           'num_init': 10,
+                           'k': 25,
+                           'num_ensemble': 3,
+                           'acq_fn_type': 'its',
+                           'acq_fn_optimization': 'mutation',
+                           'encoding_type': 'adjacency_one_hot',
+                           'num_arches_to_mutate': 2,
+                           'max_mutations': 1,
+                           'num_candidates': 100,
+                           'debug_predictor': False
+                          }
+            }
+
+            path = folder + f'/config_{args.optimizer}_{args.predictor}_{i}.yaml'
+            with open(path, 'w') as fh:
+                yaml.dump(config, fh)
+                
     else:
         print('invalid config type in create_configs.py')
 

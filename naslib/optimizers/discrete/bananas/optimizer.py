@@ -35,9 +35,10 @@ class Bananas(MetaOptimizer):
         self.k = config.search.k
         self.num_init = config.search.num_init
         self.num_ensemble = config.search.num_ensemble
+        self.predictor_type = config.search.predictor_type
         self.acq_fn_type = config.search.acq_fn_type
         self.acq_fn_optimization = config.search.acq_fn_optimization
-        self.encoding_type = config.search.encoding_type
+        self.encoding_type = config.search.encoding_type # currently not implemented
         self.num_arches_to_mutate = config.search.num_arches_to_mutate
         self.max_mutations = config.search.max_mutations
         self.num_candidates = config.search.num_candidates
@@ -72,9 +73,9 @@ class Bananas(MetaOptimizer):
                 # train a neural predictor
                 xtrain = [m.arch for m in self.train_data]
                 ytrain = [m.accuracy for m in self.train_data]
-                ensemble = Ensemble(encoding_type=self.encoding_type,
-                                    num_ensemble=self.num_ensemble,
-                                    ss_type=self.search_space.get_type())
+                ensemble = Ensemble(num_ensemble=self.num_ensemble,
+                                    ss_type=self.search_space.get_type(),
+                                    predictor_type=self.predictor_type)
                 train_error = ensemble.fit(xtrain, ytrain)
 
                 # define an acquisition function

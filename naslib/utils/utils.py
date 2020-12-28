@@ -4,6 +4,7 @@ import sys
 import logging
 import argparse
 import torchvision.datasets as dset
+from torch.utils.data import Dataset
 
 from copy import copy
 from collections import OrderedDict
@@ -67,6 +68,7 @@ Run on single machine:
     )
     parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
+    parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
     parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
     parser.add_argument('--rank', default=0, type=int, help='node rank for distributed training')
@@ -122,6 +124,10 @@ def get_config_from_args(args=None, config_type='nas'):
         # load the default base
         with open(os.path.join(get_project_root(), 'benchmarks/predictors', 'predictor_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
+    elif config_type == 'nas_predictor':
+        # load the default base
+        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+            config = CfgNode.load_cfg(f)
 
     if not args:
         args = parse_args()
@@ -151,9 +157,9 @@ def get_config_from_args(args=None, config_type='nas'):
 
     # prepare the output directories
     if config_type == 'nas':
-        config.seed = args.seed
+        #config.seed = args.seed
         config.search.seed = config.seed
-        config.optimizer = args.optimizer
+        #config.optimizer = args.optimizer
         config.evaluation.world_size = args.world_size
         config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
         config.evaluation.rank = args.rank
@@ -168,6 +174,9 @@ def get_config_from_args(args=None, config_type='nas'):
             config.save = '{}/{}/{}/{}_fidelity/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
         else:
             config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+    elif config_type == 'nas_predictor':
+        config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors', \
+                                              config.search.predictor_type, config.seed)
     else:
         print('invalid config type in utils/utils.py')
 
@@ -285,6 +294,30 @@ def _data_transforms_cifar100(args):
         transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
     ])
     return train_transform, valid_transform
+
+
+class TensorDatasetWithTrans(Dataset):
+    """
+    TensorDataset with support of transforms.
+    """
+
+    def __init__(self, tensors, transform=None):
+        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
+        self.tensors = tensors
+        self.transform = transform
+
+    def __getitem__(self, index):
+        x = self.tensors[0][index]
+
+        if self.transform:
+            x = self.transform(x)
+
+        y = self.tensors[1][index]
+
+        return x, y
+
+    def __len__(self):
+        return self.tensors[0].size(0)
 
 
 def set_seed(seed):

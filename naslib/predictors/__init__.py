@@ -1,3 +1,4 @@
+from .predictor import Predictor
 from .early_stopping import EarlyStopping
 from .ensemble import Ensemble
 from .feedforward import FeedforwardPredictor
@@ -10,3 +11,4 @@ from .lcsvr import SVR_Estimator
 from .jacobiancov import jacobian_cov
 from .trees import XGBoost, NGBoost, GBDTPredictor, RandomForestPredictor
 from .bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression, LCNetPredictor
+from .gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
