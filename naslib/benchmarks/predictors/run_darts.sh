@@ -9,19 +9,19 @@ vary_train_size vary_train_size single vary_train_size \
 vary_train_size vary_train_size)
 
 # for testing:
-experiment_types=(single single single single single single single single single \
-single single single single single single single single)
+#experiment_types=(single single single single single single single single single \
+#single single single single single single single single)
 
 # folders:
 out_dir=run
-base_file=naslib
+base_file=NASLib/naslib
 
 # search space / data:
 search_space=darts
 dataset=cifar10
 
 # trials / seeds:
-trials=1
+trials=50
 start_seed=$1
 end_seed=$(($start_seed + $trials - 1))
 
