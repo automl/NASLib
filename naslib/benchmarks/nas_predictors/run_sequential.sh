@@ -13,7 +13,7 @@ dataset=cifar10
 search_epochs=500
 
 # trials / seeds:
-trials=1
+trials=300
 start_seed=$1
 end_seed=$(($start_seed + $trials - 1))
 if [ -z "$start_seed" ]
