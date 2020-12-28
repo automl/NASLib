@@ -1,10 +1,8 @@
 class Predictor:
     
-    def __init__(self):
-        self.encoding = None
-        self.metric = None
-        self.fidelity = None
-        self.ss_type = None
+    def __init__(self, ss_type=None, encoding_type=None):
+        self.ss_type = ss_type
+        self.encoding_type = encoding_type
         
     def set_ss_type(self, ss_type):
         self.ss_type = ss_type

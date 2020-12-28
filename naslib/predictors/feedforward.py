@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
-from naslib.predictors.predictor import Predictor
+from naslib.predictors import Predictor
 
 #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 device = torch.device('cpu') #NOTE: faster on CPU
