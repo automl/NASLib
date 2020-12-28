@@ -31,6 +31,6 @@ search_space = supported_search_spaces[config.search_space]
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
     
-trainer = Trainer(optimizer, config)
+trainer = Trainer(optimizer, config, lightweight_output=True)
 trainer.search(resume_from="")
 trainer.evaluate(resume_from="")
