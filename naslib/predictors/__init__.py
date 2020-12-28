@@ -2,9 +2,8 @@ from .predictor import Predictor
 from .early_stopping import EarlyStopping
 from .ensemble import Ensemble
 from .feedforward import FeedforwardPredictor
-from .feedforward_keras import FeedforwardKerasPredictor
 from .gcn import GCNPredictor
-from .bonas_gcn import BonasGCNPredictor
+from .bonas import BonasPredictor
 from .seminas import SemiNASPredictor
 from .soloss import SoLosspredictor
 from .lcsvr import SVR_Estimator

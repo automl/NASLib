@@ -121,11 +121,11 @@ def encode_adj(arch):
 
 
 def encode_gcn_darts(arch):
+    # WIP
+    
     # make a matrix for nasbench301
     # one-hot for ops
 
-    
-    
     # offset ops list by one, add input and output to ops list
     ops = [op+1 for op in ops]
     ops = [0, *ops, 6]
@@ -152,7 +152,8 @@ def encode_gcn_darts(arch):
     return dic
 
 
-def encode_bonas_gcn_darts(arch):
+def encode_bonas_darts(arch):
+    # WIP
     '''
     Input:
     a list of categorical ops starting from 0
@@ -188,11 +189,8 @@ def encode_darts(arch, encoding_type='path'):
     #from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
     #genotype = convert_compact_to_genotype(compact)
     #print(compact)
-    #print()
     #print(genotype)
-    #print()
     #print(encode_adj(arch=compact))
-    #print()
     #print(encode_gcn_darts(arch=compact))
 
     if encoding_type == 'path':

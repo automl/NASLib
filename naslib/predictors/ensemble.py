@@ -6,7 +6,7 @@ from naslib.predictors.feedforward import FeedforwardPredictor
 from naslib.predictors.trees import GBDTPredictor, \
 XGBoost, NGBoost, RandomForestPredictor
 from naslib.predictors.gcn import GCNPredictor
-from naslib.predictors.bonas_gcn import BonasGCNPredictor
+from naslib.predictors.bonas import BonasPredictor
 from naslib.predictors.bnn import DNGOPredictor, BOHAMIANN, \
 BayesianLinearRegression
 from naslib.predictors.seminas import SemiNASPredictor
@@ -36,7 +36,7 @@ class Ensemble(Predictor):
             'gbdt': GBDTPredictor(ss_type=self.ss_type,
                                   encoding_type='adjacency_one_hot'),
             'gcn': GCNPredictor(encoding_type='gcn'),
-            'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
+            'bonas': BonasPredictor(encoding_type='bonas'),
             'xgb': XGBoost(ss_type=self.ss_type,
                            encoding_type='adjacency_one_hot'),
             'ngb': NGBoost(ss_type=self.ss_type,

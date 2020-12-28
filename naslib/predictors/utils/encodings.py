@@ -131,7 +131,7 @@ def encode_gcn_nasbench201(arch):
     return dic
 
 
-def encode_bonas_gcn_nasbench201(arch):
+def encode_bonas_nasbench201(arch):
     '''
     Input:
     a list of categorical ops starting from 0
@@ -202,8 +202,8 @@ def encode_201(arch, encoding_type='adjacency_one_hot'):
     elif encoding_type == 'gcn':
         return encode_gcn_nasbench201(arch)
     
-    elif encoding_type == 'bonas_gcn':
-        return encode_bonas_gcn_nasbench201(arch)
+    elif encoding_type == 'bonas':
+        return encode_bonas_nasbench201(arch)
 
     elif encoding_type == 'seminas':
         return encode_seminas_nasbench201(arch)
