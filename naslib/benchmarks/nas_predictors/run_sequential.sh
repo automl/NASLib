@@ -5,7 +5,7 @@ bohamiann bayes_lin_reg seminas gp sparse_gp var_sparse_gp)
 
 # folders:
 out_dir=run
-base_file=naslib
+base_file=NASLib/naslib
 
 # search space / data:
 search_space=nasbench201
