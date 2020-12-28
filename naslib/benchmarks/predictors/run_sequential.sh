@@ -26,6 +26,10 @@ dataset=cifar10
 trials=1
 start_seed=$1
 end_seed=$(($start_seed + $trials - 1))
+if [ -z "$start_seed" ]
+then
+    start_seed=0
+fi
 
 # dataset sizes:
 test_size=100
