@@ -32,7 +32,7 @@ import torch.nn.functional as F
 
 # default parameters from the paper
 n = 1100
-m = 2000 #10000
+m = 500 #10000
 nodes = 8
 new_arch = 300
 k = 100
@@ -58,7 +58,7 @@ iteration = 1 #3
 
 use_cuda = True
 # decreasing the number of epochs to reduce training time
-pretrain_epochs = 200 #1000
+pretrain_epochs = 50 #1000
 epochs = 50 #1000
 
 nb201_adj_matrix = np.array(
