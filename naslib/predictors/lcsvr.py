@@ -105,7 +105,6 @@ class SVR_Estimator(Predictor):
 
         """
         VC = np.vstack(VC_all_archs_list)  # dimension: n_archs x n_epochs
-        AP = np.vstack(AP_all_archs_list)
         DVC = np.diff(VC, n=1, axis=1)
         DDVC = np.diff(DVC, n=1, axis=1)
 
@@ -121,7 +120,11 @@ class SVR_Estimator(Predictor):
         else:
             TS = np.hstack([mVC, stdVC, mDVC, stdDVC, mDDVC, stdDDVC])
 
-        X = np.hstack([AP, TS])
+        if len(AP_all_archs_list) != 0:
+            AP = np.vstack(AP_all_archs_list)
+            X = np.hstack([AP, TS])
+        else:
+            X = TS
 
         return X
 
@@ -141,11 +144,14 @@ class SVR_Estimator(Predictor):
         val_acc_curve = []
         arch_params = []
         for arch in xtest:
-            acc_metric = arch.query(self.metric, self.dataset, epoch=200)[:fidelity]
-            arch_hp = [arch.query(Metric.RAW, self.dataset)['cifar10-valid']['cost_info'][metric_hp]
-                       for metric_hp in ['flops', 'latency', 'params']]
+            max_epoch = int(arch.max_epoch+1)
+            acc_metric = arch.query(self.metric, self.dataset, epoch=max_epoch)[:fidelity]
+            if max_epoch == 200:
+                arch_hp = [arch.query(Metric.RAW, self.dataset)['cifar10-valid']['cost_info'][metric_hp]
+                           for metric_hp in ['flops', 'latency', 'params']]
+                arch_params.append(arch_hp)
+
             val_acc_curve.append(acc_metric)
-            arch_params.append(arch_hp)
         # info = {'val_acc': val_acc_curve, 'arch_param': arch_params}
 
         xtest_info = self.collate_inputs(val_acc_curve, arch_params)

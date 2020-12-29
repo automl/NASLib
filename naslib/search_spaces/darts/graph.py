@@ -68,6 +68,8 @@ class DartsSearchSpace(Graph):
         self.channels = [16, 32, 64]
         self.compact = None
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
+        self.max_epoch = 97
+        self.space_name = 'nasbench201'
         
         """
         Build the search space with the parameters specified in __init__.
@@ -310,7 +312,10 @@ class DartsSearchSpace(Graph):
             assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS]
 
             query_results = nb301_data[self.compact]
-            return query_results[metric_to_nb301[metric]][epoch] / 100.0
+            if epoch == 98:
+                return query_results[metric_to_nb301[metric]]
+            else:
+                return query_results[metric_to_nb301[metric]][epoch] / 100.0
         
         genotype = convert_naslib_to_genotype([self.nodes[5]['subgraph'], self.nodes[9]['subgraph']])
 
