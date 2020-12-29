@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import networkx as nx
 import pickle
+import nasbench301
 
 from collections import namedtuple
 from torch import nn
@@ -21,9 +22,22 @@ from .primitives import FactorizedReduce
 logger = logging.getLogger(__name__)
 Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
 
-# load the darts architectures that have full training data (nasbench301 training data)
-with open(os.path.join(get_project_root(), 'data', 'nb301_full_training.pickle'), 'rb') as f:
+"""
+Note: we load the nb301 full training data and the nb301 models here, instead of inside the class,
+because this class is copied many times throughout the discrete NAS algos and leads to memory errors.
+TODO: ideally Trainer and PredictorEvaluator should load these data files and pass them to the 
+SearchSpace objects
+"""
+
+data_folder = os.path.join(get_project_root(), 'data/')
+with open(os.path.join(data_folder, 'nb301_full_training.pickle'), 'rb') as f:
     nb301_data = pickle.load(f)
+
+print('starting to load nb301 models')
+performance_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/xgb_v1.0'))
+runtime_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/lgb_runtime_v1.0'))
+nb301_model = [performance_model, runtime_model] 
+print('loaded nb301 models')
 
     
 class DartsSearchSpace(Graph):
@@ -53,7 +67,7 @@ class DartsSearchSpace(Graph):
         "r_stage_2",
     ]
 
-    QUERYABLE = False
+    QUERYABLE = True
 
     def __init__(self):
         """
@@ -306,19 +320,27 @@ class DartsSearchSpace(Graph):
         }
         
         if epoch:
+            """
+            If we loaded the architecture from the nasbench301 training data (using 
+            load_labeled_architecture()), then self.compact will contain the architecture spec,
+            and we can query the train loss or val accuracy at a specific epoch.
+            """
+            # if we want to query the architecture at a specific epoch
             assert self.compact is not None
             assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS]
 
             query_results = nb301_data[self.compact]
             return query_results[metric_to_nb301[metric]][epoch] / 100.0
         
-        genotype = convert_naslib_to_genotype([self.nodes[5]['subgraph'], self.nodes[9]['subgraph']])
+        else:
+            # query the accuracy from nasbench301
+            assert metric == Metric.VAL_ACCURACY   
+            genotype = convert_naslib_to_genotype([self.nodes[5]['subgraph'], self.nodes[9]['subgraph']])
+            print('genotype is', genotype)
+            val_acc = nb301_model[0].predict(config=genotype, representation="genotype")
+            return 100 - val_acc
 
-        logger.info("Until nasbench 301 is published as a pypi package please use these strings to query the result.")
-        logger.info("normal={}".format(genotype.normal))
-        logger.info("reduce={}".format(genotype.reduce))
-        return "normal={} | reduction={}".format(genotype.normal, genotype.reduce)
-
+    
     @staticmethod
     def get_configspace(path_to_configspace_obj=os.path.join(
         get_project_root(), "search_spaces/darts/configspace.json"

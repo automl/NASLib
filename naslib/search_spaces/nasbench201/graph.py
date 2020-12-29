@@ -12,7 +12,12 @@ from naslib.utils.utils import get_project_root
 from .primitives import ResNetBasicblock
 
 
-# TODO: Trainer and PredictorEvaluator should load these data files and pass them into SearchSpace objects
+"""
+Note: we load the nb201 full training data here, instead of inside the class, because 
+this class is copied many times throughout the discrete NAS algos and leads to memory errors.
+TODO: ideally Trainer and PredictorEvaluator should load these data files and pass them to
+the SearchSpace objects
+"""
 
 # load the nasbench201 data
 with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:

@@ -24,6 +24,7 @@ supported_optimizers = {
 
 supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(),
+    'darts': DartsSearchSpace()
 }
 
 search_space = supported_search_spaces[config.search_space]
