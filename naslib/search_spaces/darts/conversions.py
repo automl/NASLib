@@ -4,15 +4,16 @@ from collections import namedtuple
 Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
 
 """
-This file contains the following conversions for darts architectures:
-naslib format to Genotype 
-config to Genotype
-Genotype to config
-compact to Genotype
-Genotype to compact
+NASLib uses four representations of darts architectures:
+'naslib': the DARTSSearchSpace object
+'genotype': representation used in the original DARTS paper
+'compact': representation used in [Li and Talwalkar] and BANANAS (smallest size)
+'config': representation used in nasbench301, based on ConfigSpace
+
+This file contains all 12 types of conversions from one represenation to another.
 """
 
-def convert_naslib_to_genotype(cells):
+def convert_naslib_to_genotype(naslib_object):
     """convert the naslib representation to Genotype"""
     ops_to_genotype = {
         'Identity': 'skip_connect',
@@ -25,7 +26,7 @@ def convert_naslib_to_genotype(cells):
         'MaxPool': 'max_pool_3x3',
         'Zero': 'zero'
     }
-    
+    cells = [naslib_object.nodes[3]['subgraph'], naslib_object.nodes[5]['subgraph']]
     converted_cells = []
     for cell in cells:
         edge_op_dict = {
@@ -44,13 +45,84 @@ def convert_naslib_to_genotype(cells):
     )
 
 
-def convert_genotype_to_config(arch):
+def convert_genotype_to_naslib(genotype, naslib_object):
+    """
+    Converts the genotype representation to a naslib object
+    input: genotype is the genotype representation
+    naslib_object is an empty DARTSSearchSpace() object.
+    Do not call this method with a naslib object that has already been 
+    discretized (i.e., all but 2 incoming edges for each node are pruned).
+
+    output: none, but the naslib object now has all edges set
+    as in genotype.
+    
+    warning: this method will delete and modify the edges in naslib_object.
+    """
+    genotype_to_ops = {
+        'skip_connect': ('Identity', 'FactorizedReduce'),
+        'sep_conv_3x3': ('SepConv3x3'),
+        'dil_conv_3x3': ('DilConv3x3'),
+        'sep_conv_5x5': ('SepConv5x5'),
+        'dil_conv_5x5': ('DilConv5x5'),
+        'avg_pool_3x3': ('AvgPool'),
+        'max_pool_3x3': ('MaxPool'),
+        'zero': ('Zero')
+    }
+    cell_names = ['normal_cell', 'reduction_cell']
+    
+    # create a dictionary of edges to ops in the genotype
+    edge_op_dict = {'normal_cell': {}, 'reduction_cell': {}}
+    for c, cell_type in enumerate(['normal', 'reduce']):
+        cell = eval('genotype.' + cell_type)
+        tail = 2
+        for i, edge in enumerate(cell):
+            if i % 2 == 0:
+                tail += 1
+            head = edge[1] + 1
+            edge_op_dict[cell_names[c]][(head, tail)] = genotype_to_ops[edge[0]]
+    
+    def add_genotype_op_index(edge):
+        # function that adds the op index from genotype to each edge, and deletes the rest
+        if (edge.head, edge.tail) in edge_op_dict[edge.data.cell_name]:
+            for i, op in enumerate(edge.data.op):
+                if op.get_op_name in edge_op_dict[edge.data.cell_name][(edge.head, edge.tail)]:
+                    index = i
+                    op_name = op.get_op_name # can delete
+                    break
+            edge.data.set('op_index', index, shared=True)
+        else:
+            edge.data.delete()
+
+    def update_ops(edge):
+        # function that replaces the primitive ops at the edges with the ones from genotype
+        if isinstance(edge.data.op, list):
+            primitives = edge.data.op
+        else:
+            primitives = edge.data.primitives
+
+        edge.data.set('op', primitives[edge.data.op_index])
+        edge.data.set('primitives', primitives)     # store for later use
+
+    naslib_object.update_edges(
+        add_genotype_op_index,
+        scope=naslib_object.OPTIMIZER_SCOPE,
+        private_edge_data=False
+    )
+    
+    naslib_object.update_edges(
+        update_ops, 
+        scope=naslib_object.OPTIMIZER_SCOPE,
+        private_edge_data=True
+    )
+
+
+def convert_genotype_to_config(genotype):
     """Converts a DARTS genotype to a configspace instance dictionary"""
     base_string = 'NetworkSelectorDatasetInfo:darts:'
     config = {}
 
     for cell_type in ['normal', 'reduce']:
-        cell = eval('arch.' + cell_type)
+        cell = eval('genotype.' + cell_type)
 
         start = 0
         n = 2
@@ -73,6 +145,7 @@ def convert_genotype_to_config(arch):
             start = end
             n += 1
     return config
+
 
 def convert_config_to_genotype(config):
     """Converts a configspace instance dictionary to a DARTS genotype"""
@@ -107,10 +180,7 @@ def convert_config_to_genotype(config):
 
 
 def convert_genotype_to_compact(genotype):
-    """ 
-    Converts Genotype to the compact representation 
-    used in [Li and Talwalkar 2018] and BANANAS
-    """
+    """ Converts Genotype to the compact representation """
     OPS = ['none',
            'max_pool_3x3',
            'avg_pool_3x3',
@@ -131,12 +201,10 @@ def convert_genotype_to_compact(genotype):
         
     compact_tuple = (tuple(compact[0]), tuple(compact[1]))
     return compact_tuple
-    
+
+
 def convert_compact_to_genotype(compact):
-    """ 
-    Converts the compact representation used in 
-    [Li and Talwalkar 2018] and BANANAS, to a Genotype
-    """
+    """ Converts the compact representation to a Genotype """
     OPS = ['none',
            'max_pool_3x3',
            'avg_pool_3x3',
@@ -161,3 +229,33 @@ def convert_compact_to_genotype(compact):
         reduce = genotype[1],
         reduce_concat = [4, 5, 6]    
     )
+
+
+def convert_naslib_to_config(naslib_object):
+    genotype = convert_naslib_to_genotype(naslib_object)
+    return convert_genotype_to_config(genotype)
+
+
+def convert_config_to_naslib(config, naslib_object):
+    genotype = convert_config_to_genotype(config)
+    return convert_genotype_to_naslib(genotype, naslib_object)
+
+
+def convert_naslib_to_compact(naslib_object):
+    genotype = convert_naslib_to_genotype(naslib_object)
+    return convert_genotype_to_compact(genotype)
+
+
+def convert_compact_to_naslib(compact, naslib_object):
+    genotype = convert_compact_to_genotype(compact)
+    return convert_genotype_to_naslib(genotype, naslib_object)
+
+
+def convert_config_to_compact(config):
+    genotype = convert_config_to_genotype(config)
+    return convert_genotype_to_compact(genotype)
+
+
+def convert_compact_to_config(compact):
+    genotype = convert_compact_to_genotype(compact)
+    return convert_genotype_to_config(genotype)

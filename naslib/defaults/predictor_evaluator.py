@@ -60,10 +60,11 @@ class PredictorEvaluator(object):
         for _ in range(data_size):
             if not load_labeled:
                 arch = sample_random_architecture(self.search_space, self.scope)
-                accuracy = arch.query(metric=self.metric, dataset=self.dataset)
             else:
                 arch = self.search_space.clone()
-                accuracy = arch.load_labeled_architecture()
+                arch.load_labeled_architecture()
+                
+            accuracy = arch.query(metric=self.metric, dataset=self.dataset)
             xdata.append(arch)
             ydata.append(accuracy)
         return xdata, ydata

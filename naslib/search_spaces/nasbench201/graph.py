@@ -190,11 +190,14 @@ class NasBench201SearchSpace(Graph):
             dataset = 'cifar10-valid'
 
         if metric == Metric.HP:
+            # return hyperparameter info
             return query_results[dataset]['cost_info']
-    
+        
         if full_lc:
+            # return the full learning curve up to specified epoch
             return query_results[dataset][metric_to_nb201[metric]][:epoch]
         else:
+            # return the value of the metric only at the specified epoch 
             return query_results[dataset][metric_to_nb201[metric]][epoch]
 
     def get_type(self):

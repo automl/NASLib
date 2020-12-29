@@ -15,7 +15,8 @@ from ConfigSpace.read_and_write import json as config_space_json_r_w
 from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.darts.conversions import convert_naslib_to_genotype, convert_genotype_to_compact
+from naslib.search_spaces.darts.conversions import convert_compact_to_naslib, \
+convert_naslib_to_compact, convert_naslib_to_genotype
 from naslib.search_spaces.core.query_metrics import Metric
 from .primitives import FactorizedReduce
 
@@ -32,8 +33,8 @@ SearchSpace objects
 data_folder = os.path.join(get_project_root(), 'data/')
 with open(os.path.join(data_folder, 'nb301_full_training.pickle'), 'rb') as f:
     nb301_data = pickle.load(f)
+    nb301_arches = list(nb301_data.keys())
 
-print('starting to load nb301 models')
 performance_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/xgb_v1.0'))
 runtime_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/lgb_runtime_v1.0'))
 nb301_model = [performance_model, runtime_model] 
@@ -51,7 +52,6 @@ class DartsSearchSpace(Graph):
     each edge are 8 primitive operations.
     """
 
-    
 
     """
     Scope is used to target different instances of the same cell.
@@ -81,6 +81,7 @@ class DartsSearchSpace(Graph):
 
         self.channels = [16, 32, 64]
         self.compact = None
+        self.load_labeled = None
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         
         """
@@ -120,6 +121,15 @@ class DartsSearchSpace(Graph):
         # Reduction cell has the same topology
         reduction_cell = deepcopy(normal_cell)
         reduction_cell.name = "reduction_cell"
+        
+        # set the cell name for all edges. This is necessary to convert a genotype to a naslib object
+        for _, _, edge_data in normal_cell.edges.data():
+            if not edge_data.is_final():
+                edge_data.set("cell_name", "normal_cell")
+            
+        for _, _, edge_data in reduction_cell.edges.data():
+            if not edge_data.is_final():
+                edge_data.set("cell_name", "reduction_cell")
 
         #
         # Makrograph definition
@@ -295,21 +305,25 @@ class DartsSearchSpace(Graph):
         return self.graph['out_from_23']
 
     def load_labeled_architecture(self):
-        arches = list(nb301_data.keys())
-        index = np.random.choice(len(arches))
-        compact = arches[index]
+        """
+        This is meant to be called by a new DARTSSearchSpace() object
+        (one that has not already been discretized).
+        It samples a random architecture from the nasbench301 training data,
+        and updates the graph object to match the architecture.
+        """
+        index = np.random.choice(len(nb301_arches))
+        compact = nb301_arches[index]
+        convert_compact_to_naslib(compact, self)
+        self.load_labeled = True
         self.compact = compact
-        accuracy = nb301_data[compact]['val_accuracies'][-1] / 100.0
-        return accuracy
     
     def get_compact(self):
-        if self.compact:
+        if self.compact is not None:
             return self.compact
         else:
-            genotype = convert_naslib_to_genotype([self.nodes[5]['subgraph'], self.nodes[9]['subgraph']])
-            return convert_genotype_to_compact()
+            return convert_naslib_to_compact(self)
     
-    def query(self, metric=None, dataset=None, path=None, epoch=None):
+    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
         """
         Query results from nasbench 301. Currently we only provide the 
         genotype query as list but we will integrate nb301 in the future.
@@ -319,26 +333,32 @@ class DartsSearchSpace(Graph):
             Metric.VAL_ACCURACY: 'val_accuracies'
         }
         
-        if epoch:
+        if self.load_labeled:
             """
             If we loaded the architecture from the nasbench301 training data (using 
             load_labeled_architecture()), then self.compact will contain the architecture spec,
-            and we can query the train loss or val accuracy at a specific epoch.
+            and we can query the train loss or val accuracy at a specific epoch
+            (also, querying will give 'real' answers, since these arches were actually trained)
             """
-            # if we want to query the architecture at a specific epoch
-            assert self.compact is not None
             assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS]
-
             query_results = nb301_data[self.compact]
-            return query_results[metric_to_nb301[metric]][epoch] / 100.0
-        
+            if full_lc:
+                # return the full learning curve up to specified epoch
+                return [val / 100.0 for val in query_results[metric_to_nb301[metric]][:epoch]]
+            else:
+                # return the value of the metric only at the specified epoch 
+                return query_results[metric_to_nb301[metric]][epoch] / 100.0
+
         else:
-            # query the accuracy from nasbench301
-            assert metric == Metric.VAL_ACCURACY   
-            genotype = convert_naslib_to_genotype([self.nodes[5]['subgraph'], self.nodes[9]['subgraph']])
-            print('genotype is', genotype)
+            """
+            If we did not load the architecture using load_labeled_architecture(), then we can
+            only query the validation accuracy at epoch 100 by using nasbench301.
+            """
+            assert (not epoch or epoch in [-1, 100])
+            assert metric in [Metric.VAL_ACCURACY, Metric.RAW]   
+            genotype = convert_naslib_to_genotype([self.nodes[3]['subgraph'], self.nodes[5]['subgraph']])
             val_acc = nb301_model[0].predict(config=genotype, representation="genotype")
-            return 100 - val_acc
+            return val_acc / 100.0
 
     
     @staticmethod
@@ -408,8 +428,8 @@ def _truncate_input_edges(node, in_edges, out_edges):
         else:
             # We are in the discrete case (e.g. random search)
             for _, data in in_edges:
-                assert isinstance(data.op, list)
-                data.op.pop(1)      # Remove the zero op
+                if isinstance(data.op, list) and data.op[1].get_op_name == 'Zero':
+                    data.op.pop(1)
             if any(e.has('final') and e.final for _, e in in_edges):
                 return  # TODO: how about mixed final and non-final?
             else:
