@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import random
 import torch
 import torch.nn as nn
 
@@ -243,7 +244,7 @@ class NasBench201SearchSpace(Graph):
         # return all neighbors of the architecture
         self.get_op_indices()
         nbrs = []
-        for edge in range(len(op_indices)):
+        for edge in range(len(self.op_indices)):
             available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
             
             for op_index in available:

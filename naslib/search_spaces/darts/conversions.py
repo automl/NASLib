@@ -180,8 +180,7 @@ def convert_config_to_genotype(config):
 
 def convert_genotype_to_compact(genotype):
     """ Converts Genotype to the compact representation """
-    OPS = ['none',
-           'max_pool_3x3',
+    OPS = ['max_pool_3x3',
            'avg_pool_3x3',
            'skip_connect',
            'sep_conv_3x3',
@@ -204,8 +203,7 @@ def convert_genotype_to_compact(genotype):
 
 def convert_compact_to_genotype(compact):
     """ Converts the compact representation to a Genotype """
-    OPS = ['none',
-           'max_pool_3x3',
+    OPS = ['max_pool_3x3',
            'avg_pool_3x3',
            'skip_connect',
            'sep_conv_3x3',
@@ -228,6 +226,18 @@ def convert_compact_to_genotype(compact):
         reduce = genotype[1],
         reduce_concat = [4, 5, 6]    
     )
+
+
+def make_compact_mutable(compact):
+    # convert tuple to list so that it is mutable
+    arch_list = []
+    for cell in compact:
+        arch_list.append([])
+        for pair in cell:
+            arch_list[-1].append([])
+            for num in pair:
+                arch_list[-1][-1].append(num)
+    return arch_list
 
 
 def convert_naslib_to_config(naslib_object):

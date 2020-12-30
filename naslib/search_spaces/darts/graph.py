@@ -16,7 +16,7 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.darts.conversions import convert_compact_to_naslib, \
-convert_naslib_to_compact, convert_naslib_to_genotype
+convert_naslib_to_compact, convert_naslib_to_genotype, make_compact_mutable
 from naslib.search_spaces.core.query_metrics import Metric
 from .primitives import FactorizedReduce
 
@@ -39,6 +39,9 @@ performance_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_
 runtime_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/lgb_runtime_v1.0'))
 nb301_model = [performance_model, runtime_model] 
 print('loaded nb301 models')
+
+NUM_VERTICES = 4
+NUM_OPS = 7
 
     
 class DartsSearchSpace(Graph):
@@ -68,7 +71,7 @@ class DartsSearchSpace(Graph):
     ]
 
     QUERYABLE = True
-
+    
     def __init__(self):
         """
         Initialize a new instance of the DARTS search space.
@@ -306,7 +309,7 @@ class DartsSearchSpace(Graph):
 
     def load_labeled_architecture(self):
         """
-        This is meant to be called by a new DARTSSearchSpace() object
+        This is meant to be called by a new DartsSearchSpace() object
         (one that has not already been discretized).
         It samples a random architecture from the nasbench301 training data,
         and updates the graph object to match the architecture.
@@ -315,16 +318,6 @@ class DartsSearchSpace(Graph):
         compact = nb301_arches[index]
         self.load_labeled = True
         self.set_compact(compact)
-    
-    def get_compact(self):
-        if self.compact is None:
-            self.compact = convert_naslib_to_compact(self)
-        return self.compact
-        
-    def set_compact(self, compact):
-        # This will update the edges in the naslib object to match compact
-        self.compact = compact
-        convert_compact_to_naslib(compact, self)
     
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
         """
@@ -358,12 +351,99 @@ class DartsSearchSpace(Graph):
             only query the validation accuracy at epoch 100 by using nasbench301.
             """
             assert (not epoch or epoch in [-1, 100])
-            assert metric in [Metric.VAL_ACCURACY, Metric.RAW]   
-            genotype = convert_naslib_to_genotype([self.nodes[3]['subgraph'], self.nodes[5]['subgraph']])
+            # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]   
+            genotype = convert_naslib_to_genotype(self)
             val_acc = nb301_model[0].predict(config=genotype, representation="genotype")
             return val_acc / 100.0
 
-    
+    def get_compact(self):
+        if self.compact is None:
+            self.compact = convert_naslib_to_compact(self)
+        return self.compact
+        
+    def set_compact(self, compact):
+        # This will update the edges in the naslib object to match compact
+        self.compact = compact
+        convert_compact_to_naslib(compact, self)
+
+    def sample_random_architecture(self):
+        """
+        This will sample a random architecture and update the edges in the 
+        naslib object accordingly.
+        """
+        compact = [[], []]
+        for i in range(NUM_VERTICES):
+            ops = np.random.choice(range(NUM_OPS), 4)
+
+            nodes_in_normal = np.random.choice(range(i+2), 2, replace=False)
+            nodes_in_reduce = np.random.choice(range(i+2), 2, replace=False)
+
+            compact[0].extend([(nodes_in_normal[0], ops[0]), (nodes_in_normal[1], ops[1])])
+            compact[1].extend([(nodes_in_reduce[0], ops[2]), (nodes_in_reduce[1], ops[3])])
+
+        self.set_compact(compact)
+        
+    def mutate(self, parent, mutation_rate=1):
+        """
+        This will mutate one op from the parent op indices, and then
+        update the naslib object and op_indices
+        """
+        parent_compact = parent.get_compact()
+        parent_compact = make_compact_mutable(parent_compact)
+        compact = parent_compact
+
+        for _ in range(int(mutation_rate)):
+            cell = np.random.choice(2)
+            pair = np.random.choice(8)
+            num = np.random.choice(2)
+            if num == 1:
+                compact[cell][pair][num] = np.random.choice(NUM_OPS)
+            else:
+                inputs = pair // 2 + 2
+                choice = np.random.choice(inputs)
+                if pair % 2 == 0 and compact[cell][pair+1][num] != choice:
+                    compact[cell][pair][num] = choice
+                elif pair % 2 != 0 and compact[cell][pair-1][num] != choice:
+                    compact[cell][pair][num] = choice
+
+        self.set_compact(compact)
+
+    def get_nbhd(self):
+        # return all neighbors of the architecture
+        self.get_compact()
+        nbrs = []
+        
+        for i, cell in enumerate(self.compact):
+            for j, pair in enumerate(cell):
+                
+                # mutate the op
+                available = [op for op in range(NUM_OPS) if op != pair[1]]
+                for op in available:
+                    nbr_compact = make_compact_mutable(self.compact)
+                    nbr_compact[i][j][1] = op
+                    nbr = DartsSearchSpace()
+                    nbr.set_compact(nbr_compact)
+                    nbr_model = torch.nn.Module()
+                    nbr_model.arch = nbr
+                    nbrs.append(nbr_model)
+                    
+                # mutate the edge
+                other = j + 1 - 2 * (j % 2)
+                available = [edge for edge in range(j//2+2) \
+                            if edge not in [cell[other][0], pair[0]]]
+                
+                for edge in available:
+                    nbr_compact = make_compact_mutable(self.compact)
+                    nbr_compact[i][j][0] = edge
+                    nbr = DartsSearchSpace()
+                    nbr.set_compact(nbr_compact)
+                    nbr_model = torch.nn.Module()
+                    nbr_model.arch = nbr
+                    nbrs.append(nbr_model)
+        
+        random.shuffle(nbrs)
+        return nbrs
+
     @staticmethod
     def get_configspace(path_to_configspace_obj=os.path.join(
         get_project_root(), "search_spaces/darts/configspace.json"

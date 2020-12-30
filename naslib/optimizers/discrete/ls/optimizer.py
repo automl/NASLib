@@ -39,8 +39,6 @@ class LocalSearch(MetaOptimizer):
 
     def adapt_search_space(self, search_space, scope=None):
         assert search_space.QUERYABLE, "Local search is currently only implemented for benchmarks."
-        assert isinstance(search_space, NasBench201SearchSpace), "Local search is currently only \
-        implemented for NasBench201SearchSpace"
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
     
@@ -68,13 +66,13 @@ class LocalSearch(MetaOptimizer):
                 
                 self.chosen = model
                 self.best_arch = model
-                self.nbhd = self.chosen.get_nbhd()
+                self.nbhd = self.chosen.arch.get_nbhd()
 
             else:
                 if len(self.nbhd) == 0:
                     logger.info('Start a new iteration. Pick the best architecture and evaluate its neighbors.')
                     self.chosen = self.best_arch
-                    self.nbhd = self.chosen.get_nbhd()
+                    self.nbhd = self.chosen.arch.get_nbhd()
                     
                 model = self.nbhd.pop()
                 model.accuracy = model.arch.query(self.performance_metric, self.dataset)
