@@ -163,8 +163,8 @@ class GCN(nn.Module):
             return x
 
 
-class BonasGCNPredictor(Predictor):
-    def __init__(self, encoding_type='bonas_gcn'):
+class BonasPredictor(Predictor):
+    def __init__(self, encoding_type='bonas'):
         self.encoding_type = encoding_type
 
     def get_model(self, **kwargs):

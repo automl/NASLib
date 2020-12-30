@@ -7,10 +7,10 @@ import naslib as nl
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
-EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \
+EarlyStopping, GCNPredictor, BonasPredictor, jacobian_cov, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
-BOHAMIANN, BayesianLinearRegression, LCNetPredictor, FeedforwardKerasPredictor, \
-SemiNASPredictor, GPPredictor, SparseGPPredictor, VarSparseGPPredictor
+BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -30,13 +30,11 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    'bananas': Ensemble(encoding_type='path',
-                        predictor_type='feedforward'),
+    'bananas': Ensemble(predictor_type='bananas'),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot'),
-    'ff_keras': FeedforwardKerasPredictor(encoding_type='adjacency_one_hot'),
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
-    'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
+    'bonas': BonasPredictor(encoding_type='bonas'),
     'valloss': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_LOSS),
     'valacc': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_ACCURACY),
     'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size=256),

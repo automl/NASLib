@@ -32,7 +32,7 @@ search_space = NasBench201SearchSpace()
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
     
-trainer = Trainer(optimizer, config)
+trainer = Trainer(optimizer, config, lightweight_output=True)
 
 if not config.eval_only:
     checkpoint = utils.get_last_checkpoint(config) if config.resume else ""

@@ -6,7 +6,6 @@ import random
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.discrete.utils.utils import sample_random_architecture, update_ops
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.graph import NasBench201SearchSpace
@@ -40,43 +39,16 @@ class LocalSearch(MetaOptimizer):
 
     def adapt_search_space(self, search_space, scope=None):
         assert search_space.QUERYABLE, "Local search is currently only implemented for benchmarks."
-        assert isinstance(search_space, NasBench201SearchSpace), "Local search is currently only \
-        implemented for NasBench201SearchSpace"
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
-
-    def get_nbhd(self, chosen):
-        arch = chosen.arch
-        nbrs = []
-        
-        cells = arch._get_child_graphs(single_instances=True)
-        for i, cell in enumerate(cells):
-            edges = [(u, v) for u, v, data in sorted(cell.edges(data=True)) if not data.is_final()]
-            for edge in edges:
-
-                # change op at edge
-                data = cell.edges[edge]
-                for op_index in range(len(data.primitives)):
-                    nbr = arch.clone()
-                    nbr_cells = nbr._get_child_graphs(single_instances=True)
-                    nbr_data = nbr_cells[i].edges[edge]
-                    nbr_data.set('op_index', op_index, shared=True)
-                    nbr.update_edges(update_ops, nbr.OPTIMIZER_SCOPE, private_edge_data=True)
-                    nbr_model = torch.nn.Module()
-                    nbr_model.arch = nbr
-                    nbrs.append(nbr_model)
-        
-        random.shuffle(nbrs)
-        return nbrs
     
     def new_epoch(self, epoch):
 
         if epoch < self.num_init:
-            logger.info("Start sampling architectures to fill the initial set")
-            # If there is no scope defined, let's use the search space default one
-            
+            # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            model.arch = sample_random_architecture(self.search_space, self.scope)
+            model.arch = self.search_space.clone()
+            model.arch.sample_random_architecture()        
             model.accuracy = model.arch.query(self.performance_metric, self.dataset)
 
             if not self.best_arch or model.accuracy > self.best_arch.accuracy:
@@ -86,18 +58,21 @@ class LocalSearch(MetaOptimizer):
         else:
             if len(self.nbhd) == 0 and self.chosen and self.best_arch.accuracy <= self.chosen.accuracy:
                 logger.info('Reached local minimum. Starting from new random architecture.')
+                
                 model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-                model.arch = sample_random_architecture(self.search_space, self.scope)
+                model.arch = self.search_space.clone()
+                model.arch.sample_random_architecture()        
                 model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+                
                 self.chosen = model
                 self.best_arch = model
-                self.nbhd = self.get_nbhd(self.chosen)
+                self.nbhd = self.chosen.arch.get_nbhd()
 
             else:
                 if len(self.nbhd) == 0:
                     logger.info('Start a new iteration. Pick the best architecture and evaluate its neighbors.')
                     self.chosen = self.best_arch
-                    self.nbhd = self.get_nbhd(self.chosen)
+                    self.nbhd = self.chosen.arch.get_nbhd()
                     
                 model = self.nbhd.pop()
                 model.accuracy = model.arch.query(self.performance_metric, self.dataset)
@@ -123,8 +98,9 @@ class LocalSearch(MetaOptimizer):
             best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
             best_arch.query(Metric.VAL_LOSS, self.dataset), 
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset), 
+            best_arch.query(Metric.TEST_LOSS, self.dataset), 
         )
-    
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()

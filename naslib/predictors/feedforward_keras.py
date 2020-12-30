@@ -67,12 +67,6 @@ class FeedforwardKerasPredictor(Predictor):
             lr=.001,
             verbose=0,
             regularization=0.2):
-
-        #print('encodings')
-        #print('gcn')
-        #print(encode(xtrain[0], encoding_type='gcn'))
-        #print('gcn')
-        #print(encode(xtrain[0], encoding_type='bonas_gcn'))
         
         xtrain = np.array([encode(arch, encoding_type=self.encoding_type, 
                                   ss_type=self.ss_type) for arch in xtrain])

@@ -701,7 +701,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 if edge_data.is_deleted():
                     to_remove.append((u, v))
             if to_remove:
-                logger.info("Removing edges {} from graph {}".format(to_remove, graph))
+                # logger.info("Removing edges {} from graph {}".format(to_remove, graph))
                 graph.remove_edges_from(to_remove)
 
 
@@ -756,6 +756,14 @@ class Graph(torch.nn.Module, nx.DiGraph):
         parameters. This is done here.
         """
         pass
+
+    
+    def sample_random_architecture(self):
+        raise NotImplementedError()
+
+
+    def mutate(self):
+        raise NotImplementedError()
 
 
     def query(self, metric: Metric, dataset: str, path: str) -> float:
