@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from scipy import stats
 
-from naslib.optimizers.discrete.utils.utils import sample_random_architecture
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils import utils
 
@@ -59,7 +58,8 @@ class PredictorEvaluator(object):
         ydata = []
         for _ in range(data_size):
             if not load_labeled:
-                arch = sample_random_architecture(self.search_space, self.scope)
+                arch = self.search_space.clone()
+                arch.sample_random_architecture()
             else:
                 arch = self.search_space.clone()
                 arch.load_labeled_architecture()

@@ -757,6 +757,14 @@ class Graph(torch.nn.Module, nx.DiGraph):
         """
         pass
 
+    
+    def sample_random_architecture(self):
+        raise NotImplementedError()
+
+
+    def mutate(self):
+        raise NotImplementedError()
+
 
     def query(self, metric: Metric, dataset: str, path: str) -> float:
         """

@@ -4,8 +4,6 @@ import torch
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
 
-from naslib.optimizers.discrete.utils.utils import sample_random_architecture
-    
 
 class RandomSearch(MetaOptimizer):
     """
@@ -54,7 +52,8 @@ class RandomSearch(MetaOptimizer):
         """
 
         model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-        model.arch = sample_random_architecture(self.search_space, self.scope)
+        model.arch = self.search_space.clone()
+        model.arch.sample_random_architecture()        
         model.accuracy = model.arch.query(self.performance_metric, self.dataset, epoch=self.fidelity)
 
         self.sampled_archs.append(model)

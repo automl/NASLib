@@ -5,7 +5,6 @@ import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.discrete.utils.utils import sample_random_architecture
 
 from naslib.predictors.ensemble import Ensemble
 
@@ -55,12 +54,10 @@ class BasePredictor(MetaOptimizer):
     def new_epoch(self, epoch):
 
         if epoch < self.num_init:
-            logger.info("Start sampling architectures to generate training data")
-            # If there is no scope defined, let's use the search space default one
-            
+            # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            
-            model.arch = sample_random_architecture(self.search_space, self.scope)
+            model.arch = self.search_space.clone()
+            model.arch.sample_random_architecture()        
             model.accuracy = model.arch.query(self.performance_metric, self.dataset)
             
             self.train_data.append(model)
@@ -81,7 +78,8 @@ class BasePredictor(MetaOptimizer):
                 
                 xtest = []
                 for i in range(self.test_size):
-                    arch = sample_random_architecture(self.search_space, self.scope)
+                    arch = self.search_space.clone()
+                    arch.sample_random_architecture()                    
                     xtest.append(arch)
 
                 test_pred = np.squeeze(ensemble.query(xtest))  

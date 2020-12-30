@@ -5,7 +5,6 @@ import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.discrete.utils.utils import mutate, sample_random_architecture
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -47,8 +46,8 @@ class RegularizedEvolution(MetaOptimizer):
             # If there is no scope defined, let's use the search space default one
             
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            
-            model.arch = sample_random_architecture(self.search_space, self.scope)
+            model.arch = self.search_space.clone()
+            model.arch.sample_random_architecture()        
             model.accuracy = model.arch.query(self.performance_metric, self.dataset)
             
             self.population.append(model)
@@ -63,7 +62,8 @@ class RegularizedEvolution(MetaOptimizer):
             parent = max(sample, key=lambda x: x.accuracy)
 
             child = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            child.arch = mutate(parent.arch)
+            child.arch = self.search_space.clone()
+            child.arch.mutate(parent.arch)
             child.accuracy = child.arch.query(self.performance_metric, self.dataset)
 
             self.population.append(child)

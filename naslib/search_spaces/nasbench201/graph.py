@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import torch
 import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
@@ -32,7 +33,10 @@ with open(os.path.join(get_project_root(), 'data', 'nb201_cifar100_full_training
     cifar100_full_data = pickle.load(f)    
 with open(os.path.join(get_project_root(), 'data', 'nb201_ImageNet16_full_training.pickle'), 'rb') as f:
     imagenet_full_data = pickle.load(f)
-    
+
+
+OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1', 'AvgPool1x1']
+
 
 class NasBench201SearchSpace(Graph):
     """
@@ -128,12 +132,6 @@ class NasBench201SearchSpace(Graph):
                 scope=scope,
                 private_edge_data=True
             )
-
-    def sample_random_architecture(self):
-        # this will sample a random architecture and update the edges in self accordingly
-        op_indices = np.random.randint(5, size=(6))
-        convert_op_indices_to_naslib(op_indices, self)
-        self.op_indices = op_indices
         
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
         """
@@ -208,6 +206,57 @@ class NasBench201SearchSpace(Graph):
         else:
             # return the value of the metric only at the specified epoch 
             return query_results[dataset][metric_to_nb201[metric]][epoch]
+
+    def get_op_indices(self):
+        if self.op_indices is None:
+            self.op_indices = convert_naslib_to_op_indices(self)
+        return self.op_indices
+    
+    def set_op_indices(self, op_indices):
+        # This will update the edges in the naslib object to op_indices
+        self.op_indices = op_indices
+        convert_op_indices_to_naslib(op_indices, self)
+                    
+    def sample_random_architecture(self):
+        """
+        This will sample a random architecture and update the edges in the 
+        naslib object accordingly.
+        """
+        op_indices = np.random.randint(5, size=(6))
+        self.set_op_indices(op_indices)
+        
+    def mutate(self, parent):
+        """
+        This will mutate one op from the parent op indices, and then
+        update the naslib object and op_indices
+        """
+        parent_op_indices = parent.get_op_indices()
+        op_indices = parent_op_indices
+
+        edge = np.random.choice(len(parent_op_indices))
+        available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
+        op_index = np.random.choice(available)
+        op_indices[edge] = op_index
+        self.set_op_indices(op_indices)
+
+    def get_nbhd(self):
+        # return all neighbors of the architecture
+        self.get_op_indices()
+        nbrs = []
+        for edge in range(len(op_indices)):
+            available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
+            
+            for op_index in available:
+                nbr_op_indices = self.op_indices.copy()
+                nbr_op_indices[edge] = op_index
+                nbr = NasBench201SearchSpace()
+                nbr.set_op_indices(nbr_op_indices)
+                nbr_model = torch.nn.Module()
+                nbr_model.arch = nbr
+                nbrs.append(nbr_model)
+        
+        random.shuffle(nbrs)
+        return nbrs
 
     def get_type(self):
         return 'nasbench201'
