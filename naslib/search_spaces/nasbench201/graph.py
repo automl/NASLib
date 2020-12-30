@@ -1,11 +1,13 @@
 import os
 import pickle
+import numpy as np
 import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib
 
 from naslib.utils.utils import get_project_root
 
@@ -50,6 +52,7 @@ class NasBench201SearchSpace(Graph):
     def __init__(self):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
+        self.op_indices = None
 
         #
         # Cell definition
@@ -125,6 +128,12 @@ class NasBench201SearchSpace(Graph):
                 scope=scope,
                 private_edge_data=True
             )
+
+    def sample_random_architecture(self):
+        # this will sample a random architecture and update the edges in self accordingly
+        op_indices = np.random.randint(5, size=(6))
+        convert_op_indices_to_naslib(op_indices, self)
+        self.op_indices = op_indices
         
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
         """

@@ -87,7 +87,6 @@ def convert_genotype_to_naslib(genotype, naslib_object):
             for i, op in enumerate(edge.data.op):
                 if op.get_op_name in edge_op_dict[edge.data.cell_name][(edge.head, edge.tail)]:
                     index = i
-                    op_name = op.get_op_name # can delete
                     break
             edge.data.set('op_index', index, shared=True)
         else:
