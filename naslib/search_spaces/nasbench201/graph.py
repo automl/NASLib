@@ -9,7 +9,8 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib
+from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib, \
+convert_naslib_to_op_indices, convert_naslib_to_str
 
 from naslib.utils.utils import get_project_root
 
@@ -141,29 +142,9 @@ class NasBench201SearchSpace(Graph):
         assert isinstance(metric, Metric)
         if metric == Metric.ALL:
             raise NotImplementedError()
-
         if metric != Metric.RAW and metric != Metric.ALL:
             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
-        
-        ops_to_nb201 = {
-            'AvgPool1x1': 'avg_pool_3x3',
-            'ReLUConvBN1x1': 'nor_conv_1x1',
-            'ReLUConvBN3x3': 'nor_conv_3x3',
-            'Identity': 'skip_connect',
-            'Zero': 'none',
-        }
-
-        # convert the naslib representation to nasbench201
-        cell = self.edges[2, 3].op
-        edge_op_dict = {
-            (i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
-        }
-        op_edge_list = [
-            '{}~{}'.format(edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-        ]
-
-        arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
-        
+                
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: 'train_acc1es',
             Metric.VAL_ACCURACY: 'eval_acc1es',
@@ -179,23 +160,23 @@ class NasBench201SearchSpace(Graph):
             Metric.PARAMETERS: 'params',
             Metric.EPOCH: 'epochs'
         }
-
+        
+        arch_str = convert_naslib_to_str(self)
+        
         if metric == Metric.RAW:
             # return all data
             return nb201_data[arch_str]
         
-        if dataset == 'cifar10':
+        if dataset in ['cifar10', 'cifar10-valid']:
             query_results = cifar10_full_data[arch_str]
+            # set correct cifar10 dataset
+            dataset = 'cifar10-valid'
         elif dataset == 'cifar100':
             query_results = cifar100_full_data[arch_str]
         elif dataset == 'ImageNet16-120':
             query_results = imagenet_full_data[arch_str]
         else:
             raise NotImplementedError('Invalid dataset')
-
-        if dataset == 'cifar10':
-            # set correct cifar10 dataset
-            dataset = 'cifar10-valid'
 
         if metric == Metric.HP:
             # return hyperparameter info

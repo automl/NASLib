@@ -340,10 +340,10 @@ class DartsSearchSpace(Graph):
             query_results = nb301_data[self.compact]
             if full_lc:
                 # return the full learning curve up to specified epoch
-                return [val / 100.0 for val in query_results[metric_to_nb301[metric]][:epoch]]
+                return query_results[metric_to_nb301[metric]][:epoch]
             else:
                 # return the value of the metric only at the specified epoch 
-                return query_results[metric_to_nb301[metric]][epoch] / 100.0
+                return query_results[metric_to_nb301[metric]][epoch]
 
         else:
             """
@@ -354,7 +354,7 @@ class DartsSearchSpace(Graph):
             # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]   
             genotype = convert_naslib_to_genotype(self)
             val_acc = nb301_model[0].predict(config=genotype, representation="genotype")
-            return val_acc / 100.0
+            return val_acc
 
     def get_compact(self):
         if self.compact is None:

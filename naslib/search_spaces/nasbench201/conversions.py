@@ -1,10 +1,16 @@
 
 """
-There are two representations
+There are three representations
 'naslib': the NASBench201SearchSpace object
 'op_indices': A list of six ints, which is the simplest representation
+'arch_str': The string representation used in the original nasbench201 paper
 
-This file converts between them.
+This file currently has the following conversions:
+naslib -> op_indices
+op_indices -> naslib
+naslib -> arch_str
+
+Note: we could add more conversions, but this is all we need for now
 """
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1', 'AvgPool1x1']
@@ -71,3 +77,25 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
         private_edge_data=True
     )
 
+def convert_naslib_to_str(naslib_object):
+    """
+    Converts naslib object to string representation.
+    """
+    
+    ops_to_nb201 = {
+        'AvgPool1x1': 'avg_pool_3x3',
+        'ReLUConvBN1x1': 'nor_conv_1x1',
+        'ReLUConvBN3x3': 'nor_conv_3x3',
+        'Identity': 'skip_connect',
+        'Zero': 'none',
+    }
+
+    cell = naslib_object.edges[2, 3].op
+    edge_op_dict = {
+        (i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+    }
+    op_edge_list = [
+        '{}~{}'.format(edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
+    ]
+
+    return '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
