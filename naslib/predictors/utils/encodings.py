@@ -22,46 +22,22 @@ one_hot_nasbench201 = [[1,0,0,0,0],
 OPS = ['avg_pool_3x3', 'nor_conv_1x1', 'nor_conv_3x3', 'none', 'skip_connect']
 NUM_OPS = len(OPS)
 
-
-def encode_adjacency_categorical(arch):
-    encoding = []
-    cells = arch._get_child_graphs(single_instances=True)
-
-    for cell in cells:
-        edges = [(u, v) for u, v, data in sorted(cell.edges(data=True)) if not data.is_final()]
-        for edge in edges:
-            encoding.append(cell.edges[edge].op_index)
-            
-        return encoding
-
     
 def encode_adjacency_one_hot(arch):
     
-    encoding = encode_adjacency_categorical(arch)
+    encoding = arch.get_op_indices()
     one_hot = []
     for e in encoding:
         one_hot = [*one_hot, *one_hot_nasbench201[e]]
     return one_hot
     
 
-def get_op_indices(arch):
-
-    cells = arch._get_child_graphs(single_instances=True)
-    op_indices = []
-    for cell in cells:
-        edges = [(u, v) for u, v, data in sorted(cell.edges(data=True)) if not data.is_final()]
-    for edge in edges:
-        op_indices.append(cell.edges[edge].op_index)
-        
-    return op_indices
-
-
 def get_paths(arch):
     """ 
     return all paths from input to output
     """
+    ops = arch.get_op_indices()
     path_blueprints = [[3], [0,4], [1,5], [0,2,5]]
-    ops = get_op_indices(arch)
     paths = []
     for blueprint in path_blueprints:
         paths.append([ops[node] for node in blueprint])
@@ -104,7 +80,7 @@ def encode_gcn_nasbench201(arch):
     Input:
     a list of categorical ops starting from 0
     '''
-    ops = encode_adjacency_categorical(arch)
+    ops = arch.get_op_indices()
     # offset ops list by one, add input and output to ops list
     ops = [op+1 for op in ops]
     ops = [0, *ops, 6]
@@ -136,7 +112,7 @@ def encode_bonas_nasbench201(arch):
     Input:
     a list of categorical ops starting from 0
     '''
-    ops = encode_adjacency_categorical(arch)
+    ops = arch.get_op_indices()
     # offset ops list by one, add input and output to ops list
     ops = [op+1 for op in ops]
     ops = [0, *ops, 6]
@@ -165,7 +141,7 @@ def encode_seminas_nasbench201(arch):
     Input:
     a list of categorical ops starting from 0
     '''
-    ops = encode_adjacency_categorical(arch)
+    ops = arch.get_op_indices()
     # offset ops list by one, add input and output to ops list
     ops = [op+1 for op in ops]
     ops = [0, *ops, 6]

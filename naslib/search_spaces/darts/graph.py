@@ -313,15 +313,18 @@ class DartsSearchSpace(Graph):
         """
         index = np.random.choice(len(nb301_arches))
         compact = nb301_arches[index]
-        convert_compact_to_naslib(compact, self)
         self.load_labeled = True
-        self.compact = compact
+        self.set_compact(compact)
     
     def get_compact(self):
-        if self.compact is not None:
-            return self.compact
-        else:
-            return convert_naslib_to_compact(self)
+        if self.compact is None:
+            self.compact = convert_naslib_to_compact(self)
+        return self.compact
+        
+    def set_compact(self, compact):
+        # This will update the edges in the naslib object to match compact
+        self.compact = compact
+        convert_compact_to_naslib(compact, self)
     
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
         """
