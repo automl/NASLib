@@ -132,18 +132,18 @@ if __name__ == "__main__":
 #                                                               110, 120, 130, 140, 150, 160, 170, 180, 190], help="train size list")
 
 # nb201-lcsvr
-    parser.add_argument("--train_size_list", type=list, default=[8, 20, 50, 128, 322, 1000], help="train size list")
-    parser.add_argument("--train_size_single", type=int, default=100, help="Train size for single and vary_fidelity")
-    parser.add_argument("--fidelity_single", type=int, default=100, help="Fidelity for single and vary_train_size")
-    parser.add_argument("--fidelity_list", type=list, default=[5, 20, 40, 60, 80, 100, \
-                                                               120, 140, 160, 180, 190], help="train size list")
+#    parser.add_argument("--train_size_list", type=list, default=[8, 20, 50, 128, 322, 1000], help="train size list")
+#    parser.add_argument("--train_size_single", type=int, default=100, help="Train size for single and vary_fidelity")
+#    parser.add_argument("--fidelity_single", type=int, default=100, help="Fidelity for single and vary_train_size")
+#    parser.add_argument("--fidelity_list", type=list, default=[5, 20, 40, 60, 80, 100, \
+#                                                               120, 140, 160, 180, 190], help="train size list")
     
 # darts
-#    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512], help="train size list")
-#    parser.add_argument("--train_size_single", type=int, default=512, help="Train size for single and vary_fidelity")
-#    parser.add_argument("--fidelity_single", type=int, default=50, help="Fidelity for single and vary_train_size")
-#    parser.add_argument("--fidelity_list", type=list, default=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, \
-#                                                               60, 65, 70, 75, 80, 85, 90, 95], help="train size list")
+    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512], help="train size list")
+    parser.add_argument("--train_size_single", type=int, default=512, help="Train size for single and vary_fidelity")
+    parser.add_argument("--fidelity_single", type=int, default=50, help="Fidelity for single and vary_train_size")
+    parser.add_argument("--fidelity_list", type=list, default=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, \
+                                                               60, 65, 70, 75, 80, 85, 90, 95], help="train size list")
     parser.add_argument("--experiment_type", type=str, default='single', help="type of experiment")
 
     args = parser.parse_args()

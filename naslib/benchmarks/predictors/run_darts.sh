@@ -1,16 +1,20 @@
-predictors=(valacc sotl bananas \
-feedforward gbdt xgb \
-ngb rf dngo bohamiann \
-bayes_lin_reg ff_keras)
+predictors=(valloss valacc sotl bananas \
+feedforward gbdt gcn bonas xgb \
+ngb rf jacov dngo bohamiann \
+bayes_lin_reg lcsvr gp sparse_gp \
+var_sparse_gp seminas) # lcnet
 
-experiment_types=(vary_fidelity vary_fidelity vary_train_size \
-vary_train_size vary_train_size vary_train_size \
-vary_train_size vary_train_size single vary_train_size \
-vary_train_size vary_train_size)
+experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size \
+vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
+vary_train_size vary_train_size single vary_train_size vary_train_size \
+vary_train_size vary_train_size vary_fidelity vary_train_size \
+vary_train_size vary_train_size) # vary_train_size
 
-# for testing:
-#experiment_types=(single single single single single single single single single \
-#single single single single single single single single)
+predictors=(sotl rf gp sparse_gp var_sparse_gp seminas)
+experiment_types=(vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size)
+
+predictors=(sotl rf gp sparse_gp var_sparse_gp ngb)
+experiment_types=(vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size)
 
 # folders:
 out_dir=run
@@ -21,9 +25,13 @@ search_space=darts
 dataset=cifar10
 
 # trials / seeds:
-trials=50
+trials=100
 start_seed=$1
 end_seed=$(($start_seed + $trials - 1))
+if [ -z "$start_seed" ]
+then
+    start_seed=0
+fi
 
 # dataset sizes:
 test_size=200
