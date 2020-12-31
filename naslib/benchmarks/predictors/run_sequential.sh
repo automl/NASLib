@@ -13,6 +13,9 @@ vary_train_size vary_train_size) # vary_train_size
 predictors=(sotl rf gp sparse_gp var_sparse_gp seminas)
 experiment_types=(vary_fidelity vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size)
 
+predictors=(lcsvr)
+experiment_types=(vary_both)
+
 # folders:
 out_dir=run
 base_file=NASLib/naslib

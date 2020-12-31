@@ -124,13 +124,20 @@ if __name__ == "__main__":
     parser.add_argument("--config_type", type=str, default='nas', help="nas or predictor?")
     parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench201 or darts?")
 
-# nb201
-    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512, 1000], help="train size list")
+# nb201-reg
+#    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512, 1000], help="train size list")
+#    parser.add_argument("--train_size_single", type=int, default=100, help="Train size for single and vary_fidelity")
+#    parser.add_argument("--fidelity_single", type=int, default=100, help="Fidelity for single and vary_train_size")
+#    parser.add_argument("--fidelity_list", type=list, default=[5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, \
+#                                                               110, 120, 130, 140, 150, 160, 170, 180, 190], help="train size list")
+
+# nb201-lcsvr
+    parser.add_argument("--train_size_list", type=list, default=[8, 20, 50, 128, 322, 1000], help="train size list")
     parser.add_argument("--train_size_single", type=int, default=100, help="Train size for single and vary_fidelity")
     parser.add_argument("--fidelity_single", type=int, default=100, help="Fidelity for single and vary_train_size")
-    parser.add_argument("--fidelity_list", type=list, default=[5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, \
-                                                               110, 120, 130, 140, 150, 160, 170, 180, 190], help="train size list")
-
+    parser.add_argument("--fidelity_list", type=list, default=[5, 20, 40, 60, 80, 100, \
+                                                               120, 140, 160, 180, 190], help="train size list")
+    
 # darts
 #    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512], help="train size list")
 #    parser.add_argument("--train_size_single", type=int, default=512, help="Train size for single and vary_fidelity")
