@@ -2,6 +2,7 @@ optimizer=bananas
 predictors=(bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
 bohamiann bayes_lin_reg seminas gp sparse_gp var_sparse_gp)
 
+predictors=(bananas seminas)
 
 # folders:
 out_dir=run
