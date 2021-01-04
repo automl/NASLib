@@ -37,7 +37,7 @@ supported_predictors = {
     'bonas': BonasPredictor(encoding_type='bonas'),
     'valloss': EarlyStopping(metric=Metric.VAL_LOSS),
     'valacc': EarlyStopping(metric=Metric.VAL_ACCURACY),
-    'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size=256),
+    'jacov': jacobian_cov(config, batch_size=256),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY),
