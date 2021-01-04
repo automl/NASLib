@@ -218,14 +218,21 @@ def convert_compact_to_genotype(compact):
         genotype.append([])
         
         for j in range(8):
-            genotype[i].append((OPS[cell[j][1]], cell[j][0]))
+            genotype[i].append((OPS[cell[j][1]-1], cell[j][0]))
         
     return Genotype(
         normal = genotype[0],
-        normal_concat = [2, 3, 4, 5, 6],
+        normal_concat = [2, 3, 4, 5],
         reduce = genotype[1],
-        reduce_concat = [4, 5, 6]    
+        reduce_concat = [2, 3, 4, 5]
     )
+    # TODO: need to check with Colin and/or Arber
+    #  return Genotype(
+    #     normal = genotype[0],
+    #     normal_concat = [2, 3, 4, 5, 6],
+    #     reduce = genotype[1],
+    #     reduce_concat = [4, 5, 6]
+    # )
 
 
 def make_compact_mutable(compact):

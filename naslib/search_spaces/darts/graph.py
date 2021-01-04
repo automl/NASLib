@@ -5,7 +5,6 @@ import logging
 import numpy as np
 import networkx as nx
 import pickle
-import nasbench301
 
 from collections import namedtuple
 from torch import nn

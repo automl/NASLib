@@ -55,7 +55,7 @@ class Cell(nn.Module):
             s = h1 + h2
             states += [s]
         try:
-            return torch.cat([states[i-1] for i in self._concat], dim=1)
+            return torch.cat([states[i] for i in self._concat], dim=1)
         except:
             print('hold')
 
