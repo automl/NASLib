@@ -106,7 +106,6 @@ class SVR_Estimator(Predictor):
 
         """
         VC = np.vstack(VC_all_archs_list)  # dimension: n_archs x n_epochs
-        AP = np.vstack(AP_all_archs_list)
         DVC = np.diff(VC, n=1, axis=1)
         DDVC = np.diff(DVC, n=1, axis=1)
 
@@ -122,7 +121,11 @@ class SVR_Estimator(Predictor):
         else:
             TS = np.hstack([mVC, stdVC, mDVC, stdDVC, mDDVC, stdDDVC])
 
-        X = np.hstack([AP, TS])
+        if len(AP_all_archs_list) != 0:
+            AP = np.vstack(AP_all_archs_list)
+            X = np.hstack([AP, TS])
+        else:
+            X = TS
 
         return X
 
@@ -148,6 +151,7 @@ class SVR_Estimator(Predictor):
         # todo: this can be added at the top of collate_inputs
         val_acc_curve = []
         arch_params = []
+        
         for i in range(len(info)):
             acc_metric = info[i]['lc']
             arch_hp = [info[i][hp] for hp in ['flops', 'latency', 'params']]

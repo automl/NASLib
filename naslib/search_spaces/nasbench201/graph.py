@@ -40,6 +40,8 @@ class NasBench201SearchSpace(Graph):
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         self.op_indices = None
 
+        self.max_epoch = 199
+        self.space_name = 'nasbench201'
         #
         # Cell definition
         #
@@ -142,13 +144,13 @@ class NasBench201SearchSpace(Graph):
             Metric.PARAMETERS: 'params',
             Metric.EPOCH: 'epochs'
         }
-        
+
         arch_str = convert_naslib_to_str(self)
         
         if metric == Metric.RAW:
             # return all data
             return dataset_api['raw_data'][arch_str]
-        
+
         if dataset in ['cifar10', 'cifar10-valid']:
             query_results = dataset_api['full_lc_data'][arch_str]
             # set correct cifar10 dataset
@@ -168,27 +170,27 @@ class NasBench201SearchSpace(Graph):
             # return the full learning curve up to specified epoch
             return query_results[dataset][metric_to_nb201[metric]][:epoch]
         else:
-            # return the value of the metric only at the specified epoch 
+            # return the value of the metric only at the specified epoch
             return query_results[dataset][metric_to_nb201[metric]][epoch]
 
     def get_op_indices(self):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
-    
+
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
         convert_op_indices_to_naslib(op_indices, self)
-                    
+
     def sample_random_architecture(self):
         """
-        This will sample a random architecture and update the edges in the 
+        This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
         op_indices = np.random.randint(5, size=(6))
         self.set_op_indices(op_indices)
-        
+
     def mutate(self, parent):
         """
         This will mutate one op from the parent op indices, and then

@@ -53,7 +53,7 @@ class DartsSearchSpace(Graph):
     ]
 
     QUERYABLE = True
-    
+
     def __init__(self):
         """
         Initialize a new instance of the DARTS search space.
@@ -68,7 +68,9 @@ class DartsSearchSpace(Graph):
         self.compact = None
         self.load_labeled = None
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
-        
+        self.max_epoch = 97
+        self.space_name = 'darts'
+
         """
         Build the search space with the parameters specified in __init__.
         """
@@ -106,12 +108,12 @@ class DartsSearchSpace(Graph):
         # Reduction cell has the same topology
         reduction_cell = deepcopy(normal_cell)
         reduction_cell.name = "reduction_cell"
-        
+
         # set the cell name for all edges. This is necessary to convert a genotype to a naslib object
         for _, _, edge_data in normal_cell.edges.data():
             if not edge_data.is_final():
                 edge_data.set("cell_name", "normal_cell")
-            
+
         for _, _, edge_data in reduction_cell.edges.data():
             if not edge_data.is_final():
                 edge_data.set("cell_name", "reduction_cell")
@@ -324,7 +326,7 @@ class DartsSearchSpace(Graph):
                 # return the full learning curve up to specified epoch
                 return query_results[metric_to_nb301[metric]][:epoch]
             else:
-                # return the value of the metric only at the specified epoch 
+                # return the value of the metric only at the specified epoch
                 return query_results[metric_to_nb301[metric]][epoch]
 
         else:
@@ -333,7 +335,7 @@ class DartsSearchSpace(Graph):
             only query the validation accuracy at epoch 100 by using nasbench301.
             """
             assert (not epoch or epoch in [-1, 100])
-            # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]   
+            # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]
             genotype = convert_naslib_to_genotype(self)
             val_acc = dataset_api['nb301_model'][0].predict(config=genotype, representation="genotype")
             return val_acc
@@ -342,7 +344,7 @@ class DartsSearchSpace(Graph):
         if self.compact is None:
             self.compact = convert_naslib_to_compact(self)
         return self.compact
-        
+
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact
         self.compact = compact
@@ -350,7 +352,7 @@ class DartsSearchSpace(Graph):
 
     def sample_random_architecture(self):
         """
-        This will sample a random architecture and update the edges in the 
+        This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
         compact = [[], []]
@@ -364,7 +366,7 @@ class DartsSearchSpace(Graph):
             compact[1].extend([(nodes_in_reduce[0], ops[2]), (nodes_in_reduce[1], ops[3])])
 
         self.set_compact(compact)
-        
+
     def mutate(self, parent, mutation_rate=1):
         """
         This will mutate one op from the parent op indices, and then
@@ -394,10 +396,10 @@ class DartsSearchSpace(Graph):
         # return all neighbors of the architecture
         self.get_compact()
         nbrs = []
-        
+
         for i, cell in enumerate(self.compact):
             for j, pair in enumerate(cell):
-                
+
                 # mutate the op
                 available = [op for op in range(NUM_OPS) if op != pair[1]]
                 for op in available:
@@ -408,12 +410,12 @@ class DartsSearchSpace(Graph):
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr
                     nbrs.append(nbr_model)
-                    
+
                 # mutate the edge
                 other = j + 1 - 2 * (j % 2)
                 available = [edge for edge in range(j//2+2) \
                             if edge not in [cell[other][0], pair[0]]]
-                
+
                 for edge in available:
                     nbr_compact = make_compact_mutable(self.compact)
                     nbr_compact[i][j][0] = edge
@@ -422,7 +424,7 @@ class DartsSearchSpace(Graph):
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr
                     nbrs.append(nbr_model)
-        
+
         random.shuffle(nbrs)
         return nbrs
 
