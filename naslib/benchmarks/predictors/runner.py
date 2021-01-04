@@ -12,7 +12,7 @@ SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 
-from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
+from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -57,6 +57,7 @@ supported_predictors = {
 }
 
 supported_search_spaces = {
+    'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace()
 }

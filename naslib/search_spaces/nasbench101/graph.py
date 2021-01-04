@@ -7,19 +7,12 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.nasbench101.conversions import convert_naslib_to_spec
 
 from naslib.utils.utils import get_project_root
 
 from .primitives import ReLUConvBN
 
-
-# load the nasbench101 data -- requires TF 1.x
-from nasbench import api
-
-nb101_datadir = os.path.join(get_project_root(), 'data', 'nasbench_only108.tfrecord')
-nasbench = api.NASBench(nb101_datadir)
-
-# data = nasbench.query(cell)
 
 class NasBench101SearchSpace(Graph):
     """
@@ -90,14 +83,15 @@ class NasBench101SearchSpace(Graph):
             private_edge_data=True
         )
 
-    def query(self, metric=None, dataset='cifar10', path=None):
-        """
-            Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
-        """
+    def query(self, metric=None, dataset='cifar10', path=None, epoch=-1, full_lc=False, dataset_api=None):
+
         assert isinstance(metric, Metric)
         assert dataset in ['cifar10', None], "Unknown dataset: {}".format(dataset)
-    
-        cell = self.edges[2, 3].op
+        if metric in [Metric.ALL, Metric.HP]:
+            raise NotImplementedError()
+        if dataset_api is None:
+            raise NotImplementedError('Must pass in dataset_api to query nasbench101')
+        assert epoch in [-1, 108, None] and not full_lc, 'nasbench101 does not have full learning curve information'
     
         metric_to_nb101 = {
             Metric.TRAIN_ACCURACY: 'train_accuracy',
@@ -107,47 +101,20 @@ class NasBench101SearchSpace(Graph):
             Metric.PARAMETERS: 'trainable_parameters',
         }
 
-        # convert the naslib representation to nasbench101
-        nb101_spec = _convert_cell_to_nb101_spec(cell)        
+        #cell = self.edges[2, 3].op
+        matrix, ops = convert_naslib_to_spec(self)
+        spec = dataset_api['api'].ModelSpec(matrix=self.matrix, ops=self.ops)
     
         if not nasbench.is_valid(nb101_spec):
-            return -1 # or some negative reward or none
-
-        query_results = nasbench.query(nb101_spec)
+            return -1
+        
+        query_results = dataset_api['nasbench'].query(nb101_spec)
 
         if metric == Metric.RAW:
             return query_results
             
         return query_results[metric_to_nb101[metric]]
 
-def _convert_cell_to_nb101_spec(cell):
-    
-    matrix = np.triu(np.ones((7,7)), 1)
-
-    ops_to_nb101 = {
-            'MaxPool1x1': 'maxpool3x3',
-            'ReLUConvBN1x1': 'conv1x1-bn-relu',
-            'ReLUConvBN3x3': 'conv3x3-bn-relu',
-        }
-
-    ops_to_nb101_edges = {
-        'Identity': 1,
-        'Zero': 0,
-    }
-
-    num_vertices = 7
-    ops = ['input'] * num_vertices
-    ops[-1] = 'output'
-
-    for i in range(1, 6):
-        ops[i] = ops_to_nb101[cell.nodes[i+1]['subgraph'].edges[1, 2]['op'].get_op_name]
-    
-    for i, j in cell.edges:
-        matrix[i-1][j-1] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name]
-    
-    spec = api.ModelSpec(matrix=matrix, ops=ops)
-    
-    return spec
 
 def _set_node_ops(current_edge_data, C):
     current_edge_data.set('op', [
