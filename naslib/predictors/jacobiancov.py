@@ -7,6 +7,8 @@ from naslib.predictors.predictor import Predictor
 from naslib.predictors.utils.build_nets import get_cell_based_tiny_net
 from naslib.utils import utils
 from naslib.utils.utils import get_project_root
+from naslib.predictors.utils.build_nets.build_darts_net import NetworkCIFAR
+from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 
 
 def get_batch_jacobian(net, x, target):
@@ -29,28 +31,24 @@ def eval_score(jacob, labels=None):
 
 class jacobian_cov(Predictor):
 
-    def __init__(self, config, task_name='nas201_cifar10', batch_size = 256):
+    def __init__(self, config, dataset='cifar10', batch_size = 256):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         self.batch_size = batch_size
-        self.task_name = task_name
+        self.dataset = dataset
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         config.data = "{}/data".format(get_project_root())
         self.config = config
 
     def pre_process(self):
 
-        if 'nas201' in self.task_name:
-            self.dataset = self.task_name.split('_')[1]
-            # api_loc = './data/NAS-Bench-201-v1_1-096897.pth'
-            # self.api = API(api_loc)
-            self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
+        self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
     def query(self, xtest, info=None):
 
         test_set_scores = []
         for test_arch in xtest:
-            if 'nas201' in self.task_name:
+            if 'nasbench201' in self.config.search_space:
                 ops_to_nb201 = {'AvgPool1x1': 'avg_pool_3x3', 'ReLUConvBN1x1': 'nor_conv_1x1',
                                 'ReLUConvBN3x3': 'nor_conv_3x3', 'Identity': 'skip_connect', 'Zero': 'none',}
                 # convert the naslib representation to nasbench201
@@ -59,18 +57,27 @@ class jacobian_cov(Predictor):
                 op_edge_list = ['{}~{}'.format(edge_op_dict[(i, j)], i - 1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])]
                 arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
                 arch_config = {'name': 'infer.tiny', 'C': 16, 'N':5, 'arch_str': arch_str, 'num_classes': 1}
+
+                network = get_cell_based_tiny_net(arch_config)  # create the network from configuration
+
+            elif 'darts' in self.config.search_space:
+                test_genotype = convert_compact_to_genotype(test_arch.compact)
+                arch_config = {'name': 'darts', 'C': 32, 'layers': 8, 'genotype': test_genotype, 'num_classes': 1, 'auxiliary': False}
+                network = NetworkCIFAR(arch_config)
+
             data_iterator = iter(self.train_loader)
             x, target = next(data_iterator)
             x, target = x.to(self.device), target.to(self.device)
 
-            network = get_cell_based_tiny_net(arch_config)  # create the network from configuration
             network = network.to(self.device)
 
             jacobs, labels = get_batch_jacobian(network, x, target)
+            print('done get jacobs')
             jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
 
             try:
                 score = eval_score(jacobs, labels)
+                print('done computing scores  ')
             except Exception as e:
                 print(e)
                 score = -10e8
