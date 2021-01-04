@@ -3,6 +3,7 @@ import time
 import json
 import logging
 import os
+import copy
 import torch
 
 from fvcore.common.checkpoint import PeriodicCheckpointer
@@ -27,7 +28,7 @@ class Trainer(object):
     required logic.
     """
 
-    def __init__(self, optimizer, config):
+    def __init__(self, optimizer, config, lightweight_output=False):
         """
         Initializes the trainer.
 
@@ -39,6 +40,7 @@ class Trainer(object):
         self.optimizer = optimizer
         self.config = config
         self.epochs = self.config.search.epochs
+        self.lightweight_output = lightweight_output
 
         # preparations
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -123,11 +125,13 @@ class Trainer(object):
                 self.errors_dict.runtime.append(end_time - start_time)
             else:
                 end_time = time.time()
-                train_acc, train_loss, valid_acc, valid_loss = self.optimizer.train_statistics()
+                train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
                 self.errors_dict.train_acc.append(train_acc)
                 self.errors_dict.train_loss.append(train_loss)
                 self.errors_dict.valid_acc.append(valid_acc)
                 self.errors_dict.valid_loss.append(valid_loss)
+                self.errors_dict.test_acc.append(test_acc)
+                self.errors_dict.test_loss.append(test_loss)
                 self.errors_dict.runtime.append(end_time - start_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
@@ -429,8 +433,15 @@ class Trainer(object):
         """log training statistics to json file"""
         if not os.path.exists(self.config.save):
             os.makedirs(self.config.save)
-        with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
-            json.dump(self.errors_dict, file, separators=(',', ':'))
+        if not self.lightweight_output:
+            with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
+                json.dump(self.errors_dict, file, separators=(',', ':'))
+        else:
+            with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
+                lightweight_dict = copy.deepcopy(self.errors_dict)
+                lightweight_dict.pop('arch_eval')
+                json.dump(lightweight_dict, file, separators=(',', ':'))
+
 
 
     

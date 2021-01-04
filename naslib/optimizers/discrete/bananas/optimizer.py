@@ -5,7 +5,6 @@ import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.discrete.utils.utils import sample_random_architecture, mutate
 from naslib.optimizers.discrete.bananas.acquisition_functions import acquisition_function
 
 from naslib.predictors.ensemble import Ensemble
@@ -35,9 +34,10 @@ class Bananas(MetaOptimizer):
         self.k = config.search.k
         self.num_init = config.search.num_init
         self.num_ensemble = config.search.num_ensemble
+        self.predictor_type = config.search.predictor_type
         self.acq_fn_type = config.search.acq_fn_type
         self.acq_fn_optimization = config.search.acq_fn_optimization
-        self.encoding_type = config.search.encoding_type
+        self.encoding_type = config.search.encoding_type # currently not implemented
         self.num_arches_to_mutate = config.search.num_arches_to_mutate
         self.max_mutations = config.search.max_mutations
         self.num_candidates = config.search.num_candidates
@@ -56,12 +56,10 @@ class Bananas(MetaOptimizer):
     def new_epoch(self, epoch):
 
         if epoch < self.num_init:
-            logger.info("Start sampling architectures to generate training data")
-            # If there is no scope defined, let's use the search space default one
-            
+            # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            
-            model.arch = sample_random_architecture(self.search_space, self.scope)
+            model.arch = self.search_space.clone()
+            model.arch.sample_random_architecture()        
             model.accuracy = model.arch.query(self.performance_metric, self.dataset)
             
             self.train_data.append(model)
@@ -72,9 +70,9 @@ class Bananas(MetaOptimizer):
                 # train a neural predictor
                 xtrain = [m.arch for m in self.train_data]
                 ytrain = [m.accuracy for m in self.train_data]
-                ensemble = Ensemble(encoding_type=self.encoding_type,
-                                    num_ensemble=self.num_ensemble,
-                                    ss_type=self.search_space.get_type())
+                ensemble = Ensemble(num_ensemble=self.num_ensemble,
+                                    ss_type=self.search_space.get_type(),
+                                    predictor_type=self.predictor_type)
                 train_error = ensemble.fit(xtrain, ytrain)
 
                 # define an acquisition function
@@ -87,7 +85,8 @@ class Bananas(MetaOptimizer):
                 if self.acq_fn_optimization == 'random_sampling':
                     
                     for _ in range(self.num_candidates):
-                        arch = sample_random_architecture(self.search_space, self.scope)
+                        arch = self.search_space.clone()
+                        arch.sample_random_architecture()        
                         candidates.append(arch)
                     
                 elif self.acq_fn_optimization == 'mutation':
@@ -99,7 +98,9 @@ class Bananas(MetaOptimizer):
                         for _ in range(int(self.num_candidates / len(best_arches) / self.max_mutations)):
                             candidate = arch.clone()
                             for edit in range(int(self.max_mutations)):
-                                candidate = mutate(candidate)
+                                arch = self.search_space.clone()
+                                arch.mutate(candidate)
+                                candidate = arch
                             candidates.append(candidate)
 
                 else:
@@ -134,8 +135,9 @@ class Bananas(MetaOptimizer):
             best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
             best_arch.query(Metric.VAL_LOSS, self.dataset), 
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset), 
+            best_arch.query(Metric.TEST_LOSS, self.dataset), 
         )
-    
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()

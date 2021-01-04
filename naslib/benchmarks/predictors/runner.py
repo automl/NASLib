@@ -7,10 +7,10 @@ import naslib as nl
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
-EarlyStopping, GCNPredictor, BonasGCNPredictor, jacobian_cov, SoLosspredictor, \
+EarlyStopping, GCNPredictor, BonasPredictor, jacobian_cov, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
-BOHAMIANN, BayesianLinearRegression, LCNetPredictor, FeedforwardKerasPredictor, \
-SemiNASPredictor
+BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -30,13 +30,11 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    'bananas': Ensemble(encoding_type='path',
-                        predictor_type='feedforward'),
+    'bananas': Ensemble(predictor_type='bananas'),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot'),
-    'ff_keras': FeedforwardKerasPredictor(encoding_type='adjacency_one_hot'),
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
-    'bonas_gcn': BonasGCNPredictor(encoding_type='bonas_gcn'),
+    'bonas': BonasPredictor(encoding_type='bonas'),
     'valloss': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_LOSS),
     'valacc': EarlyStopping(dataset=config.dataset, metric=Metric.VAL_ACCURACY),
     'jacov': jacobian_cov(config, task_name='nas201_cifar10', batch_size=256),
@@ -49,7 +47,12 @@ supported_predictors = {
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
     'lcnet': LCNetPredictor(encoding_type='adjacency_one_hot'),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
-    'seminas': SemiNASPredictor(encoding_type='seminas')
+    'seminas': SemiNASPredictor(encoding_type='seminas'),
+    'gp': GPPredictor(encoding_type='adjacency_one_hot'),
+    'sparse_gp': SparseGPPredictor(encoding_type='adjacency_one_hot',
+                                   optimize_gp_hyper=True, num_steps=100),
+    'var_sparse_gp': VarSparseGPPredictor(encoding_type='adjacency_one_hot',
+                                          optimize_gp_hyper=True, num_steps=200),
 }
 
 supported_search_spaces = {

@@ -145,12 +145,11 @@ class SVR_Estimator(Predictor):
         arch_params = []
         for arch in xtest:
             max_epoch = int(arch.max_epoch+1)
-            acc_metric = arch.query(self.metric, self.dataset, epoch=max_epoch)[:fidelity]
+            acc_metric = arch.query(self.metric, self.dataset, epoch=fidelity, full_lc=True)
             if max_epoch == 200:
-                arch_hp = [arch.query(Metric.RAW, self.dataset)['cifar10-valid']['cost_info'][metric_hp]
-                           for metric_hp in ['flops', 'latency', 'params']]
+                arch_hp = [arch.query(Metric.HP, self.dataset)[metric_hp]
+                       for metric_hp in ['flops', 'latency', 'params']]
                 arch_params.append(arch_hp)
-
             val_acc_curve.append(acc_metric)
         # info = {'val_acc': val_acc_curve, 'arch_param': arch_params}
 

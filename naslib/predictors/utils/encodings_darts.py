@@ -46,6 +46,7 @@ def get_paths(arch):
 
     return paths
 
+
 def get_path_indices(arch, long_paths=True):
     """
     compute the index of each path
@@ -120,80 +121,9 @@ def encode_adj(arch):
     return np.array(encoding)
 
 
-def encode_gcn_darts(arch):
-    # make a matrix for nasbench301
-    # one-hot for ops
-
-    
-    
-    # offset ops list by one, add input and output to ops list
-    ops = [op+1 for op in ops]
-    ops = [0, *ops, 6]
-
-    ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
-    matrix = np.array(
-            [[0, 1, 1, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
-    #matrix = np.transpose(matrix)
-    dic = {
-        'num_vertices': 8,
-        'adjacency': matrix,
-        'operations': ops_onehot,
-        'mask': np.array([i < 8 for i in range(8)], dtype=np.float32),
-        'val_acc': 0.0
-    }
-
-    return dic
-
-
-def encode_bonas_gcn_darts(arch):
-    '''
-    Input:
-    a list of categorical ops starting from 0
-    '''
-    ops = encode_adjacency_categorical(arch)
-    # offset ops list by one, add input and output to ops list
-    ops = [op+1 for op in ops]
-    ops = [0, *ops, 6]
-    #print(ops)
-    ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
-    matrix = np.array(
-            [[1, 1, 1, 1, 0, 0, 0, 0],
-            [0, 1, 0, 0, 1, 1, 0, 0],
-            [0, 0, 1, 0, 0, 0, 1, 0],
-            [0, 0, 0, 1, 0, 0, 0, 1],
-            [0, 0, 0, 0, 1, 0, 1, 0],
-            [0, 0, 0, 0, 0, 1, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 1],
-            [0, 0, 0, 0, 0, 0, 0, 1]],dtype=np.float32)
-    matrix = np.transpose(matrix)
-    
-    dic = {
-        'adjacency': matrix,
-        'operations': ops_onehot,
-        'val_acc': 0.0
-    }
-    return dic
-
-
 def encode_darts(arch, encoding_type='path'):
     
     compact = arch.get_compact()
-    #from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
-    #genotype = convert_compact_to_genotype(compact)
-    #print(compact)
-    #print()
-    #print(genotype)
-    #print()
-    #print(encode_adj(arch=compact))
-    #print()
-    #print(encode_gcn_darts(arch=compact))
 
     if encoding_type == 'path':
         return encode_paths(arch=compact)

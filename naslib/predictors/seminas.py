@@ -32,7 +32,7 @@ import torch.nn.functional as F
 
 # default parameters from the paper
 n = 1100
-m = 10000
+# m = 10000
 nodes = 8
 new_arch = 300
 k = 100
@@ -49,14 +49,16 @@ l2_reg = 1e-4
 vocab_size = 9 # 7 original
 max_step_size = 100
 trade_off = 0.8  
-pretrain_epochs = 1000
-epochs = 1000
 up_sample_ratio = 10
 batch_size = 100 
 lr = 0.001
 optimizer = 'adam'
 grad_bound = 5.0  
-iteration = 3 #3
+# iteration = 3
+
+use_cuda = True
+# pretrain_epochs = 1000
+# epochs = 1000
 
 nb201_adj_matrix = np.array(
             [[0, 1, 1, 1, 0, 0, 0, 0],
@@ -452,7 +454,8 @@ def train_controller(model, train_input, train_target, epochs):
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_reg)
     for epoch in range(1, epochs + 1):
         loss, mse, ce = controller_train(controller_train_queue, model, optimizer)
-        print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
+        if epoch % 10 == 0:
+            print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
 
 # currently only works for nb201 
 def generate_synthetic_controller_data(model, base_arch=None, random_arch=0):
@@ -496,9 +499,16 @@ class SemiNASPredictor(Predictor):
         predictor = NAO()
         return predictor
 
-    def fit(self,xtrain,ytrain, 
-            gcn_hidden=64,seed=0,batch_size=100,
-            epochs=1000,lr=1e-3,wd=0):
+    def fit(self, xtrain, ytrain,
+            gcn_hidden=64, 
+            batch_size=100, 
+            lr=1e-3,
+            wd=0, 
+            iteration=1, 
+            epochs=50,
+            pretrain_epochs=50, 
+            synthetic_factor=1):
+
         up_sample_ratio = 10
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
@@ -526,7 +536,7 @@ class SemiNASPredictor(Predictor):
             decoder_length,
         )
 
-        for i in range(iteration+1):
+        for i in range(iteration):
             print('Iteration {}'.format(i+1))
 
             train_encoder_input = train_seq_pool
@@ -538,6 +548,7 @@ class SemiNASPredictor(Predictor):
             print('Finish pre-training EPD')
             # Generate synthetic data
             print('Generate synthetic data for EPD')
+            m = synthetic_factor * len(xtrain)
             synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m)
             if up_sample_ratio is None:
                 up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)

@@ -1,24 +1,43 @@
 import os
 import pickle
+import numpy as np
+import random
+import torch
 import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib, \
+convert_naslib_to_op_indices, convert_naslib_to_str
 
 from naslib.utils.utils import get_project_root
 
 from .primitives import ResNetBasicblock
 
 
+"""
+Note: we load the nb201 full training data here, instead of inside the class, because 
+this class is copied many times throughout the discrete NAS algos and leads to memory errors.
+TODO: ideally Trainer and PredictorEvaluator should load these data files and pass them to
+the SearchSpace objects
+"""
+
 # load the nasbench201 data
 with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
     nb201_data = pickle.load(f)
 
-# load nasbench201 full training data for cifar10
+# load nasbench201 full training data
 with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
     cifar10_full_data = pickle.load(f)
+with open(os.path.join(get_project_root(), 'data', 'nb201_cifar100_full_training.pickle'), 'rb') as f:
+    cifar100_full_data = pickle.load(f)
+with open(os.path.join(get_project_root(), 'data', 'nb201_ImageNet16_full_training.pickle'), 'rb') as f:
+    imagenet_full_data = pickle.load(f)
+
+
+OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1', 'AvgPool1x1']
 
 
 class NasBench201SearchSpace(Graph):
@@ -39,6 +58,8 @@ class NasBench201SearchSpace(Graph):
     def __init__(self):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
+        self.op_indices = None
+
         self.max_epoch = 199
         self.space_name = 'nasbench201'
         #
@@ -116,36 +137,16 @@ class NasBench201SearchSpace(Graph):
                 private_edge_data=True
             )
         
-    def query(self, metric=None, dataset=None, path=None, epoch=None):
+    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
         assert isinstance(metric, Metric)
         if metric == Metric.ALL:
             raise NotImplementedError()
-
         if metric != Metric.RAW and metric != Metric.ALL:
             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
-        
-        ops_to_nb201 = {
-            'AvgPool1x1': 'avg_pool_3x3',
-            'ReLUConvBN1x1': 'nor_conv_1x1',
-            'ReLUConvBN3x3': 'nor_conv_3x3',
-            'Identity': 'skip_connect',
-            'Zero': 'none',
-        }
 
-        # convert the naslib representation to nasbench201
-        cell = self.edges[2, 3].op
-        edge_op_dict = {
-            (i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
-        }
-        op_edge_list = [
-            '{}~{}'.format(edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-        ]
-
-        arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
-        
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: 'train_acc1es',
             Metric.VAL_ACCURACY: 'eval_acc1es',
@@ -162,34 +163,87 @@ class NasBench201SearchSpace(Graph):
             Metric.EPOCH: 'epochs'
         }
 
-        if not epoch or epoch == 200:
+        arch_str = convert_naslib_to_str(self)
         
-            # query data from nb201
-            if dataset == 'cifar10':
-                query_results = cifar10_full_data[arch_str]
-            else:
-                query_results = nb201_data[arch_str]
-        
-            if metric == Metric.RAW:
-                return query_results
-            elif ("VAL_" in metric.name or "TRAIN_" in metric.name) and dataset == 'cifar10':
-                dataset = 'cifar10-valid'
-            elif "VAL_" in metric.name and dataset != 'cifar10':
-                raise ValueError("nasbench 201 does not have a validation split for other datasets than cifar10.")
+        if metric == Metric.RAW:
+            # return all data
+            return nb201_data[arch_str]
 
-            return query_results[dataset][metric_to_nb201[metric]]
-        
-        else:
-            assert dataset in ['cifar10', 'cifar10-valid'], "Multi-fidelity is only \
-            implemented for cifar10: {}".format(dataset)
-            assert metric in [Metric.TRAIN_ACCURACY, Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_LOSS]
-            
+        if dataset in ['cifar10', 'cifar10-valid']:
             query_results = cifar10_full_data[arch_str]
-            return query_results['cifar10-valid'][metric_to_nb201[metric]][epoch] / 100.0
+            # set correct cifar10 dataset
+            dataset = 'cifar10-valid'
+        elif dataset == 'cifar100':
+            query_results = cifar100_full_data[arch_str]
+        elif dataset == 'ImageNet16-120':
+            query_results = imagenet_full_data[arch_str]
+        else:
+            raise NotImplementedError('Invalid dataset')
+
+        if metric == Metric.HP:
+            # return hyperparameter info
+            return query_results[dataset]['cost_info']
         
+        if full_lc:
+            # return the full learning curve up to specified epoch
+            return query_results[dataset][metric_to_nb201[metric]][:epoch]
+        else:
+            # return the value of the metric only at the specified epoch
+            return query_results[dataset][metric_to_nb201[metric]][epoch]
+
+    def get_op_indices(self):
+        if self.op_indices is None:
+            self.op_indices = convert_naslib_to_op_indices(self)
+        return self.op_indices
+
+    def set_op_indices(self, op_indices):
+        # This will update the edges in the naslib object to op_indices
+        self.op_indices = op_indices
+        convert_op_indices_to_naslib(op_indices, self)
+
+    def sample_random_architecture(self):
+        """
+        This will sample a random architecture and update the edges in the
+        naslib object accordingly.
+        """
+        op_indices = np.random.randint(5, size=(6))
+        self.set_op_indices(op_indices)
+
+    def mutate(self, parent):
+        """
+        This will mutate one op from the parent op indices, and then
+        update the naslib object and op_indices
+        """
+        parent_op_indices = parent.get_op_indices()
+        op_indices = parent_op_indices
+
+        edge = np.random.choice(len(parent_op_indices))
+        available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
+        op_index = np.random.choice(available)
+        op_indices[edge] = op_index
+        self.set_op_indices(op_indices)
+
+    def get_nbhd(self):
+        # return all neighbors of the architecture
+        self.get_op_indices()
+        nbrs = []
+        for edge in range(len(self.op_indices)):
+            available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
+            
+            for op_index in available:
+                nbr_op_indices = self.op_indices.copy()
+                nbr_op_indices[edge] = op_index
+                nbr = NasBench201SearchSpace()
+                nbr.set_op_indices(nbr_op_indices)
+                nbr_model = torch.nn.Module()
+                nbr_model.arch = nbr
+                nbrs.append(nbr_model)
+        
+        random.shuffle(nbrs)
+        return nbrs
+
     def get_type(self):
         return 'nasbench201'
-
     
 def _set_cell_ops(edge, C):
     edge.data.set('op', [

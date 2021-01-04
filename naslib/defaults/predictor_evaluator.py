@@ -7,7 +7,6 @@ import numpy as np
 import torch
 from scipy import stats
 
-from naslib.optimizers.discrete.utils.utils import sample_random_architecture
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils import utils
 
@@ -59,17 +58,20 @@ class PredictorEvaluator(object):
         ydata = []
         for _ in range(data_size):
             if not load_labeled:
-                arch = sample_random_architecture(self.search_space, self.scope)
-                accuracy = arch.query(metric=self.metric, dataset=self.dataset)[-1]
+                arch = self.search_space.clone()
+                arch.sample_random_architecture()
             else:
                 arch = self.search_space.clone()
-                accuracy = arch.load_labeled_architecture()
+                arch.load_labeled_architecture()
+                
+            accuracy = arch.query(metric=self.metric, dataset=self.dataset)
             xdata.append(arch)
             ydata.append(accuracy)
         return xdata, ydata
 
     def single_evaluate(self, xtrain, ytrain, xtest, ytest, fidelity):
         info = self.predictor.requires_partial_training(xtest, fidelity)
+        train_size = len(xtrain)
 
         logger.info("Fit the predictor")
         self.predictor.fit(xtrain, ytrain)
@@ -83,11 +85,17 @@ class PredictorEvaluator(object):
             test_pred = np.mean(test_pred, axis=0)
 
         logger.info("Compute evaluation metrics")
-        return self.compare(ytest, test_pred)
+        metrics = self.compare(ytest, test_pred)
+        test_error, correlation, rank_correlation = metrics
+        logger.info("train_size: {}, fidelity: {}, test error: {}, correlation: {}, rank correlation {}"
+                    .format(train_size, fidelity, test_error, correlation, rank_correlation))
+        self.results.append({'train_size': train_size,
+                             'fidelity': fidelity,
+                             'test_error': test_error,
+                             'correlation': correlation,
+                             'rank_correlation': rank_correlation})        
 
     def evaluate(self):
-
-        # pre-process the predictor
         self.predictor.pre_process()
 
         logger.info("Load the test set")
@@ -96,61 +104,41 @@ class PredictorEvaluator(object):
         if self.experiment_type == 'single':
             train_size = self.train_size_single
             fidelity = self.fidelity_single
-
             logger.info("Load the training set")
             xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
                                                data_size=train_size)
-
-            metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
-            test_error, correlation, rank_correlation = metrics
-            logger.info("test error: {}, correlation: {}, rank correlation {}"
-                        .format(test_error, correlation, rank_correlation))
-            self.results.append({'train_size': train_size,
-                                 'fidelity': fidelity,
-                                 'test_error': test_error,
-                                 'correlation': correlation,
-                                 'rank_correlation': rank_correlation})
+            self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_train_size':
-
             logger.info("Load the training set")
             xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled,
                                                          data_size=self.train_size_list[-1])
             fidelity = self.fidelity_single
 
             for train_size in self.train_size_list:
-                
                 xtrain, ytrain = xtrain_full[:train_size], ytrain_full[:train_size]
-
-                metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
-                test_error, correlation, rank_correlation = metrics
-                logger.info("train_size: {}, test error: {}, correlation: {}, rank correlation {}"
-                            .format(train_size, test_error, correlation, rank_correlation))
-                self.results.append({'train_size': train_size,
-                                     'fidelity': fidelity,
-                                     'test_error': test_error,
-                                     'correlation': correlation,
-                                     'rank_correlation': rank_correlation})
+                self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_fidelity':
-
             train_size = self.train_size_single
-
             logger.info("Load the training set")
             xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
                                                data_size=self.train_size_single)
 
             for fidelity in self.fidelity_list:
+                self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
 
-                metrics = self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
-                test_error, correlation, rank_correlation = metrics
-                logger.info("fidelity: {}, test error: {}, correlation: {}, rank correlation {}"
-                            .format(fidelity, test_error, correlation, rank_correlation))
-                self.results.append({'train_size': train_size,
-                                     'fidelity': fidelity,
-                                     'test_error': test_error,
-                                     'correlation': correlation,
-                                     'rank_correlation': rank_correlation})
+        elif self.experiment_type == 'vary_both':
+            logger.info("Load the training set")
+            xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled,
+                                                         data_size=self.train_size_list[-1])
+
+            for train_size in self.train_size_list:
+                xtrain, ytrain = xtrain_full[:train_size], ytrain_full[:train_size]
+
+                for fidelity in self.fidelity_list:
+                    self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)                
+
         else:
             raise NotImplementedError()
 

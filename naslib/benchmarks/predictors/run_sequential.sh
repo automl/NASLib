@@ -1,12 +1,14 @@
 predictors=(valloss valacc sotl bananas \
-feedforward gbdt gcn bonas_gcn xgb \
+feedforward gbdt gcn bonas xgb \
 ngb rf jacov dngo bohamiann \
-bayes_lin_reg ff_keras lcsvr) # lcnet
+bayes_lin_reg lcsvr gp sparse_gp \
+var_sparse_gp seminas) # lcnet
 
 experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_train_size \
 vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size single vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_fidelity) # vary_train_size
+vary_train_size vary_train_size vary_fidelity vary_train_size \
+vary_train_size vary_train_size) # vary_train_size
 
 # for testing:
 #experiment_types=(single single single single single single single single single \
@@ -17,13 +19,17 @@ out_dir=run
 base_file=naslib
 
 # search space / data:
-search_space=darts
+search_space=nasbench201
 dataset=cifar10
 
 # trials / seeds:
 trials=1
 start_seed=$1
 end_seed=$(($start_seed + $trials - 1))
+if [ -z "$start_seed" ]
+then
+    start_seed=0
+fi
 
 # dataset sizes:
 test_size=100
