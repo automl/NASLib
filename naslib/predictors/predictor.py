@@ -14,7 +14,7 @@ class Predictor:
         """
         pass
     
-    def fit(self, xtrain, ytrain):
+    def fit(self, xtrain, ytrain, info=None):
         """
         This can be called any number of times during the NAS algorithm.
         input: list of architectures, list of architecture accuracies
@@ -31,9 +31,14 @@ class Predictor:
         """
         pass
     
-    def requires_partial_training(self, xtest, fidelity):
+    def get_data_reqs(self):
         """
-        Does the predictor require training the architecture partially?
-        E.g., learning curve extrapolators.
+        Returns a dictionary with info about whether the predictor needs
+        extra info to train/query, such as a partial learning curve,
+        or hyperparameters of the architecture
         """
-        pass
+        reqs = {'requires_partial_lc':False, 
+                'metric':None, 
+                'requires_hyperparameters':False, 
+                'hyperparams':{}}
+        return reqs

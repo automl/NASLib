@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import numpy as np
+import copy
 import torch
 from scipy import stats
 
@@ -27,10 +28,8 @@ class PredictorEvaluator(object):
         self.experiment_type = config.experiment_type
 
         self.test_size = config.test_size
-
         self.train_size_single = config.train_size_single
-        self.train_size_list = config.train_size_list
-        
+        self.train_size_list = config.train_size_list        
         self.fidelity_single = config.fidelity_single
         self.fidelity_list = config.fidelity_list
 
@@ -39,48 +38,98 @@ class PredictorEvaluator(object):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results = []
 
-    def adapt_search_space(self, search_space, load_labeled, scope=None):
+    def adapt_search_space(self, search_space, load_labeled, scope=None, dataset_api=None):
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.predictor.set_ss_type(self.search_space.get_type())
         self.load_labeled = load_labeled
+        self.dataset_api = dataset_api
+        
+        # todo: see if we can query 'flops', 'latency', 'params' in darts
+        if self.search_space.get_type() == 'nasbench101':
+            self.full_lc = False
+            self.hyperparameters = False
+        elif self.search_space.get_type() == 'nasbench201':
+            self.full_lc = True
+            self.hyperparameters = True
+        elif self.search_space.get_type() == 'darts':
+            self.full_lc = True
+            self.hyperparameters = False
+        else:
+            raise NotImplementedError('This search space is not yet implemented in PredictorEvaluator.')
 
     def load_dataset(self, load_labeled=False, data_size=10):
         """
-        There are two ways to load a dataset.
-        load_labeled=False: sample random architectures and then query the architectures.
-        This works on NAS benchmarks where we can query any architecture.
-        load_labeled=True: load a dataset of architectures where we have the training info
-        (for example, load the set of 5k DARTS architectures which have the full training info)
+        There are two ways to load an architecture.
+        load_labeled=False: sample a random architecture from the search space.
+        This works on NAS benchmarks where we can query any architecture (nasbench101/201/301)
+        load_labeled=True: sample a random architecture from a set of evaluated architectures.
+        When we only have data on a subset of the search space (e.g., the set of 5k DARTS
+        architectures that have the full training info).
+        
+        After we load an architecture, query the final val accuracy.
+        If the predictor requires extra info such as partial learning curve info, query that too.
         """
-        # Note: currently ydata consists of the val_accs at the final training epoch
         xdata = []
         ydata = []
+        info = []
         for _ in range(data_size):
             if not load_labeled:
                 arch = self.search_space.clone()
                 arch.sample_random_architecture()
             else:
                 arch = self.search_space.clone()
-                arch.load_labeled_architecture()
-                
-            accuracy = arch.query(metric=self.metric, dataset=self.dataset)
+                arch.load_labeled_architecture(dataset_api=self.dataset_api)
+            
+            accuracy = arch.query(metric=self.metric, 
+                                  dataset=self.dataset, 
+                                  dataset_api=self.dataset_api)
+
+            data_reqs = self.predictor.get_data_reqs()
+            if data_reqs['requires_partial_lc']:
+                # add partial learning curve if applicable
+                assert self.full_lc, 'This predictor requires learning curve info'
+                lc = arch.query(metric=data_reqs['metric'],
+                                full_lc=True,
+                                dataset=self.dataset, 
+                                dataset_api=self.dataset_api)
+                info_dict = {'lc':lc}
+                if data_reqs['requires_hyperparameters']:
+                    assert self.hyperparameters, 'This predictor requires querying arch hyperparams'                
+                    for hp in data_reqs['hyperparams']:
+                        info_dict[hp] = arch.query(Metric.HP, dataset=self.dataset, dataset_api=self.dataset_api)[hp]
+                info.append(info_dict)
             xdata.append(arch)
             ydata.append(accuracy)
-        return xdata, ydata
+        return xdata, ydata, info
 
-    def single_evaluate(self, xtrain, ytrain, xtest, ytest, fidelity):
-        info = self.predictor.requires_partial_training(xtest, fidelity)
+    def single_evaluate(self, train_data, test_data, fidelity):
+        xtrain, ytrain, train_info = train_data
+        xtest, ytest, test_info = test_data
         train_size = len(xtrain)
-
+        
+        data_reqs = self.predictor.get_data_reqs()
+    
         logger.info("Fit the predictor")
-        self.predictor.fit(xtrain, ytrain)
+        if data_reqs['requires_partial_lc']:
+            """
+            todo: distinguish between predictors that need LC info
+            at training time vs test time
+            """
+            train_info = copy.deepcopy(train_info)
+            test_info = copy.deepcopy(test_info)
+            for info_dict in train_info:
+                info_dict['lc'] = info_dict['lc'][:fidelity]
+            for info_dict in test_info:
+                info_dict['lc'] = info_dict['lc'][:fidelity]
+            self.predictor.fit(xtrain, ytrain, train_info)
+            test_pred = self.predictor.query(xtest, test_info)
 
-        # query each architecture in the test set
-        test_pred = self.predictor.query(xtest, info)
-        test_pred = np.squeeze(test_pred)
+        else:
+            self.predictor.fit(xtrain, ytrain)
+            test_pred = self.predictor.query(xtest)
 
-        # this if statement is because of ensembles. TODO: think of a better solution
+        #If the predictor is an ensemble, take the mean
         if len(test_pred.shape) > 1:
             test_pred = np.mean(test_pred, axis=0)
 
@@ -89,6 +138,7 @@ class PredictorEvaluator(object):
         test_error, correlation, rank_correlation = metrics
         logger.info("train_size: {}, fidelity: {}, test error: {}, correlation: {}, rank correlation {}"
                     .format(train_size, fidelity, test_error, correlation, rank_correlation))
+        
         self.results.append({'train_size': train_size,
                              'fidelity': fidelity,
                              'test_error': test_error,
@@ -99,49 +149,48 @@ class PredictorEvaluator(object):
         self.predictor.pre_process()
 
         logger.info("Load the test set")
-        xtest, ytest = self.load_dataset(load_labeled=self.load_labeled, data_size=self.test_size)
+        test_data = self.load_dataset(load_labeled=self.load_labeled, data_size=self.test_size)
 
         if self.experiment_type == 'single':
             train_size = self.train_size_single
             fidelity = self.fidelity_single
             logger.info("Load the training set")
-            xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
-                                               data_size=train_size)
-            self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
+            train_data = self.load_dataset(load_labeled=self.load_labeled,
+                                           data_size=train_size)
+            self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_train_size':
             logger.info("Load the training set")
-            xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled,
-                                                         data_size=self.train_size_list[-1])
+            full_train_data = self.load_dataset(load_labeled=self.load_labeled,
+                                                data_size=self.train_size_list[-1])
             fidelity = self.fidelity_single
 
             for train_size in self.train_size_list:
-                xtrain, ytrain = xtrain_full[:train_size], ytrain_full[:train_size]
-                self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
+                train_data = [data[:train_size] for data in full_train_data]
+                self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_fidelity':
             train_size = self.train_size_single
             logger.info("Load the training set")
-            xtrain, ytrain = self.load_dataset(load_labeled=self.load_labeled,
-                                               data_size=self.train_size_single)
+            train_data = self.load_dataset(load_labeled=self.load_labeled,
+                                           data_size=self.train_size_single)
 
             for fidelity in self.fidelity_list:
-                self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)
+                self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_both':
             logger.info("Load the training set")
-            xtrain_full, ytrain_full = self.load_dataset(load_labeled=self.load_labeled,
-                                                         data_size=self.train_size_list[-1])
+            full_train_data = self.load_dataset(load_labeled=self.load_labeled,
+                                                data_size=self.train_size_list[-1])
 
             for train_size in self.train_size_list:
-                xtrain, ytrain = xtrain_full[:train_size], ytrain_full[:train_size]
+                train_data = [data[:train_size] for data in full_train_data]
 
                 for fidelity in self.fidelity_list:
-                    self.single_evaluate(xtrain, ytrain, xtest, ytest, fidelity=fidelity)                
+                    self.single_evaluate(train_data, test_data, fidelity=fidelity)                
 
         else:
             raise NotImplementedError()
-
 
         """
         TODO: also return timing information

@@ -157,7 +157,8 @@ class Trainer(object):
             retrain=True, 
             search_model="", 
             resume_from="",
-            best_arch=None,
+            best_arch=None, 
+            dataset_api=None
         ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -186,7 +187,7 @@ class Trainer(object):
         if best_arch.QUERYABLE:
             metric = Metric.TEST_ACCURACY
             result = best_arch.query(
-                metric=metric, dataset=self.config.dataset
+                metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
             logger.info("Queried results ({}): {}".format(metric, result))
         else:

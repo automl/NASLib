@@ -12,29 +12,30 @@ from naslib.predictors.predictor import Predictor
 from scipy import stats
 import numpy as np
 
+from naslib.search_spaces.core.query_metrics import Metric
+
 def loguniform(low=0, high=1, size=None):
     return np.exp(np.random.uniform(np.log(low), np.log(high), size))
 
 
 class SVR_Estimator(Predictor):
 
-    def __init__(self, dataset, metric='eval_acc1es', all_curve=False, model_name='svr',best_hyper=None, n_hypers=1000):
+    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=False, model_name='svr',best_hyper=None, n_hypers=1000):
 
         self.n_hypers = n_hypers
         self.all_curve = all_curve
         self.model_name = model_name
         self.best_hyper = best_hyper
-        self.metric = metric
         self.name = 'LcSVR'
-        self.dataset = dataset
+        self.metric=metric
 
 
-    def fit(self, xtrain, ytrain, learn_hyper=True):
+    def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
         # prepare training data
-        xtrain_data = self.requires_partial_training(xtrain, self.fidelity)
+        xtrain_data = self.prepare_data(info)
         y_train = np.array(ytrain)
-
+        
         # learn hyperparameters of the extrapolator by cross validation
         if self.best_hyper is None or learn_hyper:
             # specify model hyper-parameters
@@ -127,27 +128,29 @@ class SVR_Estimator(Predictor):
 
 
     def query(self, xtest, info):
-        # xtest is a list of search space in naslib format
-        # maybe don't need to use info but just
-        # do we need info if we already have xtest
-        pred_on_test_set = self.best_model.predict(info)
-
+        data = self.prepare_data(info)
+        pred_on_test_set = self.best_model.predict(data)        
         return pred_on_test_set
-
-    def requires_partial_training(self, xtest, fidelity):
-        from naslib.search_spaces.core.query_metrics import Metric
-
-        self.fidelity = fidelity
+    
+    def get_data_reqs(self):
+        """
+        Returns a dictionary with info about whether the predictor needs
+        extra info to train/query.
+        """
+        reqs = {'requires_partial_lc':True, 
+                'metric':self.metric, 
+                'requires_hyperparameters':True, 
+                'hyperparams':['flops', 'latency', 'params']
+               }
+        return reqs
+        
+    def prepare_data(self, info):
+        # todo: this can be added at the top of collate_inputs
         val_acc_curve = []
         arch_params = []
-        for arch in xtest:
-            acc_metric = arch.query(self.metric, self.dataset, epoch=fidelity, full_lc=True)
-            arch_hp = [arch.query(Metric.HP, self.dataset)[metric_hp]
-                       for metric_hp in ['flops', 'latency', 'params']]
+        for i in range(len(info)):
+            acc_metric = info[i]['lc']
+            arch_hp = [info[i][hp] for hp in ['flops', 'latency', 'params']]
             val_acc_curve.append(acc_metric)
             arch_params.append(arch_hp)
-        # info = {'val_acc': val_acc_curve, 'arch_param': arch_params}
-
-        xtest_info = self.collate_inputs(val_acc_curve, arch_params)
-
-        return xtest_info
+        return self.collate_inputs(val_acc_curve, arch_params)

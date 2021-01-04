@@ -45,11 +45,12 @@ class BasePredictor(MetaOptimizer):
         self.history = torch.nn.ModuleList()
 
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert search_space.QUERYABLE, "Regularized evolution is currently only implemented for benchmarks."
         
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
+        self.dataset_api = dataset_api
     
     def new_epoch(self, epoch):
 
@@ -58,7 +59,9 @@ class BasePredictor(MetaOptimizer):
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture()        
-            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+            model.accuracy = model.arch.query(self.performance_metric, 
+                                              self.dataset, 
+                                              dataset_api=self.dataset_api)
             
             self.train_data.append(model)
             self._update_history(model)
@@ -98,7 +101,9 @@ class BasePredictor(MetaOptimizer):
             # train the next chosen architecture
             choice = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             choice.arch = self.choices[epoch - self.num_init]
-            choice.accuracy = choice.arch.query(self.performance_metric, self.dataset)
+            choice.accuracy = choice.arch.query(self.performance_metric, 
+                                                self.dataset, 
+                                                dataset_api=self.dataset_api)
             self._update_history(choice)
         
     def evaluate_predictor(self, xtrain, 
@@ -113,7 +118,9 @@ class BasePredictor(MetaOptimizer):
         """
         ytest = []
         for arch in xtest:
-            ytest.append(arch.query(self.performance_metric, self.dataset))
+            ytest.append(arch.query(self.performance_metric, 
+                                    self.dataset, 
+                                    dataset_api=self.dataset_api))
 
         print('ytrain shape', np.array(ytrain).shape)
         print('ytest shape', np.array(ytest).shape)
@@ -142,17 +149,17 @@ class BasePredictor(MetaOptimizer):
     def train_statistics(self):
         best_arch = self.get_final_architecture()
         return (
-            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset), 
-            best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
-            best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
-            best_arch.query(Metric.VAL_LOSS, self.dataset), 
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset), 
-            best_arch.query(Metric.TEST_LOSS, self.dataset), 
+            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TRAIN_LOSS, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.VAL_LOSS, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TEST_LOSS, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.RAW, self.dataset)
+        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
 
     def get_final_architecture(self):
