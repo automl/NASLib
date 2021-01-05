@@ -47,7 +47,7 @@ class RegularizedEvolution(MetaOptimizer):
             
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture()        
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
             model.accuracy = model.arch.query(self.performance_metric, 
                                               self.dataset, 
                                               dataset_api=self.dataset_api)
@@ -65,7 +65,7 @@ class RegularizedEvolution(MetaOptimizer):
 
             child = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             child.arch = self.search_space.clone()
-            child.arch.mutate(parent.arch)
+            child.arch.mutate(parent.arch, dataset_api=self.dataset_api)
             child.accuracy = child.arch.query(self.performance_metric, 
                                               self.dataset, 
                                               dataset_api=self.dataset_api)
@@ -86,11 +86,8 @@ class RegularizedEvolution(MetaOptimizer):
         best_arch = self.get_final_architecture()
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TRAIN_LOSS, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.VAL_LOSS, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TEST_LOSS, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):

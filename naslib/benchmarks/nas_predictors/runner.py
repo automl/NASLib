@@ -5,7 +5,7 @@ import naslib as nl
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import Bananas
 
-from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
+from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.utils.utils import get_project_root
 
@@ -23,6 +23,7 @@ supported_optimizers = {
 }
 
 supported_search_spaces = {
+    'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace()
 }

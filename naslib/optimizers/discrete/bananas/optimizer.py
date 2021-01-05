@@ -59,7 +59,7 @@ class Bananas(MetaOptimizer):
             # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture()        
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
             
             self.train_data.append(model)
@@ -86,7 +86,7 @@ class Bananas(MetaOptimizer):
                     
                     for _ in range(self.num_candidates):
                         arch = self.search_space.clone()
-                        arch.sample_random_architecture()        
+                        arch.sample_random_architecture(dataset_api=self.dataset_api)        
                         candidates.append(arch)
                     
                 elif self.acq_fn_optimization == 'mutation':
@@ -99,7 +99,7 @@ class Bananas(MetaOptimizer):
                             candidate = arch.clone()
                             for edit in range(int(self.max_mutations)):
                                 arch = self.search_space.clone()
-                                arch.mutate(candidate)
+                                arch.mutate(candidate, dataset_api=self.dataset_api)
                                 candidate = arch
                             candidates.append(candidate)
 
@@ -132,11 +132,8 @@ class Bananas(MetaOptimizer):
         best_arch = self.get_final_architecture()
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TRAIN_LOSS, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.VAL_LOSS, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TEST_LOSS, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):

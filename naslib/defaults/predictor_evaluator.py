@@ -76,7 +76,7 @@ class PredictorEvaluator(object):
         for _ in range(data_size):
             if not load_labeled:
                 arch = self.search_space.clone()
-                arch.sample_random_architecture()
+                arch.sample_random_architecture(dataset_api=self.dataset_api)
             else:
                 arch = self.search_space.clone()
                 arch.load_labeled_architecture(dataset_api=self.dataset_api)

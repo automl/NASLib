@@ -9,6 +9,12 @@ They must be loaded outside of the search space object, because search spaces ar
 throughout the discrete NAS algos, which would lead to memory errors.
 """
 
+def get_nasbench101_api(dataset=None):
+    # load nasbench101
+    from nasbench import api
+    nb101_data = api.NASBench(os.path.join(get_project_root(), 'data', 'nasbench_only108.tfrecord'))
+    return {'api': api, 'nb101_data':nb101_data}
+
 def get_nasbench201_api(dataset=None):
     """
     Load the original nasbench201 dataset (which does not include full LC info)
@@ -48,23 +54,19 @@ def get_darts_api(dataset=None):
     performance_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/xgb_v1.0'))
     runtime_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/lgb_runtime_v1.0'))
     nb301_model = [performance_model, runtime_model] 
-    return {'nb301_data': nb301_data, 'nb301_arches':nb301_arches, 'nb301_model':nb301_model}    
-
-
-def get_nasbench101_api(dataset=None):
-    pass
+    return {'nb301_data': nb301_data, 'nb301_arches':nb301_arches, 'nb301_model':nb301_model}
 
 
 def get_dataset_api(search_space=None, dataset=None):
+
+    if search_space == 'nasbench101':
+        return get_nasbench101_api(dataset=dataset)
     
-    if search_space == 'nasbench201':
+    elif search_space == 'nasbench201':
         return get_nasbench201_api(dataset=dataset)
     
     elif search_space == 'darts':
         return get_darts_api(dataset=dataset)
-    
-    elif search_space == 'nasbench101':
-        return get_nasbench101_api(dataset=dataset)
-    
+
     else:
-        return None
+        raise NotImplementedError()

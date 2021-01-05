@@ -2,6 +2,7 @@ import numpy as np
 import logging
 
 from naslib.predictors.utils.encodings_darts import encode_darts
+from naslib.predictors.utils.encodings_nb101 import encode_101
 
 """
 Currently we need search space specific methods.
@@ -189,13 +190,14 @@ def encode_201(arch, encoding_type='adjacency_one_hot'):
         raise NotImplementedError()
 
         
-def encode(arch, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
+def encode(arch, encoding_type='adjacency_one_hot', ss_type=None):
     # this method calls either encode_201 or encode_darts based on the search space
 
-    if ss_type == 'nasbench201':
+    if ss_type == 'nasbench101':
+        return encode_101(arch, encoding_type=encoding_type)
+    elif ss_type == 'nasbench201':
         return encode_201(arch, encoding_type=encoding_type)
     elif ss_type == 'darts':
         return encode_darts(arch, encoding_type=encoding_type)
     else:
-        logger.info('{} is not yet supported for encodings'.format(ss_type))
-        raise NotImplementedError()
+        raise NotImplementedError('{} is not yet supported for encodings'.format(ss_type))

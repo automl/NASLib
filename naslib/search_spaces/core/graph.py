@@ -758,7 +758,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
         pass
 
     
-    def sample_random_architecture(self):
+    def sample_random_architecture(self, dataset_api):
         raise NotImplementedError()
 
 
