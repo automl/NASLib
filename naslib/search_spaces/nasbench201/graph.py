@@ -183,7 +183,7 @@ class NasBench201SearchSpace(Graph):
         self.op_indices = op_indices
         convert_op_indices_to_naslib(op_indices, self)
 
-    def sample_random_architecture(self):
+    def sample_random_architecture(self, dataset_api=None):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
@@ -191,7 +191,7 @@ class NasBench201SearchSpace(Graph):
         op_indices = np.random.randint(5, size=(6))
         self.set_op_indices(op_indices)
 
-    def mutate(self, parent):
+    def mutate(self, parent, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -205,7 +205,7 @@ class NasBench201SearchSpace(Graph):
         op_indices[edge] = op_index
         self.set_op_indices(op_indices)
 
-    def get_nbhd(self):
+    def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
         self.get_op_indices()
         nbrs = []

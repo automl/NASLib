@@ -125,7 +125,11 @@ class Trainer(object):
                 self.errors_dict.runtime.append(end_time - start_time)
             else:
                 end_time = time.time()
-                train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
+                # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
+                #train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
+                train_acc, valid_acc, test_acc = self.optimizer.train_statistics()
+                train_loss, valid_loss, test_loss = -1, -1, -1
+                
                 self.errors_dict.train_acc.append(train_acc)
                 self.errors_dict.train_loss.append(train_loss)
                 self.errors_dict.valid_acc.append(valid_acc)

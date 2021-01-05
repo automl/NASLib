@@ -58,7 +58,7 @@ class BasePredictor(MetaOptimizer):
             # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture()        
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
             model.accuracy = model.arch.query(self.performance_metric, 
                                               self.dataset, 
                                               dataset_api=self.dataset_api)
@@ -82,7 +82,7 @@ class BasePredictor(MetaOptimizer):
                 xtest = []
                 for i in range(self.test_size):
                     arch = self.search_space.clone()
-                    arch.sample_random_architecture()                    
+                    arch.sample_random_architecture(dataset_api=self.dataset_api)                    
                     xtest.append(arch)
 
                 test_pred = np.squeeze(ensemble.query(xtest))  
@@ -150,11 +150,8 @@ class BasePredictor(MetaOptimizer):
         best_arch = self.get_final_architecture()
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TRAIN_LOSS, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.VAL_LOSS, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TEST_LOSS, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):

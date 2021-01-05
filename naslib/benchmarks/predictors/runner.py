@@ -62,7 +62,7 @@ supported_search_spaces = {
     'darts': DartsSearchSpace()
 }
 
-load_labeled = (False if config.search_space == 'nasbench201' else True)
+load_labeled = (True if config.search_space == 'darts' else False)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 # set up the search space and predictor

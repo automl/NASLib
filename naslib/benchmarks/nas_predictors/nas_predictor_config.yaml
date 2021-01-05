@@ -8,7 +8,7 @@ search:
   seed: 0
   checkpoint_freq: 1000
   epochs: 150
-  fidelity: 200
+  fidelity: -1
 
   # GDAS
   tau_max: 10

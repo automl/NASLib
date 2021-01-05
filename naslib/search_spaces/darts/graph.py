@@ -350,7 +350,7 @@ class DartsSearchSpace(Graph):
         self.compact = compact
         convert_compact_to_naslib(compact, self)
 
-    def sample_random_architecture(self):
+    def sample_random_architecture(self, dataset_api=None):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
@@ -367,7 +367,7 @@ class DartsSearchSpace(Graph):
 
         self.set_compact(compact)
 
-    def mutate(self, parent, mutation_rate=1):
+    def mutate(self, parent, mutation_rate=1, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -392,7 +392,7 @@ class DartsSearchSpace(Graph):
 
         self.set_compact(compact)
 
-    def get_nbhd(self):
+    def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
         self.get_compact()
         nbrs = []

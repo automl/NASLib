@@ -1,4 +1,4 @@
-
+import numpy as np
 """
 'naslib': the NASBench101SearchSpace object
 'spec': adjacency matrix + op list
@@ -23,6 +23,9 @@ def convert_naslib_to_spec(naslib_object):
     ops = ['input'] * num_vertices
     ops[-1] = 'output'
 
+    cell = naslib_object.edges[2, 3].op
+    print('cell', cell)
+    
     for i in range(1, 6):
         ops[i] = ops_to_nb101[cell.nodes[i+1]['subgraph'].edges[1, 2]['op'].get_op_name]
     
@@ -30,3 +33,8 @@ def convert_naslib_to_spec(naslib_object):
         matrix[i-1][j-1] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name]
         
     return [matrix, ops]
+
+
+def convert_spec_to_naslib(spec, naslib_object):
+    # TODO: write this method similar to how it was written for nasbench201 and darts
+    raise NotImplementedError('Cannot yet convert a spec to naslib object')
