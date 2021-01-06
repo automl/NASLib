@@ -1,6 +1,6 @@
 # Author: Robin Ru @ University of Oxford
 # This is an implementation of learning curve extrapolation method based on:
-# .
+# B. Baker et al. 2017, “Accelerating neural architecture search using performance prediction,” arXiv preprint arXiv:1705.10823.
 
 from sklearn.svm import NuSVR
 from sklearn.linear_model import BayesianRidge

@@ -1,4 +1,7 @@
-import random
+# Author: Robin Ru @ University of Oxford
+# This is an implementation of zero-cost estimators based on:
+# https://github.com/BayesWatch/nas-without-training (Jacov)
+# and https://github.com/gahaalt/SNIP-pruning (SNIP)
 
 import numpy as np
 import torch
