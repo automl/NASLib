@@ -1,4 +1,7 @@
-import random
+# Author: Robin Ru @ University of Oxford
+# This is an implementation of zero-cost estimators based on:
+# https://github.com/BayesWatch/nas-without-training (Jacov)
+# and https://github.com/gahaalt/SNIP-pruning (SNIP)
 
 import numpy as np
 import torch
@@ -29,16 +32,21 @@ def eval_score(jacob, labels=None):
     k = 1e-5
     return -np.sum(np.log(v + k) + 1. / (v + k))
 
-class jacobian_cov(Predictor):
+class ZeroCostEstimators(Predictor):
 
-    def __init__(self, config, dataset='cifar10', batch_size = 256):
+    def __init__(self, config, batch_size = 64, method_type='jacov'):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         self.batch_size = batch_size
-        self.dataset = dataset
+        self.method_type = method_type
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         config.data = "{}/data".format(get_project_root())
         self.config = config
+        if method_type == 'jacov':
+            self.num_classes = 1
+        else:
+            num_classes_dic = {'cifar10': 10, 'cifar100': 100, 'ImageNet16-120': 120}
+            self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
 
@@ -56,13 +64,15 @@ class jacobian_cov(Predictor):
                 edge_op_dict = {(i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges}
                 op_edge_list = ['{}~{}'.format(edge_op_dict[(i, j)], i - 1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])]
                 arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
-                arch_config = {'name': 'infer.tiny', 'C': 16, 'N':5, 'arch_str': arch_str, 'num_classes': 1}
+                arch_config = {'name': 'infer.tiny', 'C': 16, 'N':5, 'arch_str': arch_str,
+                               'num_classes': self.num_classes}
 
                 network = get_cell_based_tiny_net(arch_config)  # create the network from configuration
 
             elif 'darts' in self.config.search_space:
                 test_genotype = convert_compact_to_genotype(test_arch.compact)
-                arch_config = {'name': 'darts', 'C': 32, 'layers': 8, 'genotype': test_genotype, 'num_classes': 1, 'auxiliary': False}
+                arch_config = {'name': 'darts', 'C': 32, 'layers': 8, 'genotype': test_genotype,
+                               'num_classes': self.num_classes, 'auxiliary': False}
                 network = NetworkCIFAR(arch_config)
 
             data_iterator = iter(self.train_loader)
@@ -71,15 +81,30 @@ class jacobian_cov(Predictor):
 
             network = network.to(self.device)
 
-            jacobs, labels = get_batch_jacobian(network, x, target)
-            print('done get jacobs')
-            jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
+            if self.method_type == 'jacov':
+                jacobs, labels = get_batch_jacobian(network, x, target)
+                print('done get jacobs')
+                jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
 
-            try:
-                score = eval_score(jacobs, labels)
-                print('done computing scores  ')
-            except Exception as e:
-                print(e)
-                score = -10e8
+                try:
+                    score = eval_score(jacobs, labels)
+                    print('done computing scores  ')
+                except Exception as e:
+                    print(e)
+                    score = -10e8
+
+            elif self.method_type == 'snip':
+                criterion = torch.nn.CrossEntropyLoss()
+                network.zero_grad()
+                _, y = network(x)
+                loss = criterion(y, target)
+                loss.backward()
+                grads = [p.grad.detach().clone().abs() for p in network.parameters() if p.grad is not None]
+
+                with torch.no_grad():
+                    saliences = [(grad * weight).view(-1).abs() for weight, grad in zip(network.parameters(), grads)]
+                    score = torch.sum(torch.cat(saliences)).cpu().numpy()
+
             test_set_scores.append(score)
+
         return np.array(test_set_scores)

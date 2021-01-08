@@ -1,3 +1,7 @@
+# Author: Robin Ru @ University of Oxford
+# This is an implementation of SoTL method based on:
+# Ru, B. et al., 2020. "Revisiting the Train Loss: an Efficient Performance Estimator for Neural Architecture Search". arXiv preprint arXiv:2006.04492.
+
 from naslib.predictors.predictor import Predictor
 import numpy as np
 
