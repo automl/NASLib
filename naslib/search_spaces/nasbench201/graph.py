@@ -165,9 +165,12 @@ class NasBench201SearchSpace(Graph):
         if metric == Metric.HP:
             # return hyperparameter info
             return query_results[dataset]['cost_info']
-        
-        if full_lc:
-            # return the full learning curve up to specified epoch
+        elif metric == Metric.TRAIN_TIME:
+            return query_results[dataset]['cost_info']['train_time']
+
+        if full_lc and epoch == -1:
+            return query_results[dataset][metric_to_nb201[metric]]
+        elif full_lc and epoch != -1:
             return query_results[dataset][metric_to_nb201[metric]][:epoch]
         else:
             # return the value of the metric only at the specified epoch

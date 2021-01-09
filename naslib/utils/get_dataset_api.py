@@ -53,7 +53,7 @@ def get_darts_api(dataset=None):
 
     performance_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/xgb_v1.0'))
     runtime_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/lgb_runtime_v1.0'))
-    nb301_model = [performance_model, runtime_model] 
+    nb301_model = [performance_model, runtime_model]
     return {'nb301_data': nb301_data, 'nb301_arches':nb301_arches, 'nb301_model':nb301_model}
 
 

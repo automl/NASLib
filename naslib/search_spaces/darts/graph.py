@@ -309,7 +309,8 @@ class DartsSearchSpace(Graph):
         """
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: 'train_losses',
-            Metric.VAL_ACCURACY: 'val_accuracies'
+            Metric.VAL_ACCURACY: 'val_accuracies',
+            Metric.TRAIN_TIME: 'runtime'
         }
         
         if self.load_labeled:
@@ -319,10 +320,14 @@ class DartsSearchSpace(Graph):
             and we can query the train loss or val accuracy at a specific epoch
             (also, querying will give 'real' answers, since these arches were actually trained)
             """
-            assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS]
+            assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.TRAIN_TIME]
             query_results = dataset_api['nb301_data'][self.compact]
-            if full_lc:
-                # return the full learning curve up to specified epoch
+
+            if metric == Metric.TRAIN_TIME:
+                return query_results[metric_to_nb301[metric]]
+            elif full_lc and epoch == -1:
+                return query_results[metric_to_nb301[metric]]
+            elif full_lc and epoch != -1:
                 return query_results[metric_to_nb301[metric]][:epoch]
             else:
                 # return the value of the metric only at the specified epoch

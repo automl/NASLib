@@ -127,8 +127,10 @@ class NasBench101SearchSpace(Graph):
 
         if metric == Metric.RAW:
             return query_results
-            
-        return query_results[metric_to_nb101[metric]]
+        elif metric == Metric.TRAIN_TIME:
+            return query_results[metric_to_nb101[metric]]
+        else:
+            return query_results[metric_to_nb101[metric]] * 100
     
     def get_spec(self):
         if self.spec is None:

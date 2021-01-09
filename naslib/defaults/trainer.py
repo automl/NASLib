@@ -444,8 +444,9 @@ class Trainer(object):
         else:
             with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
                 lightweight_dict = copy.deepcopy(self.errors_dict)
-                lightweight_dict.pop('arch_eval')
-                json.dump(lightweight_dict, file, separators=(',', ':'))
+                for key in ['arch_eval', 'train_loss', 'valid_loss', 'test_loss']:
+                    lightweight_dict.pop(key)
+                json.dump([self.config, lightweight_dict], file, separators=(',', ':'))
 
 
 

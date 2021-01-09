@@ -7,6 +7,7 @@ import numpy as np
 import copy
 import torch
 from scipy import stats
+from sklearn import metrics
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils import utils
@@ -36,7 +37,7 @@ class PredictorEvaluator(object):
         self.dataset = config.dataset
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.results = []
+        self.results = [config]
 
     def adapt_search_space(self, search_space, load_labeled, scope=None, dataset_api=None):
         self.search_space = search_space.clone()
@@ -73,6 +74,7 @@ class PredictorEvaluator(object):
         xdata = []
         ydata = []
         info = []
+        train_times = []
         for _ in range(data_size):
             if not load_labeled:
                 arch = self.search_space.clone()
@@ -84,7 +86,9 @@ class PredictorEvaluator(object):
             accuracy = arch.query(metric=self.metric, 
                                   dataset=self.dataset, 
                                   dataset_api=self.dataset_api)
-
+            train_time = arch.query(metric=Metric.TRAIN_TIME, 
+                                    dataset=self.dataset, 
+                                    dataset_api=self.dataset_api)
             data_reqs = self.predictor.get_data_reqs()
             if data_reqs['requires_partial_lc']:
                 # add partial learning curve if applicable
@@ -101,11 +105,12 @@ class PredictorEvaluator(object):
                 info.append(info_dict)
             xdata.append(arch)
             ydata.append(accuracy)
-        return xdata, ydata, info
+            train_times.append(train_time)
+        return xdata, ydata, info, train_times
 
     def single_evaluate(self, train_data, test_data, fidelity):
-        xtrain, ytrain, train_info = train_data
-        xtest, ytest, test_info = test_data
+        xtrain, ytrain, train_info, train_times = train_data
+        xtest, ytest, test_info, _ = test_data
         train_size = len(xtrain)
         
         data_reqs = self.predictor.get_data_reqs()
@@ -122,11 +127,15 @@ class PredictorEvaluator(object):
                 info_dict['lc'] = info_dict['lc'][:fidelity]
             for info_dict in test_info:
                 info_dict['lc'] = info_dict['lc'][:fidelity]
+            fit_time_start = time.time()
             self.predictor.fit(xtrain, ytrain, train_info)
+            fit_time_end = time.time()
             test_pred = self.predictor.query(xtest, test_info)
 
         else:
+            fit_time_start = time.time()
             self.predictor.fit(xtrain, ytrain)
+            fit_time_end = time.time()
             test_pred = self.predictor.query(xtest)
 
         #If the predictor is an ensemble, take the mean
@@ -134,16 +143,25 @@ class PredictorEvaluator(object):
             test_pred = np.mean(test_pred, axis=0)
 
         logger.info("Compute evaluation metrics")
-        metrics = self.compare(ytest, test_pred)
-        test_error, correlation, rank_correlation = metrics
-        logger.info("train_size: {}, fidelity: {}, test error: {}, correlation: {}, rank correlation {}"
-                    .format(train_size, fidelity, test_error, correlation, rank_correlation))
-        
-        self.results.append({'train_size': train_size,
-                             'fidelity': fidelity,
-                             'test_error': test_error,
-                             'correlation': correlation,
-                             'rank_correlation': rank_correlation})        
+        results_dict = self.compare(ytest, test_pred)
+        results_dict['train_size'] = train_size
+        results_dict['fidelity'] = fidelity
+        results_dict['train_time'] = np.sum(train_times)
+        results_dict['fit_time'] = fit_time_end - fit_time_start
+        logger.info("train_size: {}, fidelity: {}, train_time {}, fit_time {}"
+                    .format(train_size, fidelity, np.round(results_dict['train_time'], 4), 
+                            np.round(results_dict['fit_time'], 4)))
+        logger.info("mae: {}, rmse: {}, pearson: {}, spearman {}, KT: {}, sKT {}"
+                    .format(np.round(results_dict['mae'], 4), 
+                            np.round(results_dict['rmse'], 4), np.round(results_dict['pearson'], 4), 
+                            np.round(results_dict['spearman'], 4), np.round(results_dict['kendalltau'], 4), 
+                            np.round(results_dict['kt_1dec'], 4)))
+
+        self.results.append(results_dict)
+        """
+        Todo: calculate average query time by getting average training time in xtest up to 
+        'fidelity' + time to execute predictor.query(xtest)
+        """
 
     def evaluate(self):
         self.predictor.pre_process()
@@ -192,18 +210,21 @@ class PredictorEvaluator(object):
         else:
             raise NotImplementedError()
 
-        """
-        TODO: also return timing information
-        (for preprocessing, training train set, and querying test set).
-        start_time = time.time()
-        """
         self._log_to_json()
 
     def compare(self, ytest, test_pred):
-        test_error = np.mean(abs(test_pred-ytest))
-        correlation = np.abs(np.corrcoef(np.array(ytest), np.array(test_pred))[1,0])
-        rank_correlation, _ = stats.spearmanr(ytest, test_pred)
-        return test_error, correlation, rank_correlation
+        ytest = np.array(ytest)
+        test_pred = np.array(test_pred)
+        metrics_dict = {}
+        metrics_dict['mae'] = np.mean(abs(test_pred - ytest))
+        metrics_dict['rmse'] = metrics.mean_squared_error(ytest, test_pred, squared=False)
+        metrics_dict['pearson'] = np.abs(np.corrcoef(ytest, test_pred)[1,0])
+        metrics_dict['spearman'] = stats.spearmanr(ytest, test_pred)[0]
+        metrics_dict['kendalltau'] = stats.kendalltau(ytest, test_pred)[0]
+        metrics_dict['kt_2dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=2))[0]
+        metrics_dict['kt_1dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=1))[0]
+
+        return metrics_dict
 
     def _log_to_json(self):
         """log statistics to json file"""
