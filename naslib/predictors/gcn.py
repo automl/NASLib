@@ -107,7 +107,7 @@ class GCNPredictor(Predictor):
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(arch, encoding_type=self.encoding_type)
+            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
             encoded['val_acc'] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
@@ -140,7 +140,7 @@ class GCNPredictor(Predictor):
         return train_error
 
     def query(self, xtest, info=None, eval_batch_size=1000):
-        test_data = np.array([encode(arch,encoding_type=self.encoding_type)
+        test_data = np.array([encode(arch,encoding_type=self.encoding_type, ss_type=self.ss_type)
                             for arch in xtest])
         test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
 

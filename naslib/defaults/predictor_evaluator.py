@@ -101,7 +101,8 @@ class PredictorEvaluator(object):
                 if data_reqs['requires_hyperparameters']:
                     assert self.hyperparameters, 'This predictor requires querying arch hyperparams'                
                     for hp in data_reqs['hyperparams']:
-                        info_dict[hp] = arch.query(Metric.HP, dataset=self.dataset, dataset_api=self.dataset_api)[hp]
+                        info_dict[hp] = arch.query(Metric.HP, dataset=self.dataset, 
+                                                   dataset_api=self.dataset_api)[hp]
                 info.append(info_dict)
             xdata.append(arch)
             ydata.append(accuracy)
@@ -127,16 +128,12 @@ class PredictorEvaluator(object):
                 info_dict['lc'] = info_dict['lc'][:fidelity]
             for info_dict in test_info:
                 info_dict['lc'] = info_dict['lc'][:fidelity]
-            fit_time_start = time.time()
-            self.predictor.fit(xtrain, ytrain, train_info)
-            fit_time_end = time.time()
-            test_pred = self.predictor.query(xtest, test_info)
-
-        else:
-            fit_time_start = time.time()
-            self.predictor.fit(xtrain, ytrain)
-            fit_time_end = time.time()
-            test_pred = self.predictor.query(xtest)
+                
+        fit_time_start = time.time()
+        self.predictor.fit(xtrain, ytrain, train_info)
+        fit_time_end = time.time()
+        test_pred = self.predictor.query(xtest, test_info)
+        query_time_end = time.time()
 
         #If the predictor is an ensemble, take the mean
         if len(test_pred.shape) > 1:
@@ -148,9 +145,10 @@ class PredictorEvaluator(object):
         results_dict['fidelity'] = fidelity
         results_dict['train_time'] = np.sum(train_times)
         results_dict['fit_time'] = fit_time_end - fit_time_start
-        logger.info("train_size: {}, fidelity: {}, train_time {}, fit_time {}"
+        results_dict['query_time'] = (query_time_end - fit_time_end) / len(xtest)
+        logger.info("train_size: {}, fidelity: {}, train_time {}, fit_time {}, query_time {}"
                     .format(train_size, fidelity, np.round(results_dict['train_time'], 4), 
-                            np.round(results_dict['fit_time'], 4)))
+                            np.round(results_dict['fit_time'], 4), np.round(results_dict['query_time'], 4)))
         logger.info("mae: {}, rmse: {}, pearson: {}, spearman {}, KT: {}, sKT {}"
                     .format(np.round(results_dict['mae'], 4), 
                             np.round(results_dict['rmse'], 4), np.round(results_dict['pearson'], 4), 
@@ -159,8 +157,7 @@ class PredictorEvaluator(object):
 
         self.results.append(results_dict)
         """
-        Todo: calculate average query time by getting average training time in xtest up to 
-        'fidelity' + time to execute predictor.query(xtest)
+        Todo: query_time currently does not include the time taken to train a partial learning curve
         """
 
     def evaluate(self):

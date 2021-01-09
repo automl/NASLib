@@ -518,7 +518,7 @@ class SemiNASPredictor(Predictor):
         train_seq_pool = []
         train_target_pool = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(arch, encoding_type=self.encoding_type)
+            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
             seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'])
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
@@ -570,7 +570,7 @@ class SemiNASPredictor(Predictor):
 
         test_seq_pool = []
         for i, arch in enumerate(xtest):
-            encoded = encode(arch, encoding_type=self.encoding_type)
+            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
             seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'])
             test_seq_pool.append(seq)
 
@@ -588,4 +588,4 @@ class SemiNASPredictor(Predictor):
                 pred.append(prediction.cpu().numpy())
 
         pred = np.concatenate(pred)
-        return pred * self.std + self.mean
+        return np.squeeze(pred * self.std + self.mean)

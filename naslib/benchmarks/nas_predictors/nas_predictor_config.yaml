@@ -7,7 +7,7 @@ out_dir: run
 search:
   seed: 0
   checkpoint_freq: 1000
-  epochs: 150
+  epochs: 50
   fidelity: -1
 
   # GDAS
@@ -32,7 +32,7 @@ search:
   num_candidates: 100
   
   # BP
-  predictor_type: bananas
+  predictor_type: feedforward
   debug_predictor: False
 
 
