@@ -5,7 +5,6 @@ import logging
 import numpy as np
 import networkx as nx
 import pickle
-import nasbench301
 
 from collections import namedtuple
 from torch import nn
@@ -21,24 +20,6 @@ from naslib.search_spaces.core.query_metrics import Metric
 from .primitives import FactorizedReduce
 
 logger = logging.getLogger(__name__)
-Genotype = namedtuple('Genotype', 'normal normal_concat reduce reduce_concat')
-
-"""
-Note: we load the nb301 full training data and the nb301 models here, instead of inside the class,
-because this class is copied many times throughout the discrete NAS algos and leads to memory errors.
-TODO: ideally Trainer and PredictorEvaluator should load these data files and pass them to the 
-SearchSpace objects
-"""
-
-data_folder = os.path.join(get_project_root(), 'data/')
-with open(os.path.join(data_folder, 'nb301_full_training.pickle'), 'rb') as f:
-    nb301_data = pickle.load(f)
-    nb301_arches = list(nb301_data.keys())
-
-performance_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/xgb_v1.0'))
-runtime_model = nasbench301.load_ensemble(os.path.join(data_folder + 'nb301_models/lgb_runtime_v1.0'))
-nb301_model = [performance_model, runtime_model] 
-print('loaded nb301 models')
 
 NUM_VERTICES = 4
 NUM_OPS = 7
@@ -71,7 +52,7 @@ class DartsSearchSpace(Graph):
     ]
 
     QUERYABLE = True
-    
+
     def __init__(self):
         """
         Initialize a new instance of the DARTS search space.
@@ -86,7 +67,9 @@ class DartsSearchSpace(Graph):
         self.compact = None
         self.load_labeled = None
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
-        
+        self.max_epoch = 97
+        self.space_name = 'darts'
+
         """
         Build the search space with the parameters specified in __init__.
         """
@@ -124,12 +107,12 @@ class DartsSearchSpace(Graph):
         # Reduction cell has the same topology
         reduction_cell = deepcopy(normal_cell)
         reduction_cell.name = "reduction_cell"
-        
+
         # set the cell name for all edges. This is necessary to convert a genotype to a naslib object
         for _, _, edge_data in normal_cell.edges.data():
             if not edge_data.is_final():
                 edge_data.set("cell_name", "normal_cell")
-            
+
         for _, _, edge_data in reduction_cell.edges.data():
             if not edge_data.is_final():
                 edge_data.set("cell_name", "reduction_cell")
@@ -307,26 +290,27 @@ class DartsSearchSpace(Graph):
     def auxilary_logits(self):
         return self.graph['out_from_23']
 
-    def load_labeled_architecture(self):
+    def load_labeled_architecture(self, dataset_api=None):
         """
         This is meant to be called by a new DartsSearchSpace() object
         (one that has not already been discretized).
         It samples a random architecture from the nasbench301 training data,
         and updates the graph object to match the architecture.
         """
-        index = np.random.choice(len(nb301_arches))
-        compact = nb301_arches[index]
+        index = np.random.choice(len(dataset_api['nb301_arches']))
+        compact = dataset_api['nb301_arches'][index]
         self.load_labeled = True
         self.set_compact(compact)
     
-    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
+    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
         Query results from nasbench 301. Currently we only provide the 
         genotype query as list but we will integrate nb301 in the future.
         """
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: 'train_losses',
-            Metric.VAL_ACCURACY: 'val_accuracies'
+            Metric.VAL_ACCURACY: 'val_accuracies',
+            Metric.TRAIN_TIME: 'runtime'
         }
         
         if self.load_labeled:
@@ -336,13 +320,17 @@ class DartsSearchSpace(Graph):
             and we can query the train loss or val accuracy at a specific epoch
             (also, querying will give 'real' answers, since these arches were actually trained)
             """
-            assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS]
-            query_results = nb301_data[self.compact]
-            if full_lc:
-                # return the full learning curve up to specified epoch
+            assert metric in [Metric.VAL_ACCURACY, Metric.TRAIN_LOSS, Metric.TRAIN_TIME]
+            query_results = dataset_api['nb301_data'][self.compact]
+
+            if metric == Metric.TRAIN_TIME:
+                return query_results[metric_to_nb301[metric]]
+            elif full_lc and epoch == -1:
+                return query_results[metric_to_nb301[metric]]
+            elif full_lc and epoch != -1:
                 return query_results[metric_to_nb301[metric]][:epoch]
             else:
-                # return the value of the metric only at the specified epoch 
+                # return the value of the metric only at the specified epoch
                 return query_results[metric_to_nb301[metric]][epoch]
 
         else:
@@ -351,24 +339,24 @@ class DartsSearchSpace(Graph):
             only query the validation accuracy at epoch 100 by using nasbench301.
             """
             assert (not epoch or epoch in [-1, 100])
-            # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]   
+            # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]
             genotype = convert_naslib_to_genotype(self)
-            val_acc = nb301_model[0].predict(config=genotype, representation="genotype")
+            val_acc = dataset_api['nb301_model'][0].predict(config=genotype, representation="genotype")
             return val_acc
 
     def get_compact(self):
         if self.compact is None:
             self.compact = convert_naslib_to_compact(self)
         return self.compact
-        
+
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact
         self.compact = compact
         convert_compact_to_naslib(compact, self)
 
-    def sample_random_architecture(self):
+    def sample_random_architecture(self, dataset_api=None):
         """
-        This will sample a random architecture and update the edges in the 
+        This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
         compact = [[], []]
@@ -382,8 +370,8 @@ class DartsSearchSpace(Graph):
             compact[1].extend([(nodes_in_reduce[0], ops[2]), (nodes_in_reduce[1], ops[3])])
 
         self.set_compact(compact)
-        
-    def mutate(self, parent, mutation_rate=1):
+
+    def mutate(self, parent, mutation_rate=1, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -408,14 +396,14 @@ class DartsSearchSpace(Graph):
 
         self.set_compact(compact)
 
-    def get_nbhd(self):
+    def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
         self.get_compact()
         nbrs = []
-        
+
         for i, cell in enumerate(self.compact):
             for j, pair in enumerate(cell):
-                
+
                 # mutate the op
                 available = [op for op in range(NUM_OPS) if op != pair[1]]
                 for op in available:
@@ -426,12 +414,12 @@ class DartsSearchSpace(Graph):
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr
                     nbrs.append(nbr_model)
-                    
+
                 # mutate the edge
                 other = j + 1 - 2 * (j % 2)
                 available = [edge for edge in range(j//2+2) \
                             if edge not in [cell[other][0], pair[0]]]
-                
+
                 for edge in available:
                     nbr_compact = make_compact_mutable(self.compact)
                     nbr_compact[i][j][0] = edge
@@ -440,7 +428,7 @@ class DartsSearchSpace(Graph):
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr
                     nbrs.append(nbr_model)
-        
+
         random.shuffle(nbrs)
         return nbrs
 

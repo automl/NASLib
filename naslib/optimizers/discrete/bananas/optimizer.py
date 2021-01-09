@@ -46,12 +46,12 @@ class Bananas(MetaOptimizer):
         self.next_batch = []
         self.history = torch.nn.ModuleList()
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert search_space.QUERYABLE, "Bananas is currently only implemented for benchmarks."
         
         self.search_space = search_space.clone()
-        self.scope = scope if scope else search_space.OPTIMIZER_SCOPE        
-    
+        self.scope = scope if scope else search_space.OPTIMIZER_SCOPE      
+        self.dataset_api = dataset_api
     
     def new_epoch(self, epoch):
 
@@ -59,8 +59,8 @@ class Bananas(MetaOptimizer):
             # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture()        
-            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
+            model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
             
             self.train_data.append(model)
             self._update_history(model)
@@ -86,7 +86,7 @@ class Bananas(MetaOptimizer):
                     
                     for _ in range(self.num_candidates):
                         arch = self.search_space.clone()
-                        arch.sample_random_architecture()        
+                        arch.sample_random_architecture(dataset_api=self.dataset_api)        
                         candidates.append(arch)
                     
                 elif self.acq_fn_optimization == 'mutation':
@@ -99,7 +99,7 @@ class Bananas(MetaOptimizer):
                             candidate = arch.clone()
                             for edit in range(int(self.max_mutations)):
                                 arch = self.search_space.clone()
-                                arch.mutate(candidate)
+                                arch.mutate(candidate, dataset_api=self.dataset_api)
                                 candidate = arch
                             candidates.append(candidate)
 
@@ -115,7 +115,7 @@ class Bananas(MetaOptimizer):
             # train the next architecture chosen by the neural predictor
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable            
             model.arch = self.next_batch.pop()
-            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+            model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
             self._update_history(model)
             self.train_data.append(model)
         
@@ -131,17 +131,14 @@ class Bananas(MetaOptimizer):
     def train_statistics(self):
         best_arch = self.get_final_architecture()
         return (
-            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset), 
-            best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
-            best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
-            best_arch.query(Metric.VAL_LOSS, self.dataset), 
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset), 
-            best_arch.query(Metric.TEST_LOSS, self.dataset), 
+            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.RAW, self.dataset)
+        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
 
     def get_final_architecture(self):

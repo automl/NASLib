@@ -125,7 +125,11 @@ class Trainer(object):
                 self.errors_dict.runtime.append(end_time - start_time)
             else:
                 end_time = time.time()
-                train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
+                # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
+                #train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
+                train_acc, valid_acc, test_acc = self.optimizer.train_statistics()
+                train_loss, valid_loss, test_loss = -1, -1, -1
+                
                 self.errors_dict.train_acc.append(train_acc)
                 self.errors_dict.train_loss.append(train_loss)
                 self.errors_dict.valid_acc.append(valid_acc)
@@ -157,7 +161,8 @@ class Trainer(object):
             retrain=True, 
             search_model="", 
             resume_from="",
-            best_arch=None,
+            best_arch=None, 
+            dataset_api=None
         ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -186,7 +191,7 @@ class Trainer(object):
         if best_arch.QUERYABLE:
             metric = Metric.TEST_ACCURACY
             result = best_arch.query(
-                metric=metric, dataset=self.config.dataset
+                metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
             logger.info("Queried results ({}): {}".format(metric, result))
         else:
@@ -439,8 +444,9 @@ class Trainer(object):
         else:
             with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
                 lightweight_dict = copy.deepcopy(self.errors_dict)
-                lightweight_dict.pop('arch_eval')
-                json.dump(lightweight_dict, file, separators=(',', ':'))
+                for key in ['arch_eval', 'train_loss', 'valid_loss', 'test_loss']:
+                    lightweight_dict.pop(key)
+                json.dump([self.config, lightweight_dict], file, separators=(',', ':'))
 
 
 

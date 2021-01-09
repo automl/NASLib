@@ -3,6 +3,8 @@ import os
 import random
 import yaml
 
+import numpy as np
+
 
 def main(args):
 
@@ -52,6 +54,25 @@ def main(args):
         os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
+        
+        if args.search_space == 'nasbench101':
+            total_epochs = 108 - 1
+            max_train_size = 1000
+        elif args.search_space == 'nasbench201':
+            total_epochs = 200 - 1
+            max_train_size = 1000
+        elif args.search_space == 'darts':
+            total_epochs = 96 - 1
+            max_train_size = 500
+
+        train_size_list = [int(j) for j in np.logspace(start=1, stop=np.log(max_train_size)/np.log(2), num=11, endpoint=True, base=2.0)]
+        fidelity_list = [int(j) for j in np.logspace(start=1, stop=np.log(total_epochs)/np.log(2), num=11, endpoint=True, base=2.0)]
+        
+        if 'experiment_type' == 'vary_both':
+            # vary_both is computationally expensive because it tries all combos of train_size and fidelity
+            train_size_list = [train_size_list[i] for i in (0, 1, 3, 5, 7, 9, 10)]
+            fidelity_list = [fidelity_list[i] for i in (0, 1, 2, 3, 5, 7, 9)]
+        
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
                 'seed': i,
@@ -60,10 +81,10 @@ def main(args):
                 'predictor': args.predictor,
                 'test_size': args.test_size,
                 'experiment_type': args.experiment_type,
-                'train_size_list': args.train_size_list,
+                'train_size_list': train_size_list,
                 'train_size_single': args.train_size_single,
                 'fidelity_single': args.fidelity_single,
-                'fidelity_list': args.fidelity_list,
+                'fidelity_list': fidelity_list,
             }
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
@@ -117,33 +138,14 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default='rs', help="which optimizer")
     parser.add_argument("--predictor", type=str, default='full', help="which predictor")
     parser.add_argument("--test_size", type=int, default=30, help="Test set size for predictor")
+    parser.add_argument("--train_size_single", type=int, default=100, help="Train size if exp type is single")
+    parser.add_argument("--fidelity_single", type=int, default=5, help="Fidelity if exp type is single")
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")
     parser.add_argument("--out_dir", type=str, default='run', help="Output directory")
     parser.add_argument("--checkpoint_freq", type=int, default=5000, help="How often to checkpoint")
     parser.add_argument("--epochs", type=int, default=150, help="How many search epochs")
     parser.add_argument("--config_type", type=str, default='nas', help="nas or predictor?")
     parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench201 or darts?")
-
-# nb201-reg
-#    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512, 1000], help="train size list")
-#    parser.add_argument("--train_size_single", type=int, default=100, help="Train size for single and vary_fidelity")
-#    parser.add_argument("--fidelity_single", type=int, default=100, help="Fidelity for single and vary_train_size")
-#    parser.add_argument("--fidelity_list", type=list, default=[5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, \
-#                                                               110, 120, 130, 140, 150, 160, 170, 180, 190], help="train size list")
-
-# nb201-lcsvr
-#    parser.add_argument("--train_size_list", type=list, default=[8, 20, 50, 128, 322, 1000], help="train size list")
-#    parser.add_argument("--train_size_single", type=int, default=100, help="Train size for single and vary_fidelity")
-#    parser.add_argument("--fidelity_single", type=int, default=100, help="Fidelity for single and vary_train_size")
-#    parser.add_argument("--fidelity_list", type=list, default=[5, 20, 40, 60, 80, 100, \
-#                                                               120, 140, 160, 180, 190], help="train size list")
-    
-# darts
-    parser.add_argument("--train_size_list", type=list, default=[8, 12, 20, 32, 50, 80, 128, 203, 322, 512], help="train size list")
-    parser.add_argument("--train_size_single", type=int, default=512, help="Train size for single and vary_fidelity")
-    parser.add_argument("--fidelity_single", type=int, default=50, help="Fidelity for single and vary_train_size")
-    parser.add_argument("--fidelity_list", type=list, default=[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, \
-                                                               60, 65, 70, 75, 80, 85, 90, 95], help="train size list")
     parser.add_argument("--experiment_type", type=str, default='single', help="type of experiment")
 
     args = parser.parse_args()

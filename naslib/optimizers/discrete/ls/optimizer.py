@@ -37,19 +37,22 @@ class LocalSearch(MetaOptimizer):
         self.history = torch.nn.ModuleList()
 
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert search_space.QUERYABLE, "Local search is currently only implemented for benchmarks."
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
-    
+        self.dataset_api = dataset_api
+        
     def new_epoch(self, epoch):
 
         if epoch < self.num_init:
             # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture()        
-            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
+            model.accuracy = model.arch.query(self.performance_metric, 
+                                              self.dataset, 
+                                              dataset_api=self.dataset_api)
 
             if not self.best_arch or model.accuracy > self.best_arch.accuracy:
                 self.best_arch = model
@@ -61,21 +64,25 @@ class LocalSearch(MetaOptimizer):
                 
                 model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
                 model.arch = self.search_space.clone()
-                model.arch.sample_random_architecture()        
-                model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+                model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
+                model.accuracy = model.arch.query(self.performance_metric, 
+                                                  self.dataset, 
+                                                  dataset_api=self.dataset_api)
                 
                 self.chosen = model
                 self.best_arch = model
-                self.nbhd = self.chosen.arch.get_nbhd()
+                self.nbhd = self.chosen.arch.get_nbhd(dataset_api=self.dataset_api)
 
             else:
                 if len(self.nbhd) == 0:
                     logger.info('Start a new iteration. Pick the best architecture and evaluate its neighbors.')
                     self.chosen = self.best_arch
-                    self.nbhd = self.chosen.arch.get_nbhd()
+                    self.nbhd = self.chosen.arch.get_nbhd(dataset_api=self.dataset_api)
                     
                 model = self.nbhd.pop()
-                model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+                model.accuracy = model.arch.query(self.performance_metric, 
+                                                  self.dataset, 
+                                                  dataset_api=self.dataset_api)
 
                 if model.accuracy > self.best_arch.accuracy:
                     self.best_arch = model
@@ -94,17 +101,14 @@ class LocalSearch(MetaOptimizer):
     def train_statistics(self):
         best_arch = self.get_final_architecture()
         return (
-            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset), 
-            best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
-            best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
-            best_arch.query(Metric.VAL_LOSS, self.dataset), 
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset), 
-            best_arch.query(Metric.TEST_LOSS, self.dataset), 
+            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.RAW, self.dataset)
+        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
 
     def get_final_architecture(self):

@@ -17,26 +17,6 @@ from naslib.utils.utils import get_project_root
 from .primitives import ResNetBasicblock
 
 
-"""
-Note: we load the nb201 full training data here, instead of inside the class, because 
-this class is copied many times throughout the discrete NAS algos and leads to memory errors.
-TODO: ideally Trainer and PredictorEvaluator should load these data files and pass them to
-the SearchSpace objects
-"""
-
-# load the nasbench201 data
-with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
-    nb201_data = pickle.load(f)
-
-# load nasbench201 full training data
-with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
-    cifar10_full_data = pickle.load(f)
-with open(os.path.join(get_project_root(), 'data', 'nb201_cifar100_full_training.pickle'), 'rb') as f:
-    cifar100_full_data = pickle.load(f)    
-with open(os.path.join(get_project_root(), 'data', 'nb201_ImageNet16_full_training.pickle'), 'rb') as f:
-    imagenet_full_data = pickle.load(f)
-
-
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1', 'AvgPool1x1']
 
 
@@ -60,6 +40,8 @@ class NasBench201SearchSpace(Graph):
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         self.op_indices = None
 
+        self.max_epoch = 199
+        self.space_name = 'nasbench201'
         #
         # Cell definition
         #
@@ -135,7 +117,7 @@ class NasBench201SearchSpace(Graph):
                 private_edge_data=True
             )
         
-    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False):
+    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
             Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
         """
@@ -144,6 +126,8 @@ class NasBench201SearchSpace(Graph):
             raise NotImplementedError()
         if metric != Metric.RAW and metric != Metric.ALL:
             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
+        if dataset_api is None:
+            raise NotImplementedError('Must pass in dataset_api to query nasbench201')
                 
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: 'train_acc1es',
@@ -160,54 +144,57 @@ class NasBench201SearchSpace(Graph):
             Metric.PARAMETERS: 'params',
             Metric.EPOCH: 'epochs'
         }
-        
+
         arch_str = convert_naslib_to_str(self)
         
         if metric == Metric.RAW:
             # return all data
-            return nb201_data[arch_str]
-        
+            return dataset_api['raw_data'][arch_str]
+
         if dataset in ['cifar10', 'cifar10-valid']:
-            query_results = cifar10_full_data[arch_str]
+            query_results = dataset_api['full_lc_data'][arch_str]
             # set correct cifar10 dataset
             dataset = 'cifar10-valid'
         elif dataset == 'cifar100':
-            query_results = cifar100_full_data[arch_str]
+            query_results = dataset_api['full_lc_data'][arch_str]
         elif dataset == 'ImageNet16-120':
-            query_results = imagenet_full_data[arch_str]
+            query_results = dataset_api['full_lc_data'][arch_str]
         else:
             raise NotImplementedError('Invalid dataset')
 
         if metric == Metric.HP:
             # return hyperparameter info
             return query_results[dataset]['cost_info']
-        
-        if full_lc:
-            # return the full learning curve up to specified epoch
+        elif metric == Metric.TRAIN_TIME:
+            return query_results[dataset]['cost_info']['train_time']
+
+        if full_lc and epoch == -1:
+            return query_results[dataset][metric_to_nb201[metric]]
+        elif full_lc and epoch != -1:
             return query_results[dataset][metric_to_nb201[metric]][:epoch]
         else:
-            # return the value of the metric only at the specified epoch 
+            # return the value of the metric only at the specified epoch
             return query_results[dataset][metric_to_nb201[metric]][epoch]
 
     def get_op_indices(self):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
-    
+
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
         convert_op_indices_to_naslib(op_indices, self)
-                    
-    def sample_random_architecture(self):
+
+    def sample_random_architecture(self, dataset_api=None):
         """
-        This will sample a random architecture and update the edges in the 
+        This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
         op_indices = np.random.randint(5, size=(6))
         self.set_op_indices(op_indices)
-        
-    def mutate(self, parent):
+
+    def mutate(self, parent, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -221,7 +208,7 @@ class NasBench201SearchSpace(Graph):
         op_indices[edge] = op_index
         self.set_op_indices(op_indices)
 
-    def get_nbhd(self):
+    def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
         self.get_op_indices()
         nbrs = []
