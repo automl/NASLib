@@ -20,6 +20,7 @@ def main(args):
                 'search_space': args.search_space,
                 'dataset': args.dataset,
                 'optimizer': args.optimizer,
+                'out_dir': args.out_dir,
                 'search': {'checkpoint_freq': args.checkpoint_freq,
                            'epochs': args.epochs,
                            'fidelity': 200,
@@ -72,16 +73,19 @@ def main(args):
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]
 
-        if 'experiment_type' == 'vary_both':
+        if args.experiment_type == 'vary_both':
             # vary_both is computationally expensive because it tries all combos of train_size and fidelity
-            train_size_list = [train_size_list[i] for i in (0, 1, 3, 5, 7, 9, 10)]
-            fidelity_list = [fidelity_list[i] for i in (0, 1, 3, 5, 7, 9, 11, 13)]
-        
+            # also lcsvr doesn't work with fidelity < 3 or train_size<=5 or 8
+
+            train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9, 10)]
+            fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
+
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
                 'seed': i,
                 'search_space': args.search_space,
                 'dataset': args.dataset,
+                'out_dir': args.out_dir,
                 'predictor': args.predictor,
                 'test_size': args.test_size,
                 'experiment_type': args.experiment_type,
@@ -93,7 +97,7 @@ def main(args):
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
                 yaml.dump(config, fh)
-                
+
     elif args.config_type == 'nas_predictor':
         folder = f'{args.out_dir}/{args.dataset}/configs/nas_predictors'
         os.makedirs(folder, exist_ok=True)
@@ -128,7 +132,7 @@ def main(args):
             path = folder + f'/config_{args.optimizer}_{args.predictor}_{i}.yaml'
             with open(path, 'w') as fh:
                 yaml.dump(config, fh)
-                
+
     else:
         print('invalid config type in create_configs.py')
 
@@ -155,4 +159,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(args)
-

@@ -12,25 +12,25 @@ vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size)
 
-# folders:
-out_dir=p201_c10_jan9
-base_file=NASLib/naslib
-save_to_s3=true
-
-# search space / data:
-search_space=nasbench201
-dataset=cifar10
-
-# trials / seeds:
-trials=100
 start_seed=$1
-end_seed=$(($start_seed + $trials - 1))
 if [ -z "$start_seed" ]
 then
     start_seed=0
 fi
 
-# dataset sizes:
+# folders:
+base_file=NASLib/naslib
+s3_folder=p201_c10_jan9
+out_dir=$s3_folder\_$start_seed
+
+# search space / data:
+search_space=nasbench201
+dataset=cifar10
+
+# other variables:
+trials=100
+end_seed=$(($start_seed + $trials - 1))
+save_to_s3=true
 test_size=200
 
 # create config files
@@ -57,6 +57,6 @@ do
         # zip and save to s3
         echo zipping and saving to s3
         zip -r $out_dir.zip $out_dir 
-        python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir
+        python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
     fi
 done
