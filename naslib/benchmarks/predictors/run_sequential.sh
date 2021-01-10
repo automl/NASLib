@@ -19,8 +19,9 @@ then
 fi
 
 # folders:
-out_dir=p201_c10_jan9_$start_seed
 base_file=NASLib/naslib
+s3_folder=p201_c10_jan9
+out_dir=$s3_folder\_$start_seed
 
 # search space / data:
 search_space=nasbench201
@@ -56,6 +57,6 @@ do
         # zip and save to s3
         echo zipping and saving to s3
         zip -r $out_dir.zip $out_dir 
-        python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir
+        python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
     fi
 done
