@@ -171,7 +171,7 @@ class BonasPredictor(Predictor):
         predictor = GCN()
         return predictor
 
-    def fit(self,xtrain,ytrain, 
+    def fit(self, xtrain, ytrain, train_info=None,
             gcn_hidden=64,seed=0,batch_size=128,
             epochs=100,lr=1e-3,wd=0):
 

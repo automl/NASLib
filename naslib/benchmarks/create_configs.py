@@ -65,13 +65,17 @@ def main(args):
             total_epochs = 96 - 1
             max_train_size = 500
 
-        train_size_list = [int(j) for j in np.logspace(start=1, stop=np.log(max_train_size)/np.log(2), num=11, endpoint=True, base=2.0)]
-        fidelity_list = [int(j) for j in np.logspace(start=1, stop=np.log(total_epochs)/np.log(2), num=11, endpoint=True, base=2.0)]
-        
+        train_size_list = [int(j) for j in np.logspace(start=np.log(5.1)/np.log(2), 
+                                                       stop=np.log(max_train_size)/np.log(2), 
+                                                       num=11, endpoint=True, base=2.0)]
+        fidelity_list = [int(j) for j in np.logspace(start=0.9, 
+                                                     stop=np.log(total_epochs)/np.log(2), 
+                                                     num=15, endpoint=True, base=2.0)]
+
         if 'experiment_type' == 'vary_both':
             # vary_both is computationally expensive because it tries all combos of train_size and fidelity
             train_size_list = [train_size_list[i] for i in (0, 1, 3, 5, 7, 9, 10)]
-            fidelity_list = [fidelity_list[i] for i in (0, 1, 2, 3, 5, 7, 9)]
+            fidelity_list = [fidelity_list[i] for i in (0, 1, 3, 5, 7, 9, 11, 13)]
         
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {

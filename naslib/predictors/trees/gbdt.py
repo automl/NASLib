@@ -128,6 +128,6 @@ class GBDTPredictor(BaseTree):
         return self.model.predict(data,
                                   num_iteration=self.model.best_iteration)
 
-    def fit(self, xtrain, ytrain, params=None, **kwargs):
+    def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
         return super(GBDTPredictor, self).fit(xtrain, ytrain, params, **kwargs)
 

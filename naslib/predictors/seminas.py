@@ -499,7 +499,7 @@ class SemiNASPredictor(Predictor):
         predictor = NAO()
         return predictor
 
-    def fit(self, xtrain, ytrain,
+    def fit(self, xtrain, ytrain, train_info=None,
             gcn_hidden=64, 
             batch_size=100, 
             lr=1e-3,

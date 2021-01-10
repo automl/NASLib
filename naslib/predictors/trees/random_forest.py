@@ -30,6 +30,6 @@ class RandomForestPredictor(BaseTree):
         model = RF(**self.parameters)
         return model.fit(X_train, y_train)
 
-    def fit(self, xtrain, ytrain, params=None, **kwargs):
+    def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
         return super(RandomForestPredictor, self).fit(xtrain, ytrain, params, **kwargs)
 

@@ -40,5 +40,5 @@ class XGBoost(BaseTree):
     def predict(self, data):
         return self.model.predict(self.get_dataset(data))
 
-    def fit(self, xtrain, ytrain, params=None, **kwargs):
+    def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
         return super(XGBoost, self).fit(xtrain, ytrain, params, **kwargs)
