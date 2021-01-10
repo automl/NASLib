@@ -96,7 +96,7 @@ class GCNPredictor(Predictor):
         predictor = NeuralPredictorModel()
         return predictor
 
-    def fit(self,xtrain,ytrain, 
+    def fit(self, xtrain, ytrain, train_info=None,
             gcn_hidden=144,seed=0,batch_size=7,
             epochs=300,lr=1e-4,wd=3e-4):
 

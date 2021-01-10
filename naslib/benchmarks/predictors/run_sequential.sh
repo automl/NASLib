@@ -13,7 +13,7 @@ vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size)
 
 # folders:
-out_dir=run
+out_dir=p201_c10_jan9
 base_file=NASLib/naslib
 save_to_s3=true
 

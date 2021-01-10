@@ -63,7 +63,7 @@ class FeedforwardPredictor(Predictor):
         predictor = FeedforwardNet(**kwargs)
         return predictor
 
-    def fit(self, xtrain, ytrain,
+    def fit(self, xtrain, ytrain, train_info=None,
             num_layers=20,
             layer_width=20,
             loss='mae',
