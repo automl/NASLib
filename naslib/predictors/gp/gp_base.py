@@ -45,7 +45,7 @@ class BaseGPModel(Predictor):
         losses = gp.util.train(gp_model, num_steps=self.num_steps)
         return losses
 
-    def fit(self, xtrain, ytrain, params=None, **kwargs):
+    def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
 
         # normalize accuracies
         self.mean = np.mean(ytrain)

@@ -64,7 +64,7 @@ class Ensemble(Predictor):
 
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]
 
-    def fit(self, xtrain, ytrain):
+    def fit(self, xtrain, ytrain, train_info=None):
         
         self.ensemble = self.get_ensemble()
         train_errors = []

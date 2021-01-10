@@ -25,7 +25,7 @@ class BaseTree(Predictor):
     def predict(self, data, **kwargs):
         return self.model.predict(data, **kwargs)
 
-    def fit(self, xtrain, ytrain, params=None, **kwargs):
+    def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
 
         # normalize accuracies
         self.mean = np.mean(ytrain)

@@ -171,7 +171,7 @@ class BonasPredictor(Predictor):
         predictor = GCN()
         return predictor
 
-    def fit(self,xtrain,ytrain, 
+    def fit(self, xtrain, ytrain, train_info=None,
             gcn_hidden=64,seed=0,batch_size=128,
             epochs=100,lr=1e-3,wd=0):
 
@@ -182,7 +182,7 @@ class BonasPredictor(Predictor):
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(arch, encoding_type=self.encoding_type)
+            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
             encoded['val_acc'] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
@@ -214,7 +214,7 @@ class BonasPredictor(Predictor):
         return train_error
 
     def query(self, xtest, info=None, eval_batch_size=100):
-        test_data = np.array([encode(arch,encoding_type=self.encoding_type)
+        test_data = np.array([encode(arch,encoding_type=self.encoding_type, ss_type=self.ss_type)
                             for arch in xtest])
         test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
 

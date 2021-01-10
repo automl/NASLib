@@ -58,7 +58,7 @@ class FeedforwardKerasPredictor(Predictor):
         dense_net = keras.models.Model(inputs=input_layer, outputs=output)
         return dense_net
     
-    def fit(self, xtrain, ytrain,
+    def fit(self, xtrain, ytrain, train_info=None,
             num_layers=20,
             layer_width=20,
             loss='mae',
