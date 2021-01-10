@@ -129,18 +129,25 @@ def encode_bonas(arch):
         mat,op = transform_matrix(cell)
         matrices.append(mat)
         ops.append(op)
+    matrices[0] = add_global_node(matrices[0],True)
+    matrices[1] = add_global_node(matrices[1],True)
+    
+    ops[0] = add_global_node(ops[0],False)
+    ops[1] = add_global_node(ops[1],False)
 
     mat_length = len(matrices[0][0])
     merged_length = len(matrices[0][0])*2
-    matrix_merged = np.zeros((merged_length,merged_length))
+    matrix_final = np.zeros((merged_length,merged_length))
 
     for col in range(mat_length):
         for row in range(col):
-            matrix_merged[row,col] = matrices[0][row,col]
-            matrix_merged[row+mat_length,col+mat_length] = matrices[1][row,col]
+            matrix_final[row,col] = matrices[0][row,col]
+            matrix_final[row+mat_length,col+mat_length] = matrices[1][row,col]
 
-    matrix_final = add_global_node(matrix_merged,True)
-    ops = np.concatenate((ops[0],ops[1]),axis=0)
+    ops_onehot = np.concatenate((ops[0],ops[1]),axis=0)
+
+    matrix_final = add_global_node(matrix_final,True)
+    ops_onehot = add_global_node(ops_onehot,False)
 
     # print('architectures:')
     # print(arch)
@@ -148,55 +155,8 @@ def encode_bonas(arch):
     # print('matrix merged: \n {}\n'.format(matrix_merged))
     # print('matrix added: \n {}\n'.format(matrix_final))
     # print('ops:{}'.format(ops))
-    ops_onehot = add_global_node(ops,False)
-    #     matrix = np.zeros((true_num_vertices, true_num_vertices))
-    #     op_list = []
-    #     for i, edge in enumerate(cell):
-    #         dest = i//2 + 2
-    #         matrix[edge[0]][dest] = 1
-    #         op_list.append(edge[1])
-    #     for i in range(2, 6):
-    #         matrix[i][-1] = 1
-    #     matrices.append(matrix)
-    #     ops.append(op_list)
-    # # Merging two adj matrices, big adj mat should have dim 12 x 12
-    # true_num_vertices_merged = NUM_VERTICES*4 + 6
-    # offset = true_num_vertices_merged//2
-    # print('architectures:')
-    # print(arch)
-    # print('matrix 1:\n {}\n matrix 2:\n {}\n'.format(matrices[0],matrices[1]))
-    # for cell in arch:
-    #     matrix_merged = np.zeros((true_num_vertices_merged, true_num_vertices_merged)) #np.eye(true_num_vertices)
-        
-    #     op_list = []
-    #     for col in range(0,true_num_vertices):
-    #         for row in range(0,col):
-    #             #print('row:{}, col:{}\n'.format(row,col))
-    #             matrix_merged[2*row,2*col]=matrices[0][row,col]
-    #             matrix_merged[2*row+1,2*col]=matrices[0][row,col]
-    #             matrix_merged[2*row+offset,col+offset]=matrices[1][row,col]
-    #             matrix_merged[2*row+offset+1,col+offset]=matrices[1][row,col]
+    # print('ops one hot:\n{}'.format(ops_onehot))
 
-    # print('matrix merged: \n {}\n'.format(matrix_merged))
-    # matrix_final = add_global_node(matrix_merged,True)
-    # #print('matrix added: \n {}\n'.format(matrix_final))
-    # print('ops:{}'.format(ops))
-    # # list of real ops (input , OPS list, concat, output)
-    # ops_onehot = np.zeros((true_num_vertices_merged+1,7+3))
-    # for i in range(len(ops[0])):
-    #     #offset 1, account for input op
-    #     idx1 = ops[0][i]+1
-    #     idx2 = ops[1][i]+1
-    #     ops_onehot[i+2,idx1] = 1.
-    #     ops_onehot[i+2+offset,idx2] = 1.
-
-    # ops_onehot[0:2,0] = 1.
-    # ops_onehot[offset-1,-2] = 1.
-    # ops_onehot[offset:offset+2,0] = 1.
-    # ops_onehot[true_num_vertices_merged-1,-2] = 1.
-    # ops_onehot[-1,-1] = 1.
-    #print('matrix 1:\n {}\n matrix 2:\n {}\n'.format(matrices[0],matrices[1]))
-    print('ops one hot:\n{}'.format(ops_onehot))
     matrix_final = np.array(matrix_final,dtype=np.float32)
     ops_onehot = np.array(ops_onehot,dtype=np.float32)
     dic = {

@@ -179,7 +179,6 @@ class BonasPredictor(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         ytrain_normed = (ytrain - self.mean)/self.std
-        print('accs:{}'.format(ytrain))
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
@@ -188,7 +187,6 @@ class BonasPredictor(Predictor):
             train_data.append(encoded)
         train_data = np.array(train_data)
         nfeat = len(train_data[0]['operations'][0])
-        print('number of features: {}'.format(nfeat))
         self.model = self.get_model(gcn_hidden=gcn_hidden,nfeat=nfeat)
         data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=False)
         self.model.to(device)
@@ -204,6 +202,7 @@ class BonasPredictor(Predictor):
             for _, batch in enumerate(data_loader):
                 feat, adjmat, target =  batch["operations"], batch["adjacency"], batch["val_acc"].float()
                 prediction = self.model(feat, adjmat)
+                # print('predictions:\n{}'.format(prediction))
                 loss = criterion(prediction, target)
                 loss.backward()
                 optimizer.step()
