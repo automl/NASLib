@@ -124,13 +124,16 @@ def encode_adj(arch):
 def encode_bonas(arch):
     matrices = []
     ops = []
-    # true_num_vertices = NUM_VERTICES + 3
+
     for cell in arch:
         mat,op = transform_matrix(cell)
         matrices.append(mat)
         ops.append(op)
+
     matrices[0] = add_global_node(matrices[0],True)
     matrices[1] = add_global_node(matrices[1],True)
+    matrices[0] = np.transpose(matrices[0])
+    matrices[1] = np.transpose(matrices[1])
     
     ops[0] = add_global_node(ops[0],False)
     ops[1] = add_global_node(ops[1],False)
