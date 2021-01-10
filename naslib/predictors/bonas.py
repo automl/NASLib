@@ -122,10 +122,10 @@ class GraphConvolution(nn.Module):
 
 # nfeat=7 for nasbench 201
 class GCN(nn.Module):
-    def __init__(self, nfeat=7, ifsigmoid=False, layer_size = 64):
+    def __init__(self, nfeat=7, ifsigmoid=False, gcn_hidden = 64):
         super(GCN, self).__init__()
         self.ifsigmoid = ifsigmoid
-        self.size = layer_size
+        self.size = gcn_hidden
         self.gc1 = GraphConvolution(nfeat, self.size)
         self.gc2 = GraphConvolution(self.size, self.size)
         self.gc3 = GraphConvolution(self.size, self.size)
@@ -168,7 +168,7 @@ class BonasPredictor(Predictor):
         self.encoding_type = encoding_type
 
     def get_model(self, **kwargs):
-        predictor = GCN()
+        predictor = GCN(**kwargs)
         return predictor
 
     def fit(self, xtrain, ytrain, train_info=None,
@@ -179,6 +179,7 @@ class BonasPredictor(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         ytrain_normed = (ytrain - self.mean)/self.std
+        print('accs:{}'.format(ytrain))
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
@@ -186,7 +187,8 @@ class BonasPredictor(Predictor):
             encoded['val_acc'] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
-        nfeat = 7
+        nfeat = len(train_data[0]['operations'][0])
+        print('number of features: {}'.format(nfeat))
         self.model = self.get_model(gcn_hidden=gcn_hidden,nfeat=nfeat)
         data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=False)
         self.model.to(device)
