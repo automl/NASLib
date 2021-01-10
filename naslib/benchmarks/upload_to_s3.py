@@ -9,10 +9,11 @@ def main(args):
     out_dir = args.out_dir
     zip_file = out_dir + '.zip'
     bucket = args.bucket
-    folder = args.folder
-    
+    folder = 'results_predictors/' + args.s3_folder + '/'
+
     s3_client = boto3.client('s3')
-    response = s3_client.upload_file(zip_file, bucket, folder + '/' + zip_file)
+    print('uploading', zip_file, 'to', bucket, folder+zip_file)
+    response = s3_client.upload_file(zip_file, bucket, folder + zip_file)
 
 
 if __name__ == "__main__":
@@ -21,7 +22,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--out_dir", type=str, default='run', help="Output directory")
     parser.add_argument("--bucket", type=str, default='realityengines.research', help="S3 Bucket")
-    parser.add_argument("--folder", type=str, default='predictors', help="S3 folder")
+    parser.add_argument("--s3_folder", type=str, default='pred', help="S3 folder")
 
     args = parser.parse_args()
 
