@@ -9,13 +9,17 @@ experiment_types=(single single vary_both \
 vary_fidelity vary_fidelity vary_fidelity vary_fidelity \
 vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_fidelity \
+vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size)
+
+# folders:
+out_dir=run
+base_file=NASLib/naslib
+save_to_s3=true
 
 # search space / data:
 search_space=nasbench201
 dataset=cifar10
-save_to_s3=true
 
 # trials / seeds:
 trials=100
