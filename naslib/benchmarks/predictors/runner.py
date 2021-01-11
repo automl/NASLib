@@ -30,8 +30,12 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    'bananas': Ensemble(predictor_type='bananas', num_ensemble=1),
+    'ngb_10': Ensemble(predictor_type='ngb', num_ensemble=10),
+    'bananas_1': Ensemble(predictor_type='bananas', num_ensemble=1),
+    'gcn_3': Ensemble(predictor_type='gcn', num_ensemble=3),
+    'gbdt_10': Ensemble(predictor_type='gbdt', num_ensemble=10),
     'bananas_single': FeedforwardPredictor(encoding_type='path'),
+    'bananas': Ensemble(predictor_type='bananas', num_ensemble=3),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot'),
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
