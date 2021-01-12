@@ -63,9 +63,8 @@ class DirectedGraphConvolution(nn.Module):
                + str(self.out_features) + ')'
 
 
-# if nasbench-101: initial_hidden=5. if nasbench-201: initial_hidden=7
 class NeuralPredictorModel(nn.Module):
-    def __init__(self, initial_hidden=7, gcn_hidden=144, gcn_layers=4, linear_hidden=128):
+    def __init__(self, initial_hidden=-1, gcn_hidden=144, gcn_layers=4, linear_hidden=128):
         super().__init__()
         self.gcn = [DirectedGraphConvolution(initial_hidden if i == 0 else gcn_hidden, gcn_hidden)
                     for i in range(gcn_layers)]
@@ -93,7 +92,11 @@ class GCNPredictor(Predictor):
         self.encoding_type = encoding_type
 
     def get_model(self, **kwargs):
-        predictor = NeuralPredictorModel()
+        if self.ss_type == 'nasbench101':
+            initial_hidden = 5
+        else:
+            initial_hidden = 7
+        predictor = NeuralPredictorModel(initial_hidden=initial_hidden)
         return predictor
 
     def fit(self, xtrain, ytrain, train_info=None,

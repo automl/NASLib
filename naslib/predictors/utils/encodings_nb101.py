@@ -87,6 +87,38 @@ def encode_adj(spec):
     return encoding
 
 
+def encode_gcn(spec):
+    '''
+    Input:
+    a list of categorical ops starting from 0
+    '''
+    matrix, ops = spec['matrix'], spec['ops']
+    op_map = [OUTPUT, INPUT, *OPS]
+    ops_onehot = np.array([[i == op_map.index(op) for i in range(len(op_map))] for op in ops], dtype=np.float32)
+
+    dic = {
+        'num_vertices': 7,
+        'adjacency': matrix,
+        'operations': ops_onehot,
+        'mask': np.array([i < 7 for i in range(7)], dtype=np.float32),
+        'val_acc': 0.0
+    }
+    return dic
+
+def encode_seminas(spec):
+    matrix, ops = spec['matrix'], spec['ops']
+    # offset ops list by one, add input and output to ops list
+    ops = [OPS_INCLUSIVE.index(op) for op in ops]
+    dic = {
+        'num_vertices': 7,
+        'adjacency': matrix,
+        'operations': ops,
+        'mask': np.array([i < 7 for i in range(7)], dtype=np.float32),
+        'val_acc': 0.0
+    }
+    return dic
+
+
 def encode_101(arch, encoding_type='path'):
     
     spec = arch.get_spec()
@@ -96,7 +128,13 @@ def encode_101(arch, encoding_type='path'):
     
     elif encoding_type == 'adjacency_one_hot':
         return encode_adj(spec=spec)
+
+    elif encoding_type == 'gcn':
+        return encode_gcn(spec=spec)
     
+    elif encoding_type == 'seminas':
+        return encode_seminas(spec=spec)
+
     else:
         print('{} is not yet implemented as an encoding type \
          for darts'.format(encoding_type))
