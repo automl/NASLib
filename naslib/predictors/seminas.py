@@ -75,10 +75,10 @@ def move_to_cuda(tensor):
         return tensor.cuda()
     return tensor
 
-def convert_arch_to_seq(matrix, ops):
+def convert_arch_to_seq(matrix, ops, max_n=8):
     seq = []
     n = len(matrix)
-    max_n = 8
+    max_n = max_n
     assert n == len(ops)
     for col in range(1, max_n):
         if col >= n:
@@ -457,8 +457,88 @@ def train_controller(model, train_input, train_target, epochs):
         if epoch % 10 == 0:
             print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
 
+# for nb 101
+INPUT = 'input'
+OUTPUT = 'output'
+CONV3X3 = 'conv3x3-bn-relu'
+CONV1X1 = 'conv1x1-bn-relu'
+MAXPOOL3X3 = 'maxpool3x3'
+OPS = [CONV3X3, CONV1X1, MAXPOOL3X3]
+
+NUM_VERTICES = 7
+OP_SPOTS = NUM_VERTICES - 2
+MAX_EDGES = 9
+
+def get_utilized(matrix):
+    # return the sets of utilized edges and nodes
+    # first, compute all paths
+    n = np.shape(matrix)[0]
+    sub_paths = []
+    for j in range(0, n):
+        sub_paths.append([[(0, j)]]) if matrix[0][j] else sub_paths.append([])
+    
+    # create paths sequentially
+    for i in range(1, n - 1):
+        for j in range(1, n):
+            if matrix[i][j]:
+                for sub_path in sub_paths[i]:
+                    sub_paths[j].append([*sub_path, (i, j)])
+    paths = sub_paths[-1]
+
+    utilized_edges = []
+    for path in paths:
+        for edge in path:
+            if edge not in utilized_edges:
+                utilized_edges.append(edge)
+
+    utilized_nodes = []
+    for i in range(NUM_VERTICES):
+        for edge in utilized_edges:
+            if i in edge and i not in utilized_nodes:
+                utilized_nodes.append(i)
+
+    return utilized_edges, utilized_nodes
+#for nb 101
+
+
+def num_edges_and_vertices(matrix):
+    # return the true number of edges and vertices
+    edges, nodes = get_utilized(matrix)
+    return len(edges), len(nodes) 
+
+def sample_random_architecture_nb101():
+        """
+        This will sample a random architecture and update the edges in the
+        naslib object accordingly.
+        From the NASBench repository:
+        one-hot adjacency matrix
+        draw [0,1] for each slot in the adjacency matrix
+        """
+        while True:
+            matrix = np.random.choice(
+                [0, 1], size=(NUM_VERTICES, NUM_VERTICES))
+            matrix = np.triu(matrix, 1)
+            ops = np.random.choice([2,3,4], size=NUM_VERTICES).tolist()
+            ops[0] = 0 #INPUT
+            ops[-1] = 1 #OUTPUT
+            num_edges, num_vertices = num_edges_and_vertices(matrix)
+            if num_edges > 1 and num_edges < 10:
+                break      
+        return {'matrix':matrix, 'ops':ops}
+
+
+def generate_arch(ss_type):
+    if ss_type == 'nasbench101':
+        spec = sample_random_architecture_nb101()
+        seq = convert_arch_to_seq(spec['matrix'],spec['ops'],max_n=7)
+    elif ss_type == 'nasbench201':
+        ops = [random.randint(1,5) for _ in range(6)]
+        ops = [0, *ops, 6]
+        seq = convert_arch_to_seq(nb201_adj_matrix, ops)
+    return seq
+
 # currently only works for nb201 
-def generate_synthetic_controller_data(model, base_arch=None, random_arch=0):
+def generate_synthetic_controller_data(model, base_arch=None, random_arch=0,ss_type=None):
     '''
     base_arch: a list of seq 
     '''
@@ -466,9 +546,7 @@ def generate_synthetic_controller_data(model, base_arch=None, random_arch=0):
     random_synthetic_target = []
     if random_arch > 0:
         while len(random_synthetic_input) < random_arch:
-            ops = [random.randint(1,5) for _ in range(6)]
-            ops = [0, *ops, 6]
-            seq = convert_arch_to_seq(nb201_adj_matrix, ops)
+            seq = generate_arch(ss_type=ss_type)
             if seq not in random_synthetic_input and seq not in base_arch:
                 random_synthetic_input.append(seq)
 
@@ -496,7 +574,10 @@ class SemiNASPredictor(Predictor):
         self.encoding_type = encoding_type
 
     def get_model(self, **kwargs):
-        predictor = NAO()
+        if self.ss_type == 'nasbench101':
+            predictor = NAO(encoder_length=27,decoder_length=27)
+        elif self.ss_type == 'nasbench201':
+            predictor = NAO(encoder_length=35,decoder_length=35)
         return predictor
 
     def fit(self, xtrain, ytrain, train_info=None,
@@ -510,6 +591,10 @@ class SemiNASPredictor(Predictor):
             synthetic_factor=1):
 
         up_sample_ratio = 10
+        if self.ss_type == 'nasbench101':
+            self.max_n = 7
+        elif self.ss_type == 'nasbench201':
+            self.max_n = 8    
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
@@ -519,7 +604,7 @@ class SemiNASPredictor(Predictor):
         train_target_pool = []
         for i, arch in enumerate(xtrain):
             encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-            seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'])
+            seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'],max_n=self.max_n)
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
 
@@ -549,7 +634,7 @@ class SemiNASPredictor(Predictor):
             # Generate synthetic data
             print('Generate synthetic data for EPD')
             m = synthetic_factor * len(xtrain)
-            synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m)
+            synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m,self.ss_type)
             if up_sample_ratio is None:
                 up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)
             else:
@@ -571,7 +656,7 @@ class SemiNASPredictor(Predictor):
         test_seq_pool = []
         for i, arch in enumerate(xtest):
             encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-            seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'])
+            seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'],max_n=self.max_n)
             test_seq_pool.append(seq)
 
         test_dataset = ControllerDataset(test_seq_pool, None, False)
