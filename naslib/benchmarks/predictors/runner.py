@@ -41,7 +41,6 @@ supported_predictors = {
     'jacov': ZeroCostEstimators(config, batch_size=64, method_type='jacov'),
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
-    'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),

@@ -26,7 +26,7 @@ class SoLosspredictor(Predictor):
             
             if self.sum_option == 'SoTLE' or self.sum_option == 'SoVLE':
                 score = past_loss[-1]
-            elif 'EMASo' in self.sum_option:
+            elif self.sum_option == 'SoTL':
                 EMA_SoTL = []
                 mu = 0.99
                 for se in range(np.array(info).shape[1]):
