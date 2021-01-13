@@ -1,25 +1,34 @@
 import os
 import pickle
-import torch.nn as nn
 import numpy as np
+import copy
+import random
+import torch
+import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import ReLUConvBN
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.nasbench101.conversions import convert_naslib_to_spec, convert_spec_to_naslib
 
 from naslib.utils.utils import get_project_root
 
+from .primitives import ReLUConvBN
 
-# load the nasbench101 data -- requires TF 1.x
-from nasbench import api
+INPUT = 'input'
+OUTPUT = 'output'
+CONV3X3 = 'conv3x3-bn-relu'
+CONV1X1 = 'conv1x1-bn-relu'
+MAXPOOL3X3 = 'maxpool3x3'
+OPS = [CONV3X3, CONV1X1, MAXPOOL3X3]
 
-nb101_datadir = os.path.join(get_project_root(), 'data', 'nasbench_only108.tfrecord')
-nasbench = api.NASBench(nb101_datadir)
+NUM_VERTICES = 7
+OP_SPOTS = NUM_VERTICES - 2
+MAX_EDGES = 9
 
-# data = nasbench.query(cell)
 
-class NasBench101SeachSpace(Graph):
+class NasBench101SearchSpace(Graph):
     """
     Contains the interface to the tabular benchmark of nasbench 101.
     """
@@ -88,14 +97,15 @@ class NasBench101SeachSpace(Graph):
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
         self.edges[2, 3].set('op', cell.copy().set_scope('cell'))
 
-    def query(self, metric=None, dataset='cifar10', path=None):
-        """
-            Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
-        """
+    def query(self, metric=None, dataset='cifar10', path=None, epoch=-1, full_lc=False, dataset_api=None):
+
         assert isinstance(metric, Metric)
         assert dataset in ['cifar10', None], "Unknown dataset: {}".format(dataset)
-    
-        cell = self.edges[2, 3].op
+        if metric in [Metric.ALL, Metric.HP]:
+            raise NotImplementedError()
+        if dataset_api is None:
+            raise NotImplementedError('Must pass in dataset_api to query nasbench101')
+        assert epoch in [-1, 108, None] and not full_lc, 'nasbench101 does not have full learning curve information'
     
         metric_to_nb101 = {
             Metric.TRAIN_ACCURACY: 'train_accuracy',
@@ -105,50 +115,129 @@ class NasBench101SeachSpace(Graph):
             Metric.PARAMETERS: 'trainable_parameters',
         }
 
-        # convert the naslib representation to nasbench101
-        nb101_spec = _convert_cell_to_nb101_spec(cell)        
+        if self.spec is None:
+            #matrix, ops = convert_naslib_to_spec(self)
+            raise NotImplementedError('Cannot yet query directly from the naslib object')
+        api_spec = dataset_api['api'].ModelSpec(**self.spec)
     
-        if not nasbench.is_valid(nb101_spec):
-            return -1 # or some negative reward or none
-
-        query_results = nasbench.query(nb101_spec)
+        if not dataset_api['nb101_data'].is_valid(api_spec):
+            return -1
         
+        query_results = dataset_api['nb101_data'].query(api_spec)
+
         if metric == Metric.RAW:
             return query_results
+        elif metric == Metric.TRAIN_TIME:
+            return query_results[metric_to_nb101[metric]]
+        else:
+            return query_results[metric_to_nb101[metric]] * 100
+    
+    def get_spec(self):
+        if self.spec is None:
+            self.spec = convert_naslib_to_spec(self)
+        return self.spec
+
+    def set_spec(self, spec):
+        # TODO: convert the naslib object to this spec
+        # convert_spec_to_naslib(spec, self)
+        self.spec = spec
+
+    def sample_random_architecture(self, dataset_api):
+        """
+        This will sample a random architecture and update the edges in the
+        naslib object accordingly.
+        From the NASBench repository:
+        one-hot adjacency matrix
+        draw [0,1] for each slot in the adjacency matrix
+        """
+        while True:
+            matrix = np.random.choice(
+                [0, 1], size=(NUM_VERTICES, NUM_VERTICES))
+            matrix = np.triu(matrix, 1)
+            ops = np.random.choice(OPS, size=NUM_VERTICES).tolist()
+            ops[0] = INPUT
+            ops[-1] = OUTPUT
+            spec = dataset_api['api'].ModelSpec(matrix=matrix, ops=ops)
+            if dataset_api['nb101_data'].is_valid(spec):
+                break
+                
+        self.set_spec({'matrix':matrix, 'ops':ops})
+
+    def mutate(self, parent, dataset_api, edits=1):
+        """
+        This will mutate the parent architecture spec.
+        Code inspird by https://github.com/google-research/nasbench
+        """
+        parent_spec = parent.get_spec()
+        spec = copy.deepcopy(parent_spec)
+        matrix, ops = spec['matrix'], spec['ops']
+        
+        for _ in range(edits):
+            while True:
+                if np.random.random() < 0.5:
+                    for src in range(0, NUM_VERTICES - 1):
+                        for dst in range(src+1, NUM_VERTICES):
+                            matrix[src][dst] = 1 - matrix[src][dst]
+                else:
+                    for ind in range(1, NUM_VERTICES - 1):
+                        available = [op for op in OPS if op != ops[ind]]
+                        ops[ind] = np.random.choice(available)
+
+                new_spec = dataset_api['api'].ModelSpec(matrix, ops)
+                if dataset_api['nb101_data'].is_valid(new_spec):
+                    break
+        
+        self.set_spec({'matrix':matrix, 'ops':ops})
+
+    def get_nbhd(self, dataset_api=None):
+        # return all neighbors of the architecture
+        spec = self.get_spec()
+        matrix, ops = spec['matrix'], spec['ops']
+        nbhd = []
+        
+        def add_to_nbhd(new_matrix, new_ops, nbhd):
+            new_spec = {'matrix':new_matrix, 'ops':new_ops}
+            model_spec = dataset_api['api'].ModelSpec(new_matrix, new_ops)
+            if dataset_api['nb101_data'].is_valid(model_spec):
+                nbr = NasBench101SearchSpace()
+                nbr.set_spec(new_spec)
+                nbr_model = torch.nn.Module()
+                nbr_model.arch = nbr
+                nbhd.append(nbr_model)
+            return nbhd
+        
+        # add op neighbors
+        for vertex in range(1, OP_SPOTS + 1):
+            if is_valid_vertex(matrix, vertex):
+                available = [op for op in OPS if op != ops[vertex]]
+                for op in available:
+                    new_matrix = copy.deepcopy(matrix)
+                    new_ops = copy.deepcopy(ops)
+                    new_ops[vertex] = op
+                    nbhd = add_to_nbhd(new_matrix, new_ops, nbhd)
+
+        # add edge neighbors
+        for src in range(0, NUM_VERTICES - 1):
+            for dst in range(src+1, NUM_VERTICES):
+                new_matrix = copy.deepcopy(matrix)
+                new_ops = copy.deepcopy(ops)
+                new_matrix[src][dst] = 1 - new_matrix[src][dst]
+                new_spec = {'matrix':new_matrix, 'ops':new_ops}
             
-        return query_results[metric_to_nb101[metric]]
+                if matrix[src][dst] and is_valid_edge(matrix, (src, dst)):
+                    nbhd = add_to_nbhd(new_matrix, new_ops, nbhd)
 
-def _convert_cell_to_nb101_spec(cell):
+                if not matrix[src][dst] and is_valid_edge(new_matrix, (src, dst)):
+                    nbhd = add_to_nbhd(new_matrix, new_ops, nbhd)
+
+        random.shuffle(nbhd)
+        return nbhd
+
+    def get_type(self):
+        return 'nasbench101'
     
-    matrix = np.triu(np.ones((7,7)), 1)
-
-    ops_to_nb101 = {
-            'MaxPool1x1': 'maxpool3x3',
-            'ReLUConvBN1x1': 'conv1x1-bn-relu',
-            'ReLUConvBN3x3': 'conv3x3-bn-relu',
-        }
-
-    ops_to_nb101_edges = {
-        'Identity': 1,
-        'Zero': 0,
-    }
-
-    num_vertices = 7
-    ops = ['input'] * num_vertices
-    ops[-1] = 'output'
-
-    for i in range(1, 6):
-        ops[i] = ops_to_nb101[cell.nodes[i+1]['subgraph'].edges[1, 2]['op'].get_op_name]
-    
-    for i, j in cell.edges:
-        matrix[i-1][j-1] = ops_to_nb101_edges[cell.edges[i, j]['op'].get_op_name]
-    
-    matrix = matrix.astype(int)
-    spec = api.ModelSpec(matrix=matrix, ops=ops)
-    return spec
-
-def _set_node_ops(edge, C):
-        edge.data.set('op', [
+def _set_node_ops(current_edge_data, C):
+    current_edge_data.set('op', [
         ReLUConvBN(C, C, kernel_size=1),
         # ops.Zero(stride=1),    #! recheck about the hardcoded second operation
         ReLUConvBN(C, C, kernel_size=3),
@@ -160,3 +249,47 @@ def _set_cell_ops(edge, C):
         ops.Identity(),
         ops.Zero(stride=1), 
     ])
+    
+
+def get_utilized(matrix):
+    # return the sets of utilized edges and nodes
+    # first, compute all paths
+    n = np.shape(matrix)[0]
+    sub_paths = []
+    for j in range(0, n):
+        sub_paths.append([[(0, j)]]) if matrix[0][j] else sub_paths.append([])
+    
+    # create paths sequentially
+    for i in range(1, n - 1):
+        for j in range(1, n):
+            if matrix[i][j]:
+                for sub_path in sub_paths[i]:
+                    sub_paths[j].append([*sub_path, (i, j)])
+    paths = sub_paths[-1]
+
+    utilized_edges = []
+    for path in paths:
+        for edge in path:
+            if edge not in utilized_edges:
+                utilized_edges.append(edge)
+
+    utilized_nodes = []
+    for i in range(NUM_VERTICES):
+        for edge in utilized_edges:
+            if i in edge and i not in utilized_nodes:
+                utilized_nodes.append(i)
+
+    return utilized_edges, utilized_nodes
+
+def num_edges_and_vertices(matrix):
+    # return the true number of edges and vertices
+    edges, nodes = self.get_utilized(matrix)
+    return len(edges), len(nodes)
+
+def is_valid_vertex(matrix, vertex):
+    edges, nodes = get_utilized(matrix)
+    return (vertex in nodes)
+
+def is_valid_edge(matrix, edge):
+    edges, nodes = get_utilized(matrix)
+    return (edge in edges)

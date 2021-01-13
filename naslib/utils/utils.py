@@ -4,8 +4,10 @@ import sys
 import logging
 import argparse
 import torchvision.datasets as dset
+from torch.utils.data import Dataset
 
 from copy import copy
+from collections import OrderedDict
 
 import random
 import os
@@ -18,6 +20,7 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 import yaml
+import tensorflow as tf
 
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
@@ -65,7 +68,19 @@ Run on single machine:
     )
     parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
+    parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
+    parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
+    parser.add_argument('--rank', default=0, type=int, help='node rank for distributed training')
+    parser.add_argument('--gpu', default=None, type=int, help='GPU id to use.')
+    parser.add_argument('--dist-url', default='tcp://127.0.0.1:8888',
+                        type=str, help='url used to set up distributed training')
+    parser.add_argument('--dist-backend', default='nccl', type=str, help='distributed backend')
+    parser.add_argument('--multiprocessing-distributed', action='store_true',
+                        help='Use multi-processing distributed training to launch '
+                             'N processes per node, which has N GPUs. This is the '
+                             'fastest way to use PyTorch for either single node or '
+                             'multi node data parallel training')
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -90,7 +105,7 @@ def pairwise(iterable):
     return zip(a, a)
 
 
-def get_config_from_args(args=None):
+def get_config_from_args(args=None, config_type='nas'):
     """
     Parses command line arguments and merges them with the defaults
     from the config file.
@@ -100,23 +115,71 @@ def get_config_from_args(args=None):
     Args:
         args: args from a different argument parser than the default one.
     """
-    # load the default base
-    with open(os.path.join(get_project_root(), 'defaults', 'darts_defaults.yaml')) as f:
-        config = CfgNode.load_cfg(f)
-    
+
+    if config_type == 'nas':
+        # load the default base
+        with open(os.path.join(get_project_root(), 'defaults', 'darts_defaults.yaml')) as f:
+            config = CfgNode.load_cfg(f)
+    elif config_type == 'predictor':
+        # load the default base
+        with open(os.path.join(get_project_root(), 'benchmarks/predictors', 'predictor_config.yaml')) as f:
+            config = CfgNode.load_cfg(f)
+    elif config_type == 'nas_predictor':
+        # load the default base
+        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+            config = CfgNode.load_cfg(f)
+
     if not args:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
-    
+
+    # load config file
+     #with open(args.config_file, 'r') as f:
+         #config = AttrDict(yaml.safe_load(f))
+     #for k, v in config.items():
+         #if isinstance(v, dict):
+             #config[k] = AttrDict(v)
+
+    # Override file args with ones from command line
+    for arg, value in pairwise(args.opts):
+        if '.' in arg:
+            arg1, arg2 = arg.split('.')
+            config[arg1][arg2] = type(config[arg1][arg2])(value)
+        else:
+            config[arg] = value
+
     config.eval_only = args.eval_only
     config.resume = args.resume
-    
+
     # load config file
     config.merge_from_file(args.config_file)
     config.merge_from_list(args.opts)
 
     # prepare the output directories
-    config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
+    if config_type == 'nas':
+        #config.seed = args.seed
+        config.search.seed = config.seed
+        #config.optimizer = args.optimizer
+        config.evaluation.world_size = args.world_size
+        config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
+        config.evaluation.rank = args.rank
+        config.evaluation.dist_url = args.dist_url
+        config.evaluation.dist_backend = args.dist_backend
+        config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
+        config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
+    elif config_type == 'predictor':
+        if config.predictor == 'lcsvr' and config.experiment_type == 'vary_train_size':
+            config.save = '{}/{}/{}/{}_train/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+        elif config.predictor == 'lcsvr' and config.experiment_type == 'vary_fidelity':
+            config.save = '{}/{}/{}/{}_fidelity/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+        else:
+            config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+    elif config_type == 'nas_predictor':
+        config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors', \
+                                              config.search.predictor_type, config.seed)
+    else:
+        print('invalid config type in utils/utils.py')
+
     config.data = "{}/data".format(get_project_root())
 
     create_exp_dir(config.save)
@@ -233,6 +296,30 @@ def _data_transforms_cifar100(args):
     return train_transform, valid_transform
 
 
+class TensorDatasetWithTrans(Dataset):
+    """
+    TensorDataset with support of transforms.
+    """
+
+    def __init__(self, tensors, transform=None):
+        assert all(tensors[0].size(0) == tensor.size(0) for tensor in tensors)
+        self.tensors = tensors
+        self.transform = transform
+
+    def __getitem__(self, index):
+        x = self.tensors[0][index]
+
+        if self.transform:
+            x = self.transform(x)
+
+        y = self.tensors[1][index]
+
+        return x, y
+
+    def __len__(self):
+        return self.tensors[0].size(0)
+
+
 def set_seed(seed):
     """
     Set the seeds for all used libraries.
@@ -240,6 +327,7 @@ def set_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
+    #tf.random.set_random_seed(seed)
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.enabled = True
@@ -254,7 +342,7 @@ def get_last_checkpoint(config, search=True):
     Args:
         config (AttrDict): The config from config file.
         search (bool): Search or evaluation checkpoint
-    
+
     Returns:
         (str): The path to the latest checkpoint file.
     """
@@ -280,7 +368,7 @@ def accuracy(output, target, topk=(1,)):
 
     res = []
     for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0)
+        correct_k = correct[:k].reshape(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
@@ -314,6 +402,69 @@ class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
+
+class AverageMeterGroup:
+    """Average meter group for multiple average meters, ported from Naszilla repo."""
+
+    def __init__(self):
+        self.meters =  OrderedDict()
+
+    def update(self, data, n=1):
+        for k, v in data.items():
+            if k not in self.meters:
+                self.meters[k] = NamedAverageMeter(k, ":4f")
+            self.meters[k].update(v, n=n)
+
+    def __getattr__(self, item):
+        return self.meters[item]
+
+    def __getitem__(self, item):
+        return self.meters[item]
+
+    def __str__(self):
+        return "  ".join(str(v) for v in self.meters.values())
+
+    def summary(self):
+        return "  ".join(v.summary() for v in self.meters.values())
+
+
+class NamedAverageMeter:
+    """Computes and stores the average and current value, ported from naszilla repo"""
+
+    def __init__(self, name, fmt=':f'):
+        """
+        Initialization of AverageMeter
+        Parameters
+        ----------
+        name : str
+            Name to display.
+        fmt : str
+            Format string to print the values.
+        """
+        self.name = name
+        self.fmt = fmt
+        self.reset()
+
+    def reset(self):
+        self.val = 0
+        self.avg = 0
+        self.sum = 0
+        self.count = 0
+
+    def update(self, val, n=1):
+        self.val = val
+        self.sum += val * n
+        self.count += n
+        self.avg = self.sum / self.count
+
+    def __str__(self):
+        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
+        return fmtstr.format(**self.__dict__)
+
+    def summary(self):
+        fmtstr = '{name}: {avg' + self.fmt + '}'
+        return fmtstr.format(**self.__dict__)
 
 
 class AverageMeter(object):
@@ -403,6 +554,6 @@ class Checkpointer(fvCheckpointer):
                     obj.load_state_dict(checkpoint.pop(key))  # pyre-ignore
                 except:
                     print("exception loading")
-        
+
         # return any further checkpoint data
         return checkpoint

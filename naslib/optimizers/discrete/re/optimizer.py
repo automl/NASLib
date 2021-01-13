@@ -5,7 +5,6 @@ import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.optimizers.discrete.rs.optimizer import sample_random_architecture, update_ops
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -13,8 +12,8 @@ from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
 
 logger = logging.getLogger(__name__)
-
-
+    
+        
 class RegularizedEvolution(MetaOptimizer):
     
     # training the models is not implemented
@@ -34,43 +33,12 @@ class RegularizedEvolution(MetaOptimizer):
         self.history = torch.nn.ModuleList()
 
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert search_space.QUERYABLE, "Regularized evolution is currently only implemented for benchmarks."
-        
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
-
-
-    def _mutate(self, parent_arch):
-        child = parent_arch.clone()
+        self.dataset_api = dataset_api
         
-        # sample which cell/motif we want to mutate
-        cells = child._get_child_graphs(single_instances=True)
-        cell = np.random.choice(cells) if len(cells) > 1 else cells[0]
-        
-        edges = [(u, v) for u, v, data in sorted(cell.edges(data=True)) if not data.is_final()]
-
-        # sample if op or edge change
-        if np.random.choice(a=[False, True]):
-            # change op
-            random_edge = edges[np.random.choice(len(edges))]
-            data = cell.edges[random_edge]
-            op_index = np.random.randint(len(data.primitives))
-            data.set('op_index', op_index, shared=True)
-        else:
-            # change edge by setting it to zero
-            random_edge = edges[np.random.choice(len(edges))]
-            cell.edges[random_edge].set('op_index', 1, shared=True)     # this is search space dependent
-
-            random_edge = edges[np.random.choice(len(edges))]
-            data = cell.edges[random_edge]
-            op_index = np.random.randint(len(data.primitives))
-            cell.edges[random_edge].set('op_index', op_index, shared=True)
-
-        child.update_edges(update_ops, child.OPTIMIZER_SCOPE, private_edge_data=True)
-        return child
-    
-    
     def new_epoch(self, epoch):
         # We sample as many architectures as we need 
         if epoch < self.population_size:
@@ -78,9 +46,11 @@ class RegularizedEvolution(MetaOptimizer):
             # If there is no scope defined, let's use the search space default one
             
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            
-            model.arch = sample_random_architecture(self.search_space, self.scope)
-            model.accuracy = model.arch.query(self.performance_metric, self.dataset)
+            model.arch = self.search_space.clone()
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
+            model.accuracy = model.arch.query(self.performance_metric, 
+                                              self.dataset, 
+                                              dataset_api=self.dataset_api)
             
             self.population.append(model)
             self._update_history(model)
@@ -94,8 +64,11 @@ class RegularizedEvolution(MetaOptimizer):
             parent = max(sample, key=lambda x: x.accuracy)
 
             child = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
-            child.arch = self._mutate(parent.arch)
-            child.accuracy = child.arch.query(self.performance_metric, self.dataset)
+            child.arch = self.search_space.clone()
+            child.arch.mutate(parent.arch, dataset_api=self.dataset_api)
+            child.accuracy = child.arch.query(self.performance_metric, 
+                                              self.dataset, 
+                                              dataset_api=self.dataset_api)
 
             self.population.append(child)
             self._update_history(child)
@@ -112,18 +85,14 @@ class RegularizedEvolution(MetaOptimizer):
     def train_statistics(self):
         best_arch = self.get_final_architecture()
         return (
-            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset), 
-            # best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
-            3.0,
-            best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
-            # best_arch.query(Metric.VAL_LOSS, self.dataset), 
-            3.0,
+            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
         )
-    
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.RAW, self.dataset)
+        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
 
     def get_final_architecture(self):

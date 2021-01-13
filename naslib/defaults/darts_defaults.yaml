@@ -25,6 +25,8 @@ search:
   arch_learning_rate: 0.0003
   arch_weight_decay: 0.001
   output_weights: True
+  
+  fidelity: 200
 
   # GDAS
   tau_max: 10
@@ -33,6 +35,23 @@ search:
   # RE
   sample_size: 10
   population_size: 100
+  
+  #LS
+  num_init: 10
+  
+  # BANANAS
+  k: 10
+  num_ensemble: 3
+  acq_fn_type: its
+  acq_fn_optimization: mutation
+  encoding_type: path
+  num_arches_to_mutate: 2
+  max_mutations: 1
+  num_candidates: 100
+  
+  # BasePredictor
+  predictor_type: feedforward
+  debug_predictor: False
 
 evaluation:
   checkpoint_freq: 30

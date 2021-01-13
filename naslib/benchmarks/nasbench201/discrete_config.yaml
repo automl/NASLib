@@ -1,5 +1,35 @@
 
+seed: 0
+optimizer: bp
+dataset: cifar10
+out_dir: run
 
 search:
-  checkpoint_freq: 100 
-  epochs: 2000
+  checkpoint_freq: 1000
+  epochs: 150
+  fidelity: 200
+
+  # GDAS
+  tau_max: 10
+  tau_min: 0.1
+
+  # RE
+  sample_size: 10
+  population_size: 30
+  
+  # LS
+  num_init: 10
+  
+  # BANANAS
+  k: 10
+  num_ensemble: 3
+  acq_fn_type: its
+  acq_fn_optimization: mutation
+  encoding_type: adjacency_one_hot
+  num_arches_to_mutate: 2
+  max_mutations: 1
+  num_candidates: 100
+  
+  # BP
+  predictor_type: feedforward
+  debug_predictor: False

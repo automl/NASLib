@@ -23,11 +23,12 @@ supported_optimizers = {
     #'random': RandomSearch(sample_size=1),
 }
 
+if config.dataset == 'cifar100': DartsSearchSpace.NUM_CLASSES = 100
 search_space = DartsSearchSpace()
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
-    
+
 trainer = Trainer(optimizer, config)
 
 if config.eval_only:

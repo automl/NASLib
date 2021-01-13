@@ -3,11 +3,11 @@ import sys
 import naslib as nl
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RegularizedEvolution
-from naslib.optimizers.discrete.rs.optimizer import RandomSearch
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch, \
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
-from naslib.search_spaces import NasBench201SeachSpace
-from naslib.utils import utils, setup_logger
+from naslib.search_spaces import NasBench201SearchSpace
+from naslib.utils import utils, setup_logger, get_dataset_api
 
 config = utils.get_config_from_args()
 utils.set_seed(config.seed)
@@ -22,18 +22,22 @@ supported_optimizers = {
     'gdas': GDASOptimizer(config),
     're': RegularizedEvolution(config),
     'rs': RandomSearch(config),
+    'ls': RandomSearch(config),
+    'bananas': Bananas(config),
+    'bp': BasePredictor(config)
 }
 
-search_space = NasBench201SeachSpace()
+search_space = NasBench201SearchSpace()
+dataset_api = get_dataset_api('nasbench201', config.dataset)
 
 optimizer = supported_optimizers[config.optimizer]
-optimizer.adapt_search_space(search_space)
+optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
     
-trainer = Trainer(optimizer, config)
+trainer = Trainer(optimizer, config, lightweight_output=True)
 
 if not config.eval_only:
     checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
     trainer.search(resume_from=checkpoint)
 
 checkpoint = utils.get_last_checkpoint(config, search=False) if config.resume else ""
-trainer.evaluate(resume_from=checkpoint)
+trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)

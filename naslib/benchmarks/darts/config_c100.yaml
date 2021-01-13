@@ -1,0 +1,64 @@
+data: "../../data"
+dataset: cifar100
+gpu: 0
+seed: 10
+report_freq: 1
+num_classes: 10
+criterion: CrossEntropyLoss
+working_dir: run
+save: run
+
+search:
+  dataset: cifar100
+  data: "../../data"
+  checkpoint_freq: 1
+  seed: 10
+  batch_size: 64
+  learning_rate: 0.025
+  learning_rate_min: 0.001
+  momentum: 0.9
+  weight_decay: 0.0003
+  epochs: 50
+  warm_start_epochs: 0
+  grad_clip: 5
+  train_portion: 0.5
+  data_size: 25000
+
+  cutout: False
+  cutout_length: 16
+  cutout_prob: 1.0
+  drop_path_prob: 0.0
+
+  unrolled: False
+  arch_learning_rate: 0.0003
+  arch_weight_decay: 0.001
+  output_weights: True
+
+  # GDAS
+  tau_max: 10
+  tau_min: 0.1
+
+evaluation:
+  dataset: cifar100
+  data: "../../data"
+  checkpoint_freq: 10
+  seed: 10
+  batch_size: 96
+  learning_rate: 0.025
+  learning_rate_min: 0.00
+  momentum: 0.9
+  weight_decay: 0.0003
+  epochs: 600
+  warm_start_epochs: 0
+  grad_clip: 5
+  train_portion: 1
+  data_size: 50000
+
+  cutout: True
+  cutout_length: 16
+  cutout_prob: 1.0
+  drop_path_prob: 0.2
+  auxiliary_weight: 0.4
+
+
+
