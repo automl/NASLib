@@ -86,6 +86,7 @@ def encode_adj(spec):
         encoding = [*encoding, *op_dict[ops[i]]]
     return encoding
 
+
 def encode_gcn(spec):
     '''
     Input:
@@ -99,6 +100,19 @@ def encode_gcn(spec):
         'num_vertices': 7,
         'adjacency': matrix,
         'operations': ops_onehot,
+        'mask': np.array([i < 7 for i in range(7)], dtype=np.float32),
+        'val_acc': 0.0
+    }
+    return dic
+
+def encode_seminas(spec):
+    matrix, ops = spec['matrix'], spec['ops']
+    # offset ops list by one, add input and output to ops list
+    ops = [OPS_INCLUSIVE.index(op) for op in ops]
+    dic = {
+        'num_vertices': 7,
+        'adjacency': matrix,
+        'operations': ops,
         'mask': np.array([i < 7 for i in range(7)], dtype=np.float32),
         'val_acc': 0.0
     }
@@ -118,6 +132,9 @@ def encode_101(arch, encoding_type='path'):
     elif encoding_type == 'gcn':
         return encode_gcn(spec=spec)
     
+    elif encoding_type == 'seminas':
+        return encode_seminas(spec=spec)
+
     else:
         print('{} is not yet implemented as an encoding type \
          for darts'.format(encoding_type))
