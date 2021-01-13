@@ -113,9 +113,11 @@ class RegularizedEvolution(MetaOptimizer):
         best_arch = self.get_final_architecture()
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset), 
-            best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
+            # best_arch.query(Metric.TRAIN_LOSS, self.dataset), 
+            3.0,
             best_arch.query(Metric.VAL_ACCURACY, self.dataset), 
-            best_arch.query(Metric.VAL_LOSS, self.dataset), 
+            # best_arch.query(Metric.VAL_LOSS, self.dataset), 
+            3.0,
         )
     
 

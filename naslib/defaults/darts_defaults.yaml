@@ -1,5 +1,5 @@
 dataset: cifar10
-seed: 99
+seed: 93
 out_dir: run
 optimizer: darts
 
@@ -10,7 +10,7 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 50
+  epochs: 300
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5

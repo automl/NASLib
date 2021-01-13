@@ -42,6 +42,7 @@ search_space = graph.NasBench101SeachSpace()
 
 # optimizer = supported_optimizers[config.optimizer]
 optimizer = RandomSearch(config)
+# optimizer = RegularizedEvolution(config)
 
 optimizer.adapt_search_space(search_space)
 
