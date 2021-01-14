@@ -27,7 +27,7 @@ def main(args):
                            'sample_size': 10,
                            'population_size': 30,
                            'num_init': 10,
-                           'k': 10,
+                           'k': 25,
                            'num_ensemble': 3,
                            'acq_fn_type': 'its',
                            'acq_fn_optimization': 'mutation',
