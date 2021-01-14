@@ -2,8 +2,6 @@ optimizer=bananas
 predictors=(bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
 bohamiann bayes_lin_reg seminas gp sparse_gp var_sparse_gp)
 
-predictors=(bananas seminas)
-
 # folders:
 out_dir=run
 base_file=NASLib/naslib
@@ -14,7 +12,7 @@ dataset=cifar10
 search_epochs=500
 
 # trials / seeds:
-trials=300
+trials=100
 start_seed=$1
 end_seed=$(($start_seed + $trials - 1))
 if [ -z "$start_seed" ]
