@@ -164,8 +164,10 @@ class GCN(nn.Module):
 
 
 class BonasPredictor(Predictor):
-    def __init__(self, encoding_type='bonas'):
+    def __init__(self, encoding_type='bonas', ss_type=None):
         self.encoding_type = encoding_type
+        if ss_type is not None:
+            self.ss_type = ss_type
 
     def get_model(self, **kwargs):
         predictor = GCN(**kwargs)

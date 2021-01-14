@@ -570,8 +570,10 @@ def generate_synthetic_controller_data(model, base_arch=None, random_arch=0,ss_t
     return synthetic_input, synthetic_target
 
 class SemiNASPredictor(Predictor):
-    def __init__(self, encoding_type='gcn'):
+    def __init__(self, encoding_type='gcn', ss_type=None):
         self.encoding_type = encoding_type
+        if ss_type is not None:
+            self.ss_type = ss_type
 
     def get_model(self, **kwargs):
         if self.ss_type == 'nasbench101':

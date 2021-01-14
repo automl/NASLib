@@ -116,7 +116,7 @@ def main(args):
                            'fidelity': 200,
                            'sample_size': 10,
                            'population_size': 30,
-                           'num_init': 10,
+                           'num_init': 25,
                            'k': 25,
                            'num_ensemble': 3,
                            'acq_fn_type': 'its',

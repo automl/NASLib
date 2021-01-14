@@ -88,8 +88,10 @@ class NeuralPredictorModel(nn.Module):
 
 
 class GCNPredictor(Predictor):
-    def __init__(self, encoding_type='gcn'):
+    def __init__(self, encoding_type='gcn', ss_type=None):
         self.encoding_type = encoding_type
+        if ss_type is not None:
+            self.ss_type = ss_type
 
     def get_model(self, **kwargs):
         if self.ss_type == 'nasbench101':
