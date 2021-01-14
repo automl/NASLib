@@ -116,7 +116,7 @@ def encode_adj(arch):
         matrices.append(matrix)
         ops.append(op_list)
 
-    print('matrix 1:\n {}\n matrix 2:\n {}\n'.format(matrices[0],matrices[1]))
+    #print('matrix 1:\n {}\n matrix 2:\n {}\n'.format(matrices[0],matrices[1]))
 
     encoding = [*matrices[0].flatten(), *ops[0], *matrices[1].flatten(), *ops[1]]
     return np.array(encoding)
