@@ -30,8 +30,7 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    'bananas': Ensemble(predictor_type='bananas', num_ensemble=1),
-    'bananas_single': FeedforwardPredictor(encoding_type='path'),
+    'bananas': Ensemble(predictor_type='bananas', num_ensemble=3),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot'),
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
@@ -41,6 +40,7 @@ supported_predictors = {
     'jacov': ZeroCostEstimators(config, batch_size=64, method_type='jacov'),
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
+    'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),

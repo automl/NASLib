@@ -21,15 +21,15 @@ class SoLosspredictor(Predictor):
         """
         test_set_scores = []
         learning_curves = [inf['lc'] for inf in info]
+        trained_epochs = len(info[0]['lc'])
         for test_arch, past_loss in zip(xtest, learning_curves):
             # assume we have the training loss for each preceding epoch: past_loss is a list
-            
             if self.sum_option == 'SoTLE' or self.sum_option == 'SoVLE':
                 score = past_loss[-1]
             elif self.sum_option == 'SoTL':
                 EMA_SoTL = []
                 mu = 0.99
-                for se in range(np.array(info).shape[1]):
+                for se in range(trained_epochs):
                     if se <= 0:
                         ema = past_loss[se]
                     else:
