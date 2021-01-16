@@ -10,13 +10,13 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=bo301_jan14
+s3_folder=bo301_jan15
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
 search_space=darts
 dataset=cifar10
-search_epochs=300
+search_epochs=200
 
 # trials / seeds:
 trials=100

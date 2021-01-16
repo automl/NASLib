@@ -117,15 +117,15 @@ def main(args):
                            'fidelity': 200,
                            'sample_size': 10,
                            'population_size': 30,
-                           'num_init': 25,
-                           'k': 25,
+                           'num_init': 20,
+                           'k': 20,
                            'num_ensemble': 3,
                            'acq_fn_type': 'its',
-                           'acq_fn_optimization': 'mutation',
+                           'acq_fn_optimization': 'random_sampling',
                            'encoding_type': 'adjacency_one_hot',
                            'num_arches_to_mutate': 2,
                            'max_mutations': 1,
-                           'num_candidates': 100,
+                           'num_candidates': 200,
                            'debug_predictor': False
                           }
             }
