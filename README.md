@@ -66,7 +66,7 @@ The test coverage can be seen with `coverage report`.
 
 If you use this code in your own work, please cite NASLib using the following bibtex entry:
 
-```
+```bibtex
 @misc{naslib-2020, 
   title={NASLib: A Modular and Flexible Neural Architecture Search Library}, 
   author={Ruchte, Michael and Zela, Arber and Siems, Julien and Grabocka, Josif and Hutter, Frank}, 
