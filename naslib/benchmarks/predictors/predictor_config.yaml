@@ -2,15 +2,15 @@
 # experiment types: single, vary_train_size, vary_fidelity, vary_both
 experiment_type: single
 search_space: nasbench201
-predictor: feedforward
-test_size: 200
+predictor: aug_lcblr_ac #aug_lcsvr
+test_size: 20
 seed: 1000
 
 dataset: cifar10
 out_dir: run
 
 train_size_list: [8, 12, 20, 32, 50, 80, 128, 203, 322, 512]
-train_size_single: 100
+train_size_single: 10
 
 fidelity_list: [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
 fidelity_single: 5

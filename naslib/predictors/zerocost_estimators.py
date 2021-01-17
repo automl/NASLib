@@ -83,12 +83,12 @@ class ZeroCostEstimators(Predictor):
 
             if self.method_type == 'jacov':
                 jacobs, labels = get_batch_jacobian(network, x, target)
-                print('done get jacobs')
+                # print('done get jacobs')
                 jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
 
                 try:
                     score = eval_score(jacobs, labels)
-                    print('done computing scores  ')
+                    # print('done computing scores  ')
                 except Exception as e:
                     print(e)
                     score = -10e8

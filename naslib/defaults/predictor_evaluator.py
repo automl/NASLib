@@ -123,7 +123,11 @@ class PredictorEvaluator(object):
         xtrain, ytrain, train_info, train_times = train_data
         xtest, ytest, test_info, _ = test_data
         train_size = len(xtrain)
-        
+
+        # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
+        if 'aug_lc' in self.config.predictor:
+            self.predictor.pre_compute(xtrain, xtest)
+
         data_reqs = self.predictor.get_data_reqs()
     
         logger.info("Fit the predictor")

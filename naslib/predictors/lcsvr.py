@@ -29,7 +29,6 @@ class SVR_Estimator(Predictor):
         self.name = 'LcSVR'
         self.metric=metric
 
-
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
         # prepare training data

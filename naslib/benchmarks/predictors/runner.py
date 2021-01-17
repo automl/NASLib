@@ -42,7 +42,7 @@ supported_predictors = {
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=True),
-    'aug_lcsvr': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY], all_curve=True),
+    'aug_lcsvr': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY], all_curve=True, config=config),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),
     'rf': RandomForestPredictor(encoding_type='adjacency_one_hot'),
