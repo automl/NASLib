@@ -57,6 +57,7 @@ supported_predictors = {
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False),
     'lcsvr_ac': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=True),
     'lcsvr_t': SVR_Estimator(metric=Metric.TRAIN_LOSS, all_curve=False),
+    'lcsvr_t_ac': SVR_Estimator(metric=Metric.TRAIN_LOSS, all_curve=True),
     'aug_lcsvr': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
                                    all_curve=False, config=config,
                                    zero_cost_methods=['jacov'], model_name='svr'),
