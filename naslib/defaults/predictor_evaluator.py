@@ -245,19 +245,25 @@ class PredictorEvaluator(object):
     def compare(self, ytest, test_pred):
         ytest = np.array(ytest)
         test_pred = np.array(test_pred)
+        METRICS = ['mae', 'rmse', 'pearson', 'spearman', 'kendalltau', 'kt_2dec', 'kt_1dec', \
+                   'precision_10', 'precision_20']
         metrics_dict = {}
-        metrics_dict['mae'] = np.mean(abs(test_pred - ytest))
-        metrics_dict['rmse'] = metrics.mean_squared_error(ytest, test_pred, squared=False)
-        metrics_dict['pearson'] = np.abs(np.corrcoef(ytest, test_pred)[1,0])
-        metrics_dict['spearman'] = stats.spearmanr(ytest, test_pred)[0]
-        metrics_dict['kendalltau'] = stats.kendalltau(ytest, test_pred)[0]
-        metrics_dict['kt_2dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=2))[0]
-        metrics_dict['kt_1dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=1))[0]
-        for k in [10, 20]:
-            top_ytest = np.array([y > sorted(ytest)[max(-len(ytest),-k-1)] for y in ytest])
-            top_test_pred = np.array([y > sorted(test_pred)[max(-len(test_pred),-k-1)] for y in test_pred])
-            metrics_dict['precision_{}'.format(k)] = sum(top_ytest & top_test_pred) / k
-
+        try:
+            metrics_dict['mae'] = np.mean(abs(test_pred - ytest))
+            metrics_dict['rmse'] = metrics.mean_squared_error(ytest, test_pred, squared=False)
+            metrics_dict['pearson'] = np.abs(np.corrcoef(ytest, test_pred)[1,0])
+            metrics_dict['spearman'] = stats.spearmanr(ytest, test_pred)[0]
+            metrics_dict['kendalltau'] = stats.kendalltau(ytest, test_pred)[0]
+            metrics_dict['kt_2dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=2))[0]
+            metrics_dict['kt_1dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=1))[0]
+            for k in [10, 20]:
+                top_ytest = np.array([y > sorted(ytest)[max(-len(ytest),-k-1)] for y in ytest])
+                top_test_pred = np.array([y > sorted(test_pred)[max(-len(test_pred),-k-1)] for y in test_pred])
+                metrics_dict['precision_{}'.format(k)] = sum(top_ytest & top_test_pred) / k
+        except:
+            logger.info('Error when computing metrics')
+            for metric in METRICS:
+                metrics_dict[metric] = float('nan')
         return metrics_dict
 
     def _log_to_json(self):
