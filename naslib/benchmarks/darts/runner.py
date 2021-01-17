@@ -3,8 +3,9 @@ import sys
 import naslib as nl
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
-from naslib.optimizers.discrete.re.optimizer import RegularizedEvolution
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, \
+OneShotNASOptimizer, RandomNASOptimizer, RandomSearch, \
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
 from naslib.search_spaces import DartsSearchSpace
 from naslib.utils import utils, setup_logger
@@ -20,7 +21,13 @@ utils.log_args(config)
 supported_optimizers = {
     'darts': DARTSOptimizer(config),
     'gdas': GDASOptimizer(config),
-    #'random': RandomSearch(sample_size=1),
+    'oneshot': OneShotNASOptimizer(config),
+    'rsws': RandomNASOptimizer(config),
+    're': RegularizedEvolution(config),
+    'rs': RandomSearch(config),
+    'ls': RandomSearch(config),
+    'bananas': Bananas(config),
+    'bp': BasePredictor(config)
 }
 
 if config.dataset == 'cifar100': DartsSearchSpace.NUM_CLASSES = 100
@@ -31,8 +38,8 @@ optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config)
 
-if config.eval_only:
-    trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
-else:
-    trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
-    trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
+ #if config.eval_only:
+     #trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
+ #else:
+     #trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
+     #trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
