@@ -1,15 +1,9 @@
-import numpy as np
 import torch
 import logging
-from torch.autograd import Variable
 
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.darts.conversions import Genotype
 from naslib.optimizers import DARTSOptimizer
-from naslib.utils.utils import count_parameters_in_MB
-from naslib.search_spaces.core.query_metrics import Metric
-
-import naslib.search_spaces.core.primitives as ops
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +63,7 @@ class OneShotNASOptimizer(DARTSOptimizer):
         return logits_train, logits_val, train_loss, val_loss
 
 
-    def query_single_path(self, arch_encoding):
+    def set_alphas_from_path(self, arch_encoding):
         """
         arch_encoding: this can be either a Genotype object (when the darts
         space) or a list of 6 integers (when the nb201 space), aka op_indices
@@ -85,6 +79,35 @@ class OneShotNASOptimizer(DARTSOptimizer):
 
         elif self.graph.get_type() == 'darts':
             assert type(arch_encoding) is Genotype, "darts requires a Genotype object in order to query the one-shot model."
+
+            # darts = [id, zero, maxpool, avg, sep3, sep5, dil3, dil5]
+            ops = ['skip_connect', 'zero', 'max_pool_3x3', 'avg_pool_5x5',
+                   'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3',
+                   'dil_conv_5x5']
+
+            # set all alphas to 0 firstly
+            for alpha in self.architectural_weights:
+                alpha.detach_().copy_(torch.nn.Parameter(torch.zeros(seze=[len(ops)],
+                                                                     requires_grad=False)))
+
+            def update_alphas(cell_type, alphas):
+                n_inputs = 2
+                start_idx = 0
+                end_idx = 2
+
+                for i (op, input_node) in enumerate(cell_type):
+                    if i%2 == 0:
+                        alphas_subset = alphas[start_idx: end_idx]
+                        n_inputs += 1
+                        start_idx = end_idx
+                        end_idx += n_inputs
+
+                    alphas_subset[input_node][ops.index(op)] = 1
+
+            update_alphas(arch_encoding.normal,
+                          self.architectural_weights[:13])
+            update_alphas(arch_encoding.reduce,
+                          self.architectural_weights[13:])
 
 
     def get_final_architecture(self):
