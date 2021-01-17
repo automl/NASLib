@@ -165,15 +165,14 @@ class PredictorEvaluator(object):
         results_dict['train_time'] = np.sum(train_times)
         results_dict['fit_time'] = fit_time_end - fit_time_start
         results_dict['query_time'] = (query_time_end - fit_time_end) / len(xtest)
-        logger.info("train_size: {}, fidelity: {}, train_time {}, fit_time {}, query_time {}"
-                    .format(train_size, fidelity, np.round(results_dict['train_time'], 4), 
-                            np.round(results_dict['fit_time'], 4), np.round(results_dict['query_time'], 4)))
-        logger.info("mae: {}, rmse: {}, pearson: {}, spearman {}, KT: {}, sKT {}"
-                    .format(np.round(results_dict['mae'], 4), 
-                            np.round(results_dict['rmse'], 4), np.round(results_dict['pearson'], 4), 
-                            np.round(results_dict['spearman'], 4), np.round(results_dict['kendalltau'], 4), 
-                            np.round(results_dict['kt_1dec'], 4)))
-
+        # print abridged results on one line:
+        logger.info("train_size: {}, fidelity: {}, pearson correlation {}"
+                    .format(train_size, fidelity, np.round(results_dict['pearson'], 4)))
+        # print entire results dict:
+        print_string = ''
+        for key in results_dict:
+            print_string += key + ': {}, '.format(np.round(results_dict[key], 4))
+        logger.info(print_string)
         self.results.append(results_dict)
         """
         Todo: query_time currently does not include the time taken to train a partial learning curve
@@ -239,6 +238,10 @@ class PredictorEvaluator(object):
         metrics_dict['kendalltau'] = stats.kendalltau(ytest, test_pred)[0]
         metrics_dict['kt_2dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=2))[0]
         metrics_dict['kt_1dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=1))[0]
+        for k in [10, 20]:
+            top_ytest = np.array([y > sorted(ytest)[max(-len(ytest),-k-1)] for y in ytest])
+            top_test_pred = np.array([y > sorted(test_pred)[max(-len(test_pred),-k-1)] for y in test_pred])
+            metrics_dict['precision_{}'.format(k)] = sum(top_ytest & top_test_pred) / k
 
         return metrics_dict
 
