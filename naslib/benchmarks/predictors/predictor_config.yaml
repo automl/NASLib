@@ -1,9 +1,9 @@
 
-# experiment types: single, vary_train_size, vary_fidelity, vary_both
+# experiment types: single, vary_train_size, vary_fidelity
 experiment_type: single
 search_space: nasbench201
 predictor: feedforward
-test_size: 200
+test_size: 100
 seed: 1000
 
 dataset: cifar10

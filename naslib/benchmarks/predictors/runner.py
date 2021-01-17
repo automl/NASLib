@@ -10,7 +10,7 @@ from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
-GPPredictor, SparseGPPredictor, VarSparseGPPredictor
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -42,6 +42,9 @@ supported_predictors = {
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY),
+    'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=True),
+    'aug_lcsvr': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY], all_curve=True, config=config,
+                                   zero_cost_methods=['jacov'], model_name='svr'),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),
     'rf': RandomForestPredictor(encoding_type='adjacency_one_hot'),

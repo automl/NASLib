@@ -91,13 +91,23 @@ class PredictorEvaluator(object):
                                     dataset_api=self.dataset_api)
             data_reqs = self.predictor.get_data_reqs()
             if data_reqs['requires_partial_lc']:
+                info_dict = {}
                 # add partial learning curve if applicable
                 assert self.full_lc, 'This predictor requires learning curve info'
-                lc = arch.query(metric=data_reqs['metric'],
-                                full_lc=True,
-                                dataset=self.dataset, 
-                                dataset_api=self.dataset_api)
-                info_dict = {'lc':lc}
+                if type(data_reqs['metric']) is list:
+                    for metric_i in data_reqs['metric']:
+                        metric_lc = arch.query(metric=metric_i,
+                                        full_lc=True,
+                                        dataset=self.dataset,
+                                        dataset_api=self.dataset_api)
+                        info_dict[f'{metric_i.name}_lc'] = metric_lc
+
+                else:
+                    lc = arch.query(metric=data_reqs['metric'],
+                                    full_lc=True,
+                                    dataset=self.dataset,
+                                    dataset_api=self.dataset_api)
+                    info_dict['lc'] = lc
                 if data_reqs['requires_hyperparameters']:
                     assert self.hyperparameters, 'This predictor requires querying arch hyperparams'                
                     for hp in data_reqs['hyperparams']:
@@ -113,7 +123,11 @@ class PredictorEvaluator(object):
         xtrain, ytrain, train_info, train_times = train_data
         xtest, ytest, test_info, _ = test_data
         train_size = len(xtrain)
-        
+
+        # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
+        if 'aug_lc' in self.config.predictor:
+            self.predictor.pre_compute(xtrain, xtest)
+
         data_reqs = self.predictor.get_data_reqs()
     
         logger.info("Fit the predictor")
@@ -125,9 +139,14 @@ class PredictorEvaluator(object):
             train_info = copy.deepcopy(train_info)
             test_info = copy.deepcopy(test_info)
             for info_dict in train_info:
-                info_dict['lc'] = info_dict['lc'][:fidelity]
+                lc_related_keys = [key for key in info_dict.keys() if 'lc' in key]
+                for lc_key in lc_related_keys:
+                    info_dict[lc_key] = info_dict[lc_key][:fidelity]
+
             for info_dict in test_info:
-                info_dict['lc'] = info_dict['lc'][:fidelity]
+                lc_related_keys = [key for key in info_dict.keys() if 'lc' in key]
+                for lc_key in lc_related_keys:
+                    info_dict[lc_key] = info_dict[lc_key][:fidelity]
                 
         fit_time_start = time.time()
         self.predictor.fit(xtrain, ytrain, train_info)

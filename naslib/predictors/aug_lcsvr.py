@@ -10,31 +10,64 @@ from sklearn.model_selection import cross_val_score, train_test_split
 import numpy as np
 from naslib.predictors.predictor import Predictor
 from scipy import stats
+import copy
 import numpy as np
+from naslib.predictors.lcsvr import loguniform
 
 from naslib.search_spaces.core.query_metrics import Metric
 
-def loguniform(low=0, high=1, size=None):
-    return np.exp(np.random.uniform(np.log(low), np.log(high), size))
+class Aug_SVR_Estimator(Predictor):
 
-
-class SVR_Estimator(Predictor):
-
-    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=True, model_name='svr',best_hyper=None, n_hypers=1000):
+    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=True, zero_cost_methods=['jacov'], config=None,
+                 model_name='svr',best_hyper=None, n_hypers=1000):
+        # metric is a list for Aug SVR e.g.[Metric.VAL_ACCURACY, ]
 
         self.n_hypers = n_hypers
         self.all_curve = all_curve
         self.model_name = model_name
         self.best_hyper = best_hyper
-        self.name = 'LcSVR'
-        self.metric=metric
+        self.metric = metric
+
+        self.config = config
+        self.zero_cost_methods = zero_cost_methods
+        if len(self.zero_cost_methods) > 0:
+            self.include_zero_cost = True
+        else:
+            self.include_zero_cost = False
+
+    def pre_process(self):
+        if self.include_zero_cost:
+            # pre load image training data for zero-cost methods
+            from naslib.utils import utils
+            self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
+
+    def pre_compute(self, xtrain, xtest):
+
+        if self.include_zero_cost:
+            # compute zero-cost scores for test and train data
+            from naslib.predictors.zerocost_estimators import ZeroCostEstimators
+            self.xtrain_zc_scores = {}
+            self.xtest_zc_scores = {}
+            for method_name in self.zero_cost_methods:
+                print(f'pre-compute {method_name} scores for all train and test data')
+                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type=method_name)
+                zc_method.train_loader = copy.deepcopy(self.train_loader)
+                xtrain_zc_scores = zc_method.query(xtrain)
+                xtest_zc_scores = zc_method.query(xtest)
+
+                self.xtrain_zc_scores[f'{method_name}_scores'] = list(xtrain_zc_scores)
+                self.xtest_zc_scores[f'{method_name}_scores'] = list(xtest_zc_scores)
+
+        else:
+            self.xtrain_zc_scores = None
+            self.xtest_zc_scores = None
 
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
         # prepare training data
-        xtrain_data = self.prepare_data(info)
+        xtrain_data = self.prepare_data(info, zero_cost_info=self.xtrain_zc_scores)
         y_train = np.array(ytrain)
-        
+
         # learn hyperparameters of the extrapolator by cross validation
         if self.best_hyper is None or learn_hyper:
             # specify model hyper-parameters
@@ -94,50 +127,9 @@ class SVR_Estimator(Predictor):
         best_model.fit(xtrain_data, y_train)
         self.best_model = best_model
 
-    def collate_inputs(self, VC_all_archs_list, AP_all_archs_list):
-        """
-        Args:
-            VC_all_archs_list: a list of validation accuracy curves for all archs
-            AP_all_archs_list: a list of architecture features for all archs
-
-        Returns:
-            X: an collated array of all input information used for extrapolation model
-
-        """
-        VC = np.vstack(VC_all_archs_list)  # dimension: n_archs x n_epochs
-        DVC = np.diff(VC, n=1, axis=1)
-        DDVC = np.diff(DVC, n=1, axis=1)
-
-        mVC = np.mean(VC, axis=1)[:, None]
-        stdVC = np.std(VC, axis=1)[:, None]
-        mDVC = np.mean(DVC, axis=1)[:, None]
-        stdDVC = np.std(DVC, axis=1)[:, None]
-        mDDVC = np.mean(DDVC, axis=1)[:, None]
-        stdDDVC = np.std(DDVC, axis=1)[:, None]
-
-        if self.all_curve:
-            TS_list = [VC, DVC, DDVC, mVC, stdVC]
-        else:
-            TS_list = [mVC, stdVC, mDVC, stdDVC, mDDVC, stdDDVC]
-
-        if self.metric == Metric.TRAIN_LOSS:
-            sumVC = np.sum(VC, axis=1)[:, None]
-            TS_list += [sumVC]
-
-        TS = np.hstack(TS_list)
-
-        if len(AP_all_archs_list) != 0:
-            AP = np.vstack(AP_all_archs_list)
-            X = np.hstack([AP, TS])
-        else:
-            X = TS
-
-        return X
-
-
     def query(self, xtest, info):
-        data = self.prepare_data(info)
-        pred_on_test_set = self.best_model.predict(data)        
+        data = self.prepare_data(info, zero_cost_info=self.xtest_zc_scores)
+        pred_on_test_set = self.best_model.predict(data)
         return pred_on_test_set
     
     def get_data_reqs(self):
@@ -151,15 +143,64 @@ class SVR_Estimator(Predictor):
                 'hyperparams':['flops', 'latency', 'params']
                }
         return reqs
-        
-    def prepare_data(self, info):
+
+    def prepare_data(self, info, zero_cost_info=None):
         # todo: this can be added at the top of collate_inputs
-        val_acc_curve = []
         arch_params = []
-        
+        all_metrics_info = {f'{lc_metric.name}_lc': [] for lc_metric in self.metric}
+
         for i in range(len(info)):
-            acc_metric = info[i]['lc']
+            for lc_metric in all_metrics_info.keys():
+                lc_metric_score = info[i][lc_metric]
+                all_metrics_info[lc_metric].append(lc_metric_score)
             arch_hp = [info[i][hp] for hp in ['flops', 'latency', 'params']]
-            val_acc_curve.append(acc_metric)
             arch_params.append(arch_hp)
-        return self.collate_inputs(val_acc_curve, arch_params)
+
+        all_metrics_info['arch_params'] = arch_params
+        if self.include_zero_cost:
+            for zc_method in self.zero_cost_methods:
+                all_metrics_info[f'{zc_method}_scores'] = zero_cost_info[f'{zc_method}_scores']
+
+        return self.collate_inputs(all_metrics_info)
+
+    def collate_inputs(self, all_metrics_info):
+
+        TS_list = []
+        for metric_name, metric_content in all_metrics_info.items():
+            if 'lc' in metric_name:
+                # learning curve metrics like valid acc and train losses
+                lc_metric_list = metric_content
+                lc_metric = np.vstack(lc_metric_list)  # dimension: n_archs x n_epochs
+                Dlc_metric = np.diff(lc_metric, n=1, axis=1)
+                DDlc_metric = np.diff(Dlc_metric, n=1, axis=1)
+
+                mlc_metric = np.mean(lc_metric, axis=1)[:, None]
+                stdlc_metric = np.std(lc_metric, axis=1)[:, None]
+                mDlc_metric = np.mean(Dlc_metric, axis=1)[:, None]
+                stdDlc_metric = np.std(Dlc_metric, axis=1)[:, None]
+                mDDlc_metric = np.mean(DDlc_metric, axis=1)[:, None]
+                stdDDlc_metric = np.std(DDlc_metric, axis=1)[:, None]
+
+                if self.all_curve:
+                    collated_metric_list = [lc_metric, Dlc_metric, DDlc_metric, mlc_metric, stdlc_metric]
+                else:
+                    collated_metric_list = [mlc_metric, stdlc_metric, mDlc_metric, stdDlc_metric, mDDlc_metric, stdDDlc_metric]
+
+                if 'TRAIN_LOSS' in metric_name:
+                    sumVC = np.sum(lc_metric, axis=1)[:, None]
+                    collated_metric_list += [sumVC]
+
+            else:
+                # architecture parameters like flops and latency or zc scores
+                arch_metric_list = metric_content
+                if len(arch_metric_list) != 0:
+                    AP = np.vstack(arch_metric_list)
+                    collated_metric_list = [AP]
+                else:
+                    collated_metric_list = []
+
+            TS_list += collated_metric_list
+
+        X = np.hstack(TS_list)
+
+        return X
