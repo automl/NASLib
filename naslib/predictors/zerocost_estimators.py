@@ -5,6 +5,7 @@
 
 import numpy as np
 import torch
+import logging
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.utils.build_nets import get_cell_based_tiny_net
@@ -13,6 +14,7 @@ from naslib.utils.utils import get_project_root
 from naslib.predictors.utils.build_nets.build_darts_net import NetworkCIFAR
 from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 
+logger = logging.getLogger(__name__)
 
 def get_batch_jacobian(net, x, target):
     net.zero_grad()
@@ -55,7 +57,10 @@ class ZeroCostEstimators(Predictor):
     def query(self, xtest, info=None):
 
         test_set_scores = []
+        count = 0
         for test_arch in xtest:
+            count += 1
+            logger.info('zero cost: {} of {}'.format(count, len(xtest)))
             if 'nasbench201' in self.config.search_space:
                 ops_to_nb201 = {'AvgPool1x1': 'avg_pool_3x3', 'ReLUConvBN1x1': 'nor_conv_1x1',
                                 'ReLUConvBN3x3': 'nor_conv_3x3', 'Identity': 'skip_connect', 'Zero': 'none',}
