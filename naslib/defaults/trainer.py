@@ -113,7 +113,6 @@ class Trainer(object):
 
                     self.train_loss.update(float(train_loss.detach().cpu()))
                     self.val_loss.update(float(val_loss.detach().cpu()))
-                    break
                     
                 self.scheduler.step()
 

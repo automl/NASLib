@@ -7,7 +7,7 @@ from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 logger = logging.getLogger(__name__)
 
 
-class RandomNAS(OneShotNASOptimizer):
+class RandomNASOptimizer(OneShotNASOptimizer):
     """
     Implementation of the Random NAS with weight sharing as in
         Li et al. 2019: Random Search and Reproducibility for Neural Architecture Search.
