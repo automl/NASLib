@@ -77,14 +77,18 @@ class Aug_SVR_Estimator(Predictor):
                     ss_type=self.config.search_space) for arch in xtest]
 
                 self.xtrain_zc_infos[f'{encoding_name}'] = train_arch_encoding
-                self.xtest_zc_infos[f'{method_name}'] = test_arch_encoding
+                self.xtest_zc_infos[f'{encoding_name}'] = test_arch_encoding
 
 
 
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
         # prepare training data
-        xtrain_data = self.prepare_data(info, zero_cost_info=self.xtrain_zc_infos)
+        extra_info = copy.deepcopy(self.xtrain_zc_infos)
+        for key in extra_info:
+            # cut the zero cost info to the size of the train data
+            extra_info[key] = extra_info[key][:len(xtrain)]
+        xtrain_data = self.prepare_data(info, zero_cost_info=extra_info)
         y_train = np.array(ytrain)
 
         # learn hyperparameters of the extrapolator by cross validation
