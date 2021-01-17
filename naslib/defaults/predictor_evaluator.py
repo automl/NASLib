@@ -228,6 +228,7 @@ class PredictorEvaluator(object):
 
             # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
             if 'aug_lc' in self.config.predictor:
+                logger.info("Load extra info")
                 self.predictor.pre_compute(full_train_data[0], test_data[0])
 
             for train_size in self.train_size_list:
