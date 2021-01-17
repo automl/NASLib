@@ -18,7 +18,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 
 class Aug_SVR_Estimator(Predictor):
 
-    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=True, zero_cost_methods=['jacov'], config=None,
+    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=True, encoding_type=[], zero_cost_methods=[], config=None,
                  model_name='svr',best_hyper=None, n_hypers=1000):
         # metric is a list for Aug SVR e.g.[Metric.VAL_ACCURACY, ]
 
@@ -29,11 +29,19 @@ class Aug_SVR_Estimator(Predictor):
         self.metric = metric
 
         self.config = config
+        # check whether to include zero-cost proxy scores
         self.zero_cost_methods = zero_cost_methods
         if len(self.zero_cost_methods) > 0:
             self.include_zero_cost = True
         else:
             self.include_zero_cost = False
+
+        # check whether to include architecture encodings
+        self.arch_encodings = encoding_type
+        if len(encoding_type) > 0:
+            self.include_arch_encoding = True
+        else:
+            self.include_arch_encoding = False
 
     def pre_process(self):
         if self.include_zero_cost:
@@ -43,11 +51,13 @@ class Aug_SVR_Estimator(Predictor):
 
     def pre_compute(self, xtrain, xtest):
 
+        self.xtrain_zc_infos = {}
+        self.xtest_zc_infos = {}
+
         if self.include_zero_cost:
             # compute zero-cost scores for test and train data
             from naslib.predictors.zerocost_estimators import ZeroCostEstimators
-            self.xtrain_zc_scores = {}
-            self.xtest_zc_scores = {}
+
             for method_name in self.zero_cost_methods:
                 print(f'pre-compute {method_name} scores for all train and test data')
                 zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type=method_name)
@@ -55,17 +65,26 @@ class Aug_SVR_Estimator(Predictor):
                 xtrain_zc_scores = zc_method.query(xtrain)
                 xtest_zc_scores = zc_method.query(xtest)
 
-                self.xtrain_zc_scores[f'{method_name}_scores'] = list(xtrain_zc_scores)
-                self.xtest_zc_scores[f'{method_name}_scores'] = list(xtest_zc_scores)
+                self.xtrain_zc_infos[f'{method_name}_scores'] = list(xtrain_zc_scores)
+                self.xtest_zc_infos[f'{method_name}_scores'] = list(xtest_zc_scores)
 
-        else:
-            self.xtrain_zc_scores = None
-            self.xtest_zc_scores = None
+        if self.include_arch_encoding:
+            from naslib.predictors.utils.encodings import encode
+            for encoding_name in self.arch_encodings:
+                train_arch_encoding = [encode(arch, encoding_type=encoding_name,
+                    ss_type=self.config.search_space) for arch in xtrain]
+                test_arch_encoding = [encode(arch, encoding_type=encoding_name,
+                    ss_type=self.config.search_space) for arch in xtest]
+
+                self.xtrain_zc_infos[f'{encoding_name}'] = train_arch_encoding
+                self.xtest_zc_infos[f'{method_name}'] = test_arch_encoding
+
+
 
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
         # prepare training data
-        xtrain_data = self.prepare_data(info, zero_cost_info=self.xtrain_zc_scores)
+        xtrain_data = self.prepare_data(info, zero_cost_info=self.xtrain_zc_infos)
         y_train = np.array(ytrain)
 
         # learn hyperparameters of the extrapolator by cross validation
@@ -128,7 +147,7 @@ class Aug_SVR_Estimator(Predictor):
         self.best_model = best_model
 
     def query(self, xtest, info):
-        data = self.prepare_data(info, zero_cost_info=self.xtest_zc_scores)
+        data = self.prepare_data(info, zero_cost_info=self.xtest_zc_infos)
         pred_on_test_set = self.best_model.predict(data)
         return pred_on_test_set
     
@@ -157,9 +176,9 @@ class Aug_SVR_Estimator(Predictor):
             arch_params.append(arch_hp)
 
         all_metrics_info['arch_params'] = arch_params
-        if self.include_zero_cost:
-            for zc_method in self.zero_cost_methods:
-                all_metrics_info[f'{zc_method}_scores'] = zero_cost_info[f'{zc_method}_scores']
+        if len(zero_cost_info) > 0:
+            for info_key, values in zero_cost_info.items():
+                all_metrics_info[info_key] = values
 
         return self.collate_inputs(all_metrics_info)
 
@@ -191,11 +210,12 @@ class Aug_SVR_Estimator(Predictor):
                     collated_metric_list += [sumVC]
 
             else:
-                # architecture parameters like flops and latency or zc scores
-                arch_metric_list = metric_content
-                if len(arch_metric_list) != 0:
-                    AP = np.vstack(arch_metric_list)
-                    collated_metric_list = [AP]
+                # other metrics include architecture parameters like flops and latency or zc scores
+                # and/or zero cost proxy scores and/or arch encoding
+                other_metric_list = metric_content
+                if len(other_metric_list) != 0:
+                    other_metric_array = np.vstack(other_metric_list)
+                    collated_metric_list = [other_metric_array]
                 else:
                     collated_metric_list = []
 
