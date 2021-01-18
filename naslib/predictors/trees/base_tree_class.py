@@ -31,8 +31,14 @@ class BaseTree(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
 
-        xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                  ss_type=self.ss_type) for arch in xtrain])
+        if type(ytrain) is list:
+            # when used in itself, we use
+            xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
+                                      ss_type=self.ss_type) for arch in xtrain])
+        else:
+            # when used in aug_lcsvr we feed in ndarray directly
+            x_train = xtrain
+
         ytrain = np.array(ytrain)
 
         # convert to the right representation
