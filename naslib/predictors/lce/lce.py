@@ -11,21 +11,32 @@ class LCEPredictor(Predictor):
     def __init__(self, metric=None):
         self.metric = metric
 
-    def query(self, xtest, info, nan_replacement=80.0):
+    def query(self, xtest, info):
         
         ensemble = ParametricEnsemble([construct_parametric_model(model_config, name) for name in model_name_list])
         
         learning_curves = np.array([np.array(inf['lc']) / 100 for inf in info])
         trained_epochs = len(info[0]['lc'])
+        
+        if self.ss_type == 'nasbench201':
+            final_epoch = 200
+            default_guess = 85.0
+            N = 300
+        elif self.ss_type == 'darts':
+            final_epoch = 98
+            default_guess = 93.0
+            N = 1000
+        else:
+            raise NotImplementedError()
 
         predictions = []
         for i in range(len(xtest)):
-            ensemble.mcmc(learning_curves[i, :], N=100)
-            prediction_epochs = epochs=list(range(93, 94))
-            prediction = ensemble.mcmc_sample_predict(prediction_epochs) * 100
+            ensemble.mcmc(learning_curves[i, :], N=N)
+            prediction = ensemble.mcmc_sample_predict([final_epoch])
+            prediction = np.squeeze(prediction) * 100
             
             if np.isnan(prediction):
-                prediction = nan_replacement + np.random.rand()
+                prediction = default_guess + np.random.rand()
             predictions.append(prediction)
             
         predictions = np.squeeze(np.array(predictions))
