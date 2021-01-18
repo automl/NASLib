@@ -6,6 +6,7 @@
 import numpy as np
 import torch
 import logging
+import gc
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.utils.build_nets import get_cell_based_tiny_net
@@ -111,5 +112,8 @@ class ZeroCostEstimators(Predictor):
                     score = torch.sum(torch.cat(saliences)).cpu().numpy()
 
             test_set_scores.append(score)
+            network, data_iterator, x, target, jacobs, labels = None, None, None, None, None, None
+            torch.cuda.empty_cache()
+            gc.collect()
 
         return np.array(test_set_scores)
