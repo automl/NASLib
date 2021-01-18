@@ -261,7 +261,9 @@ class PredictorEvaluator(object):
                 top_test_pred = np.array([y > sorted(test_pred)[max(-len(test_pred),-k-1)] for y in test_pred])
                 metrics_dict['precision_{}'.format(k)] = sum(top_ytest & top_test_pred) / k
         except:
-            logger.info('Error when computing metrics')
+            logger.info('Error when computing metrics. Ytest and test_pred are:')
+            logger.info(ytest)
+            logger.info(test_pred)
             for metric in METRICS:
                 metrics_dict[metric] = float('nan')
         return metrics_dict

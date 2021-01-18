@@ -10,7 +10,7 @@ from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
-GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, LCEPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -37,6 +37,7 @@ supported_predictors = {
     'bonas': BonasPredictor(encoding_type='bonas'),
     'valloss': EarlyStopping(metric=Metric.VAL_LOSS),
     'valacc': EarlyStopping(metric=Metric.VAL_ACCURACY),
+    'lce': LCEPredictor(metric=Metric.VAL_ACCURACY),
     'jacov': ZeroCostEstimators(config, batch_size=64, method_type='jacov'),
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),

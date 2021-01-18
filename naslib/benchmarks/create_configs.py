@@ -73,10 +73,13 @@ def main(args):
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]
 
-        if args.experiment_type == 'vary_both':
+        if args.experiment_type == 'vary_both' and 'aug' in args.predictor:
+            train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9)]
+            fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
+            
+        elif args.experiment_type == 'vary_both':
             # vary_both is computationally expensive because it tries all combos of train_size and fidelity
             # also lcsvr doesn't work with fidelity < 3 or train_size<=5 or 8
-
             train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9, 10)]
             fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
 
@@ -117,15 +120,15 @@ def main(args):
                            'fidelity': 200,
                            'sample_size': 10,
                            'population_size': 30,
-                           'num_init': 25,
-                           'k': 25,
+                           'num_init': 20,
+                           'k': 20,
                            'num_ensemble': 3,
                            'acq_fn_type': 'its',
-                           'acq_fn_optimization': 'mutation',
+                           'acq_fn_optimization': 'random_sampling',
                            'encoding_type': 'adjacency_one_hot',
                            'num_arches_to_mutate': 2,
                            'max_mutations': 1,
-                           'num_candidates': 100,
+                           'num_candidates': 200,
                            'debug_predictor': False
                           }
             }
