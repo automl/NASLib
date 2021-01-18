@@ -1,6 +1,5 @@
-predictors=(lce)
-
-experiment_types=(vary_fidelity)
+predictors=(aug_lcsvr_ac_arch)
+experiment_types=(vary_both)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -10,18 +9,18 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p301_jan17
+s3_folder=p201_c10_jan17_3
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
-search_space=darts
+search_space=nasbench201
 dataset=cifar10
 
 # other variables:
 trials=100
 end_seed=$(($start_seed + $trials - 1))
 save_to_s3=true
-test_size=100
+test_size=200
 
 # create config files
 for i in $(seq 0 $((${#predictors[@]}-1)) )

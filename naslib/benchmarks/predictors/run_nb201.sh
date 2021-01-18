@@ -1,6 +1,6 @@
-predictors=(aug_lcsvr_ac_arch aug_lcsvr_arch aug_lcsvr lcsvr_t_ac)
+predictors=(lce)
 
-experiment_types=(vary_both vary_both vary_both vary_both)
+experiment_types=(vary_fidelity)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -10,7 +10,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p201_c10_jan17
+s3_folder=p201_c10_jan17_2
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
