@@ -68,6 +68,7 @@ class DARTSOptimizer(MetaOptimizer):
 
     def adapt_search_space(self, search_space, scope=None):
         # We are going to modify the search space
+        self.search_space = search_space
         graph = search_space.clone()
 
         # If there is no scope defined, let's use the search space default one

@@ -1,5 +1,6 @@
 import torch
 import logging
+import numpy as np
 
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.darts.conversions import Genotype
@@ -20,8 +21,9 @@ class OneShotNASOptimizer(DARTSOptimizer):
         Function to add the architectural weights to the edges.
         """
         len_primitives = len(edge.data.op)
-        alpha = torch.nn.Parameter(torch.ones(size=[len_primitives],
-                                              requires_grad=False))
+        with torch.no_grad():
+            alpha = torch.nn.Parameter(torch.ones(size=[len_primitives],
+                                                  requires_grad=False))
         edge.data.set('alpha', alpha, shared=True)
 
 
@@ -50,6 +52,7 @@ class OneShotNASOptimizer(DARTSOptimizer):
 
         logits_val = self.graph(input_val)
         val_loss = self.loss(logits_val, target_val)
+        val_loss.backward()
 
         # Update op weights
         self.op_optimizer.zero_grad()
@@ -70,32 +73,24 @@ class OneShotNASOptimizer(DARTSOptimizer):
         """
 
         if self.graph.get_type() == 'nasbench201':
-            assert type(arch_encoding) is list, "nasbench201 requires a list of ints of size 6 in order to query the one-shot model."
+            assert type(arch_encoding) in [list, np.ndarray], "nasbench201 requires a list of ints of size 6 in order to query the one-shot model."
 
-            for i, op_index in enumerate(arch_encoding):
-                _new_alpha = torch.nn.Parameter(torch.zeros(size=[5], requires_grad=False))
-                _new_alpha[op_index] = 1
-                self.architectural_weights[i].detach_().copy_(_new_alpha)
+            with torch.no_grad():
+                for i, op_index in enumerate(arch_encoding):
+                    _new_alpha = torch.nn.Parameter(torch.zeros(size=[5],
+                                                                requires_grad=False))
+                    _new_alpha[op_index] = 1
+                    self.architectural_weights[i].copy_(_new_alpha)
 
         elif self.graph.get_type() == 'darts':
             assert type(arch_encoding) is Genotype, "darts requires a Genotype object in order to query the one-shot model."
-
-            # darts = [id, zero, maxpool, avg, sep3, sep5, dil3, dil5]
-            ops = ['skip_connect', 'zero', 'max_pool_3x3', 'avg_pool_5x5',
-                   'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3',
-                   'dil_conv_5x5']
-
-            # set all alphas to 0 firstly
-            for alpha in self.architectural_weights:
-                alpha.detach_().copy_(torch.nn.Parameter(torch.zeros(seze=[len(ops)],
-                                                                     requires_grad=False)))
 
             def update_alphas(cell_type, alphas):
                 n_inputs = 2
                 start_idx = 0
                 end_idx = 2
 
-                for i (op, input_node) in enumerate(cell_type):
+                for i, (op, input_node) in enumerate(cell_type):
                     if i%2 == 0:
                         alphas_subset = alphas[start_idx: end_idx]
                         n_inputs += 1
@@ -104,10 +99,21 @@ class OneShotNASOptimizer(DARTSOptimizer):
 
                     alphas_subset[input_node][ops.index(op)] = 1
 
-            update_alphas(arch_encoding.normal,
-                          self.architectural_weights[:13])
-            update_alphas(arch_encoding.reduce,
-                          self.architectural_weights[13:])
+            # darts = [id, zero, maxpool, avg, sep3, sep5, dil3, dil5]
+            ops = ['skip_connect', 'zero', 'max_pool_3x3', 'avg_pool_3x3',
+                   'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3',
+                   'dil_conv_5x5']
+
+            # set all alphas to 0 firstly
+            with torch.no_grad():
+                for alpha in self.architectural_weights:
+                    alpha.copy_(torch.nn.Parameter(torch.zeros(size=[len(ops)],
+                                                                         requires_grad=False)))
+
+                update_alphas(arch_encoding.normal,
+                              self.graph.get_all_edge_data('alpha')[:14])
+                update_alphas(arch_encoding.reduce,
+                              self.graph.get_all_edge_data('alpha')[14:])
 
 
     def get_final_architecture(self):

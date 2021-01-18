@@ -37,6 +37,7 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config)
+trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
 
  #if config.eval_only:
      #trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")

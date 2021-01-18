@@ -34,6 +34,7 @@ class RandomNASOptimizer(OneShotNASOptimizer):
 
         logits_val = self.graph(input_val)
         val_loss = self.loss(logits_val, target_val)
+        val_loss.backward()
 
         # Update op weights
         self.op_optimizer.zero_grad()
@@ -48,7 +49,7 @@ class RandomNASOptimizer(OneShotNASOptimizer):
 
 
     def sample_random_and_update_alphas(self):
-        tmp_graph = self.graph.clone()
+        tmp_graph = self.search_space.clone()
         tmp_graph.sample_random_architecture()
 
         if self.graph.get_type() == 'nasbench201':

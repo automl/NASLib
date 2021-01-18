@@ -4,7 +4,7 @@ import naslib as nl
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, \
-OneShotNASOptimizer, RandomSearch, \
+OneShotNASOptimizer, RandomNASOptimizer, RandomSearch, \
 RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
 from naslib.search_spaces import NasBench201SearchSpace
@@ -22,6 +22,7 @@ supported_optimizers = {
     'darts': DARTSOptimizer(config),
     'gdas': GDASOptimizer(config),
     'oneshot': OneShotNASOptimizer(config),
+    'rsws': RandomNASOptimizer(config),
     're': RegularizedEvolution(config),
     'rs': RandomSearch(config),
     'ls': RandomSearch(config),
@@ -36,6 +37,7 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
+trainer.search(resume_from=checkpoint)
 
 #if not config.eval_only:
 #    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
