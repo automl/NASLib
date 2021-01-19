@@ -10,15 +10,14 @@ from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
-GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, LCEPredictor
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, \
+LCEPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.utils.utils import get_project_root
-
-from fvcore.common.config import CfgNode
 
 
 config = utils.get_config_from_args(config_type='predictor')
