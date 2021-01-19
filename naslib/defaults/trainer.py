@@ -194,7 +194,6 @@ class Trainer(object):
             self.errors_dict.runtime.append(end_time - start_time)
 
             self._log_to_json()
-            self._log_and_reset_accuracies(e)
 
         logger.info("Evaluation finished")
 
