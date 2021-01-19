@@ -118,7 +118,6 @@ def encode_bonas(spec):
     # matrix = np.transpose(matrix)
     matrix = add_global_node(matrix, True)
     ops_onehot = add_global_node(ops_onehot,False)
-    print('matrix:\n{}'.format(matrix))
     matrix = np.array(matrix,dtype=np.float32)
     ops_onehot = np.array(ops_onehot,dtype=np.float32)
     dic = {
