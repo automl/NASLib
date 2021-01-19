@@ -188,13 +188,14 @@ class BonasPredictor(Predictor):
             encoded['val_acc'] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
+        print('train data:\n{}'.format(train_data))
         nfeat = len(train_data[0]['operations'][0])
         self.model = self.get_model(gcn_hidden=gcn_hidden,nfeat=nfeat)
         data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=False)
         self.model.to(device)
         criterion = nn.MSELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
-        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=lr)
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=0)
 
         self.model.train()
 
@@ -219,7 +220,7 @@ class BonasPredictor(Predictor):
     def query(self, xtest, info=None, eval_batch_size=100):
         test_data = np.array([encode(arch,encoding_type=self.encoding_type, ss_type=self.ss_type)
                             for arch in xtest])
-        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
+        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size,drop_last=False)
 
         self.model.eval()
         pred = []

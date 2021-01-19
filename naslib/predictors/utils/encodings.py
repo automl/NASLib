@@ -120,15 +120,20 @@ def encode_bonas_nasbench201(arch):
     #print(ops)
     ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
     matrix = np.array(
-            [[1, 1, 1, 1, 0, 0, 0, 0],
-            [0, 1, 0, 0, 1, 1, 0, 0],
-            [0, 0, 1, 0, 0, 0, 1, 0],
-            [0, 0, 0, 1, 0, 0, 0, 1],
-            [0, 0, 0, 0, 1, 0, 1, 0],
-            [0, 0, 0, 0, 0, 1, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 1],
-            [0, 0, 0, 0, 0, 0, 0, 1]],dtype=np.float32)
-    matrix = np.transpose(matrix)
+            [[0, 1, 1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
+            
+    matrix = add_global_node(matrix, True)
+    ops_onehot = add_global_node(ops_onehot,False)
+
+    matrix = np.array(matrix,dtype=np.float32)
+    ops_onehot = np.array(ops_onehot,dtype=np.float32)
     
     dic = {
         'adjacency': matrix,
@@ -136,6 +141,19 @@ def encode_bonas_nasbench201(arch):
         'val_acc': 0.0
     }
     return dic
+
+def add_global_node( mx, ifAdj):
+    """add a global node to operation or adjacency matrixs, fill diagonal for adj and transpose adjs"""
+    if (ifAdj):
+        mx = np.column_stack((mx, np.ones(mx.shape[0], dtype=np.float32)))
+        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
+        np.fill_diagonal(mx, 1)
+        mx = mx.T
+    else:
+        mx = np.column_stack((mx, np.zeros(mx.shape[0], dtype=np.float32)))
+        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
+        mx[mx.shape[0] - 1][mx.shape[1] - 1] = 1
+    return mx
 
 def encode_seminas_nasbench201(arch):
     '''
