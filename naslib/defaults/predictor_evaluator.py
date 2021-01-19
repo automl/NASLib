@@ -91,13 +91,23 @@ class PredictorEvaluator(object):
                                     dataset_api=self.dataset_api)
             data_reqs = self.predictor.get_data_reqs()
             if data_reqs['requires_partial_lc']:
+                info_dict = {}
                 # add partial learning curve if applicable
                 assert self.full_lc, 'This predictor requires learning curve info'
-                lc = arch.query(metric=data_reqs['metric'],
-                                full_lc=True,
-                                dataset=self.dataset, 
-                                dataset_api=self.dataset_api)
-                info_dict = {'lc':lc}
+                if type(data_reqs['metric']) is list:
+                    for metric_i in data_reqs['metric']:
+                        metric_lc = arch.query(metric=metric_i,
+                                        full_lc=True,
+                                        dataset=self.dataset,
+                                        dataset_api=self.dataset_api)
+                        info_dict[f'{metric_i.name}_lc'] = metric_lc
+
+                else:
+                    lc = arch.query(metric=data_reqs['metric'],
+                                    full_lc=True,
+                                    dataset=self.dataset,
+                                    dataset_api=self.dataset_api)
+                    info_dict['lc'] = lc
                 if data_reqs['requires_hyperparameters']:
                     assert self.hyperparameters, 'This predictor requires querying arch hyperparams'                
                     for hp in data_reqs['hyperparams']:
@@ -113,7 +123,7 @@ class PredictorEvaluator(object):
         xtrain, ytrain, train_info, train_times = train_data
         xtest, ytest, test_info, _ = test_data
         train_size = len(xtrain)
-        
+
         data_reqs = self.predictor.get_data_reqs()
     
         logger.info("Fit the predictor")
@@ -125,9 +135,14 @@ class PredictorEvaluator(object):
             train_info = copy.deepcopy(train_info)
             test_info = copy.deepcopy(test_info)
             for info_dict in train_info:
-                info_dict['lc'] = info_dict['lc'][:fidelity]
+                lc_related_keys = [key for key in info_dict.keys() if 'lc' in key]
+                for lc_key in lc_related_keys:
+                    info_dict[lc_key] = info_dict[lc_key][:fidelity]
+
             for info_dict in test_info:
-                info_dict['lc'] = info_dict['lc'][:fidelity]
+                lc_related_keys = [key for key in info_dict.keys() if 'lc' in key]
+                for lc_key in lc_related_keys:
+                    info_dict[lc_key] = info_dict[lc_key][:fidelity]
                 
         fit_time_start = time.time()
         self.predictor.fit(xtrain, ytrain, train_info)
@@ -146,15 +161,14 @@ class PredictorEvaluator(object):
         results_dict['train_time'] = np.sum(train_times)
         results_dict['fit_time'] = fit_time_end - fit_time_start
         results_dict['query_time'] = (query_time_end - fit_time_end) / len(xtest)
-        logger.info("train_size: {}, fidelity: {}, train_time {}, fit_time {}, query_time {}"
-                    .format(train_size, fidelity, np.round(results_dict['train_time'], 4), 
-                            np.round(results_dict['fit_time'], 4), np.round(results_dict['query_time'], 4)))
-        logger.info("mae: {}, rmse: {}, pearson: {}, spearman {}, KT: {}, sKT {}"
-                    .format(np.round(results_dict['mae'], 4), 
-                            np.round(results_dict['rmse'], 4), np.round(results_dict['pearson'], 4), 
-                            np.round(results_dict['spearman'], 4), np.round(results_dict['kendalltau'], 4), 
-                            np.round(results_dict['kt_1dec'], 4)))
-
+        # print abridged results on one line:
+        logger.info("train_size: {}, fidelity: {}, pearson correlation {}"
+                    .format(train_size, fidelity, np.round(results_dict['pearson'], 4)))
+        # print entire results dict:
+        print_string = ''
+        for key in results_dict:
+            print_string += key + ': {}, '.format(np.round(results_dict[key], 4))
+        logger.info(print_string)
         self.results.append(results_dict)
         """
         Todo: query_time currently does not include the time taken to train a partial learning curve
@@ -172,12 +186,22 @@ class PredictorEvaluator(object):
             logger.info("Load the training set")
             train_data = self.load_dataset(load_labeled=self.load_labeled,
                                            data_size=train_size)
+
+            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
+            if 'aug_lc' in self.config.predictor:
+                self.predictor.pre_compute(train_data[0], test_data[0])
+            
             self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_train_size':
             logger.info("Load the training set")
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
                                                 data_size=self.train_size_list[-1])
+            
+            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
+            if 'aug_lc' in self.config.predictor:
+                self.predictor.pre_compute(full_train_data[0], test_data[0])
+            
             fidelity = self.fidelity_single
 
             for train_size in self.train_size_list:
@@ -190,6 +214,10 @@ class PredictorEvaluator(object):
             train_data = self.load_dataset(load_labeled=self.load_labeled,
                                            data_size=self.train_size_single)
 
+            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
+            if 'aug_lc' in self.config.predictor:
+                self.predictor.pre_compute(train_data[0], test_data[0])
+
             for fidelity in self.fidelity_list:
                 self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
@@ -197,6 +225,11 @@ class PredictorEvaluator(object):
             logger.info("Load the training set")
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
                                                 data_size=self.train_size_list[-1])
+
+            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
+            if 'aug_lc' in self.config.predictor:
+                logger.info("Load extra info")
+                self.predictor.pre_compute(full_train_data[0], test_data[0])
 
             for train_size in self.train_size_list:
                 train_data = [data[:train_size] for data in full_train_data]
@@ -212,15 +245,27 @@ class PredictorEvaluator(object):
     def compare(self, ytest, test_pred):
         ytest = np.array(ytest)
         test_pred = np.array(test_pred)
+        METRICS = ['mae', 'rmse', 'pearson', 'spearman', 'kendalltau', 'kt_2dec', 'kt_1dec', \
+                   'precision_10', 'precision_20']
         metrics_dict = {}
-        metrics_dict['mae'] = np.mean(abs(test_pred - ytest))
-        metrics_dict['rmse'] = metrics.mean_squared_error(ytest, test_pred, squared=False)
-        metrics_dict['pearson'] = np.abs(np.corrcoef(ytest, test_pred)[1,0])
-        metrics_dict['spearman'] = stats.spearmanr(ytest, test_pred)[0]
-        metrics_dict['kendalltau'] = stats.kendalltau(ytest, test_pred)[0]
-        metrics_dict['kt_2dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=2))[0]
-        metrics_dict['kt_1dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=1))[0]
-
+        try:
+            metrics_dict['mae'] = np.mean(abs(test_pred - ytest))
+            metrics_dict['rmse'] = metrics.mean_squared_error(ytest, test_pred, squared=False)
+            metrics_dict['pearson'] = np.abs(np.corrcoef(ytest, test_pred)[1,0])
+            metrics_dict['spearman'] = stats.spearmanr(ytest, test_pred)[0]
+            metrics_dict['kendalltau'] = stats.kendalltau(ytest, test_pred)[0]
+            metrics_dict['kt_2dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=2))[0]
+            metrics_dict['kt_1dec'] = stats.kendalltau(ytest, np.round(test_pred, decimals=1))[0]
+            for k in [10, 20]:
+                top_ytest = np.array([y > sorted(ytest)[max(-len(ytest),-k-1)] for y in ytest])
+                top_test_pred = np.array([y > sorted(test_pred)[max(-len(test_pred),-k-1)] for y in test_pred])
+                metrics_dict['precision_{}'.format(k)] = sum(top_ytest & top_test_pred) / k
+        except:
+            logger.info('Error when computing metrics. Ytest and test_pred are:')
+            logger.info(ytest)
+            logger.info(test_pred)
+            for metric in METRICS:
+                metrics_dict[metric] = float('nan')
         return metrics_dict
 
     def _log_to_json(self):
