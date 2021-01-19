@@ -130,8 +130,9 @@ def get_config_from_args(args=None, config_type='nas'):
         with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
 
-    if not args:
+    if args is None:
         args = parse_args()
+    print(args)
     logger.info("Command line args: {}".format(args))
 
     # load config file

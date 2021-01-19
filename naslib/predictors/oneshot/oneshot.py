@@ -5,7 +5,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors import Predictor
 
 
@@ -23,10 +22,8 @@ class OneShotPredictor(Predictor):
         if model_path is None:
             self.model.search()
         else:
+            #TODO load model
             pass
-
-
-
 
 
     def __call__(self, archs):
@@ -50,8 +47,7 @@ class OneShotPredictor(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
 
-        _xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                  ss_type=self.ss_type) for arch in xtrain])
+        _xtrain = np.array([arch for arch in xtrain])
         _ytrain = np.array(ytrain)
 
         X_tensor = torch.FloatTensor(_xtrain).to(device)
@@ -68,8 +64,7 @@ class OneShotPredictor(Predictor):
 
 
     def query(self, xtest, info=None, eval_batch_size=None):
-        xtest = np.array([encode(arch, encoding_type=self.encoding_type,
-                          ss_type=self.ss_type) for arch in xtest])
+        xtest = np.array([arch for arch in xtest])
         X_tensor = torch.FloatTensor(xtest).to(device)
         test_data = TensorDataset(X_tensor)
 
