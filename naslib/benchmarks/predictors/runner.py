@@ -70,6 +70,9 @@ supported_predictors = {
                                            all_curve=True, config=config,
                                            encoding_type=['adjacency_one_hot'],
                                            zero_cost_methods=['jacov'], model_name='svr'),
+    'aug_lcgbdt': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
+                                   all_curve=False, config=config,
+                                   zero_cost_methods=['jacov'], model_name='gbdt'),
 }
 
 supported_search_spaces = {

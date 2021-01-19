@@ -88,7 +88,7 @@ class Aug_SVR_Estimator(Predictor):
         for key in extra_info:
             # cut the zero cost info to the size of the train data
             extra_info[key] = extra_info[key][:len(xtrain)]
-        xtrain_data = self.prepare_data(info, zero_cost_info=extra_info)
+        xtrain_data = self.prepare_data(info, zero_cost_info=extra_info) #ndarray
         y_train = np.array(ytrain)
 
         # learn hyperparameters of the extrapolator by cross validation
@@ -146,6 +146,11 @@ class Aug_SVR_Estimator(Predictor):
                                        lambda_1=self.best_hyper[2], lambda_2=self.best_hyper[3])
         elif self.model_name == 'rf':
             best_model = RandomForestRegressor(n_estimators=int(self.best_hyper[0]), max_features=self.best_hyper[1])
+
+        elif self.model_name == 'gbdt':
+            from naslib.predictors.trees import GBDTPredictor
+            best_model = GBDTPredictor(params=self.best_hyper)
+            # best_model = GBDTPredictor(params=None)
 
         best_model.fit(xtrain_data, y_train)
         self.best_model = best_model
@@ -207,7 +212,10 @@ class Aug_SVR_Estimator(Predictor):
                 if self.all_curve:
                     collated_metric_list = [lc_metric, Dlc_metric, DDlc_metric, mlc_metric, stdlc_metric]
                 else:
-                    collated_metric_list = [mlc_metric, stdlc_metric, mDlc_metric, stdDlc_metric, mDDlc_metric, stdDDlc_metric]
+                    if self.model_name in ['svr', 'blr', 'rf']:
+                        collated_metric_list = [mlc_metric, stdlc_metric, mDlc_metric, stdDlc_metric, mDDlc_metric, stdDDlc_metric]
+                    else:
+                        collated_metric_list = [mlc_metric, stdlc_metric]
 
                 if 'TRAIN_LOSS' in metric_name:
                     sumVC = np.sum(lc_metric, axis=1)[:, None]
