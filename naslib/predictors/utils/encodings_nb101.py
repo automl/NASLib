@@ -87,6 +87,73 @@ def encode_adj(spec):
     return encoding
 
 
+def encode_gcn(spec):
+    '''
+    Input:
+    a list of categorical ops starting from 0
+    '''
+    matrix, ops = spec['matrix'], spec['ops']
+    op_map = [OUTPUT, INPUT, *OPS]
+    ops_onehot = np.array([[i == op_map.index(op) for i in range(len(op_map))] for op in ops], dtype=np.float32)
+
+    dic = {
+        'num_vertices': 7,
+        'adjacency': matrix,
+        'operations': ops_onehot,
+        'mask': np.array([i < 7 for i in range(7)], dtype=np.float32),
+        'val_acc': 0.0
+    }
+    return dic
+
+def encode_bonas(spec):
+    '''
+    Input:
+    a list of categorical ops starting from 0
+    '''
+    matrix, ops = spec['matrix'], spec['ops']
+    op_map = [INPUT, *OPS, OUTPUT]
+    ops_onehot = np.array([[i == op_map.index(op) for i in range(len(op_map))] for op in ops], dtype=np.float32)
+
+    # np.fill_diagonal(matrix, 1)
+    # matrix = np.transpose(matrix)
+    matrix = add_global_node(matrix, True)
+    ops_onehot = add_global_node(ops_onehot,False)
+    matrix = np.array(matrix,dtype=np.float32)
+    ops_onehot = np.array(ops_onehot,dtype=np.float32)
+    dic = {
+        'adjacency': matrix,
+        'operations': ops_onehot,
+        'val_acc': 0.0
+    }
+    return dic
+
+def add_global_node( mx, ifAdj):
+    """add a global node to operation or adjacency matrixs, fill diagonal for adj and transpose adjs"""
+    if (ifAdj):
+        mx = np.column_stack((mx, np.ones(mx.shape[0], dtype=np.float32)))
+        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
+        np.fill_diagonal(mx, 1)
+        mx = mx.T
+    else:
+        mx = np.column_stack((mx, np.zeros(mx.shape[0], dtype=np.float32)))
+        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
+        mx[mx.shape[0] - 1][mx.shape[1] - 1] = 1
+    return mx
+
+def encode_seminas(spec):
+    matrix, ops = spec['matrix'], spec['ops']
+    # offset ops list by one, add input and output to ops list
+    ops = [OPS_INCLUSIVE.index(op) for op in ops]
+    dic = {
+        'num_vertices': 7,
+        'adjacency': matrix,
+        'operations': ops,
+        'mask': np.array([i < 7 for i in range(7)], dtype=np.float32),
+        'val_acc': 0.0
+    }
+    return dic
+
+
 def encode_101(arch, encoding_type='path'):
     
     spec = arch.get_spec()
@@ -96,7 +163,16 @@ def encode_101(arch, encoding_type='path'):
     
     elif encoding_type == 'adjacency_one_hot':
         return encode_adj(spec=spec)
+
+    elif encoding_type == 'gcn':
+        return encode_gcn(spec=spec)
     
+    elif encoding_type == 'seminas':
+        return encode_seminas(spec=spec)
+
+    elif encoding_type == 'bonas':
+        return encode_bonas(spec=spec)
+
     else:
         print('{} is not yet implemented as an encoding type \
          for darts'.format(encoding_type))

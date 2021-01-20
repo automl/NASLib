@@ -20,7 +20,7 @@ def loguniform(low=0, high=1, size=None):
 
 class SVR_Estimator(Predictor):
 
-    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=False, model_name='svr',best_hyper=None, n_hypers=1000):
+    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=True, model_name='svr',best_hyper=None, n_hypers=1000):
 
         self.n_hypers = n_hypers
         self.all_curve = all_curve
@@ -28,7 +28,6 @@ class SVR_Estimator(Predictor):
         self.best_hyper = best_hyper
         self.name = 'LcSVR'
         self.metric=metric
-
 
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
@@ -117,9 +116,15 @@ class SVR_Estimator(Predictor):
         stdDDVC = np.std(DDVC, axis=1)[:, None]
 
         if self.all_curve:
-            TS = np.hstack([VC, DVC, DDVC, mVC, stdVC])
+            TS_list = [VC, DVC, DDVC, mVC, stdVC]
         else:
-            TS = np.hstack([mVC, stdVC, mDVC, stdDVC, mDDVC, stdDDVC])
+            TS_list = [mVC, stdVC, mDVC, stdDVC, mDDVC, stdDDVC]
+
+        if self.metric == Metric.TRAIN_LOSS:
+            sumVC = np.sum(VC, axis=1)[:, None]
+            TS_list += [sumVC]
+
+        TS = np.hstack(TS_list)
 
         if len(AP_all_archs_list) != 0:
             AP = np.vstack(AP_all_archs_list)

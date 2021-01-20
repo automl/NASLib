@@ -1,7 +1,7 @@
 import numpy as np
 
 from naslib.predictors.predictor import Predictor
-
+from naslib.search_spaces.core.query_metrics import Metric
 
 class EarlyStopping(Predictor):
 
@@ -15,7 +15,11 @@ class EarlyStopping(Predictor):
         corresponding architecture.
         Return the final value on the learning curve
         """
-        return np.array([inf['lc'][-1] for inf in info])
+        if self.metric in [Metric.VAL_LOSS, Metric.TRAIN_LOSS]:
+            # invert to get accurate rank correlation
+            return np.array([-inf['lc'][-1] for inf in info])
+        else:
+            return np.array([inf['lc'][-1] for inf in info])
         
     def get_metric(self):
         return self.metric

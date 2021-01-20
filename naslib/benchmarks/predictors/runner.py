@@ -10,15 +10,14 @@ from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
-GPPredictor, SparseGPPredictor, VarSparseGPPredictor
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, \
+LCEPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.utils.utils import get_project_root
-
-from fvcore.common.config import CfgNode
 
 
 config = utils.get_config_from_args(config_type='predictor')
@@ -30,18 +29,18 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    'bananas': Ensemble(predictor_type='bananas'),
+    'bananas': Ensemble(predictor_type='bananas', num_ensemble=3),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot'),
     'gbdt': GBDTPredictor(encoding_type='adjacency_one_hot'),
     'gcn': GCNPredictor(encoding_type='gcn'),
     'bonas': BonasPredictor(encoding_type='bonas'),
     'valloss': EarlyStopping(metric=Metric.VAL_LOSS),
     'valacc': EarlyStopping(metric=Metric.VAL_ACCURACY),
+    'lce': LCEPredictor(metric=Metric.VAL_ACCURACY),
     'jacov': ZeroCostEstimators(config, batch_size=64, method_type='jacov'),
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
-    'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),
     'rf': RandomForestPredictor(encoding_type='adjacency_one_hot'),
@@ -55,6 +54,29 @@ supported_predictors = {
                                    optimize_gp_hyper=True, num_steps=100),
     'var_sparse_gp': VarSparseGPPredictor(encoding_type='adjacency_one_hot',
                                           optimize_gp_hyper=True, num_steps=200),
+    'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False),
+    'lcsvr_ac': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=True),
+    'lcsvr_t': SVR_Estimator(metric=Metric.TRAIN_LOSS, all_curve=False),
+    'aug_lcsvr': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
+                                   all_curve=False, config=config,
+                                   zero_cost_methods=['jacov'], model_name='svr'),
+    'aug_lcsvr_arch': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
+                                        all_curve=False, config=config,
+                                        encoding_type=['adjacency_one_hot'],
+                                        zero_cost_methods=['jacov'], model_name='svr'),
+    'aug_lcsvr_ac_arch': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
+                                           all_curve=True, config=config,
+                                           encoding_type=['adjacency_one_hot'],
+                                           zero_cost_methods=['jacov'], model_name='svr'),
+    'aug_lcgbdt': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
+                                   all_curve=False, config=config,
+                                   zero_cost_methods=['jacov'], model_name='gbdt'),
+    'gbdt_path': GBDTPredictor(encoding_type='path'),
+    'ngb_path': NGBoost(encoding_type='path'),
+    'dngo_path': DNGOPredictor(encoding_type='path'),
+    'bohamiann_path': BOHAMIANN(encoding_type='path'),
+    'bayes_lin_reg_path': BayesianLinearRegression(encoding_type='path'),
+    'gp_path': GPPredictor(encoding_type='path'),
 }
 
 supported_search_spaces = {

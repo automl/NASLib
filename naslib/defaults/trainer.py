@@ -95,8 +95,9 @@ class Trainer(object):
             
             start_time = time.time()
             if self.optimizer.using_step_function:
-                for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
+                for step, data_train in enumerate(self.train_queue):
                     data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
+                    data_val = next(iter(self.valid_queue))
                     data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
 
                     stats = self.optimizer.step(data_train, data_val)
@@ -154,6 +155,51 @@ class Trainer(object):
 
         self.optimizer.after_training()
         logger.info("Training finished")
+
+
+    def evaluate_oneshot(self, resume_from="", dataloader=None):
+        """
+        Evaluate the one-shot model on the specified dataset.
+
+        Generates a json file with training statistics.
+
+        Args:
+            resume_from (str): Checkpoint file to resume from. If not given then
+                evaluate with the current one-shot weights.
+        """
+        logger.info("Start one-shot evaluation")
+        self.optimizer.before_training()
+        self._setup_checkpointers(resume_from)
+
+        loss = torch.nn.CrossEntropyLoss()
+
+        if dataloader is None:
+            # load only the validation data
+            _, dataloader, _ = self.build_search_dataloaders(self.config)
+
+        self.optimizer.graph.eval()
+        with torch.no_grad():
+            start_time = time.time()
+            for step, data_val in enumerate(dataloader):
+                input_val = data_val[0].to(self.device)
+                target_val = data_val[1].to(self.device, non_blocking=True)
+
+                logits_val = self.optimizer.graph(input_val)
+                val_loss = loss(logits_val, target_val)
+
+                self._store_accuracies(logits_val, data_val[1], 'val')
+                self.val_loss.update(float(val_loss.detach().cpu()))
+
+            end_time = time.time()
+
+            self.errors_dict.valid_acc.append(self.val_top1.avg)
+            self.errors_dict.valid_loss.append(self.val_loss.avg)
+            self.errors_dict.runtime.append(end_time - start_time)
+
+            self._log_to_json()
+
+        logger.info("Evaluation finished")
+        return self.val_top1.avg
 
 
     def evaluate(
@@ -417,7 +463,7 @@ class Trainer(object):
         checkpointer = utils.Checkpointer(
             model=checkpointables.pop('model'),
             save_dir=self.config.save + "/search" if search else self.config.save + "/eval",
-            **checkpointables
+            #**checkpointables #NOTE: this is throwing an Error
         )
 
         self.periodic_checkpointer = PeriodicCheckpointer(

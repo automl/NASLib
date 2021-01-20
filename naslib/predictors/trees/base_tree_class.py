@@ -31,9 +31,16 @@ class BaseTree(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
 
-        xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                  ss_type=self.ss_type) for arch in xtrain])
-        ytrain = np.array(ytrain)
+        if type(xtrain) is list:
+            # when used in itself, we use
+            xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
+                                      ss_type=self.ss_type) for arch in xtrain])
+            ytrain = np.array(ytrain)
+        else:
+            # when used in aug_lcsvr we feed in ndarray directly
+            xtrain = xtrain
+            ytrain = ytrain
+
 
         # convert to the right representation
         train_data = self.get_dataset(xtrain, ytrain)
@@ -48,8 +55,15 @@ class BaseTree(Predictor):
         return train_error
 
     def query(self, xtest, info=None):
-        xtest = np.array([encode(arch, encoding_type=self.encoding_type,
+
+        if type(xtest) is list:
+            #  when used in itself, we use
+            xtest = np.array([encode(arch, encoding_type=self.encoding_type,
                                  ss_type=self.ss_type) for arch in xtest])
+        else:
+            # when used in aug_lcsvr we feed in ndarray directly
+            xtest = xtest
+
         test_data = self.get_dataset(xtest)
         return np.squeeze(self.model.predict(test_data)) * self.std + self.mean
 

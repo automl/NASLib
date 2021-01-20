@@ -1,9 +1,11 @@
 dataset: cifar10
-seed: 93
+seed: 99
+search_space: darts
 out_dir: run
 optimizer: darts
 
 search:
+  seed: 0 
   checkpoint_freq: 5
   batch_size: 64
   learning_rate: 0.025
