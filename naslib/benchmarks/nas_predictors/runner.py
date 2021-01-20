@@ -33,7 +33,8 @@ supported_search_spaces = {
 }
 
 
-load_labeled = (True if config.search_space == 'darts' else False)
+#load_labeled = (True if config.search_space == 'darts' else False)
+load_labeled = False
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 search_space = supported_search_spaces[config.search_space]
@@ -42,15 +43,13 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-#trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
 
 if config.optimizer == 'bananas':
     trainer.search(resume_from="")
     trainer.evaluate(resume_from="", dataset_api=dataset_api)
 elif config.optimizer in ['oneshot', 'rsws']:
-    predictor = OneShotPredictor(config, trainer,
-                                 encoding_type='adjacency_one_hot',
-                                 model_path=config.resume_from)
+    predictor = OneShotPredictor(config, trainer, model_path=config.model_path)
+
     predictor_evaluator = PredictorEvaluator(predictor, config=config)
     predictor_evaluator.adapt_search_space(search_space, load_labeled=load_labeled, dataset_api=dataset_api)
 

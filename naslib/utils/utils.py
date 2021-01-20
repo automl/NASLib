@@ -20,7 +20,6 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 import yaml
-import tensorflow as tf
 
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
@@ -71,6 +70,7 @@ Run on single machine:
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
+    parser.add_argument("--model_path", type=str, default=None, help="Path to saved model weights")
     parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
     parser.add_argument('--rank', default=0, type=int, help='node rank for distributed training')
     parser.add_argument('--gpu', default=None, type=int, help='GPU id to use.')
@@ -152,6 +152,7 @@ def get_config_from_args(args=None, config_type='nas'):
 
     config.eval_only = args.eval_only
     config.resume = args.resume
+    config.model_path = args.model_path
 
     # load config file
     config.merge_from_file(args.config_file)
@@ -329,7 +330,6 @@ def set_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
-    #tf.random.set_random_seed(seed)
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.enabled = True

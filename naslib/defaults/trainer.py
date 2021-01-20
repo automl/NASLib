@@ -170,6 +170,8 @@ class Trainer(object):
         self.optimizer.before_training()
         self._setup_checkpointers(resume_from)
 
+        loss = torch.nn.CrossEntropyLoss()
+
         if dataloader is None:
             # load only the validation data
             _, dataloader, _ = self.build_search_dataloaders(self.config)
@@ -182,7 +184,7 @@ class Trainer(object):
                 target_val = data_val[1].to(self.device, non_blocking=True)
 
                 logits_val = self.optimizer.graph(input_val)
-                val_loss = self.loss(logits_val, target_val)
+                val_loss = loss(logits_val, target_val)
 
                 self._store_accuracies(logits_val, data_val[1], 'val')
                 self.val_loss.update(float(val_loss.detach().cpu()))

@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
 from naslib.predictors import Predictor
-
+from naslib.search_spaces.darts.conversions import convert_naslib_to_genotype
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
@@ -14,19 +14,37 @@ print('device:', device)
 
 class OneShotPredictor(Predictor):
 
-    def __init__(self, config, trainer, encoding_type='adjacency_one_hot',
-                 model_path=None):
+    def __init__(self, config, trainer, model_path=None):
         self.config = config
         self.model = trainer
-        self.encoding_type = encoding_type
+        if trainer.optimizer.graph.get_type() == 'darts':
+            self.converter = convert_naslib_to_genotype
+        else:
+            pass
+
         if model_path is None:
+            # if no saved model is provided conduct the search from scratch.
+            # NOTE: that this is an expensive step and it should be avoided when
+            # using the oneshot model as performance predictor
+            print('No saved model found! Starting search...')
             self.model.search()
         else:
-            #TODO load model
-            pass
+            #TODO: change after refactoring checkpointer in NASLib
+            print('Loading model from {}'.format(model_path))
+            self.model.optimizer.graph.load_state_dict(torch.load(model_path)['model'])
+            print('Fineshed loading model')
 
 
     def __call__(self, archs):
+        """
+        Evaluate, i.e. do a forward pass for every image datapoint, the
+        one-shot model for every architecture in archs.
+            params:
+                archs: torch.Tensor where each element is an architecture encoding
+
+            return:
+                torch.Tensor with the predictions for every arch in archs
+        """
         prediction = []
         for arch in archs:
             # we have to iterate through all the architectures in the
@@ -37,26 +55,15 @@ class OneShotPredictor(Predictor):
             self.model.evaluate_oneshot(dataloader=None)
             prediction.append(self.model.errors_dict.valid_acc)
 
-        return torch.Tensor(prediction)
+        return prediction
 
 
     def fit(self, xtrain, ytrain, train_info=None,
             verbose=0):
 
         #NOTE: the train data here is not used at all to train the predictor
-        self.mean = np.mean(ytrain)
-        self.std = np.std(ytrain)
-
-        _xtrain = np.array([arch for arch in xtrain])
+        _xtrain = [self.converter(arch) for arch in xtrain]
         _ytrain = np.array(ytrain)
-
-        X_tensor = torch.FloatTensor(_xtrain).to(device)
-        y_tensor = torch.FloatTensor(_ytrain).to(device)
-
-        train_data = TensorDataset(X_tensor, y_tensor)
-        data_loader = DataLoader(train_data, batch_size=batch_size,
-                                 shuffle=True, drop_last=False,
-                                 pin_memory=False)
 
         train_pred = np.squeeze(self.query(xtrain))
         train_error = np.mean(abs(train_pred-ytrain))
@@ -64,21 +71,12 @@ class OneShotPredictor(Predictor):
 
 
     def query(self, xtest, info=None, eval_batch_size=None):
-        xtest = np.array([arch for arch in xtest])
-        X_tensor = torch.FloatTensor(xtest).to(device)
-        test_data = TensorDataset(X_tensor)
+        _xtest = [self.converter(arch) for arch in xtest]
 
-        eval_batch_size = len(xtest) if eval_batch_size is None else eval_batch_size
-        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size,
-                                      pin_memory=False)
-
-        pred = []
         with torch.no_grad():
-            for _, batch in enumerate(test_data_loader):
-                prediction = self(batch[0]).view(-1)
-                pred.append(prediction.cpu().numpy())
+            #pred = self(_xtest).view(-1).cpu().numpy()
+            pred = np.array(self(_xtest))
 
-        pred = np.concatenate(pred)
         return np.squeeze(pred)
 
 
