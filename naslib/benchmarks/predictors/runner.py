@@ -10,15 +10,14 @@ from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
-GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, LCEPredictor
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, \
+LCEPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.utils.utils import get_project_root
-
-from fvcore.common.config import CfgNode
 
 
 config = utils.get_config_from_args(config_type='predictor')
@@ -42,6 +41,7 @@ supported_predictors = {
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
+    'sotlema': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLEMA'),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),
     'rf': RandomForestPredictor(encoding_type='adjacency_one_hot'),
@@ -78,7 +78,7 @@ supported_predictors = {
     'dngo_path': DNGOPredictor(encoding_type='path'),
     'bohamiann_path': BOHAMIANN(encoding_type='path'),
     'bayes_lin_reg_path': BayesianLinearRegression(encoding_type='path'),
-    'gp_path': GPPredictor(encoding_type='path'),
+    'gp_path': GPPredictor(encoding_type='path')
 }
 
 supported_search_spaces = {

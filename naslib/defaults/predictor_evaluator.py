@@ -145,7 +145,9 @@ class PredictorEvaluator(object):
                     info_dict[lc_key] = info_dict[lc_key][:fidelity]
                 
         fit_time_start = time.time()
-        self.predictor.fit(xtrain, ytrain, train_info)
+        if self.config.predictor not in ['oneshot', 'rsws']:
+            # for oneshot predictors we do not fit
+            self.predictor.fit(xtrain, ytrain, train_info)
         fit_time_end = time.time()
         test_pred = self.predictor.query(xtest, test_info)
         query_time_end = time.time()
@@ -187,10 +189,7 @@ class PredictorEvaluator(object):
             train_data = self.load_dataset(load_labeled=self.load_labeled,
                                            data_size=train_size)
 
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                self.predictor.pre_compute(train_data[0], test_data[0])
-            
+            self.predictor.pre_compute(train_data[0], test_data[0])
             self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_train_size':
@@ -198,10 +197,7 @@ class PredictorEvaluator(object):
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
                                                 data_size=self.train_size_list[-1])
             
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                self.predictor.pre_compute(full_train_data[0], test_data[0])
-            
+            self.predictor.pre_compute(full_train_data[0], test_data[0])
             fidelity = self.fidelity_single
 
             for train_size in self.train_size_list:
@@ -214,10 +210,7 @@ class PredictorEvaluator(object):
             train_data = self.load_dataset(load_labeled=self.load_labeled,
                                            data_size=self.train_size_single)
 
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                self.predictor.pre_compute(train_data[0], test_data[0])
-
+            self.predictor.pre_compute(train_data[0], test_data[0])
             for fidelity in self.fidelity_list:
                 self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
@@ -226,10 +219,7 @@ class PredictorEvaluator(object):
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
                                                 data_size=self.train_size_list[-1])
 
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                logger.info("Load extra info")
-                self.predictor.pre_compute(full_train_data[0], test_data[0])
+            self.predictor.pre_compute(full_train_data[0], test_data[0])
 
             for train_size in self.train_size_list:
                 train_data = [data[:train_size] for data in full_train_data]
