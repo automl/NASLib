@@ -95,8 +95,9 @@ class Trainer(object):
             
             start_time = time.time()
             if self.optimizer.using_step_function:
-                for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
+                for step, data_train in enumerate(self.train_queue):
                     data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
+                    data_val = next(iter(self.valid_queue))
                     data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
 
                     stats = self.optimizer.step(data_train, data_val)
@@ -198,6 +199,7 @@ class Trainer(object):
             self._log_to_json()
 
         logger.info("Evaluation finished")
+        return self.val_top1.avg
 
 
     def evaluate(

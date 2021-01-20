@@ -53,31 +53,19 @@ class OneShotPredictor(Predictor):
             self.model.optimizer.set_alphas_from_path(arch)
             # NOTE: evaluation on the 25k validation data for now. provide a test
             # dataloader to evaluate on the test data
-            self.model.evaluate_oneshot(dataloader=None)
-            prediction.append(self.model.errors_dict.valid_acc)
+            val_acc = self.model.evaluate_oneshot(dataloader=None)
+            prediction.append(val_acc)
 
         return prediction
 
 
     def fit(self, xtrain, ytrain, train_info=None,
             verbose=0):
-
-        #NOTE: the train data here is not used at all to train the predictor
-        _xtrain = [self.converter(arch) for arch in xtrain]
-        _ytrain = np.array(ytrain)
-
-        train_pred = np.squeeze(self.query(xtrain))
-        train_error = np.mean(abs(train_pred-ytrain))
-        return train_error
+        pass
 
 
     def query(self, xtest, info=None, eval_batch_size=None):
         _xtest = [self.converter(arch) for arch in xtest]
-
-        with torch.no_grad():
-            #pred = self(_xtest).view(-1).cpu().numpy()
-            pred = np.array(self(_xtest))
-
-        return np.squeeze(pred)
+        return np.squeeze(np.array(self(_xtest)))
 
 

@@ -52,7 +52,7 @@ search:
   weight_decay: 0.0003
   warm_start_epochs: 0
   grad_clip: 5
-  train_portion: 0.5
+  train_portion: 0.9
   data_size: 25000
 
   cutout: False

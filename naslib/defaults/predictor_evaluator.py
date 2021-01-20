@@ -145,7 +145,9 @@ class PredictorEvaluator(object):
                     info_dict[lc_key] = info_dict[lc_key][:fidelity]
                 
         fit_time_start = time.time()
-        self.predictor.fit(xtrain, ytrain, train_info)
+        if self.config.predictor not in ['oneshot', 'rsws']:
+            # for oneshot predictors we do not fit
+            self.predictor.fit(xtrain, ytrain, train_info)
         fit_time_end = time.time()
         test_pred = self.predictor.query(xtest, test_info)
         query_time_end = time.time()
