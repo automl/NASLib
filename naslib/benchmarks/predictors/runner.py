@@ -71,6 +71,12 @@ supported_predictors = {
     'aug_lcgbdt': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
                                    all_curve=False, config=config,
                                    zero_cost_methods=['jacov'], model_name='gbdt'),
+    'gbdt_path': GBDTPredictor(encoding_type='path'),
+    'ngb_path': NGBoost(encoding_type='path'),
+    'dngo_path': DNGOPredictor(encoding_type='path'),
+    'bohamiann_path': BOHAMIANN(encoding_type='path'),
+    'bayes_lin_reg_path': BayesianLinearRegression(encoding_type='path'),
+    'gp_path': GPPredictor(encoding_type='path'),
 }
 
 supported_search_spaces = {

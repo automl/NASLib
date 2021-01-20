@@ -111,19 +111,18 @@ def encode_bonas(spec):
     a list of categorical ops starting from 0
     '''
     matrix, ops = spec['matrix'], spec['ops']
-    op_map = [OUTPUT, INPUT, *OPS]
+    op_map = [INPUT, *OPS, OUTPUT]
     ops_onehot = np.array([[i == op_map.index(op) for i in range(len(op_map))] for op in ops], dtype=np.float32)
 
-    matrix  = add_global_node(matrix,True)
+    # np.fill_diagonal(matrix, 1)
+    # matrix = np.transpose(matrix)
+    matrix = add_global_node(matrix, True)
     ops_onehot = add_global_node(ops_onehot,False)
-    
     matrix = np.array(matrix,dtype=np.float32)
     ops_onehot = np.array(ops_onehot,dtype=np.float32)
     dic = {
-        'num_vertices': 7,
         'adjacency': matrix,
         'operations': ops_onehot,
-        'mask': np.array([i < 7 for i in range(7)], dtype=np.float32),
         'val_acc': 0.0
     }
     return dic

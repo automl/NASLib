@@ -2,6 +2,8 @@
 # This is an implementation of gcn predictor for NAS from the paper:
 # Shi et al., 2020. Bridging the Gap between Sample-based and
 # One-shot Neural Architecture Search with BONAS
+# The original repo uses a fixed 0.001 lr for gcn training, 
+# However a 0.0001 lr with cosine schedule works better.
 
 import itertools
 import os
@@ -175,7 +177,7 @@ class BonasPredictor(Predictor):
 
     def fit(self, xtrain, ytrain, train_info=None,
             gcn_hidden=64,seed=0,batch_size=128,
-            epochs=100,lr=1e-3,wd=0):
+            epochs=100,lr=1e-4,wd=0):
 
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
@@ -194,7 +196,7 @@ class BonasPredictor(Predictor):
         self.model.to(device)
         criterion = nn.MSELoss()
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
-        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=lr)
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=0)
 
         self.model.train()
 
@@ -219,7 +221,7 @@ class BonasPredictor(Predictor):
     def query(self, xtest, info=None, eval_batch_size=100):
         test_data = np.array([encode(arch,encoding_type=self.encoding_type, ss_type=self.ss_type)
                             for arch in xtest])
-        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
+        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size,drop_last=False)
 
         self.model.eval()
         pred = []
