@@ -41,6 +41,7 @@ supported_predictors = {
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
+    'sotlema': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLEMA'),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),
     'rf': RandomForestPredictor(encoding_type='adjacency_one_hot'),
@@ -76,7 +77,7 @@ supported_predictors = {
     'dngo_path': DNGOPredictor(encoding_type='path'),
     'bohamiann_path': BOHAMIANN(encoding_type='path'),
     'bayes_lin_reg_path': BayesianLinearRegression(encoding_type='path'),
-    'gp_path': GPPredictor(encoding_type='path'),
+    'gp_path': GPPredictor(encoding_type='path')
 }
 
 supported_search_spaces = {

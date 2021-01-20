@@ -7,7 +7,7 @@ import numpy as np
 
 class SoLosspredictor(Predictor):
     
-    def __init__(self, metric='train_loss', sum_option='SoTL'):
+    def __init__(self, metric='train_loss', sum_option='SoTLEMA'):
         self.metric = metric
         self.sum_option = sum_option
         self.name = 'SoLoss'
@@ -26,7 +26,7 @@ class SoLosspredictor(Predictor):
             # assume we have the training loss for each preceding epoch: past_loss is a list
             if self.sum_option == 'SoTLE' or self.sum_option == 'SoVLE':
                 score = past_loss[-1]
-            elif self.sum_option == 'SoTL':
+            elif self.sum_option == 'SoTLEMA':
                 EMA_SoTL = []
                 mu = 0.99
                 for se in range(trained_epochs):
