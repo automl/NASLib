@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from naslib.predictors import Predictor
 from naslib.search_spaces.darts.conversions import convert_naslib_to_genotype
+from naslib.search_spaces.nasbench201.conversions import convert_naslib_to_op_indices
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
@@ -20,7 +21,7 @@ class OneShotPredictor(Predictor):
         if trainer.optimizer.graph.get_type() == 'darts':
             self.converter = convert_naslib_to_genotype
         else:
-            pass
+            self.converter = convert_naslib_to_op_indices
 
         if model_path is None:
             # if no saved model is provided conduct the search from scratch.

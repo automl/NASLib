@@ -40,7 +40,7 @@ search:
   num_candidates: 100
   
   # BP
-  predictor_type: feedforward
+  predictor_type: oneshot
   debug_predictor: False
 
 

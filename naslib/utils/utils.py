@@ -70,7 +70,7 @@ Run on single machine:
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
-    parser.add_argument("--model_path", type=str, default=None, help="Path to saved model weights")
+    parser.add_argument("--model-path", type=str, default=None, help="Path to saved model weights")
     parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
     parser.add_argument('--rank', default=0, type=int, help='node rank for distributed training')
     parser.add_argument('--gpu', default=None, type=int, help='GPU id to use.')
