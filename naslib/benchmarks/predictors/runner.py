@@ -82,7 +82,9 @@ supported_predictors = {
     'omni': OmniPredictor(zero_cost=['jacov'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot', 
                           config=config),
     'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
-                               config=config)
+                               config=config),
+    'omni_sc': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
+                               config=config),
 }
 
 supported_search_spaces = {
