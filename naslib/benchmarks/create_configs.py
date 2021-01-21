@@ -83,6 +83,8 @@ def main(args):
             train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9, 10)]
             fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
 
+        elif args.experiment_type == 'vary_train_size' and 'lofi' in args.predictor:
+            train_size_list = [train_size_list[i] for i in (1, 2, 3, 4, 5, 6, 7, 8, 9)]
 
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {

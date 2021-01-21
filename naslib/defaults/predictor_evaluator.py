@@ -238,6 +238,7 @@ class PredictorEvaluator(object):
         METRICS = ['mae', 'rmse', 'pearson', 'spearman', 'kendalltau', 'kt_2dec', 'kt_1dec', \
                    'precision_10', 'precision_20']
         metrics_dict = {}
+
         try:
             metrics_dict['mae'] = np.mean(abs(test_pred - ytest))
             metrics_dict['rmse'] = metrics.mean_squared_error(ytest, test_pred, squared=False)
@@ -251,11 +252,13 @@ class PredictorEvaluator(object):
                 top_test_pred = np.array([y > sorted(test_pred)[max(-len(test_pred),-k-1)] for y in test_pred])
                 metrics_dict['precision_{}'.format(k)] = sum(top_ytest & top_test_pred) / k
         except:
+            for metric in METRICS:
+                metrics_dict[metric] = float('nan')
+        if np.isnan(metrics_dict['pearson']) or not np.isfinite(metrics_dict['pearson']):
             logger.info('Error when computing metrics. Ytest and test_pred are:')
             logger.info(ytest)
             logger.info(test_pred)
-            for metric in METRICS:
-                metrics_dict[metric] = float('nan')
+
         return metrics_dict
 
     def _log_to_json(self):
