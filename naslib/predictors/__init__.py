@@ -14,3 +14,4 @@ from .trees import XGBoost, NGBoost, GBDTPredictor, RandomForestPredictor
 from .bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression, LCNetPredictor
 from .gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 from .oneshot import OneShotPredictor
+from .omni import OmniPredictor
