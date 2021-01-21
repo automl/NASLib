@@ -36,6 +36,7 @@ class OmniPredictor(Predictor):
         self.config = config        
         self.n_hypers = n_hypers
         self.config = config
+        self.lce = lce
 
     def pre_compute(self, xtrain, xtest):
         """
@@ -102,7 +103,7 @@ class OmniPredictor(Predictor):
         scores = cross_val_score(model, xtrain, ytrain, cv=3)
         return np.mean(scores)
 
-    def prepare_features(self, xdata, train=True):
+    def prepare_features(self, xdata, info, train=True):
         # prepare training data features
         full_xdata = [[] for _ in range(len(xdata))]
         if len(self.zero_cost) > 0: 
@@ -112,23 +113,33 @@ class OmniPredictor(Predictor):
                 else:
                     full_xdata = [[*x, self.xtest_zc_info[key][i]] for i, x in enumerate(full_xdata)]
 
+        if 'sotle' in self.lce:
+            train_losses = np.array([lcs['TRAIN_LOSS_lc'][-1] for lcs in info])
+            mean = np.mean(train_losses)
+            std = np.std(train_losses)
+            normalized = (train_losses - mean)/std
+            full_xdata = [[*x, normalized[i]] for i, x in enumerate(full_xdata)]
+
+        if 'valacc' in self.lce:
+            val_accs = [lcs['VAL_ACCURACY_lc'][-1] for lcs in info]
+            mean = np.mean(val_accs)
+            std = np.std(val_accs)
+            normalized = (val_accs - mean)/std
+            full_xdata = [[*x, normalized[i]] for i, x in enumerate(full_xdata)]
+
         if self.encoding_type is not None:
             xdata_encoded = np.array([encode(arch, encoding_type=self.encoding_type,
                                              ss_type=self.ss_type) for arch in xdata])            
             full_xdata = [[*x, *xdata_encoded[i]] for i, x in enumerate(full_xdata)]
-        
-        # todo:
-        #if self.lce is not None:
-        
+
         return full_xdata
         
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
-        
         # prepare training data labels
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         ytrain = (np.array(ytrain)-self.mean)/self.std
-        xtrain = self.prepare_features(xtrain, train=True)
+        xtrain = self.prepare_features(xtrain, info, train=True)
         params = self.run_hpo(xtrain, ytrain)
 
         # todo: this code is repeated in cross_validate
@@ -141,18 +152,26 @@ class OmniPredictor(Predictor):
         self.model.fit(xtrain, ytrain)
 
     def query(self, xtest, info):
-        test_data = self.prepare_features(xtest, train=False)
+        test_data = self.prepare_features(xtest, info, train=False)
 
         return np.squeeze(self.model.predict(test_data)) * self.std + self.mean
     
-    def get_data_reqs_commented(self):
+    def get_data_reqs(self):
         """
         Returns a dictionary with info about whether the predictor needs
         extra info to train/query.
         """
-        reqs = {'requires_partial_lc':True, 
-                'metric':self.metric, 
-                'requires_hyperparameters':True, 
-                'hyperparams':['flops', 'latency', 'params']
-               }
+        if len(self.lce) > 0:
+            # add the metrics needed for the lce predictors
+            required_metric_dict = {'sotle':Metric.TRAIN_LOSS, 'valacc':Metric.VAL_ACCURACY}
+            self.metric = [required_metric_dict[key] for key in self.lce]
+
+            reqs = {'requires_partial_lc':True, 
+                    'metric':self.metric, 
+                    'requires_hyperparameters':False, 
+                    'hyperparams':{}
+                   }
+        else:
+            reqs = super().get_data_reqs()
+
         return reqs
