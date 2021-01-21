@@ -79,9 +79,9 @@ supported_predictors = {
     'bohamiann_path': BOHAMIANN(encoding_type='path'),
     'bayes_lin_reg_path': BayesianLinearRegression(encoding_type='path'),
     'gp_path': GPPredictor(encoding_type='path'),
-    'omni': OmniPredictor(zero_cost=['jacov'], lce=None, encoding_type='adjacency_one_hot', 
+    'omni': OmniPredictor(zero_cost=['jacov'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot', 
                           config=config),
-    'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=None, encoding_type='adjacency_one_hot', 
+    'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                config=config)
 }
 
