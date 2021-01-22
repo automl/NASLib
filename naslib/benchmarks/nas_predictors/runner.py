@@ -22,8 +22,8 @@ utils.log_args(config)
 
 supported_optimizers = {
     'bananas': Bananas(config),
-    'oneshot': OneShotNASOptimizer(config),
-    'rsws': RandomNASOptimizer(config),
+    #'oneshot': OneShotNASOptimizer(config),
+    #'rsws': RandomNASOptimizer(config),
 }
 
 supported_search_spaces = {
