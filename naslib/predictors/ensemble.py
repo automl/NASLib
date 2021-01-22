@@ -11,7 +11,7 @@ from naslib.predictors.bnn import DNGOPredictor, BOHAMIANN, \
 BayesianLinearRegression
 from naslib.predictors.seminas import SemiNASPredictor
 from naslib.predictors.gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
-
+from naslib.predictors.omni import OmniPredictor
 
 class Ensemble(Predictor):
     
@@ -24,7 +24,7 @@ class Ensemble(Predictor):
         self.predictor_type = predictor_type
         self.encoding_type = encoding_type
         self.ss_type = ss_type
-    
+
     def get_ensemble(self):
         # TODO: if encoding_type is not None, set the encoding type
 
@@ -63,6 +63,9 @@ class Ensemble(Predictor):
                                                   encoding_type='adjacency_one_hot',
                                                   optimize_gp_hyper=True, 
                                                   num_steps=200),
+            'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
+                                       ss_type=self.ss_type, run_pre_compute=False, n_hypers=50, 
+                                       min_train_size=30)
         }
 
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]
@@ -72,7 +75,7 @@ class Ensemble(Predictor):
         self.ensemble = self.get_ensemble()
         train_errors = []
         for i in range(self.num_ensemble):
-            train_error = self.ensemble[i].fit(xtrain, ytrain)
+            train_error = self.ensemble[i].fit(xtrain, ytrain, train_info)
             train_errors.append(train_error)
         
         return train_errors
@@ -80,7 +83,7 @@ class Ensemble(Predictor):
     def query(self, xtest, info=None):
         predictions = []
         for i in range(self.num_ensemble):
-            prediction = self.ensemble[i].query(xtest)
+            prediction = self.ensemble[i].query(xtest, info)
             predictions.append(prediction)
             
         return np.array(predictions)

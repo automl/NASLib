@@ -8,10 +8,11 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.bananas.acquisition_functions import acquisition_function
 
 from naslib.predictors.ensemble import Ensemble
+from naslib.predictors.zerocost_estimators import ZeroCostEstimators
 
 from naslib.search_spaces.core.query_metrics import Metric
 
-from naslib.utils.utils import AttrDict, count_parameters_in_MB
+from naslib.utils.utils import AttrDict, count_parameters_in_MB, get_train_val_loaders
 from naslib.utils.logging import log_every_n_seconds
 
 
@@ -46,12 +47,16 @@ class Bananas(MetaOptimizer):
         self.next_batch = []
         self.history = torch.nn.ModuleList()
 
+        self.zc = ('omni' in self.predictor_type)
+
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert search_space.QUERYABLE, "Bananas is currently only implemented for benchmarks."
         
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE      
         self.dataset_api = dataset_api
+        if self.zc:
+            self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode='train')
     
     def new_epoch(self, epoch):
 
@@ -59,8 +64,13 @@ class Bananas(MetaOptimizer):
             # randomly sample initial architectures 
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture(dataset_api=self.dataset_api)        
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
+            if self.zc:                
+                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type='jacov')
+                zc_method.train_loader = copy.deepcopy(self.train_loader)
+                score = zc_method.query([model.arch])
+                model.zc_score = np.squeeze(score)
             
             self.train_data.append(model)
             self._update_history(model)
@@ -73,7 +83,10 @@ class Bananas(MetaOptimizer):
                 ensemble = Ensemble(num_ensemble=self.num_ensemble,
                                     ss_type=self.search_space.get_type(),
                                     predictor_type=self.predictor_type)
-                train_error = ensemble.fit(xtrain, ytrain)
+                zc_scores = None
+                if self.zc:
+                    zc_scores = [m.zc_score for m in self.train_data]
+                train_error = ensemble.fit(xtrain, ytrain, train_info=zc_scores)
 
                 # define an acquisition function
                 acq_fn = acquisition_function(ensemble=ensemble, 
@@ -82,11 +95,12 @@ class Bananas(MetaOptimizer):
                 
                 # optimize the acquisition function to output k new architectures
                 candidates = []
+                zc_scores = []
                 if self.acq_fn_optimization == 'random_sampling':
-                    
+
                     for _ in range(self.num_candidates):
                         arch = self.search_space.clone()
-                        arch.sample_random_architecture(dataset_api=self.dataset_api)        
+                        arch.sample_random_architecture(dataset_api=self.dataset_api)
                         candidates.append(arch)
                     
                 elif self.acq_fn_optimization == 'mutation':
@@ -107,7 +121,13 @@ class Bananas(MetaOptimizer):
                     logger.info('{} is not yet supported as a acq fn optimizer'.format(encoding_type))
                     raise NotImplementedError()
 
-                values = [acq_fn(encoding) for encoding in candidates]
+                if self.zc:
+                    zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type='jacov')
+                    zc_method.train_loader = copy.deepcopy(self.train_loader)
+                    zc_scores = zc_method.query(candidates)
+                    values = [acq_fn(enc, score) for enc, score in zip(candidates, zc_scores)]
+                else:
+                    values = [acq_fn(encoding) for encoding in candidates]
                 sorted_indices = np.argsort(values)
                 choices = [candidates[i] for i in sorted_indices[-self.k:]]                        
                 self.next_batch = [*choices]
@@ -116,6 +136,12 @@ class Bananas(MetaOptimizer):
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable            
             model.arch = self.next_batch.pop()
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
+            if self.zc:                
+                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type='jacov')
+                zc_method.train_loader = copy.deepcopy(self.train_loader)
+                score = zc_method.query([model.arch])
+                model.zc_score = np.squeeze(score)
+
             self._update_history(model)
             self.train_data.append(model)
         

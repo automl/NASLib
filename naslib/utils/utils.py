@@ -127,7 +127,8 @@ def get_config_from_args(args=None, config_type='nas'):
             config = CfgNode.load_cfg(f)
     elif config_type == 'nas_predictor':
         # load the default base
-        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+        #with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'discrete_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
 
     if args is None:
