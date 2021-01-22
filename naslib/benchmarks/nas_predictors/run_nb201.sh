@@ -9,7 +9,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=bo201_c10_jan21
+s3_folder=bo201_c10_jan22
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
