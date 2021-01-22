@@ -136,7 +136,12 @@ def main(args):
                            'num_arches_to_mutate': 2,
                            'max_mutations': 1,
                            'num_candidates': 200,
-                           'debug_predictor': False
+                           'batch_size': 256,
+                           'data_size': 25000,
+                           'cutout': False,
+                           'cutout_length': 16,
+                           'cutout_prob': 1.0,
+                           'train_portion': 0.7
                           }
             }
 

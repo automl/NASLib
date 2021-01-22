@@ -28,15 +28,19 @@ def parse_params(params, identifier):
 
 class OmniPredictor(Predictor):
 
-    def __init__(self, zero_cost, lce, encoding_type, config, n_hypers=50):
+    def __init__(self, zero_cost, lce, encoding_type, ss_type=None, config=None, 
+                 n_hypers=50, run_pre_compute=True, min_train_size=0):
         
         self.zero_cost = zero_cost
         self.lce = lce
         self.encoding_type = encoding_type
-        self.config = config        
+        self.config = config
         self.n_hypers = n_hypers
         self.config = config
         self.lce = lce
+        self.ss_type = ss_type
+        self.run_pre_compute = run_pre_compute
+        self.min_train_size = min_train_size
 
     def pre_compute(self, xtrain, xtest):
         """
@@ -93,7 +97,6 @@ class OmniPredictor(Predictor):
         return best_params
         
     def cross_validate(self, xtrain, ytrain, params):
-
         base_learner = DecisionTreeRegressor(criterion='friedman_mse',
                                              random_state=None,
                                              splitter='best',
@@ -107,11 +110,15 @@ class OmniPredictor(Predictor):
         # prepare training data features
         full_xdata = [[] for _ in range(len(xdata))]
         if len(self.zero_cost) > 0: 
-            for key in self.xtrain_zc_info:
-                if train:
-                    full_xdata = [[*x, self.xtrain_zc_info[key][i]] for i, x in enumerate(full_xdata)]
-                else:
-                    full_xdata = [[*x, self.xtest_zc_info[key][i]] for i, x in enumerate(full_xdata)]
+            if self.run_pre_compute:
+                for key in self.xtrain_zc_info:
+                    if train:
+                        full_xdata = [[*x, self.xtrain_zc_info[key][i]] for i, x in enumerate(full_xdata)]
+                    else:
+                        full_xdata = [[*x, self.xtest_zc_info[key][i]] for i, x in enumerate(full_xdata)]
+            else:
+                # if the zero_cost scores were not precomputed, they are in info
+                full_xdata = [[*x, info[i]] for i, x in enumerate(full_xdata)]
 
         if 'sotle' in self.lce:
             train_losses = np.array([lcs['TRAIN_LOSS_lc'][-1] for lcs in info])
@@ -134,12 +141,19 @@ class OmniPredictor(Predictor):
 
         return full_xdata
         
-    def fit(self, xtrain, ytrain, info, learn_hyper=True):
+    def fit(self, xtrain, ytrain, train_info, learn_hyper=True):
+
+        # if we are below the min train size, use the zero_cost and lce info
+        if len(xtrain) < self.min_train_size:
+            self.trained = False
+            return None
+        self.trained = True
+
         # prepare training data labels
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         ytrain = (np.array(ytrain)-self.mean)/self.std
-        xtrain = self.prepare_features(xtrain, info, train=True)
+        xtrain = self.prepare_features(xtrain, train_info, train=True)
         params = self.run_hpo(xtrain, ytrain)
 
         # todo: this code is repeated in cross_validate
@@ -152,10 +166,13 @@ class OmniPredictor(Predictor):
         self.model.fit(xtrain, ytrain)
 
     def query(self, xtest, info):
-        test_data = self.prepare_features(xtest, info, train=False)
+        if self.trained:
+            test_data = self.prepare_features(xtest, info, train=False)
+            return np.squeeze(self.model.predict(test_data)) * self.std + self.mean
+        else:
+            logger.info('below the train size, so returning info')
+            return info
 
-        return np.squeeze(self.model.predict(test_data)) * self.std + self.mean
-    
     def get_data_reqs(self):
         """
         Returns a dictionary with info about whether the predictor needs
