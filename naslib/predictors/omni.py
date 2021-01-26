@@ -139,7 +139,7 @@ class OmniPredictor(Predictor):
                                              ss_type=self.ss_type) for arch in xdata])            
             full_xdata = [[*x, *xdata_encoded[i]] for i, x in enumerate(full_xdata)]
 
-        return full_xdata
+        return np.array(full_xdata)
         
     def fit(self, xtrain, ytrain, train_info, learn_hyper=True):
 

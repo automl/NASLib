@@ -129,7 +129,7 @@ class Bananas(MetaOptimizer):
                 else:
                     values = [acq_fn(encoding) for encoding in candidates]
                 sorted_indices = np.argsort(values)
-                choices = [candidates[i] for i in sorted_indices[-self.k:]]                        
+                choices = [candidates[i] for i in sorted_indices[-self.k:]]
                 self.next_batch = [*choices]
 
             # train the next architecture chosen by the neural predictor

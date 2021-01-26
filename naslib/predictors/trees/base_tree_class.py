@@ -6,10 +6,11 @@ from naslib.predictors.predictor import Predictor
 
 class BaseTree(Predictor):
 
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
+    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', zc=False):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
         self.ss_type = ss_type
+        self.zc = zc
 
     @property
     def parameters(self):
@@ -35,7 +36,13 @@ class BaseTree(Predictor):
             # when used in itself, we use
             xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
                                       ss_type=self.ss_type) for arch in xtrain])
+
+            if self.zc:
+                mean, std = -10000000.0, 150000000.0
+                xtrain = [[*x, (train_info[i]-mean)/std] for i, x in enumerate(xtrain)]
+            xtrain = np.array(xtrain)
             ytrain = np.array(ytrain)
+
         else:
             # when used in aug_lcsvr we feed in ndarray directly
             xtrain = xtrain
@@ -60,6 +67,11 @@ class BaseTree(Predictor):
             #  when used in itself, we use
             xtest = np.array([encode(arch, encoding_type=self.encoding_type,
                                  ss_type=self.ss_type) for arch in xtest])
+            if self.zc:
+                mean, std = -10000000.0, 150000000.0
+                xtest = [[*x, (info[i]-mean)/std] for i, x in enumerate(xtest)]
+            xtest = np.array(xtest)
+
         else:
             # when used in aug_lcsvr we feed in ndarray directly
             xtest = xtest
