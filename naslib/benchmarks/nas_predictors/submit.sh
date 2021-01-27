@@ -13,7 +13,7 @@ do
 		do
 			for e in $epochs
 			do
-				sbatch --bosch -J ${s}\_${o}\_$p\_$e slurm_job.sh $s $o $p $e
+				sbatch -J ${s}\_${o}\_$p\_$e slurm_job.sh $s $o $p $e
 				echo $s $o 0.$p\_$e
 			done
 		done

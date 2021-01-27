@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p bosch_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
+#SBATCH -p alldlc_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH --gres=gpu:1          # reserves one GPU
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
@@ -14,7 +14,7 @@ start=`date +%s`
 
 # Activate virtual env so that run_experiment can load the correct packages
 source activate python37
-python runner.py --config-file nas_predictor_config.yaml search_space $1 optimizer $2 search.predictor_type $2 seed $SLURM_ARRAY_TASK_ID search.seed $SLURM_ARRAY_TASK_ID search.train_portion 0.$3 search.epochs $4 --out_dir run_epochs_size/$3\_$4
+python runner.py --config-file nas_predictor_config.yaml search_space $1 optimizer $2 search.predictor_type $2 seed $SLURM_ARRAY_TASK_ID search.seed $SLURM_ARRAY_TASK_ID search.train_portion 0.$3 search.epochs $4 out_dir run_epochs_size/$3\_$4
 
 
 end=`date +%s`
