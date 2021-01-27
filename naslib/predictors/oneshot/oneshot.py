@@ -55,6 +55,8 @@ class OneShotPredictor(Predictor):
             # dataloader to evaluate on the test data
             val_acc = self.model.evaluate_oneshot(dataloader=None)
             prediction.append(val_acc)
+        print('Predictions:')
+        print(prediction)
 
         return prediction
 

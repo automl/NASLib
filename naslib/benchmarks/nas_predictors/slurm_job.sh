@@ -4,7 +4,7 @@
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -D .
-#SBATCH -a 1-5 # array size
+#SBATCH -a 1 # array size
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
@@ -14,7 +14,7 @@ start=`date +%s`
 
 # Activate virtual env so that run_experiment can load the correct packages
 source activate python37
-python runner.py --config-file nas_predictor_config.yaml search_space $1 optimizer $2 search.predictor_type $2 seed $SLURM_ARRAY_TASK_ID search.seed $SLURM_ARRAY_TASK_ID search.train_portion 0.9
+python runner.py --config-file nas_predictor_config.yaml search_space $1 optimizer $2 search.predictor_type $2 seed $SLURM_ARRAY_TASK_ID search.seed $SLURM_ARRAY_TASK_ID search.train_portion 0.$3 search.epochs $4 --out_dir run_epochs_size/$3\_$4
 
 
 end=`date +%s`
