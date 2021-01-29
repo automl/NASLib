@@ -1,6 +1,5 @@
-predictors=(lce)
-
-experiment_types=(vary_fidelity)
+predictors=(jacov snip lcsvr sotl sotle)
+experiment_types=(single single vary_both vary_fidelity vary_fidelity)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -10,7 +9,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p301_jan17
+s3_folder=p301_jan29
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
