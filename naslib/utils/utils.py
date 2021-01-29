@@ -216,6 +216,12 @@ def get_train_val_loaders(config, mode):
         train_transform, valid_transform = _data_transforms_svhn(config)
         train_data = dset.SVHN(root=data, split='train', download=True, transform=train_transform)
         test_data = dset.SVHN(root=data, split='test', download=True, transform=valid_transform)
+    elif dataset == 'ImageNet16-120':
+        from naslib.utils.DownsampledImageNet import ImageNet16
+        train_transform, valid_transform = _data_transforms_ImageNet_16_120(config)
+        data_folder = f'{data}/{dataset}'
+        train_data = ImageNet16(root=data_folder, train=True, transform=train_transform, use_num_of_class_only=120)
+        test_data = ImageNet16(root=data_folder, train=False, transform=valid_transform, use_num_of_class_only=120)
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
@@ -305,6 +311,25 @@ def _data_transforms_cifar100(args):
     ])
     return train_transform, valid_transform
 
+def _data_transforms_ImageNet_16_120(args):
+    IMAGENET16_MEAN = [x / 255 for x in [122.68, 116.66, 104.01]]
+    IMAGENET16_STD = [x / 255 for x in [63.22,  61.26 , 65.09]]
+
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(16, padding=2),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+    ])
+    if args.cutout:
+        train_transform.transforms.append(Cutout(args.cutout_length,
+                                                 args.cutout_prob))
+
+    valid_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+    ])
+    return train_transform, valid_transform
 
 class TensorDatasetWithTrans(Dataset):
     """

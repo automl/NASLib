@@ -2,12 +2,21 @@
 
 optimizers="oneshot rsws"
 space="darts nasbench201"
+portion="25 5 75 9"
+epochs="25 50 100 150"
 
 for s in $space
 do
 	for o in $optimizers
 	do
-		sbatch -J ${s}\_${o} slurm_job.sh $s $o
+		for p in $portion
+		do
+			for e in $epochs
+			do
+				sbatch -J ${s}\_${o}\_$p\_$e slurm_job.sh $s $o $p $e
+				echo $s $o 0.$p\_$e
+			done
+		done
 	done
 done
 

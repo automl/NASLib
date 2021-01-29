@@ -39,7 +39,7 @@ class Ensemble(Predictor):
                                 encoding_type='gcn'),
             'bonas': BonasPredictor(ss_type=self.ss_type,
                                     encoding_type='bonas'),
-            'xgb': XGBoost(ss_type=self.ss_type,
+            'xgb': XGBoost(ss_type=self.ss_type, zc=False,
                            encoding_type='adjacency_one_hot'),
             'ngb': NGBoost(ss_type=self.ss_type,
                            encoding_type='adjacency_one_hot'),
@@ -62,7 +62,7 @@ class Ensemble(Predictor):
             'var_sparse_gp': VarSparseGPPredictor(ss_type=self.ss_type,
                                                   encoding_type='adjacency_one_hot',
                                                   optimize_gp_hyper=True, 
-                                                  num_steps=200),
+                                                  num_steps=200, zc=False),
             'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                        ss_type=self.ss_type, run_pre_compute=False, n_hypers=50, 
                                        min_train_size=100)

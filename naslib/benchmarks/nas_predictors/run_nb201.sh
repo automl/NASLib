@@ -1,5 +1,5 @@
-optimizer=bananas
-predictors=(omni_lofi var_sparse_gp)
+optimizer=oneshot
+predictors=(oneshot rsws)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -41,6 +41,7 @@ do
         echo ================running $predictor trial: $t =====================
         python $base_file/benchmarks/nas_predictors/runner.py --config-file $config_file
     done
+<<<<<<< HEAD
     if [ "save_to_s3" ]
     then
         # zip and save to s3
@@ -49,3 +50,13 @@ do
         python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
     fi
 done
+=======
+    #if [ "save_to_s3" ]
+    #then
+        # zip and save to s3
+        #echo zipping and saving to s3
+        #zip -r $out_dir.zip $out_dir
+        #python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
+    #fi
+done
+>>>>>>> predictors

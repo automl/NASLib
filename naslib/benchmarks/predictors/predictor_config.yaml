@@ -2,11 +2,11 @@
 # experiment types: single, vary_train_size, vary_fidelity
 experiment_type: single
 search_space: nasbench201
-predictor: feedforward
+predictor: snip
 test_size: 100
 seed: 1000
 
-dataset: cifar10
+dataset: ImageNet16-120
 out_dir: run
 
 train_size_list: [8, 12, 20, 32, 50, 80, 128, 203, 322, 512]

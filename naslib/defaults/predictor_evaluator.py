@@ -55,7 +55,7 @@ class PredictorEvaluator(object):
             self.hyperparameters = True
         elif self.search_space.get_type() == 'darts':
             self.full_lc = True
-            self.hyperparameters = False
+            self.hyperparameters = True
         else:
             raise NotImplementedError('This search space is not yet implemented in PredictorEvaluator.')
 
@@ -231,6 +231,7 @@ class PredictorEvaluator(object):
             raise NotImplementedError()
 
         self._log_to_json()
+        return self.results
 
     def compare(self, ytest, test_pred):
         ytest = np.array(ytest)
