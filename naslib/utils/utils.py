@@ -219,8 +219,9 @@ def get_train_val_loaders(config, mode):
     elif dataset == 'ImageNet16-120':
         from naslib.utils.DownsampledImageNet import ImageNet16
         train_transform, valid_transform = _data_transforms_ImageNet_16_120(config)
-        train_data = ImageNet16(root=data, train=True, transform=train_transform, use_num_of_class_only=120)
-        test_data = ImageNet16(root=data, train=False, transform=valid_transform, use_num_of_class_only=120)
+        data_folder = f'{data}/{dataset}'
+        train_data = ImageNet16(root=data_folder, train=True, transform=train_transform, use_num_of_class_only=120)
+        test_data = ImageNet16(root=data_folder, train=False, transform=valid_transform, use_num_of_class_only=120)
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
