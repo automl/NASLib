@@ -105,7 +105,7 @@ class NasBench101SearchSpace(Graph):
             raise NotImplementedError()
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query nasbench101')
-        assert epoch in [-1, 108, None] and not full_lc, 'nasbench101 does not have full learning curve information'
+        assert epoch in [-1, 4, 12, 36, 108, None], 'nasbench101 does not have full learning curve information'
     
         metric_to_nb101 = {
             Metric.TRAIN_ACCURACY: 'train_accuracy',
@@ -124,6 +124,15 @@ class NasBench101SearchSpace(Graph):
             return -1
         
         query_results = dataset_api['nb101_data'].query(api_spec)
+        if full_lc:
+            vals =  [dataset_api['nb101_data'].query(api_spec, epochs=e)[metric_to_nb101[metric]] for e in [4, 12, 36, 108]]
+            # return a learning curve with unique values only at 4, 12, 36, 108
+            nums = [4, 8, 20, 56]
+            lc = [val for i, val in enumerate(vals) for _ in range(nums[i])]
+            if epoch == -1:
+                return lc
+            else:
+                return lc[:epoch]
 
         if metric == Metric.RAW:
             return query_results

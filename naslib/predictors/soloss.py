@@ -3,6 +3,8 @@
 # Ru, B. et al., 2020. "Revisiting the Train Loss: an Efficient Performance Estimator for Neural Architecture Search". arXiv preprint arXiv:2006.04492.
 
 from naslib.predictors.predictor import Predictor
+from naslib.search_spaces.core.query_metrics import Metric
+
 import numpy as np
 
 class SoLosspredictor(Predictor):
@@ -11,6 +13,7 @@ class SoLosspredictor(Predictor):
         self.metric = metric
         self.sum_option = sum_option
         self.name = 'SoLoss'
+        self.need_separate_hpo = False
 
     def query(self, xtest, info):
         """
@@ -38,7 +41,10 @@ class SoLosspredictor(Predictor):
                 score = np.sum(EMA_SoTL)
             else:
                 score = np.sum(past_loss)
-            test_set_scores.append(-score)
+            if self.metric in [Metric.VAL_LOSS, Metric.TRAIN_LOSS, Metric.TEST_LOSS]:
+                test_set_scores.append(-score)
+            else:
+                test_set_scores.append(score)
             
         return np.array(test_set_scores)
     
