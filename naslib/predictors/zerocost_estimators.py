@@ -108,6 +108,8 @@ class ZeroCostEstimators(Predictor):
                 with torch.no_grad():
                     saliences = [(grad * weight).view(-1).abs() for weight, grad in zip(network.parameters(), grads)]
                     score = torch.sum(torch.cat(saliences)).cpu().numpy()
+                    if hasattr(self, 'ss_type') and self.ss_type == 'darts':
+                        score = -score
 
             # print(f'nclass={self.num_classes}, scores={score}')
             test_set_scores.append(score)

@@ -73,19 +73,19 @@ def main(args):
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]
 
-        if args.experiment_type == 'vary_both' and 'aug' in args.predictor:
-            train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9)]
-            fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
+        if args.experiment_type == 'vary_both' and 'svr' in args.predictor:
+            train_size_list.pop(0)
             
-        elif args.experiment_type == 'vary_both':
+        elif args.experiment_type == 'vary_both' and 'omni' in args.predictor:
+            train_size_list.pop(0)
+            train_size_list.pop(-1)
+            
+        #elif False and args.experiment_type == 'vary_both':
             # vary_both is computationally expensive because it tries all combos of train_size and fidelity
             # also lcsvr doesn't work with fidelity < 3 or train_size<=5 or 8
 
-            train_size_list = [train_size_list[i] for i in (1, 2, 3, 4, 5, 6, 7, 8, 9)]
-            fidelity_list = [fidelity_list[i] for i in (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)]
-
-            #train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9, 10)]
-            #fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
+            #train_size_list = [train_size_list[i] for i in (1, 2, 3, 4, 5, 6, 7, 8, 9)]
+            #fidelity_list = [fidelity_list[i] for i in (4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)]
 
         elif args.experiment_type == 'vary_train_size' and 'lofi' in args.predictor:
             train_size_list = [train_size_list[i] for i in (1, 2, 3, 4, 5, 6, 7, 8, 9)]
