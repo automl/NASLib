@@ -75,7 +75,10 @@ def main(args):
 
         if args.experiment_type == 'vary_both' and 'svr' in args.predictor:
             train_size_list.pop(0)
-            
+            fidelity_list.pop(0)
+            fidelity_list.pop(0)
+            fidelity_list.pop(0)
+
         elif args.experiment_type == 'vary_both' and 'omni' in args.predictor:
             train_size_list.pop(0)
             train_size_list.pop(-1)
