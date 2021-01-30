@@ -1,5 +1,5 @@
-predictors=(lcsvr)
-experiment_types=(vary_both)
+predictors=(lcsvr jacov snip sotl sotle)
+experiment_types=(vary_both single single vary_fidelity vary_fidelity)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -9,18 +9,18 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p301_jan29_2
+s3_folder=p201_im_jan29
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
-search_space=darts
-dataset=cifar10
+search_space=nasbench201
+dataset=ImageNet16-120
 
 # other variables:
 trials=100
 end_seed=$(($start_seed + $trials - 1))
 save_to_s3=true
-test_size=100
+test_size=200
 
 # create config files
 for i in $(seq 0 $((${#predictors[@]}-1)) )
