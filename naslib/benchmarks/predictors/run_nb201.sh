@@ -1,9 +1,6 @@
 predictors=(omni lcsvr jacov snip sotl sotle)
 experiment_types=(vary_both vary_both single single vary_fidelity vary_fidelity)
 
-predictors=(lcsvr jacov snip sotl sotle)
-experiment_types=(vary_both single single vary_fidelity vary_fidelity)
-
 start_seed=$1
 if [ -z "$start_seed" ]
 then
