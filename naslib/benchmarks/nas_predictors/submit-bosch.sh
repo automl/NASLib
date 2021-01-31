@@ -5,6 +5,7 @@ predictors=(bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
 
 for predictor in ${predictors[@]}
 do
-    sbatch -J ${predictor} slurm_job.sh $predictor
+    sbatch --bosch -J nb301-${predictor} slurm_job-nb301.sh $predictor
+    sbatch --bosch -J nb101-${predictor} slurm_job-nb101.sh $predictor
 done
 
