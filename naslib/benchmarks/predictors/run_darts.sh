@@ -1,4 +1,4 @@
-predictors=(lcsvr)
+predictors=(omni_both)
 experiment_types=(vary_both)
 
 start_seed=$1
@@ -9,7 +9,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p301_jan29_2
+s3_folder=p301_jan30
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
