@@ -78,15 +78,16 @@ def main(args):
             fidelity_list.pop(0)
             fidelity_list.pop(0)
 
-        elif 'omni' in args.predictor:
+        elif 'omni' in args.predictor and args.search_space != 'darts':
             train_size_list.pop(0)
-            train_size_list.pop(-1)            
-            fidelity_list.pop(0)
-            fidelity_list.pop(0)
-            fidelity_list.pop(0)
-            
-            if args.search_space != 'darts':
-                fidelity_list.pop(0)
+            train_size_list.pop(-1)
+            fidelity_list.pop(1)
+
+        elif 'omni' in args.predictor and args.search_space == 'darts':
+            train_size_list.pop(0)
+            train_size_list.pop(-1)
+            fidelity_list.pop(1)
+            fidelity_list.pop(1)
                         
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
