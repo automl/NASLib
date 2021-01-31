@@ -373,14 +373,14 @@ class NAO(nn.Module):
             dropout,
             source_length,
             encoder_length,
-        )
+        ).to(device)
         self.decoder = Decoder(
             decoder_layers,
             hidden_size,
             vocab_size,
             dropout,
             decoder_length,
-        )
+        ).to(device)
 
         self.flatten_parameters()
     
@@ -389,9 +389,12 @@ class NAO(nn.Module):
         self.decoder.rnn.flatten_parameters()
     
     def forward(self, input_variable, target_variable=None):
-        encoder_outputs, encoder_hidden, arch_emb, predict_value = self.encoder(input_variable)
-        decoder_hidden = (arch_emb.unsqueeze(0), arch_emb.unsqueeze(0))
-        decoder_outputs, archs = self.decoder(target_variable, decoder_hidden, encoder_outputs)
+        encoder_outputs, encoder_hidden, arch_emb, predict_value = self.encoder(input_variable.to(device))
+        decoder_hidden = (arch_emb.unsqueeze(0).to(device),
+                          arch_emb.unsqueeze(0).to(device))
+        decoder_outputs, archs = self.decoder(target_variable.to(device),
+                                              decoder_hidden,
+                                              encoder_outputs.to(device))
         return predict_value, decoder_outputs, archs
     
     def generate_new_arch(self, input_variable, predict_lambda=1, direction='-'):
@@ -621,7 +624,7 @@ class SemiNASPredictor(Predictor):
             source_length,
             encoder_length,
             decoder_length,
-        )
+        ).to(device)
 
         for i in range(iteration):
             print('Iteration {}'.format(i+1))

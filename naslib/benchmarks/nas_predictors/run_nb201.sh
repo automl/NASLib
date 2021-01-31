@@ -1,5 +1,6 @@
 optimizer=bananas
-predictors=(omni_lofi var_sparse_gp)
+predictors=(bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
+	bohamiann bayes_lin_reg seminas gp sparse_gp var_sparse_gp)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -8,14 +9,14 @@ then
 fi
 
 # folders:
-base_file=NASLib/naslib
-s3_folder=bo201_c10_jan22
+base_file=naslib
+s3_folder=bo201_c10_jan27
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
 search_space=nasbench201
 dataset=cifar10
-search_epochs=200
+search_epochs=1000
 
 # trials / seeds:
 trials=100
@@ -33,19 +34,19 @@ do
 done
 
 # run experiments
-for t in $(seq $start_seed $end_seed)
-do
-    for predictor in ${predictors[@]}
-    do
-        config_file=$out_dir/$dataset/configs/nas_predictors/config\_$optimizer\_$predictor\_$t.yaml
-        echo ================running $predictor trial: $t =====================
-        python $base_file/benchmarks/nas_predictors/runner.py --config-file $config_file
-    done
-    if [ "save_to_s3" ]
-    then
-        # zip and save to s3
-        echo zipping and saving to s3
-        zip -r $out_dir.zip $out_dir
-        python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
-    fi
-done
+#for t in $(seq $start_seed $end_seed)
+#do
+    #for predictor in ${predictors[@]}
+    #do
+        #config_file=$out_dir/$dataset/configs/nas_predictors/config\_$optimizer\_$predictor\_$t.yaml
+        #echo ================running $predictor trial: $t =====================
+        #python $base_file/benchmarks/nas_predictors/runner.py --config-file $config_file
+    #done
+    #if [ "save_to_s3" ]
+    #then
+        ## zip and save to s3
+        #echo zipping and saving to s3
+        #zip -r $out_dir.zip $out_dir
+        #python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
+    #fi
+#done

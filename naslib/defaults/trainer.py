@@ -63,6 +63,7 @@ class Trainer(object):
              'test_acc': [],
              'test_loss': [],
              'runtime': [],
+             'train_time': [],
              'arch_eval': [],
              'params': n_parameters}
         )
@@ -128,7 +129,7 @@ class Trainer(object):
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
                 #train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
-                train_acc, valid_acc, test_acc = self.optimizer.train_statistics()
+                train_acc, valid_acc, test_acc, train_time = self.optimizer.train_statistics()
                 train_loss, valid_loss, test_loss = -1, -1, -1
                 
                 self.errors_dict.train_acc.append(train_acc)
@@ -138,9 +139,10 @@ class Trainer(object):
                 self.errors_dict.test_acc.append(test_acc)
                 self.errors_dict.test_loss.append(test_loss)
                 self.errors_dict.runtime.append(end_time - start_time)
+                self.errors_dict.train_time.append(train_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
-            
+
             self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
@@ -149,7 +151,7 @@ class Trainer(object):
                 self.errors_dict.arch_eval.append(anytime_results)
                 log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results: {}".format(
                         e, anytime_results), n=5)
-                    
+
             self._log_to_json()
             self._log_and_reset_accuracies(e)
 
