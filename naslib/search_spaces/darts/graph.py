@@ -341,8 +341,14 @@ class DartsSearchSpace(Graph):
             assert (not epoch or epoch in [-1, 100])
             # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]
             genotype = convert_naslib_to_genotype(self)
-            val_acc = dataset_api['nb301_model'][0].predict(config=genotype, representation="genotype")
-            return val_acc
+            if metric == Metric.VAL_ACCURACY:
+                val_acc = dataset_api['nb301_model'][0].predict(config=genotype, representation="genotype")
+                return val_acc
+            elif metric == Metric.TRAIN_TIME:
+                runtime = dataset_api['nb301_model'][1].predict(config=genotype, representation="genotype")
+                return runtime
+            else:
+                return -1
 
     def get_compact(self):
         if self.compact is None:
