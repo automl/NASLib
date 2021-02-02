@@ -86,16 +86,12 @@ supported_predictors = {
                                config=config),
     'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                config=config, run_pre_compute=True, min_train_size=0),
-<<<<<<< HEAD
     'omni_sc': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
                                config=config, run_pre_compute=True, min_train_size=0),
-=======
     'omni_no_zero': OmniPredictor(zero_cost=[], lce=['sotle'], encoding_type='adjacency_one_hot',
                                   config=config, run_pre_compute=False, min_train_size=0),
     'omni_no_enc': OmniPredictor(zero_cost=['jacov'], lce=['sotle'], encoding_type=None,
                                  config=config, run_pre_compute=True, min_train_size=0),
-
->>>>>>> predictors
 }
 
 supported_search_spaces = {
