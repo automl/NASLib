@@ -15,6 +15,6 @@ bohamiann bayes_lin_reg seminas gp sparse_gp var_sparse_gp)
 for predictor in ${predictors[@]}
 do
     #sbatch -J nb301-${predictor} slurm_job-nb301.sh $predictor
-    sbatch --bosch -J nb101-${predictor} slurm_job-nb101.sh $predictor
+    sbatch -J 101-${predictor} slurm_job-nb101.sh $predictor
 done
 

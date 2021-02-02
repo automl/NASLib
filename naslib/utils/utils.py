@@ -130,6 +130,10 @@ def get_config_from_args(args=None, config_type='nas'):
         #with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
         with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'discrete_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
+    elif config_type == 'oneshot':
+        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+            config = CfgNode.load_cfg(f)
+
 
     if args is None:
         args = parse_args()
@@ -154,7 +158,8 @@ def get_config_from_args(args=None, config_type='nas'):
     config.eval_only = args.eval_only
     config.resume = args.resume
     config.model_path = args.model_path
-    config.seed = args.seed
+    if config_type != 'nas_predictor':
+        config.seed = args.seed
 
     # load config file
     config.merge_from_file(args.config_file)
@@ -180,6 +185,12 @@ def get_config_from_args(args=None, config_type='nas'):
         else:
             config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
     elif config_type == 'nas_predictor':
+        config.search.seed = config.seed
+        config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
+                                                 config.search_space,
+                                                 config.search.predictor_type,
+                                                 config.seed)
+    elif config_type == 'oneshot':
         config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
                                                  config.search_space,
                                                  config.search.predictor_type,

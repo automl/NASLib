@@ -5,6 +5,7 @@ import logging
 import os
 import copy
 import torch
+import numpy as np
 
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
@@ -80,6 +81,10 @@ class Trainer(object):
                 train from scratch.
         """
         logger.info("Start training")
+
+        np.random.seed(self.config.search.seed)
+        torch.manual_seed(self.config.search.seed)
+
         self.optimizer.before_training()
         checkpoint_freq = self.config.search.checkpoint_freq
         if self.optimizer.using_step_function:

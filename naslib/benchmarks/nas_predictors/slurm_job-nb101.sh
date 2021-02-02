@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p bosch_gpu-rtx2080,ml_gpu-rtx2080 #bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
+#SBATCH -p alldlc_gpu-rtx2080 #bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH --gres=gpu:1          # reserves one GPU
 #SBATCH -o logs_bo-101/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs_bo-101/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
