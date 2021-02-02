@@ -21,7 +21,6 @@ from naslib.utils.utils import get_project_root
 
 
 config = utils.get_config_from_args(config_type='predictor')
-
 utils.set_seed(config.seed)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
@@ -102,6 +101,7 @@ supported_search_spaces = {
 
 load_labeled = (True if config.search_space == 'darts' else False)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
+utils.set_seed(config.seed)
 
 # set up the search space and predictor
 predictor = supported_predictors[config.predictor]
