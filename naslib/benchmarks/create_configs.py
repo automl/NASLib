@@ -132,7 +132,7 @@ def main(args):
                            'acq_fn_type': 'its',
                            'acq_fn_optimization': 'random_sampling',
                            'encoding_type': 'adjacency_one_hot',
-                           'num_arches_to_mutate': 2,
+                           'num_arches_to_mutate': 5,
                            'max_mutations': 1,
                            'num_candidates': 200,
                            'batch_size': 256,
