@@ -84,7 +84,12 @@ supported_predictors = {
     'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
                                config=config),
     'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
-                               config=config, run_pre_compute=True, min_train_size=0)
+                               config=config, run_pre_compute=True, min_train_size=0),
+    'omni_no_zero': OmniPredictor(zero_cost=[], lce=['sotle'], encoding_type='adjacency_one_hot',
+                                  config=config, run_pre_compute=False, min_train_size=0),
+    'omni_no_enc': OmniPredictor(zero_cost=['jacov'], lce=['sotle'], encoding_type=None,
+                                 config=config, run_pre_compute=True, min_train_size=0),
+
 }
 
 supported_search_spaces = {
