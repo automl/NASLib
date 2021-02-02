@@ -58,6 +58,14 @@ def acquisition_function(ensemble,
             return ei_value
         return ei
 
+    elif acq_fn_type == 'exploit_only':
+        # Expected improvement (EI) acquisition function
+        
+        def exploit(arch_encoding, info=None):
+            predictions = ensemble.query([arch_encoding], [info])
+            return np.mean(predictions)
+        return exploit
+    
     else:
         logger.info('{} is not a valid exploration type'.format(acq_fn_type))
         raise NotImplementedError()

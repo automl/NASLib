@@ -29,7 +29,7 @@ def parse_params(params, identifier):
 class OmniPredictor(Predictor):
 
     def __init__(self, zero_cost, lce, encoding_type, ss_type=None, config=None, 
-                 n_hypers=50, run_pre_compute=True, min_train_size=0):
+                 n_hypers=35, run_pre_compute=True, min_train_size=0):
         
         self.zero_cost = zero_cost
         self.lce = lce
@@ -79,7 +79,7 @@ class OmniPredictor(Predictor):
             'base:min_samples_leaf': np.random.choice(18) + 2,
             'base:min_samples_split': np.random.choice(18) + 2,
         }
-        return params   
+        return params
     
     def run_hpo(self, xtrain, ytrain):
         min_score = 100000
@@ -120,14 +120,17 @@ class OmniPredictor(Predictor):
                 # if the zero_cost scores were not precomputed, they are in info
                 full_xdata = [[*x, info[i]] for i, x in enumerate(full_xdata)]
 
-        if 'sotle' in self.lce:
+        if 'sotle' in self.lce and len(info[0]['TRAIN_LOSS_lc']) >= 3:
             train_losses = np.array([lcs['TRAIN_LOSS_lc'][-1] for lcs in info])
             mean = np.mean(train_losses)
             std = np.std(train_losses)
             normalized = (train_losses - mean)/std
             full_xdata = [[*x, normalized[i]] for i, x in enumerate(full_xdata)]
+            
+        elif 'sotle' in self.lce and len(info[0]['TRAIN_LOSS_lc']) < 3:
+            logger.info('Not enough fidelities to use train loss')
 
-        if 'valacc' in self.lce:
+        if 'valacc' in self.lce and len(info[0]['VAL_ACCURACY_lc']) >= 3:
             val_accs = [lcs['VAL_ACCURACY_lc'][-1] for lcs in info]
             mean = np.mean(val_accs)
             std = np.std(val_accs)
@@ -139,7 +142,7 @@ class OmniPredictor(Predictor):
                                              ss_type=self.ss_type) for arch in xdata])            
             full_xdata = [[*x, *xdata_encoded[i]] for i, x in enumerate(full_xdata)]
 
-        return full_xdata
+        return np.array(full_xdata)
         
     def fit(self, xtrain, ytrain, train_info, learn_hyper=True):
 

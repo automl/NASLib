@@ -93,7 +93,6 @@ class ZeroCostEstimators(Predictor):
 
                 try:
                     score = eval_score(jacobs, labels)
-                    # print('done computing scores  ')
                 except Exception as e:
                     print(e)
                     score = -10e8
@@ -109,7 +108,10 @@ class ZeroCostEstimators(Predictor):
                 with torch.no_grad():
                     saliences = [(grad * weight).view(-1).abs() for weight, grad in zip(network.parameters(), grads)]
                     score = torch.sum(torch.cat(saliences)).cpu().numpy()
+                    if hasattr(self, 'ss_type') and self.ss_type == 'darts':
+                        score = -score
 
+            # print(f'nclass={self.num_classes}, scores={score}')
             test_set_scores.append(score)
             network, data_iterator, x, target, jacobs, labels = None, None, None, None, None, None
             torch.cuda.empty_cache()

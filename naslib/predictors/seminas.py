@@ -573,8 +573,9 @@ def generate_synthetic_controller_data(model, base_arch=None, random_arch=0,ss_t
     return synthetic_input, synthetic_target
 
 class SemiNASPredictor(Predictor):
-    def __init__(self, encoding_type='gcn', ss_type=None):
+    def __init__(self, encoding_type='gcn', ss_type=None, semi=False):
         self.encoding_type = encoding_type
+        self.semi = semi
         if ss_type is not None:
             self.ss_type = ss_type
 
@@ -636,21 +637,23 @@ class SemiNASPredictor(Predictor):
             print('Pre-train EPD')
             train_controller(self.model, train_encoder_input, train_encoder_target, pretrain_epochs)
             print('Finish pre-training EPD')
-            # Generate synthetic data
-            print('Generate synthetic data for EPD')
-            m = synthetic_factor * len(xtrain)
-            synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m,self.ss_type)
-            if up_sample_ratio is None:
-                up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)
-            else:
-                up_sample_ratio = up_sample_ratio
+            
+            if self.semi:
+                # Generate synthetic data
+                print('Generate synthetic data for EPD')
+                m = synthetic_factor * len(xtrain)
+                synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m,self.ss_type)
+                if up_sample_ratio is None:
+                    up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)
+                else:
+                    up_sample_ratio = up_sample_ratio
 
-            all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
-            all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
-            # Train
-            print('Train EPD')
-            train_controller(self.model, all_encoder_input, all_encoder_target, epochs)
-            print('Finish training EPD')
+                all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
+                all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
+                # Train
+                print('Train EPD')
+                train_controller(self.model, all_encoder_input, all_encoder_target, epochs)
+                print('Finish training EPD')
             
         train_pred = np.squeeze(self.query(xtrain))
         train_error = np.mean(abs(train_pred-ytrain))

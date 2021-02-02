@@ -49,7 +49,8 @@ supported_predictors = {
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
     'lcnet': LCNetPredictor(encoding_type='adjacency_one_hot'),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
-    'seminas': SemiNASPredictor(encoding_type='seminas'),
+    'seminas': SemiNASPredictor(encoding_type='seminas', semi=True),
+    'nao': SemiNASPredictor(encoding_type='seminas', semi=False),
     'gp': GPPredictor(encoding_type='adjacency_one_hot'),
     'sparse_gp': SparseGPPredictor(encoding_type='adjacency_one_hot',
                                    optimize_gp_hyper=True, num_steps=100),
@@ -81,10 +82,15 @@ supported_predictors = {
     'gp_path': GPPredictor(encoding_type='path'),
     'omni': OmniPredictor(zero_cost=['jacov'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot', 
                           config=config),
+    'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
+                               config=config),
     'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                config=config, run_pre_compute=True, min_train_size=0),
-    'omni_sc': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
-                               config=config, run_pre_compute=True, min_train_size=0),
+    'omni_no_zero': OmniPredictor(zero_cost=[], lce=['sotle'], encoding_type='adjacency_one_hot',
+                                  config=config, run_pre_compute=False, min_train_size=0),
+    'omni_no_enc': OmniPredictor(zero_cost=['jacov'], lce=['sotle'], encoding_type=None,
+                                 config=config, run_pre_compute=True, min_train_size=0),
+
 }
 
 supported_search_spaces = {

@@ -12,7 +12,8 @@ class GPPredictor(BaseGPModel):
 
     def __init__(self, encoding_type='adjacency_one_hot',
                  ss_type='nasbench201', kernel_type='RBF',
-                 optimize_gp_hyper=False, num_steps=200):
+                 optimize_gp_hyper=False, num_steps=200, 
+                 zc=False):
         """
         Params:
             kernel_type (str): determines the kernel type. Can be RBF,

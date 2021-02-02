@@ -19,7 +19,7 @@ from naslib.utils.logging import log_every_n_seconds
 logger = logging.getLogger(__name__)
 
 
-class Bananas(MetaOptimizer):
+class Npenas(MetaOptimizer):
     
     # training the models is not implemented
     using_step_function = False
@@ -34,10 +34,7 @@ class Bananas(MetaOptimizer):
 
         self.k = config.search.k
         self.num_init = config.search.num_init
-        self.num_ensemble = config.search.num_ensemble
         self.predictor_type = config.search.predictor_type
-        self.acq_fn_type = config.search.acq_fn_type
-        self.acq_fn_optimization = config.search.acq_fn_optimization
         self.encoding_type = config.search.encoding_type # currently not implemented
         self.num_arches_to_mutate = config.search.num_arches_to_mutate
         self.max_mutations = config.search.max_mutations
@@ -80,7 +77,7 @@ class Bananas(MetaOptimizer):
                 # train a neural predictor
                 xtrain = [m.arch for m in self.train_data]
                 ytrain = [m.accuracy for m in self.train_data]
-                ensemble = Ensemble(num_ensemble=self.num_ensemble,
+                ensemble = Ensemble(num_ensemble=1,
                                     ss_type=self.search_space.get_type(),
                                     predictor_type=self.predictor_type)
                 zc_scores = None
@@ -90,36 +87,25 @@ class Bananas(MetaOptimizer):
 
                 # define an acquisition function
                 acq_fn = acquisition_function(ensemble=ensemble, 
-                                              ytrain=ytrain,
-                                              acq_fn_type=self.acq_fn_type)
+                                              ytrain=None,
+                                              acq_fn_type='exploit_only')
                 
                 # optimize the acquisition function to output k new architectures
                 candidates = []
                 zc_scores = []
-                if self.acq_fn_optimization == 'random_sampling':
 
-                    for _ in range(self.num_candidates):
-                        arch = self.search_space.clone()
-                        arch.sample_random_architecture(dataset_api=self.dataset_api)
-                        candidates.append(arch)
-                    
-                elif self.acq_fn_optimization == 'mutation':
-                    # mutate the k best architectures by x
-                    best_arch_indices = np.argsort(ytrain)[-self.num_arches_to_mutate:]
-                    best_arches = [self.train_data[i].arch for i in best_arch_indices]
-                    candidates = []
-                    for arch in best_arches:
-                        for _ in range(int(self.num_candidates / len(best_arches) / self.max_mutations)):
-                            candidate = arch.clone()
-                            for edit in range(int(self.max_mutations)):
-                                arch = self.search_space.clone()
-                                arch.mutate(candidate, dataset_api=self.dataset_api)
-                                candidate = arch
-                            candidates.append(candidate)
-
-                else:
-                    logger.info('{} is not yet supported as a acq fn optimizer'.format(encoding_type))
-                    raise NotImplementedError()
+                # mutate the k best architectures by x
+                best_arch_indices = np.argsort(ytrain)[-self.num_arches_to_mutate:]
+                best_arches = [self.train_data[i].arch for i in best_arch_indices]
+                candidates = []
+                for arch in best_arches:
+                    for _ in range(int(self.num_candidates / len(best_arches) / self.max_mutations)):
+                        candidate = arch.clone()
+                        for edit in range(int(self.max_mutations)):
+                            arch = self.search_space.clone()
+                            arch.mutate(candidate, dataset_api=self.dataset_api)
+                            candidate = arch
+                        candidates.append(candidate)
 
                 if self.zc:
                     zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type='jacov')
@@ -160,7 +146,6 @@ class Bananas(MetaOptimizer):
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):
