@@ -4,7 +4,7 @@ import naslib as nl
 
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import Bananas, OneShotNASOptimizer, RandomNASOptimizer
+from naslib.optimizers import Bananas, Npenas, OneShotNASOptimizer, RandomNASOptimizer
 from naslib.predictors import OneShotPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
@@ -22,6 +22,7 @@ utils.log_args(config)
 
 supported_optimizers = {
     'bananas': Bananas(config),
+    'npenas': Npenas(config),
     #'oneshot': OneShotNASOptimizer(config),
     #'rsws': RandomNASOptimizer(config),
 }
@@ -44,7 +45,7 @@ optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
-if config.optimizer == 'bananas':
+if config.optimizer in ['bananas', 'npenas']:
     trainer.search(resume_from="")
     trainer.evaluate(resume_from="", dataset_api=dataset_api)
 elif config.optimizer in ['oneshot', 'rsws']:
