@@ -16,7 +16,7 @@ out_dir=$s3_folder\_$start_seed
 # search space / data:
 search_space=darts
 dataset=cifar10
-search_epochs=500
+search_epochs=1000
 
 # trials / seeds:
 trials=100

@@ -89,7 +89,8 @@ class Trainer(object):
         else:
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq)
         
-        self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
+        if self.optimizer.using_step_function:
+            self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
 
         for e in range(start_epoch, self.epochs):
             self.optimizer.new_epoch(e)

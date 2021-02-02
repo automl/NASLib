@@ -10,12 +10,12 @@ fi
 
 # folders:
 base_file=naslib
-s3_folder=bo201_c10_jan27
+s3_folder=bo201_imagenet_feb01
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
 search_space=nasbench201
-dataset=cifar10
+dataset=ImageNet16-120 # cifar10, cifar100, ImageNet16-120
 search_epochs=1000
 
 # trials / seeds:

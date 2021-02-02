@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH -p alldlc_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH --gres=gpu:1          # reserves one GPU
-#SBATCH -o logs_bo/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -e logs_bo/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
+#SBATCH -o logs_bo-201-imagenet/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
+#SBATCH -e logs_bo-201-imagenet/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -D .
 #SBATCH -a 0-99 # array size
 
@@ -14,7 +14,8 @@ start=`date +%s`
 
 # Activate virtual env so that run_experiment can load the correct packages
 source activate python37
-python runner.py --config-file bo_runs/nb201-c10/bo201_c10_jan27_0/cifar10/configs/nas_predictors/config_bananas_${1}_${SLURM_ARRAY_TASK_ID}.yaml
+#python runner.py --config-file bo201_c100_feb01_0/cifar100/configs/nas_predictors/config_bananas_${1}_${SLURM_ARRAY_TASK_ID}.yaml
+python runner.py --config-file bo201_imagenet_feb01_0/ImageNet16-120/configs/nas_predictors/config_bananas_${1}_${SLURM_ARRAY_TASK_ID}.yaml
 
 
 end=`date +%s`
