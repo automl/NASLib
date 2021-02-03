@@ -98,9 +98,10 @@ class Trainer(object):
             self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
 
         for e in range(start_epoch, self.epochs):
-            self.optimizer.new_epoch(e)
             
             start_time = time.time()
+            self.optimizer.new_epoch(e)
+
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
                     data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
