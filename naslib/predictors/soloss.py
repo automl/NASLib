@@ -3,14 +3,17 @@
 # Ru, B. et al., 2020. "Revisiting the Train Loss: an Efficient Performance Estimator for Neural Architecture Search". arXiv preprint arXiv:2006.04492.
 
 from naslib.predictors.predictor import Predictor
+from naslib.search_spaces.core.query_metrics import Metric
+
 import numpy as np
 
 class SoLosspredictor(Predictor):
     
-    def __init__(self, metric='train_loss', sum_option='SoTL'):
+    def __init__(self, metric='train_loss', sum_option='SoTLEMA'):
         self.metric = metric
         self.sum_option = sum_option
         self.name = 'SoLoss'
+        self.need_separate_hpo = False
 
     def query(self, xtest, info):
         """
@@ -26,7 +29,7 @@ class SoLosspredictor(Predictor):
             # assume we have the training loss for each preceding epoch: past_loss is a list
             if self.sum_option == 'SoTLE' or self.sum_option == 'SoVLE':
                 score = past_loss[-1]
-            elif self.sum_option == 'SoTL':
+            elif self.sum_option == 'SoTLEMA':
                 EMA_SoTL = []
                 mu = 0.99
                 for se in range(trained_epochs):
@@ -38,7 +41,10 @@ class SoLosspredictor(Predictor):
                 score = np.sum(EMA_SoTL)
             else:
                 score = np.sum(past_loss)
-            test_set_scores.append(-score)
+            if self.metric in [Metric.VAL_LOSS, Metric.TRAIN_LOSS, Metric.TEST_LOSS]:
+                test_set_scores.append(-score)
+            else:
+                test_set_scores.append(score)
             
         return np.array(test_set_scores)
     

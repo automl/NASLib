@@ -37,7 +37,7 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-trainer.search(resume_from=checkpoint)
+#trainer.search()
 
 #if not config.eval_only:
 #    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""

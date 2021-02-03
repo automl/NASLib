@@ -10,8 +10,7 @@ import gc
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.utils.build_nets import get_cell_based_tiny_net
-from naslib.utils import utils
-from naslib.utils.utils import get_project_root
+from naslib.utils.utils import get_project_root, get_train_val_loaders
 from naslib.predictors.utils.build_nets.build_darts_net import NetworkCIFAR
 from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 
@@ -53,7 +52,7 @@ class ZeroCostEstimators(Predictor):
 
     def pre_process(self):
 
-        self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
+        self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode='train')
 
     def query(self, xtest, info=None):
 
@@ -94,7 +93,6 @@ class ZeroCostEstimators(Predictor):
 
                 try:
                     score = eval_score(jacobs, labels)
-                    # print('done computing scores  ')
                 except Exception as e:
                     print(e)
                     score = -10e8
@@ -110,7 +108,10 @@ class ZeroCostEstimators(Predictor):
                 with torch.no_grad():
                     saliences = [(grad * weight).view(-1).abs() for weight, grad in zip(network.parameters(), grads)]
                     score = torch.sum(torch.cat(saliences)).cpu().numpy()
+                    if hasattr(self, 'ss_type') and self.ss_type == 'darts':
+                        score = -score
 
+            # print(f'nclass={self.num_classes}, scores={score}')
             test_set_scores.append(score)
             network, data_iterator, x, target, jacobs, labels = None, None, None, None, None, None
             torch.cuda.empty_cache()

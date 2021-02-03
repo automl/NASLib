@@ -11,13 +11,15 @@ class BaseGPModel(Predictor):
 
     def __init__(self, encoding_type='adjacency_one_hot',
                  ss_type='nasbench201', kernel_type=None,
-                 optimize_gp_hyper=False, num_steps=200):
+                 optimize_gp_hyper=False, num_steps=200, 
+                 zc=False):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
         self.ss_type = ss_type
         self.kernel_type = kernel_type
         self.optimize_gp_hyper = optimize_gp_hyper
         self.num_steps = num_steps
+        self.zc = zc
 
     def get_dataset(self, encodings, labels=None):
         if labels is None:
@@ -53,6 +55,10 @@ class BaseGPModel(Predictor):
 
         xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
                                   ss_type=self.ss_type) for arch in xtrain])
+        if self.zc:
+            mean, std = -10000000.0, 150000000.0
+            xtrain = [[*x, (train_info[i]-mean)/std] for i, x in enumerate(xtrain)]
+        xtrain = np.array(xtrain)
         ytrain = np.array(ytrain)
 
         # convert to the right representation
@@ -76,6 +82,12 @@ class BaseGPModel(Predictor):
     def query(self, xtest, info=None):
         xtest = np.array([encode(arch, encoding_type=self.encoding_type,
                                  ss_type=self.ss_type) for arch in xtest])
+        
+        if self.zc:
+            mean, std = -10000000.0, 150000000.0
+            xtest = [[*x, (info[i]-mean)/std] for i, x in enumerate(xtest)]
+        xtest = np.array(xtest)
+        
         test_data = self.get_dataset(xtest)
         return np.squeeze(self.predict(test_data)) * self.std + self.mean
 

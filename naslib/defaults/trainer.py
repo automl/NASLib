@@ -91,12 +91,14 @@ class Trainer(object):
         self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
 
         for e in range(start_epoch, self.epochs):
-            self.optimizer.new_epoch(e)
             
             start_time = time.time()
+            self.optimizer.new_epoch(e)
+
             if self.optimizer.using_step_function:
-                for step, (data_train, data_val) in enumerate(zip(self.train_queue, self.valid_queue)):
+                for step, data_train in enumerate(self.train_queue):
                     data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
+                    data_val = next(iter(self.valid_queue))
                     data_val = (data_val[0].to(self.device), data_val[1].to(self.device, non_blocking=True))
 
                     stats = self.optimizer.step(data_train, data_val)
@@ -170,6 +172,8 @@ class Trainer(object):
         self.optimizer.before_training()
         self._setup_checkpointers(resume_from)
 
+        loss = torch.nn.CrossEntropyLoss()
+
         if dataloader is None:
             # load only the validation data
             _, dataloader, _ = self.build_search_dataloaders(self.config)
@@ -182,7 +186,7 @@ class Trainer(object):
                 target_val = data_val[1].to(self.device, non_blocking=True)
 
                 logits_val = self.optimizer.graph(input_val)
-                val_loss = self.loss(logits_val, target_val)
+                val_loss = loss(logits_val, target_val)
 
                 self._store_accuracies(logits_val, data_val[1], 'val')
                 self.val_loss.update(float(val_loss.detach().cpu()))
@@ -194,9 +198,9 @@ class Trainer(object):
             self.errors_dict.runtime.append(end_time - start_time)
 
             self._log_to_json()
-            self._log_and_reset_accuracies(e)
 
         logger.info("Evaluation finished")
+        return self.val_top1.avg
 
 
     def evaluate(

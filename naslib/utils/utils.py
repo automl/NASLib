@@ -20,7 +20,6 @@ import numpy as np
 import torch
 import torchvision.transforms as transforms
 import yaml
-import tensorflow as tf
 
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
@@ -71,6 +70,7 @@ Run on single machine:
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
+    parser.add_argument("--model-path", type=str, default=None, help="Path to saved model weights")
     parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
     parser.add_argument('--rank', default=0, type=int, help='node rank for distributed training')
     parser.add_argument('--gpu', default=None, type=int, help='GPU id to use.')
@@ -127,11 +127,13 @@ def get_config_from_args(args=None, config_type='nas'):
             config = CfgNode.load_cfg(f)
     elif config_type == 'nas_predictor':
         # load the default base
-        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+        #with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'discrete_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
 
-    if not args:
+    if args is None:
         args = parse_args()
+    print(args)
     logger.info("Command line args: {}".format(args))
 
     # load config file
@@ -151,6 +153,8 @@ def get_config_from_args(args=None, config_type='nas'):
 
     config.eval_only = args.eval_only
     config.resume = args.resume
+    config.model_path = args.model_path
+    config.seed = args.seed
 
     # load config file
     config.merge_from_file(args.config_file)
@@ -176,8 +180,10 @@ def get_config_from_args(args=None, config_type='nas'):
         else:
             config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
     elif config_type == 'nas_predictor':
-        config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors', \
-                                              config.search.predictor_type, config.seed)
+        config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
+                                                 config.search_space,
+                                                 config.search.predictor_type,
+                                                 config.seed)
     else:
         print('invalid config type in utils/utils.py')
 
@@ -210,12 +216,21 @@ def get_train_val_loaders(config, mode):
         train_transform, valid_transform = _data_transforms_svhn(config)
         train_data = dset.SVHN(root=data, split='train', download=True, transform=train_transform)
         test_data = dset.SVHN(root=data, split='test', download=True, transform=valid_transform)
+    elif dataset == 'ImageNet16-120':
+        from naslib.utils.DownsampledImageNet import ImageNet16
+        train_transform, valid_transform = _data_transforms_ImageNet_16_120(config)
+        data_folder = f'{data}/{dataset}'
+        train_data = ImageNet16(root=data_folder, train=True, transform=train_transform, use_num_of_class_only=120)
+        test_data = ImageNet16(root=data_folder, train=False, transform=valid_transform, use_num_of_class_only=120)
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
     num_train = len(train_data)
     indices = list(range(num_train))
     split = int(np.floor(config.train_portion * num_train))
+    print(num_train)
+    print(len(indices))
+    print(split)
 
     train_queue = torch.utils.data.DataLoader(
         train_data, batch_size=config.batch_size,
@@ -296,6 +311,25 @@ def _data_transforms_cifar100(args):
     ])
     return train_transform, valid_transform
 
+def _data_transforms_ImageNet_16_120(args):
+    IMAGENET16_MEAN = [x / 255 for x in [122.68, 116.66, 104.01]]
+    IMAGENET16_STD = [x / 255 for x in [63.22,  61.26 , 65.09]]
+
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(16, padding=2),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+    ])
+    if args.cutout:
+        train_transform.transforms.append(Cutout(args.cutout_length,
+                                                 args.cutout_prob))
+
+    valid_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+    ])
+    return train_transform, valid_transform
 
 class TensorDatasetWithTrans(Dataset):
     """
@@ -328,7 +362,6 @@ def set_seed(seed):
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)
-    #tf.random.set_random_seed(seed)
     if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.enabled = True

@@ -66,7 +66,7 @@ class DARTSOptimizer(MetaOptimizer):
         self.dataset = config.dataset
 
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, scope=None, **kwargs):
         # We are going to modify the search space
         self.search_space = search_space
         graph = search_space.clone()

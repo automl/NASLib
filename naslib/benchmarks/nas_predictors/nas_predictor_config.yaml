@@ -1,8 +1,16 @@
 seed: 0
-optimizer: bananas
-search_space: nasbench201
+optimizer: oneshot
+search_space: darts
 dataset: cifar10
 out_dir: run
+
+experiment_type: single
+predictor: oneshot
+test_size: 10
+train_size_list: [8, 12]
+train_size_single: 10
+fidelity_list: [5]
+fidelity_single: 5
 
 search:
   seed: 0
@@ -32,7 +40,7 @@ search:
   num_candidates: 100
   
   # BP
-  predictor_type: feedforward
+  predictor_type: oneshot
   debug_predictor: False
 
 
@@ -44,7 +52,7 @@ search:
   weight_decay: 0.0003
   warm_start_epochs: 0
   grad_clip: 5
-  train_portion: 0.5
+  train_portion: 0.9
   data_size: 25000
 
   cutout: False
