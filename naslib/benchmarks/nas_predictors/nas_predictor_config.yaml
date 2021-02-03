@@ -6,7 +6,7 @@ out_dir: run
 
 experiment_type: single
 predictor: oneshot
-test_size: 100
+test_size: 200
 train_size_list: [8, 12]
 train_size_single: 2
 fidelity_list: [5]
