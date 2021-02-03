@@ -14,7 +14,7 @@ start=`date +%s`
 
 # Activate virtual env so that run_experiment can load the correct packages
 source activate python37
-python runner.py --config-file bo101_jan31_0/cifar10/configs/nas_predictors/config_bananas_${1}_${SLURM_ARRAY_TASK_ID}.yaml
+python runner.py --config-file bo101_feb03_0/cifar10/configs/nas_predictors/config_bananas_${1}_${SLURM_ARRAY_TASK_ID}.yaml
 
 
 
