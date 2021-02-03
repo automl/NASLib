@@ -213,7 +213,7 @@ def get_train_val_loaders(config, mode):
     """
     data = config.data
     dataset = config.dataset
-    seed = config.seed
+    seed = config.search.seed
     config = config.search if mode=='train' else config.evaluation
     if dataset == 'cifar10':
         train_transform, valid_transform = _data_transforms_cifar10(config)
@@ -239,9 +239,6 @@ def get_train_val_loaders(config, mode):
     num_train = len(train_data)
     indices = list(range(num_train))
     split = int(np.floor(config.train_portion * num_train))
-    print(num_train)
-    print(len(indices))
-    print(split)
 
     train_queue = torch.utils.data.DataLoader(
         train_data, batch_size=config.batch_size,
