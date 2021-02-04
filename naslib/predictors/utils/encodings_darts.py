@@ -116,8 +116,6 @@ def encode_adj(arch):
         matrices.append(matrix)
         ops.append(op_list)
 
-    #print('matrix 1:\n {}\n matrix 2:\n {}\n'.format(matrices[0],matrices[1]))
-
     encoding = [*matrices[0].flatten(), *ops[0], *matrices[1].flatten(), *ops[1]]
     return np.array(encoding)
 
@@ -152,16 +150,9 @@ def encode_bonas(arch):
     matrix_final = add_global_node(matrix_final,True)
     ops_onehot = add_global_node(ops_onehot,False)
 
-    # print('architectures:')
-    # print(arch)
-    # print('matrix 1:\n {}\n matrix 2:\n {}\n'.format(matrices[0],matrices[1]))
-    # print('matrix merged: \n {}\n'.format(matrix_merged))
-    # print('matrix added: \n {}\n'.format(matrix_final))
-    # print('ops:{}'.format(ops))
-    # print('ops one hot:\n{}'.format(ops_onehot))
-
     matrix_final = np.array(matrix_final,dtype=np.float32)
     ops_onehot = np.array(ops_onehot,dtype=np.float32)
+
     dic = {
         'adjacency': matrix_final,
         'operations': ops_onehot,
@@ -204,7 +195,46 @@ def transform_matrix(cell):
     ops[-1][-1] = 1
     return adj, ops
 
+def encode_seminas(arch):
+    matrices = []
+    ops = []
+    for cell in arch:
+        mat,op = transform_matrix(cell)
+        matrices.append(mat)
+        ops.append(op)
 
+    matrices[0] = add_global_node(matrices[0],True)
+    matrices[1] = add_global_node(matrices[1],True)
+    matrices[0] = np.transpose(matrices[0])
+    matrices[1] = np.transpose(matrices[1])
+    
+    ops[0] = add_global_node(ops[0],False)
+    ops[1] = add_global_node(ops[1],False)
+
+    mat_length = len(matrices[0][0])
+    merged_length = len(matrices[0][0])*2
+    matrix_final = np.zeros((merged_length,merged_length))
+
+    for col in range(mat_length):
+        for row in range(col):
+            matrix_final[row,col] = matrices[0][row,col]
+            matrix_final[row+mat_length,col+mat_length] = matrices[1][row,col]
+
+    ops_onehot = np.concatenate((ops[0],ops[1]),axis=0)
+
+    matrix_final = add_global_node(matrix_final,True)
+    ops_onehot = add_global_node(ops_onehot,False)
+    
+    matrix_final = np.array(matrix_final,dtype=np.float32)
+    ops_onehot = np.array(ops_onehot,dtype=np.float32)
+    ops = [np.where(r==1)[0][0] for r in ops_onehot]
+
+    dic = {
+        'adjacency': matrix_final,
+        'operations': ops,
+        'val_acc': 0.0
+    }
+    return dic
 
 def encode_darts(arch, encoding_type='path'):
     
@@ -221,6 +251,9 @@ def encode_darts(arch, encoding_type='path'):
     
     elif encoding_type == 'bonas':
         return encode_bonas(arch=compact)
+
+    elif encoding_type == 'seminas':
+        return encode_seminas(arch=compact)
 
     else:
         print('{} is not yet implemented as an encoding type \
