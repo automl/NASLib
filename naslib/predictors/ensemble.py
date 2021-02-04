@@ -67,7 +67,10 @@ class Ensemble(Predictor):
                                                   num_steps=200, zc=False),
             'omni': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                   ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
-                                  min_train_size=0, max_zerocost=100)
+                                  min_train_size=0, max_zerocost=100),
+            'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
+                                    ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
+                                    min_train_size=0, max_zerocost=0)
         }
 
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]

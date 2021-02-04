@@ -88,7 +88,8 @@ supported_predictors = {
                                   config=config, run_pre_compute=False, min_train_size=0),
     'omni_no_enc': OmniPredictor(zero_cost=['jacov'], lce=['sotle'], encoding_type=None,
                                  config=config, run_pre_compute=True, min_train_size=0),
-
+    'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot',
+                            config=config, run_pre_compute=False, min_train_size=0),
 }
 
 supported_search_spaces = {
