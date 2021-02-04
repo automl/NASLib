@@ -59,15 +59,18 @@ class Ensemble(Predictor):
                               encoding_type='adjacency_one_hot'),
             'sparse_gp': SparseGPPredictor(ss_type=self.ss_type,
                                            encoding_type='adjacency_one_hot',
-                                           optimize_gp_hyper=True, 
+                                           optimize_gp_hyper=True,
                                            num_steps=100),
             'var_sparse_gp': VarSparseGPPredictor(ss_type=self.ss_type,
                                                   encoding_type='adjacency_one_hot',
                                                   optimize_gp_hyper=True, 
                                                   num_steps=200, zc=False),
-            'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
-                                       ss_type=self.ss_type, run_pre_compute=False, n_hypers=50, 
-                                       min_train_size=100)
+            'omni': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
+                                  ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
+                                  min_train_size=0, max_zerocost=100),
+            'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
+                                    ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
+                                    min_train_size=0, max_zerocost=0)
         }
 
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]

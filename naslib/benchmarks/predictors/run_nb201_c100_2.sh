@@ -1,5 +1,5 @@
-predictors=(omni lcsvr jacov snip sotl sotle)
-experiment_types=(vary_both vary_both single single vary_fidelity vary_fidelity)
+predictors=(omni_both)
+experiment_types=(vary_both)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -9,12 +9,12 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p201_im_jan29
+s3_folder=p201_c100_jan30
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
 search_space=nasbench201
-dataset=ImageNet16-120
+dataset=cifar100
 
 # other variables:
 trials=100

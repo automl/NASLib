@@ -29,7 +29,7 @@ def parse_params(params, identifier):
 class OmniPredictor(Predictor):
 
     def __init__(self, zero_cost, lce, encoding_type, ss_type=None, config=None, 
-                 n_hypers=35, run_pre_compute=True, min_train_size=0):
+                 n_hypers=35, run_pre_compute=True, min_train_size=0, max_zerocost=np.inf):
         
         self.zero_cost = zero_cost
         self.lce = lce
@@ -41,6 +41,7 @@ class OmniPredictor(Predictor):
         self.ss_type = ss_type
         self.run_pre_compute = run_pre_compute
         self.min_train_size = min_train_size
+        self.max_zerocost = max_zerocost
 
     def pre_compute(self, xtrain, xtest):
         """
@@ -109,7 +110,7 @@ class OmniPredictor(Predictor):
     def prepare_features(self, xdata, info, train=True):
         # prepare training data features
         full_xdata = [[] for _ in range(len(xdata))]
-        if len(self.zero_cost) > 0: 
+        if len(self.zero_cost) > 0 and self.train_size <= self.max_zerocost: 
             if self.run_pre_compute:
                 for key in self.xtrain_zc_info:
                     if train:
@@ -151,6 +152,7 @@ class OmniPredictor(Predictor):
             self.trained = False
             return None
         self.trained = True
+        self.train_size = len(xtrain)
 
         # prepare training data labels
         self.mean = np.mean(ytrain)
