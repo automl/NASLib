@@ -665,7 +665,6 @@ class SemiNASPredictor(Predictor):
         elif self.ss_type == 'nasbench201':
             predictor = NAO(encoder_length=35,decoder_length=35)
         elif self.ss_type == 'darts':
-            print("Darts config!!!")
             predictor = NAO(encoder_length=629,decoder_length=629,vocab_size=12)
         return predictor
 
