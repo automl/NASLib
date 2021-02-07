@@ -12,7 +12,7 @@ pytest
 pytest-cov
 codecov
 coverage
-tensorflow==1.15.4
+tensorflow==2.4.0
 keras==2.3.1
 lightgbm
 ngboost==0.3.7
