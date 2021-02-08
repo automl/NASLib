@@ -1,5 +1,5 @@
-predictors=(lcsvr)
-experiment_types=(vary_both)
+predictors=(ngb nao)
+experiment_types=(vary_train_size vary_train_size)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -9,7 +9,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p201_c100_jan29
+s3_folder=p201_c100_feb7
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:

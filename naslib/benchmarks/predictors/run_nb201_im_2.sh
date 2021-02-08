@@ -1,5 +1,5 @@
-predictors=(omni_both)
-experiment_types=(vary_both)
+predictors=(lce)
+experiment_types=(vary_fidelity)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -9,7 +9,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p201_im_jan30
+s3_folder=p201_im_feb8
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
