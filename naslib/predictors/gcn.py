@@ -99,8 +99,10 @@ class GCNPredictor(Predictor):
     def get_model(self, **kwargs):
         if self.ss_type == 'nasbench101':
             initial_hidden = 5
-        else:
+        elif self.ss_type == 'nasbench201':
             initial_hidden = 7
+        elif self.ss_type == 'darts':
+            initial_hidden = 9
         predictor = NeuralPredictorModel(initial_hidden=initial_hidden)
         return predictor
 
