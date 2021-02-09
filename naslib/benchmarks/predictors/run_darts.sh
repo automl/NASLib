@@ -1,5 +1,5 @@
-predictors=(omni_both)
-experiment_types=(vary_both)
+predictors=(sotl sotle bonas nao ngb_hp)
+experiment_types=(vary_fidelity vary_fidelity vary_train_size vary_train_size vary_train_size)
 
 start_seed=$1
 if [ -z "$start_seed" ]
