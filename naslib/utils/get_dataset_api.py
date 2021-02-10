@@ -29,18 +29,18 @@ def get_nasbench201_api(dataset=None):
     if dataset == 'cifar10':
         with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
             full_lc_data = pickle.load(f)
-                
+
     elif dataset == 'cifar100':
         with open(os.path.join(get_project_root(), 'data', 'nb201_cifar100_full_training.pickle'), 'rb') as f:
-            full_lc_data = pickle.load(f)    
-                
+            full_lc_data = pickle.load(f)
+
     elif dataset == 'ImageNet16-120':
         with open(os.path.join(get_project_root(), 'data', 'nb201_ImageNet16_full_training.pickle'), 'rb') as f:
             full_lc_data = pickle.load(f)
-            
+
     return {'raw_data':nb201_data, 'full_lc_data':full_lc_data}
 
-            
+
 def get_darts_api(dataset=None):
     """
     Load the nb301 training data (which contains full learning curves) and the nb301 models
@@ -61,10 +61,10 @@ def get_dataset_api(search_space=None, dataset=None):
 
     if search_space == 'nasbench101':
         return get_nasbench101_api(dataset=dataset)
-    
+
     elif search_space == 'nasbench201':
         return get_nasbench201_api(dataset=dataset)
-    
+
     elif search_space == 'darts':
         return get_darts_api(dataset=dataset)
 

@@ -1,22 +1,10 @@
 #!/bin/bash
 
-optimizers="oneshot rsws"
-space="darts nasbench201"
-portion="25 5 75 9"
-epochs="25 50 100 150"
+predictors=(bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
+ 	bohamiann bayes_lin_reg seminas nao gp sparse_gp var_sparse_gp)
 
-for s in $space
+for predictor in ${predictors[@]}
 do
-	for o in $optimizers
-	do
-		for p in $portion
-		do
-			for e in $epochs
-			do
-				sbatch -J ${s}\_${o}\_$p\_$e slurm_job.sh $s $o $p $e
-				echo $s $o 0.$p\_$e
-			done
-		done
-	done
+    sbatch -J ${predictor} slurm_job.sh $predictor
 done
 

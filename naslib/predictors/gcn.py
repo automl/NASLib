@@ -75,6 +75,9 @@ class NeuralPredictorModel(nn.Module):
 
     def forward(self, inputs):
         numv, adj, out = inputs["num_vertices"], inputs["adjacency"], inputs["operations"]
+        adj = adj.to(device)
+        numv = numv.to(device)
+        out = out.to(device)
         gs = adj.size(1)  # graph node number
 
         adj_with_diag = normalize_adj(adj + torch.eye(gs, device=adj.device))  # assuming diagonal is not 1
@@ -96,8 +99,10 @@ class GCNPredictor(Predictor):
     def get_model(self, **kwargs):
         if self.ss_type == 'nasbench101':
             initial_hidden = 5
-        else:
+        elif self.ss_type == 'nasbench201':
             initial_hidden = 7
+        elif self.ss_type == 'darts':
+            initial_hidden = 9
         predictor = NeuralPredictorModel(initial_hidden=initial_hidden)
         return predictor
 
@@ -121,7 +126,7 @@ class GCNPredictor(Predictor):
         data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True)
 
         self.model.to(device)
-        criterion = nn.MSELoss()
+        criterion = nn.MSELoss().to(device)
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
         lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs)
 
@@ -131,7 +136,7 @@ class GCNPredictor(Predictor):
             meters = AverageMeterGroup()
             lr = optimizer.param_groups[0]["lr"]
             for _, batch in enumerate(data_loader):
-                target = batch["val_acc"].float()
+                target = batch["val_acc"].float().to(device)
                 prediction = self.model(batch)
                 loss = criterion(prediction, target)
                 loss.backward()

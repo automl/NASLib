@@ -14,7 +14,6 @@ from naslib.utils.utils import get_project_root
 
 config = utils.get_config_from_args(config_type='nas_predictor')
 
-utils.set_seed(config.seed)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 

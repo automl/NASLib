@@ -143,7 +143,7 @@ class PredictorEvaluator(object):
                 lc_related_keys = [key for key in info_dict.keys() if 'lc' in key]
                 for lc_key in lc_related_keys:
                     info_dict[lc_key] = info_dict[lc_key][:fidelity]
-                
+
         fit_time_start = time.time()
         if self.config.predictor not in ['oneshot', 'rsws']:
             # for oneshot predictors we do not fit
