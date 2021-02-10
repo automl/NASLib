@@ -29,5 +29,8 @@ class DNGOPredictor(BNN):
         return predictor
 
     def train_model(self, xtrain, ytrain):
-        self.model.train(xtrain, ytrain, do_optimize=True)
+        try:
+            self.model.train(xtrain, ytrain, do_optimize=True)
+        except ValueError:
+            self.model.train(xtrain, ytrain, do_optimize=False)
 

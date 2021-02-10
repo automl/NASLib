@@ -73,15 +73,21 @@ def main(args):
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]
 
-        if args.experiment_type == 'vary_both' and 'aug' in args.predictor:
-            train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9)]
-            fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
-            
-        elif args.experiment_type == 'vary_both':
-            # vary_both is computationally expensive because it tries all combos of train_size and fidelity
-            # also lcsvr doesn't work with fidelity < 3 or train_size<=5 or 8
-            train_size_list = [train_size_list[i] for i in (1, 3, 5, 7, 9, 10)]
-            fidelity_list = [fidelity_list[i] for i in (2, 3, 5, 7, 9, 11, 13)]
+        if 'svr' in args.predictor:
+            train_size_list.pop(0)
+            fidelity_list.pop(0)
+            fidelity_list.pop(0)
+
+        elif 'omni' in args.predictor and args.search_space != 'darts':
+            train_size_list.pop(0)
+            train_size_list.pop(-1)
+            fidelity_list.pop(1)
+
+        elif 'omni' in args.predictor and args.search_space == 'darts':
+            train_size_list.pop(0)
+            train_size_list.pop(-1)
+            fidelity_list.pop(1)
+            fidelity_list.pop(1)
 
         for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
@@ -126,10 +132,15 @@ def main(args):
                            'acq_fn_type': 'its',
                            'acq_fn_optimization': 'random_sampling',
                            'encoding_type': 'adjacency_one_hot',
-                           'num_arches_to_mutate': 2,
+                           'num_arches_to_mutate': 5,
                            'max_mutations': 1,
                            'num_candidates': 200,
-                           'debug_predictor': False
+                           'batch_size': 256,
+                           'data_size': 25000,
+                           'cutout': False,
+                           'cutout_length': 16,
+                           'cutout_prob': 1.0,
+                           'train_portion': 0.7
                           }
             }
 
@@ -150,7 +161,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default='rs', help="which optimizer")
     parser.add_argument("--predictor", type=str, default='full', help="which predictor")
     parser.add_argument("--test_size", type=int, default=30, help="Test set size for predictor")
-    parser.add_argument("--train_size_single", type=int, default=100, help="Train size if exp type is single")
+    parser.add_argument("--train_size_single", type=int, default=5, help="Train size if exp type is single")
     parser.add_argument("--fidelity_single", type=int, default=5, help="Fidelity if exp type is single")
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")
     parser.add_argument("--out_dir", type=str, default='run', help="Output directory")

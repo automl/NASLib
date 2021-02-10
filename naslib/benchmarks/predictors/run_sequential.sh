@@ -20,12 +20,12 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p201_c10_jan9
+s3_folder=p201_im_jan12
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
 search_space=nasbench201
-dataset=cifar10
+dataset=ImageNet16-120
 
 # other variables:
 trials=100

@@ -29,8 +29,8 @@ class NGBoost(BaseTree):
             'param:minibatch_frac': 0.5081694143793387,
             'base:max_depth': 6,
             'base:max_features': 0.7920456318712875,
-            'base:min_samples_leaf': 15,
-            'base:min_samples_split': 20,
+            #'base:min_samples_leaf': 15,
+            #'base:min_samples_split': 20,
             #'early_stopping_rounds': 100,
             #'verbose': -1
         }
@@ -45,7 +45,12 @@ class NGBoost(BaseTree):
 
     def train(self, train_data):
         X_train, y_train = train_data
-        base_learner = DecisionTreeRegressor(criterion='friedman_mse',
+        min_samples_leaf = min(max(len(X_train)//2, 1), 15)
+        min_samples_split = min(max(len(X_train)//2, 2), 20)
+        
+        base_learner = DecisionTreeRegressor(criterion='friedman_mse', 
+                                             min_samples_leaf=min_samples_leaf, 
+                                             min_samples_split=min_samples_split,
                                              random_state=None,
                                              splitter='best',
                                              **self.parameters(identifier='base:'))

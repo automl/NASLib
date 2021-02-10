@@ -147,6 +147,8 @@ class GCN(nn.Module):
         nn.init.uniform_(self.gc4.weight, a=-0.05, b=0.05)
 
     def forward(self, feat, adj, extract_embedding=False):
+        feat = feat.to(device)
+        adj = adj.to(device)
         x = F.relu(self.bn1(self.gc1(feat, adj).transpose(2, 1)))
         x = x.transpose(1, 2)
         x = F.relu(self.bn2(self.gc2(x, adj).transpose(2, 1)))
@@ -194,7 +196,7 @@ class BonasPredictor(Predictor):
         self.model = self.get_model(gcn_hidden=gcn_hidden,nfeat=nfeat)
         data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=False)
         self.model.to(device)
-        criterion = nn.MSELoss()
+        criterion = nn.MSELoss().to(device)
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
         lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=0)
 
@@ -204,7 +206,9 @@ class BonasPredictor(Predictor):
             meters = AverageMeterGroup()
             lr = optimizer.param_groups[0]["lr"]
             for _, batch in enumerate(data_loader):
-                feat, adjmat, target =  batch["operations"], batch["adjacency"], batch["val_acc"].float()
+                feat, adjmat, target =  batch["operations"].to(device), \
+                                        batch["adjacency"].to(device), \
+                                        batch["val_acc"].float().to(device)
                 prediction = self.model(feat, adjmat)
                 # print('predictions:\n{}'.format(prediction))
                 loss = criterion(prediction, target)

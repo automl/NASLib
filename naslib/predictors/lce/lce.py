@@ -35,7 +35,8 @@ class LCEPredictor(Predictor):
             prediction = ensemble.mcmc_sample_predict([final_epoch])
             prediction = np.squeeze(prediction) * 100
             
-            if np.isnan(prediction):
+            if np.isnan(prediction) or not np.isfinite(prediction):
+                print('nan or finite')
                 prediction = default_guess + np.random.rand()
             predictions.append(prediction)
             

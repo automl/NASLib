@@ -127,8 +127,13 @@ def get_config_from_args(args=None, config_type='nas'):
             config = CfgNode.load_cfg(f)
     elif config_type == 'nas_predictor':
         # load the default base
+        #with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'discrete_config.yaml')) as f:
+            config = CfgNode.load_cfg(f)
+    elif config_type == 'oneshot':
         with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
+
 
     if args is None:
         args = parse_args()
@@ -153,7 +158,8 @@ def get_config_from_args(args=None, config_type='nas'):
     config.eval_only = args.eval_only
     config.resume = args.resume
     config.model_path = args.model_path
-    config.seed = args.seed
+    if config_type != 'nas_predictor':
+        config.seed = args.seed
 
     # load config file
     config.merge_from_file(args.config_file)
@@ -179,6 +185,12 @@ def get_config_from_args(args=None, config_type='nas'):
         else:
             config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
     elif config_type == 'nas_predictor':
+        config.search.seed = config.seed
+        config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
+                                                 config.search_space,
+                                                 config.search.predictor_type,
+                                                 config.seed)
+    elif config_type == 'oneshot':
         config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
                                                  config.search_space,
                                                  config.search.predictor_type,
@@ -201,7 +213,7 @@ def get_train_val_loaders(config, mode):
     """
     data = config.data
     dataset = config.dataset
-    seed = config.seed
+    seed = config.search.seed
     config = config.search if mode=='train' else config.evaluation
     if dataset == 'cifar10':
         train_transform, valid_transform = _data_transforms_cifar10(config)
@@ -215,15 +227,18 @@ def get_train_val_loaders(config, mode):
         train_transform, valid_transform = _data_transforms_svhn(config)
         train_data = dset.SVHN(root=data, split='train', download=True, transform=train_transform)
         test_data = dset.SVHN(root=data, split='test', download=True, transform=valid_transform)
+    elif dataset == 'ImageNet16-120':
+        from naslib.utils.DownsampledImageNet import ImageNet16
+        train_transform, valid_transform = _data_transforms_ImageNet_16_120(config)
+        data_folder = f'{data}/{dataset}'
+        train_data = ImageNet16(root=data_folder, train=True, transform=train_transform, use_num_of_class_only=120)
+        test_data = ImageNet16(root=data_folder, train=False, transform=valid_transform, use_num_of_class_only=120)
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
     num_train = len(train_data)
     indices = list(range(num_train))
     split = int(np.floor(config.train_portion * num_train))
-    print(num_train)
-    print(len(indices))
-    print(split)
 
     train_queue = torch.utils.data.DataLoader(
         train_data, batch_size=config.batch_size,
@@ -304,6 +319,25 @@ def _data_transforms_cifar100(args):
     ])
     return train_transform, valid_transform
 
+def _data_transforms_ImageNet_16_120(args):
+    IMAGENET16_MEAN = [x / 255 for x in [122.68, 116.66, 104.01]]
+    IMAGENET16_STD = [x / 255 for x in [63.22,  61.26 , 65.09]]
+
+    train_transform = transforms.Compose([
+        transforms.RandomCrop(16, padding=2),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+    ])
+    if args.cutout:
+        train_transform.transforms.append(Cutout(args.cutout_length,
+                                                 args.cutout_prob))
+
+    valid_transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+    ])
+    return train_transform, valid_transform
 
 class TensorDatasetWithTrans(Dataset):
     """

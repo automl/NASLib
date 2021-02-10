@@ -184,6 +184,8 @@ class Encoder(nn.Module):
         return predict_value
 
     def forward(self, x):
+        # print("x shape: \n{}".format(x.shape))
+        # print('x max: \n {}'.format(torch.max(torch.tensor(x))))
         x = self.embedding(x)
         x = F.dropout(x, self.dropout, training=self.training)
         residual = x
@@ -373,14 +375,14 @@ class NAO(nn.Module):
             dropout,
             source_length,
             encoder_length,
-        )
+        ).to(device)
         self.decoder = Decoder(
             decoder_layers,
             hidden_size,
             vocab_size,
             dropout,
             decoder_length,
-        )
+        ).to(device)
 
         self.flatten_parameters()
     
@@ -389,9 +391,12 @@ class NAO(nn.Module):
         self.decoder.rnn.flatten_parameters()
     
     def forward(self, input_variable, target_variable=None):
-        encoder_outputs, encoder_hidden, arch_emb, predict_value = self.encoder(input_variable)
-        decoder_hidden = (arch_emb.unsqueeze(0), arch_emb.unsqueeze(0))
-        decoder_outputs, archs = self.decoder(target_variable, decoder_hidden, encoder_outputs)
+        encoder_outputs, encoder_hidden, arch_emb, predict_value = self.encoder(input_variable.to(device))
+        decoder_hidden = (arch_emb.unsqueeze(0).to(device),
+                          arch_emb.unsqueeze(0).to(device))
+        decoder_outputs, archs = self.decoder(target_variable.to(device),
+                                              decoder_hidden,
+                                              encoder_outputs.to(device))
         return predict_value, decoder_outputs, archs
     
     def generate_new_arch(self, input_variable, predict_lambda=1, direction='-'):
@@ -526,6 +531,80 @@ def sample_random_architecture_nb101():
                 break      
         return {'matrix':matrix, 'ops':ops}
 
+def encode_darts(arch):
+    matrices = []
+    ops = []
+    for cell in arch:
+        mat,op = transform_matrix(cell)
+        matrices.append(mat)
+        ops.append(op)
+
+    matrices[0] = add_global_node(matrices[0],True)
+    matrices[1] = add_global_node(matrices[1],True)
+    matrices[0] = np.transpose(matrices[0])
+    matrices[1] = np.transpose(matrices[1])
+    
+    ops[0] = add_global_node(ops[0],False)
+    ops[1] = add_global_node(ops[1],False)
+
+    mat_length = len(matrices[0][0])
+    merged_length = len(matrices[0][0])*2
+    matrix_final = np.zeros((merged_length,merged_length))
+
+    for col in range(mat_length):
+        for row in range(col):
+            matrix_final[row,col] = matrices[0][row,col]
+            matrix_final[row+mat_length,col+mat_length] = matrices[1][row,col]
+
+    ops_onehot = np.concatenate((ops[0],ops[1]),axis=0)
+
+    matrix_final = add_global_node(matrix_final,True)
+    ops_onehot = add_global_node(ops_onehot,False)
+    
+    matrix_final = np.array(matrix_final,dtype=np.float32)
+    ops_onehot = np.array(ops_onehot,dtype=np.float32)
+    ops = [np.where(r==1)[0][0] for r in ops_onehot]
+
+    dic = {
+        'adjacency': matrix_final,
+        'operations': ops,
+        'val_acc': 0.0
+    }
+    return dic
+
+def add_global_node( mx, ifAdj):
+    """add a global node to operation or adjacency matrixs, fill diagonal for adj and transpose adjs"""
+    if (ifAdj):
+        mx = np.column_stack((mx, np.ones(mx.shape[0], dtype=np.float32)))
+        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
+        np.fill_diagonal(mx, 1)
+        mx = mx.T
+    else:
+        mx = np.column_stack((mx, np.zeros(mx.shape[0], dtype=np.float32)))
+        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
+        mx[mx.shape[0] - 1][mx.shape[1] - 1] = 1
+    return mx
+
+def transform_matrix(cell):
+    normal = cell
+
+    node_num = len(normal)+3
+
+    adj = np.zeros((node_num, node_num))
+
+    ops = np.zeros((node_num, 8)) # 6+2 operations 
+    for i in range(len(normal)):
+        connect, op = normal[i]
+        if connect == 0 or connect==1:
+            adj[connect][i+2] = 1
+        else:
+            adj[(connect-2)*2+2][i+2] = 1
+            adj[(connect-2)*2+3][i+2] = 1
+        ops[i+2][op] = 1
+    adj[2:-1, -1] = 1
+    ops[0:2, 0] = 1
+    ops[-1][-1] = 1
+    return adj, ops
 
 def generate_arch(ss_type):
     if ss_type == 'nasbench101':
@@ -535,6 +614,12 @@ def generate_arch(ss_type):
         ops = [random.randint(1,5) for _ in range(6)]
         ops = [0, *ops, 6]
         seq = convert_arch_to_seq(nb201_adj_matrix, ops)
+    elif ss_type == 'darts':
+        cell_norm = [( random.randint(0,i//2+1), random.randint(0,6) ) for i in range(8)]
+        cell_reduct = [( random.randint(0,i//2+1), random.randint(0,6) ) for i in range(8)]
+        cells = [cell_norm, cell_reduct]
+        arch = encode_darts(cells)
+        seq = convert_arch_to_seq(arch['adjacency'],arch['operations'],max_n=35)
     return seq
 
 # currently only works for nb201 
@@ -570,16 +655,20 @@ def generate_synthetic_controller_data(model, base_arch=None, random_arch=0,ss_t
     return synthetic_input, synthetic_target
 
 class SemiNASPredictor(Predictor):
-    def __init__(self, encoding_type='gcn', ss_type=None):
+    def __init__(self, encoding_type='gcn', ss_type=None, semi=False):
         self.encoding_type = encoding_type
+        self.semi = semi
         if ss_type is not None:
             self.ss_type = ss_type
 
     def get_model(self, **kwargs):
+        # old API, not being used 
         if self.ss_type == 'nasbench101':
             predictor = NAO(encoder_length=27,decoder_length=27)
         elif self.ss_type == 'nasbench201':
             predictor = NAO(encoder_length=35,decoder_length=35)
+        elif self.ss_type == 'darts':
+            predictor = NAO(encoder_length=629,decoder_length=629,vocab_size=12)
         return predictor
 
     def fit(self, xtrain, ytrain, train_info=None,
@@ -596,7 +685,9 @@ class SemiNASPredictor(Predictor):
         if self.ss_type == 'nasbench101':
             self.max_n = 7
         elif self.ss_type == 'nasbench201':
-            self.max_n = 8    
+            self.max_n = 8
+        elif self.ss_type == 'darts':
+            self.max_n = 35    
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
@@ -610,6 +701,19 @@ class SemiNASPredictor(Predictor):
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
 
+        if self.ss_type == 'nasbench101':
+            encoder_length=27
+            decoder_length=27
+            vocab_size=7
+        elif self.ss_type == 'nasbench201':
+            encoder_length=35
+            decoder_length=35
+            vocab_size=9
+        elif self.ss_type == 'darts':
+            encoder_length=629
+            decoder_length=629
+            vocab_size=13
+
         self.model = NAO(
             encoder_layers,
             decoder_layers,
@@ -621,7 +725,7 @@ class SemiNASPredictor(Predictor):
             source_length,
             encoder_length,
             decoder_length,
-        )
+        ).to(device)
 
         for i in range(iteration):
             print('Iteration {}'.format(i+1))
@@ -633,21 +737,23 @@ class SemiNASPredictor(Predictor):
             print('Pre-train EPD')
             train_controller(self.model, train_encoder_input, train_encoder_target, pretrain_epochs)
             print('Finish pre-training EPD')
-            # Generate synthetic data
-            print('Generate synthetic data for EPD')
-            m = synthetic_factor * len(xtrain)
-            synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m,self.ss_type)
-            if up_sample_ratio is None:
-                up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)
-            else:
-                up_sample_ratio = up_sample_ratio
+            
+            if self.semi:
+                # Generate synthetic data
+                print('Generate synthetic data for EPD')
+                m = synthetic_factor * len(xtrain)
+                synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m,self.ss_type)
+                if up_sample_ratio is None:
+                    up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)
+                else:
+                    up_sample_ratio = up_sample_ratio
 
-            all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
-            all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
-            # Train
-            print('Train EPD')
-            train_controller(self.model, all_encoder_input, all_encoder_target, epochs)
-            print('Finish training EPD')
+                all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
+                all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
+                # Train
+                print('Train EPD')
+                train_controller(self.model, all_encoder_input, all_encoder_target, epochs)
+                print('Finish training EPD')
             
         train_pred = np.squeeze(self.query(xtrain))
         train_error = np.mean(abs(train_pred-ytrain))

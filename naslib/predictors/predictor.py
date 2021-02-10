@@ -14,6 +14,15 @@ class Predictor:
         """
         pass
     
+    def pre_compute(self, xtrain, xtest):
+        """
+        This method is used to make batch predictions
+        more efficient. Perform a computation on the train/test
+        set once (e.g., calculate the Jacobian covariance)
+        and then use it for all train_sizes.
+        """
+        pass
+    
     def fit(self, xtrain, ytrain, info=None):
         """
         This can be called any number of times during the NAS algorithm.

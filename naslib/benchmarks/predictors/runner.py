@@ -11,7 +11,7 @@ EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, \
-LCEPredictor
+LCEPredictor, OmniPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -21,7 +21,6 @@ from naslib.utils.utils import get_project_root
 
 
 config = utils.get_config_from_args(config_type='predictor')
-
 utils.set_seed(config.seed)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
@@ -41,6 +40,7 @@ supported_predictors = {
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
+    'sotlema': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLEMA'),
     'xgb': XGBoost(encoding_type='adjacency_one_hot'),
     'ngb': NGBoost(encoding_type='adjacency_one_hot'),
     'rf': RandomForestPredictor(encoding_type='adjacency_one_hot'),
@@ -48,7 +48,8 @@ supported_predictors = {
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
     'lcnet': LCNetPredictor(encoding_type='adjacency_one_hot'),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
-    'seminas': SemiNASPredictor(encoding_type='seminas'),
+    'seminas': SemiNASPredictor(encoding_type='seminas', semi=True),
+    'nao': SemiNASPredictor(encoding_type='seminas', semi=False),
     'gp': GPPredictor(encoding_type='adjacency_one_hot'),
     'sparse_gp': SparseGPPredictor(encoding_type='adjacency_one_hot',
                                    optimize_gp_hyper=True, num_steps=100),
@@ -57,6 +58,7 @@ supported_predictors = {
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False),
     'lcsvr_ac': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=True),
     'lcsvr_t': SVR_Estimator(metric=Metric.TRAIN_LOSS, all_curve=False),
+    'lcsvr_t_ac': SVR_Estimator(metric=Metric.TRAIN_LOSS, all_curve=True),
     'aug_lcsvr': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
                                    all_curve=False, config=config,
                                    zero_cost_methods=['jacov'], model_name='svr'),
@@ -77,6 +79,20 @@ supported_predictors = {
     'bohamiann_path': BOHAMIANN(encoding_type='path'),
     'bayes_lin_reg_path': BayesianLinearRegression(encoding_type='path'),
     'gp_path': GPPredictor(encoding_type='path'),
+    'omni': OmniPredictor(zero_cost=['jacov'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot', 
+                          config=config),
+    'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
+                               config=config),
+    'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
+                               config=config, run_pre_compute=True, min_train_size=0),
+    'omni_sc': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
+                               config=config, run_pre_compute=True, min_train_size=0),
+    'omni_no_zero': OmniPredictor(zero_cost=[], lce=['sotle'], encoding_type='adjacency_one_hot',
+                                  config=config, run_pre_compute=False, min_train_size=0),
+    'omni_no_enc': OmniPredictor(zero_cost=['jacov'], lce=['sotle'], encoding_type=None,
+                                 config=config, run_pre_compute=True, min_train_size=0),
+    'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot',
+                            config=config, run_pre_compute=False, min_train_size=0),
 }
 
 supported_search_spaces = {
@@ -87,6 +103,7 @@ supported_search_spaces = {
 
 load_labeled = (True if config.search_space == 'darts' else False)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
+utils.set_seed(config.seed)
 
 # set up the search space and predictor
 predictor = supported_predictors[config.predictor]

@@ -55,7 +55,7 @@ class PredictorEvaluator(object):
             self.hyperparameters = True
         elif self.search_space.get_type() == 'darts':
             self.full_lc = True
-            self.hyperparameters = False
+            self.hyperparameters = True
         else:
             raise NotImplementedError('This search space is not yet implemented in PredictorEvaluator.')
 
@@ -143,7 +143,7 @@ class PredictorEvaluator(object):
                 lc_related_keys = [key for key in info_dict.keys() if 'lc' in key]
                 for lc_key in lc_related_keys:
                     info_dict[lc_key] = info_dict[lc_key][:fidelity]
-                
+
         fit_time_start = time.time()
         if self.config.predictor not in ['oneshot', 'rsws']:
             # for oneshot predictors we do not fit
@@ -189,10 +189,7 @@ class PredictorEvaluator(object):
             train_data = self.load_dataset(load_labeled=self.load_labeled,
                                            data_size=train_size)
 
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                self.predictor.pre_compute(train_data[0], test_data[0])
-            
+            self.predictor.pre_compute(train_data[0], test_data[0])
             self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_train_size':
@@ -200,10 +197,7 @@ class PredictorEvaluator(object):
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
                                                 data_size=self.train_size_list[-1])
             
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                self.predictor.pre_compute(full_train_data[0], test_data[0])
-            
+            self.predictor.pre_compute(full_train_data[0], test_data[0])
             fidelity = self.fidelity_single
 
             for train_size in self.train_size_list:
@@ -216,10 +210,7 @@ class PredictorEvaluator(object):
             train_data = self.load_dataset(load_labeled=self.load_labeled,
                                            data_size=self.train_size_single)
 
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                self.predictor.pre_compute(train_data[0], test_data[0])
-
+            self.predictor.pre_compute(train_data[0], test_data[0])
             for fidelity in self.fidelity_list:
                 self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
@@ -228,10 +219,7 @@ class PredictorEvaluator(object):
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
                                                 data_size=self.train_size_list[-1])
 
-            # for aug_lcsvr or aug_lcrf or aug_lcblr or (aug_lcbnn later)
-            if 'aug_lc' in self.config.predictor:
-                logger.info("Load extra info")
-                self.predictor.pre_compute(full_train_data[0], test_data[0])
+            self.predictor.pre_compute(full_train_data[0], test_data[0])
 
             for train_size in self.train_size_list:
                 train_data = [data[:train_size] for data in full_train_data]
@@ -243,6 +231,7 @@ class PredictorEvaluator(object):
             raise NotImplementedError()
 
         self._log_to_json()
+        return self.results
 
     def compare(self, ytest, test_pred):
         ytest = np.array(ytest)
@@ -250,6 +239,7 @@ class PredictorEvaluator(object):
         METRICS = ['mae', 'rmse', 'pearson', 'spearman', 'kendalltau', 'kt_2dec', 'kt_1dec', \
                    'precision_10', 'precision_20']
         metrics_dict = {}
+
         try:
             metrics_dict['mae'] = np.mean(abs(test_pred - ytest))
             metrics_dict['rmse'] = metrics.mean_squared_error(ytest, test_pred, squared=False)
@@ -263,11 +253,13 @@ class PredictorEvaluator(object):
                 top_test_pred = np.array([y > sorted(test_pred)[max(-len(test_pred),-k-1)] for y in test_pred])
                 metrics_dict['precision_{}'.format(k)] = sum(top_ytest & top_test_pred) / k
         except:
+            for metric in METRICS:
+                metrics_dict[metric] = float('nan')
+        if np.isnan(metrics_dict['pearson']) or not np.isfinite(metrics_dict['pearson']):
             logger.info('Error when computing metrics. Ytest and test_pred are:')
             logger.info(ytest)
             logger.info(test_pred)
-            for metric in METRICS:
-                metrics_dict[metric] = float('nan')
+
         return metrics_dict
 
     def _log_to_json(self):

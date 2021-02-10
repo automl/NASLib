@@ -5,6 +5,7 @@ import logging
 import os
 import copy
 import torch
+import numpy as np
 
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
@@ -63,6 +64,7 @@ class Trainer(object):
              'test_acc': [],
              'test_loss': [],
              'runtime': [],
+             'train_time': [],
              'arch_eval': [],
              'params': n_parameters}
         )
@@ -79,6 +81,10 @@ class Trainer(object):
                 train from scratch.
         """
         logger.info("Start training")
+
+        np.random.seed(self.config.search.seed)
+        torch.manual_seed(self.config.search.seed)
+
         self.optimizer.before_training()
         checkpoint_freq = self.config.search.checkpoint_freq
         if self.optimizer.using_step_function:
@@ -88,12 +94,14 @@ class Trainer(object):
         else:
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq)
         
-        self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
+        if self.optimizer.using_step_function:
+            self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(self.config)
 
         for e in range(start_epoch, self.epochs):
-            self.optimizer.new_epoch(e)
             
             start_time = time.time()
+            self.optimizer.new_epoch(e)
+
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
                     data_train = (data_train[0].to(self.device), data_train[1].to(self.device, non_blocking=True))
@@ -128,7 +136,7 @@ class Trainer(object):
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
                 #train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
-                train_acc, valid_acc, test_acc = self.optimizer.train_statistics()
+                train_acc, valid_acc, test_acc, train_time = self.optimizer.train_statistics()
                 train_loss, valid_loss, test_loss = -1, -1, -1
                 
                 self.errors_dict.train_acc.append(train_acc)
@@ -138,9 +146,10 @@ class Trainer(object):
                 self.errors_dict.test_acc.append(test_acc)
                 self.errors_dict.test_loss.append(test_loss)
                 self.errors_dict.runtime.append(end_time - start_time)
+                self.errors_dict.train_time.append(train_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
-            
+
             self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
@@ -149,8 +158,9 @@ class Trainer(object):
                 self.errors_dict.arch_eval.append(anytime_results)
                 log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results: {}".format(
                         e, anytime_results), n=5)
-                    
-            # self._log_to_json()
+
+            self._log_to_json()
+
             self._log_and_reset_accuracies(e)
 
         self.optimizer.after_training()
