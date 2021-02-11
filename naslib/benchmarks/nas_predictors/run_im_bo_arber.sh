@@ -1,5 +1,6 @@
 optimizer=bananas
-predictors=(omni ngb_hp seminas nao gcn)
+predictors=(ngb_hp omni nao seminas bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
+bohamiann bayes_lin_reg gp sparse_gp var_sparse_gp)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -9,12 +10,12 @@ fi
 
 # folders:
 base_file=naslib
-s3_folder=bo301_feb9_0
+s3_folder=bo201_im_feb4_2
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
-search_space=darts
-dataset=cifar10
+search_space=nasbench201
+dataset=ImageNet16-120
 search_epochs=500
 
 # trials / seeds:
