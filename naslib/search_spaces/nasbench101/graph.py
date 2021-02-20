@@ -10,7 +10,8 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.search_spaces.nasbench101.conversions import convert_naslib_to_spec, convert_spec_to_naslib
+from naslib.search_spaces.nasbench101.conversions import convert_naslib_to_spec, \
+convert_spec_to_naslib, convert_spec_to_tuple
 
 from naslib.utils.utils import get_project_root
 
@@ -145,6 +146,9 @@ class NasBench101SearchSpace(Graph):
         if self.spec is None:
             self.spec = convert_naslib_to_spec(self)
         return self.spec
+    
+    def get_hash(self):
+        return convert_spec_to_tuple(self.get_spec())
 
     def set_spec(self, spec):
         # TODO: convert the naslib object to this spec

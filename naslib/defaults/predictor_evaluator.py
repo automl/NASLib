@@ -59,7 +59,7 @@ class PredictorEvaluator(object):
         else:
             raise NotImplementedError('This search space is not yet implemented in PredictorEvaluator.')
 
-    def load_dataset(self, load_labeled=False, data_size=10):
+    def load_dataset(self, load_labeled=False, data_size=10, arch_hash_map={}):
         """
         There are two ways to load an architecture.
         load_labeled=False: sample a random architecture from the search space.
@@ -75,7 +75,7 @@ class PredictorEvaluator(object):
         ydata = []
         info = []
         train_times = []
-        for _ in range(data_size):
+        while len(xdata) < data_size:
             if not load_labeled:
                 arch = self.search_space.clone()
                 arch.sample_random_architecture(dataset_api=self.dataset_api)
@@ -83,6 +83,12 @@ class PredictorEvaluator(object):
                 arch = self.search_space.clone()
                 arch.load_labeled_architecture(dataset_api=self.dataset_api)
             
+            arch_hash = arch.get_hash()
+            if arch_hash in arch_hash_map:
+                continue
+            else:
+                arch_hash_map[arch_hash] = True
+
             accuracy = arch.query(metric=self.metric, 
                                   dataset=self.dataset, 
                                   dataset_api=self.dataset_api)
@@ -117,11 +123,11 @@ class PredictorEvaluator(object):
             xdata.append(arch)
             ydata.append(accuracy)
             train_times.append(train_time)
-        return xdata, ydata, info, train_times
+        return xdata, ydata, info, train_times, arch_hash_map
 
     def single_evaluate(self, train_data, test_data, fidelity):
-        xtrain, ytrain, train_info, train_times = train_data
-        xtest, ytest, test_info, _ = test_data
+        xtrain, ytrain, train_info, train_times, _ = train_data
+        xtest, ytest, test_info, _, _ = test_data
         train_size = len(xtrain)
 
         data_reqs = self.predictor.get_data_reqs()
@@ -181,13 +187,14 @@ class PredictorEvaluator(object):
 
         logger.info("Load the test set")
         test_data = self.load_dataset(load_labeled=self.load_labeled, data_size=self.test_size)
+        arch_hash_map = test_data[-1]
 
         if self.experiment_type == 'single':
             train_size = self.train_size_single
             fidelity = self.fidelity_single
             logger.info("Load the training set")
             train_data = self.load_dataset(load_labeled=self.load_labeled,
-                                           data_size=train_size)
+                                           data_size=train_size, arch_hash_map=arch_hash_map)
 
             self.predictor.pre_compute(train_data[0], test_data[0])
             self.single_evaluate(train_data, test_data, fidelity=fidelity)
@@ -195,8 +202,9 @@ class PredictorEvaluator(object):
         elif self.experiment_type == 'vary_train_size':
             logger.info("Load the training set")
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
-                                                data_size=self.train_size_list[-1])
-            
+                                                data_size=self.train_size_list[-1], 
+                                                arch_hash_map=arch_hash_map)
+       
             self.predictor.pre_compute(full_train_data[0], test_data[0])
             fidelity = self.fidelity_single
 
@@ -208,7 +216,8 @@ class PredictorEvaluator(object):
             train_size = self.train_size_single
             logger.info("Load the training set")
             train_data = self.load_dataset(load_labeled=self.load_labeled,
-                                           data_size=self.train_size_single)
+                                           data_size=self.train_size_single, 
+                                           arch_hash_map=arch_hash_map)
 
             self.predictor.pre_compute(train_data[0], test_data[0])
             for fidelity in self.fidelity_list:
@@ -217,7 +226,8 @@ class PredictorEvaluator(object):
         elif self.experiment_type == 'vary_both':
             logger.info("Load the training set")
             full_train_data = self.load_dataset(load_labeled=self.load_labeled,
-                                                data_size=self.train_size_list[-1])
+                                                data_size=self.train_size_list[-1], 
+                                                arch_hash_map=arch_hash_map)
 
             self.predictor.pre_compute(full_train_data[0], test_data[0])
 

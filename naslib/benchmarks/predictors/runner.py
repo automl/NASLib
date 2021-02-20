@@ -10,7 +10,7 @@ from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
-GPPredictor, SparseGPPredictor, VarSparseGPPredictor, Aug_SVR_Estimator, \
+GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
 LCEPredictor, OmniPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
@@ -56,23 +56,6 @@ supported_predictors = {
     'var_sparse_gp': VarSparseGPPredictor(encoding_type='adjacency_one_hot',
                                           optimize_gp_hyper=True, num_steps=200),
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False),
-    'lcsvr_ac': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=True),
-    'lcsvr_t': SVR_Estimator(metric=Metric.TRAIN_LOSS, all_curve=False),
-    'lcsvr_t_ac': SVR_Estimator(metric=Metric.TRAIN_LOSS, all_curve=True),
-    'aug_lcsvr': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
-                                   all_curve=False, config=config,
-                                   zero_cost_methods=['jacov'], model_name='svr'),
-    'aug_lcsvr_arch': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
-                                        all_curve=False, config=config,
-                                        encoding_type=['adjacency_one_hot'],
-                                        zero_cost_methods=['jacov'], model_name='svr'),
-    'aug_lcsvr_ac_arch': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
-                                           all_curve=True, config=config,
-                                           encoding_type=['adjacency_one_hot'],
-                                           zero_cost_methods=['jacov'], model_name='svr'),
-    'aug_lcgbdt': Aug_SVR_Estimator(metric=[Metric.TRAIN_LOSS, Metric.VAL_ACCURACY],
-                                   all_curve=False, config=config,
-                                   zero_cost_methods=['jacov'], model_name='gbdt'),
     'gbdt_path': GBDTPredictor(encoding_type='path'),
     'ngb_path': NGBoost(encoding_type='path'),
     'dngo_path': DNGOPredictor(encoding_type='path'),
@@ -84,8 +67,6 @@ supported_predictors = {
     'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
                                config=config),
     'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
-                               config=config, run_pre_compute=True, min_train_size=0),
-    'omni_sc': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
                                config=config, run_pre_compute=True, min_train_size=0),
     'omni_no_zero': OmniPredictor(zero_cost=[], lce=['sotle'], encoding_type='adjacency_one_hot',
                                   config=config, run_pre_compute=False, min_train_size=0),
