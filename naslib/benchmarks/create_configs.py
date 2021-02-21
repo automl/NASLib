@@ -102,6 +102,7 @@ def main(args):
                 'train_size_single': args.train_size_single,
                 'fidelity_single': args.fidelity_single,
                 'fidelity_list': fidelity_list,
+                'max_hpo_time': 0,
             }
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
