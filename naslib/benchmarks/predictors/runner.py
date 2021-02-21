@@ -74,6 +74,8 @@ supported_predictors = {
                                  config=config, run_pre_compute=True, min_train_size=0),
     'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot',
                             config=config, run_pre_compute=False, min_train_size=0),
+    'xgb_hpo': XGBoost(encoding_type='adjacency_one_hot', hpo_wrapper=True),
+    'feedforward_hpo': FeedforwardPredictor(encoding_type='adjacency_one_hot', hpo_wrapper=True),
 }
 
 supported_search_spaces = {

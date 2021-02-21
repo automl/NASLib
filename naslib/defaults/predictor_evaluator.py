@@ -86,7 +86,7 @@ class PredictorEvaluator(object):
                 arch.load_labeled_architecture(dataset_api=self.dataset_api)
             
             arch_hash = arch.get_hash()
-            if arch_hash in arch_hash_map:
+            if False: # removing this for consistency, for now
                 continue
             else:
                 arch_hash_map[arch_hash] = True
