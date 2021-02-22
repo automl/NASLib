@@ -42,7 +42,7 @@ class Bananas(MetaOptimizer):
         self.num_arches_to_mutate = config.search.num_arches_to_mutate
         self.max_mutations = config.search.max_mutations
         self.num_candidates = config.search.num_candidates
-        self.max_zerocost = 100
+        self.max_zerocost = 1000
 
         self.train_data = []
         self.next_batch = []
