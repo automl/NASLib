@@ -215,7 +215,7 @@ class PredictorEvaluator(object):
             train_data, _ = self.load_dataset(load_labeled=self.load_labeled,
                                               data_size=train_size, arch_hash_map=arch_hash_map)
 
-            self.predictor.pre_compute(train_data, test_data)
+            self.predictor.pre_compute(train_data[0], test_data[0])
             self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_train_size':
@@ -224,7 +224,7 @@ class PredictorEvaluator(object):
                                                    data_size=self.train_size_list[-1], 
                                                    arch_hash_map=arch_hash_map)
        
-            self.predictor.pre_compute(full_train_data, test_data)
+            self.predictor.pre_compute(full_train_data[0], test_data[0])
             fidelity = self.fidelity_single
 
             for train_size in self.train_size_list:
@@ -238,7 +238,7 @@ class PredictorEvaluator(object):
                                               data_size=self.train_size_single, 
                                               arch_hash_map=arch_hash_map)
 
-            self.predictor.pre_compute(train_data, test_data)
+            self.predictor.pre_compute(train_data[0], test_data[0])
             for fidelity in self.fidelity_list:
                 self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
@@ -248,7 +248,7 @@ class PredictorEvaluator(object):
                                                    data_size=self.train_size_list[-1], 
                                                    arch_hash_map=arch_hash_map)
 
-            self.predictor.pre_compute(full_train_data, test_data)
+            self.predictor.pre_compute(full_train_data[0], test_data[0])
 
             for train_size in self.train_size_list:
                 train_data = [data[:train_size] for data in full_train_data]

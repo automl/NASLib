@@ -11,7 +11,7 @@ EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
-LCEPredictor, OmniPredictor
+LCEPredictor, OmniPredictor, OmniXGBPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -64,6 +64,8 @@ supported_predictors = {
     'gp_path': GPPredictor(encoding_type='path'),
     'omni': OmniPredictor(zero_cost=['jacov'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot', 
                           config=config),
+    'omni_xgb': OmniXGBPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
+                                 config=config),
     'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
                                config=config),
     'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
