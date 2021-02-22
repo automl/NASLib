@@ -12,6 +12,7 @@ BayesianLinearRegression
 from naslib.predictors.seminas import SemiNASPredictor
 from naslib.predictors.gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 from naslib.predictors.omni import OmniPredictor
+from naslib.predictors.omni_xgb import OmniXGBPredictor
 
 class Ensemble(Predictor):
     
@@ -68,6 +69,9 @@ class Ensemble(Predictor):
             'omni': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                   ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
                                   min_train_size=0, max_zerocost=100),
+            'omni_xgb': OmniXGBPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
+                                         ss_type=self.ss_type, run_pre_compute=False, n_hypers=0, 
+                                         min_train_size=0, max_zerocost=1000),
             'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
                                     ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
                                     min_train_size=0, max_zerocost=0)

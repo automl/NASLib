@@ -14,3 +14,4 @@ from .bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression, LCNetPredic
 from .gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 from .oneshot import OneShotPredictor
 from .omni import OmniPredictor
+from .omni_xgb import OmniXGBPredictor
