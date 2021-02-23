@@ -14,7 +14,7 @@ start=`date +%s`
 
 # Activate virtual env so that run_experiment can load the correct packages
 source activate python37
-python runner.py --config-file bo201_imagenet_feb03_0/ImageNet16-120/configs/nas_predictors/config_bananas_${1}_${SLURM_ARRAY_TASK_ID}.yaml
+python runner.py --config-file bo201_feb22_0/ImageNet16-120/configs/nas_predictors/config_bananas_${1}_${SLURM_ARRAY_TASK_ID}.yaml
 
 
 end=`date +%s`
