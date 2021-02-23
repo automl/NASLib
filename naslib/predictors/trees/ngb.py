@@ -1,3 +1,4 @@
+import numpy as np
 from functools import wraps
 
 from ngboost import NGBRegressor
@@ -17,6 +18,9 @@ def parse_params(func):
                 params[k.replace(identifier, "")] = v
         return params
     return wrapper
+
+def loguniform(low=0, high=1, size=None):
+    return np.exp(np.random.uniform(np.log(low), np.log(high), size))
 
 
 class NGBoost(BaseTree):

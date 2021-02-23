@@ -51,3 +51,21 @@ class Predictor:
                 'requires_hyperparameters':False, 
                 'hyperparams':{}}
         return reqs
+
+    def set_hyperparams(self, hyperparams):
+        self.hyperparams = hyperparams
+        
+    def get_hyperparams(self):
+        if hasattr(self, 'hyperparams'):
+            return self.hyperparams
+        else:
+            # TODO: set hyperparams (at least to None) for all predictors
+            print('no hyperparams set')
+            return None
+        
+    def get_hpo_wrapper(self):
+        if hasattr(self, 'hpo_wrapper'):
+            return self.hpo_wrapper
+        else:
+            # TODO: set hpo_wrapper to a boolean for all predictors
+            return None

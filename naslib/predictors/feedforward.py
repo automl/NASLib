@@ -19,7 +19,6 @@ def accuracy_mse(prediction, target, scale=100.):
     return F.mse_loss(prediction, target)
 
 
-
 class FeedforwardNet(nn.Module):
     def __init__(self, input_dims: int = 5, num_layers: int = 3, layer_width:
                  list = [10, 10, 10], output_dims: int = 1, activation='relu'):
@@ -55,23 +54,32 @@ class FeedforwardNet(nn.Module):
 
 class FeedforwardPredictor(Predictor):
 
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201'):
+    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', hpo_wrapper=False):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
+        self.hpo_wrapper = hpo_wrapper
+        self.default_hyperparams = {'num_layers': 20, 
+                                    'layer_width': 20, 
+                                    'batch_size': 32,
+                                    'lr': 0.001,
+                                    'regularization': 0.2}
+        self.hyperparams = None
 
     def get_model(self, **kwargs):
         predictor = FeedforwardNet(**kwargs)
         return predictor
 
     def fit(self, xtrain, ytrain, train_info=None,
-            num_layers=20,
-            layer_width=20,
-            loss='mae',
-            epochs=500,
-            batch_size=32,
-            lr=.001,
-            verbose=0,
-            regularization=0.2):
+            epochs=500, loss='mae', verbose=0):
+        
+        if self.hyperparams is None:
+            self.hyperparams = self.default_hyperparams.copy()
+
+        num_layers = self.hyperparams['num_layers']
+        layer_width = self.hyperparams['layer_width']
+        batch_size = self.hyperparams['batch_size']
+        lr = self.hyperparams['lr']
+        regularization = self.hyperparams['regularization']
 
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
@@ -90,7 +98,7 @@ class FeedforwardPredictor(Predictor):
 
         self.model = self.get_model(input_dims=_xtrain.shape[1],
                                     num_layers=num_layers,
-                                    layer_width=num_layers*[20])
+                                    layer_width=num_layers*[layer_width])
         self.model.to(device)
         optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.99))
 
@@ -120,7 +128,7 @@ class FeedforwardPredictor(Predictor):
                 mse = accuracy_mse(prediction, target)
                 meters.update({"loss": loss_fn.item(), "mse": mse.item()}, n=target.size(0))
 
-            if e%100 == 0:
+            if verbose and e%100 == 0:
                 print('Epoch {}, {}, {}'.format(e, meters['loss'], meters['mse']))
 
         train_pred = np.squeeze(self.query(xtrain))
@@ -147,3 +155,18 @@ class FeedforwardPredictor(Predictor):
         pred = np.concatenate(pred)
         return np.squeeze(pred)
 
+    def set_random_hyperparams(self):
+
+        if self.hyperparams is None:
+            params = self.default_hyperparams.copy()
+
+        else:
+            params = {
+                'num_layers': int(np.random.choice(range(5,25))),
+                'layer_width': int(np.random.choice(range(5,25))),
+                'batch_size': 32,
+                'lr': np.random.choice([0.1, 0.01, 0.005, 0.001, 0.0001]),
+                'regularization': 0.2}
+
+        self.hyperparams = params
+        return params

@@ -1,5 +1,16 @@
-predictors=(bonas gbdt_path gp_path dngo_path bohamiann_path bayes_lin_reg_path)
-experiment_types=(vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size)
+predictors=(bonas gcn \
+ngb rf xgb gbdt \
+bananas mlp seminas nao \
+dngo bohamiann bayes_lin_reg \
+gp sparse_gp var_sparse_gp\
+gbdt_path gp_path dngo_path bohamiann_path bayes_lin_reg_path)
+
+experiment_types=(vary_train_size vary_train_size \
+vary_train_size vary_train_size vary_train_size vary_train_size
+vary_train_size vary_train_size vary_train_size vary_train_size \
+vary_train_size vary_train_size vary_train_size \
+vary_train_size vary_train_size vary_train_size\
+vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -9,7 +20,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p101_jan19
+s3_folder=p101
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:

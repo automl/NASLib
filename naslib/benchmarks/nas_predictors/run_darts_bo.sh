@@ -1,5 +1,6 @@
 optimizer=bananas
-predictors=(omni ngb_hp seminas nao gcn)
+predictors=(omni bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
+bohamiann bayes_lin_reg gp seminas sparse_gp var_sparse_gp nao)
 
 start_seed=$1
 if [ -z "$start_seed" ]

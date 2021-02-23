@@ -180,6 +180,9 @@ class NasBench201SearchSpace(Graph):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
+    
+    def get_hash(self):
+        return tuple(self.get_op_indices())
 
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices

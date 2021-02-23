@@ -2,11 +2,12 @@
 # experiment types: single, vary_train_size, vary_fidelity
 experiment_type: single
 search_space: nasbench201
-predictor: snip
-test_size: 100
+predictor: xgb
+test_size: 200
 seed: 1000
+max_hpo_time: 0
 
-dataset: ImageNet16-120
+dataset: cifar10
 out_dir: run
 
 train_size_list: [8, 12, 20, 32, 50, 80, 128, 203, 322, 512]
@@ -17,6 +18,7 @@ fidelity_single: 5
 
 # Used by Jacobian_cov from NAS without training from DARTS for data loader
 search:
+  seed: 1000
   batch_size: 256 # modified based on NAS with training paper
   data_size: 25000
   cutout: False

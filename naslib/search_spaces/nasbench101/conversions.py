@@ -38,3 +38,12 @@ def convert_naslib_to_spec(naslib_object):
 def convert_spec_to_naslib(spec, naslib_object):
     # TODO: write this method similar to how it was written for nasbench201 and darts
     raise NotImplementedError('Cannot yet convert a spec to naslib object')
+
+def convert_spec_to_tuple(spec):
+    # convert the spec to a hashable type
+    op_dict = ['input', 'output', 'maxpool3x3', 'conv1x1-bn-relu', 'conv3x3-bn-relu']
+    
+    matrix = spec['matrix'].flatten()
+    ops = [op_dict.index(s) for s in spec['ops']]
+    tup = tuple([*matrix, *ops])
+    return tup

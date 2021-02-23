@@ -357,6 +357,9 @@ class DartsSearchSpace(Graph):
         if self.compact is None:
             self.compact = convert_naslib_to_compact(self)
         return self.compact
+    
+    def get_hash(self):
+        return self.get_compact()
 
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact

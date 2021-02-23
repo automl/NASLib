@@ -39,7 +39,7 @@ class Npenas(MetaOptimizer):
         self.num_arches_to_mutate = config.search.num_arches_to_mutate
         self.max_mutations = config.search.max_mutations
         self.num_candidates = config.search.num_candidates
-        self.max_zerocost = 100
+        self.max_zerocost = 1000
 
         self.train_data = []
         self.next_batch = []
@@ -147,6 +147,7 @@ class Npenas(MetaOptimizer):
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api), 
         )
 
     def test_statistics(self):

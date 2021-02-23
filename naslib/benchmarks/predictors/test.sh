@@ -1,11 +1,6 @@
-predictors=(jacov snip valloss valacc \
-bananas mlp seminas nao \
-dngo bohamiann bayes_lin_reg \
-gp sparse_gp var_sparse_gp)
-experiment_types=(single single vary_fidelity vary_fidelity \
-vary_train_size vary_train_size vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_train_size)
+predictors=(rf)
+
+experiment_types=(single)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -15,18 +10,18 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p301_feb2
+s3_folder=test
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
-search_space=darts
+search_space=nasbench201
 dataset=cifar10
 
 # other variables:
-trials=100
+trials=1
 end_seed=$(($start_seed + $trials - 1))
 save_to_s3=true
-test_size=100
+test_size=10
 
 # create config files
 for i in $(seq 0 $((${#predictors[@]}-1)) )
