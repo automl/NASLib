@@ -38,6 +38,7 @@ supported_predictors = {
     'lce': LCEPredictor(metric=Metric.VAL_ACCURACY),
     'jacov': ZeroCostEstimators(config, batch_size=64, method_type='jacov'),
     'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
+    'synflow': ZeroCostEstimators(config, batch_size=64, method_type='synflow'),
     'sotl': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTL'),
     'sotle': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLE'),
     'sotlema': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLEMA'),

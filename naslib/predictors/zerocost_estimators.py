@@ -1,54 +1,36 @@
-# Author: Robin Ru @ University of Oxford
-# This is an implementation of zero-cost estimators based on:
-# https://github.com/BayesWatch/nas-without-training (Jacov)
-# and https://github.com/gahaalt/SNIP-pruning (SNIP)
+import random
 
 import numpy as np
 import torch
 import logging
-import gc
-
+# import gc
 from naslib.predictors.predictor import Predictor
-from naslib.predictors.utils.build_nets import get_cell_based_tiny_net
 from naslib.utils.utils import get_project_root, get_train_val_loaders
-from naslib.predictors.utils.build_nets.build_darts_net import NetworkCIFAR
+from naslib.predictors.utils.models.build_darts_net import NetworkCIFAR
+from naslib.predictors.utils.models import nasbench2 as nas201_arch
+from naslib.predictors.utils.models import nasbench1 as nas101_arch
+from naslib.predictors.utils.models import nasbench1_spec
+from naslib.predictors.utils.pruners import predictive
+
 from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
-
 logger = logging.getLogger(__name__)
-
-def get_batch_jacobian(net, x, target):
-    net.zero_grad()
-
-    x.requires_grad_(True)
-
-    _, y = net(x)
-
-    y.backward(torch.ones_like(y))
-    jacob = x.grad.detach()
-
-    return jacob, target.detach()
-
-def eval_score(jacob, labels=None):
-    corrs = np.corrcoef(jacob)
-    v, _ = np.linalg.eig(corrs)
-    k = 1e-5
-    return -np.sum(np.log(v + k) + 1. / (v + k))
 
 class ZeroCostEstimators(Predictor):
 
     def __init__(self, config, batch_size = 64, method_type='jacov'):
+        # available zero-cost method types: 'jacov', 'snip', 'synflow', 'grad_norm', 'fisher', 'grasp'
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
         self.batch_size = batch_size
+        self.dataload = 'random'
+        self.num_imgs_or_batches = 1
         self.method_type = method_type
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         config.data = "{}/data".format(get_project_root())
         self.config = config
-        if method_type == 'jacov':
-            self.num_classes = 1
-        else:
-            num_classes_dic = {'cifar10': 10, 'cifar100': 100, 'ImageNet16-120': 120}
-            self.num_classes = num_classes_dic[self.config.dataset]
+        num_classes_dic = {'cifar10': 10, 'cifar100': 100, 'ImageNet16-120': 120}
+        self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
 
@@ -71,8 +53,13 @@ class ZeroCostEstimators(Predictor):
                 arch_str = '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
                 arch_config = {'name': 'infer.tiny', 'C': 16, 'N':5, 'arch_str': arch_str,
                                'num_classes': self.num_classes}
-
-                network = get_cell_based_tiny_net(arch_config)  # create the network from configuration
+                network = nas201_arch.get_model_from_arch_str(arch_str, self.num_classes)  # create the network from configuration
+                # zero-cost-proxy author has the following checking lines (which I think might be optional)
+                arch_str2 = nas201_arch.get_arch_str_from_model(network)
+                if arch_str != arch_str2:
+                    print(f'Value Error: orig_arch={arch_str}, convert_arch={arch_str2}')
+                    measure_score = -10e8
+                    return measure_score
 
             elif 'darts' in self.config.search_space:
                 test_genotype = convert_compact_to_genotype(test_arch.compact)
@@ -80,41 +67,16 @@ class ZeroCostEstimators(Predictor):
                                'num_classes': self.num_classes, 'auxiliary': False}
                 network = NetworkCIFAR(arch_config)
 
-            data_iterator = iter(self.train_loader)
-            x, target = next(data_iterator)
-            x, target = x.to(self.device), target.to(self.device)
+            elif 'nasbench101' in self.config.search_space:
+                spec = nasbench1_spec._ToModelSpec(test_arch.spec['matrix'], test_arch.spec['ops'])
+                network = nas101_arch.Network(spec, stem_out=128, num_stacks=3, num_mods=3, num_classes=self.num_classes)
 
             network = network.to(self.device)
-
-            if self.method_type == 'jacov':
-                jacobs, labels = get_batch_jacobian(network, x, target)
-                # print('done get jacobs')
-                jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
-
-                try:
-                    score = eval_score(jacobs, labels)
-                except Exception as e:
-                    print(e)
-                    score = -10e8
-
-            elif self.method_type == 'snip':
-                criterion = torch.nn.CrossEntropyLoss()
-                network.zero_grad()
-                _, y = network(x)
-                loss = criterion(y, target)
-                loss.backward()
-                grads = [p.grad.detach().clone().abs() for p in network.parameters() if p.grad is not None]
-
-                with torch.no_grad():
-                    saliences = [(grad * weight).view(-1).abs() for weight, grad in zip(network.parameters(), grads)]
-                    score = torch.sum(torch.cat(saliences)).cpu().numpy()
-                    if hasattr(self, 'ss_type') and self.ss_type == 'darts':
-                        score = -score
-
-            # print(f'nclass={self.num_classes}, scores={score}')
+            score = predictive.find_measures(network, self.train_loader,
+                                             (self.dataload, self.num_imgs_or_batches, self.num_classes),
+                                             self.device, measure_names=[self.method_type])
             test_set_scores.append(score)
-            network, data_iterator, x, target, jacobs, labels = None, None, None, None, None, None
             torch.cuda.empty_cache()
-            gc.collect()
+            # gc.collect()
 
         return np.array(test_set_scores)
