@@ -6,7 +6,7 @@ from naslib.predictors.predictor import Predictor
 
 class BaseTree(Predictor):
 
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', zc=False, hpo_wrapper=True):
+    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', zc=False, hpo_wrapper=False):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
         self.ss_type = ss_type

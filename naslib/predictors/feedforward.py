@@ -54,7 +54,7 @@ class FeedforwardNet(nn.Module):
 
 class FeedforwardPredictor(Predictor):
 
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', hpo_wrapper=True):
+    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', hpo_wrapper=False):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper

@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
+from naslib.predictors.trees.ngb import loguniform
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
@@ -91,10 +92,16 @@ class NeuralPredictorModel(nn.Module):
 
 
 class GCNPredictor(Predictor):
-    def __init__(self, encoding_type='gcn', ss_type=None):
+    def __init__(self, encoding_type='gcn', ss_type=None, hpo_wrapper=False):
         self.encoding_type = encoding_type
         if ss_type is not None:
             self.ss_type = ss_type
+        self.hpo_wrapper = hpo_wrapper
+        self.default_hyperparams = {'gcn_hidden':144, 
+                                    'batch_size':7, 
+                                    'lr':1e-4, 
+                                    'wd':3e-4}
+        self.hyperparams = None
 
     def get_model(self, **kwargs):
         if self.ss_type == 'nasbench101':
@@ -106,9 +113,16 @@ class GCNPredictor(Predictor):
         predictor = NeuralPredictorModel(initial_hidden=initial_hidden)
         return predictor
 
-    def fit(self, xtrain, ytrain, train_info=None,
-            gcn_hidden=144,seed=0,batch_size=7,
-            epochs=300,lr=1e-4,wd=3e-4):
+    def fit(self, xtrain, ytrain, train_info=None, 
+            epochs=300):
+
+        if self.hyperparams is None:
+            self.hyperparams = self.default_hyperparams.copy()
+
+        gcn_hidden = self.hyperparams['gcn_hidden']
+        batch_size = self.hyperparams['batch_size']
+        lr = self.hyperparams['lr']
+        wd = self.hyperparams['wd']
 
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
@@ -163,3 +177,18 @@ class GCNPredictor(Predictor):
 
         pred = np.concatenate(pred)
         return pred * self.std + self.mean
+
+    def set_random_hyperparams(self):
+
+        if self.hyperparams is None:
+            params = self.default_hyperparams.copy()
+
+        else:
+            params = {
+                'gcn_hidden': int(loguniform(64, 200)), 
+                'batch_size': int(loguniform(5, 32)),
+                'lr': loguniform(.00001, .1),
+                'wd': loguniform(.00001, .1)}
+
+        self.hyperparams = params
+        return params

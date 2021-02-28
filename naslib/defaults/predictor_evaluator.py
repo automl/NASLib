@@ -192,9 +192,8 @@ class PredictorEvaluator(object):
         # print entire results dict:
         print_string = ''
         for key in results_dict:
-            if type(results_dict[key]) == str:
-                print_string += key + ': {}, '.format(results_dict[key])
-            else:
+            if type(results_dict[key]) not in [str, set, bool]:
+                # todo: serialize other types
                 print_string += key + ': {}, '.format(np.round(results_dict[key], 4))
         logger.info(print_string)
         self.results.append(results_dict)
@@ -308,22 +307,27 @@ class PredictorEvaluator(object):
         best_score = -1e6
         best_hyperparams = None
 
-        for i in range(max_iters):
-
+        t = 0
+        while t < max_iters:
+            t += 1
             hyperparams = predictor.set_random_hyperparams()
             cv_score = cross_validation(xtrain, ytrain, predictor, split_indices, metric)
-
-            if cv_score > best_score or i == 0:
+            if np.isnan(cv_score) or cv_score < 0:
+                # todo: this will not work for mae/rmse
+                cv_score = 0
+            if cv_score > best_score or t == 0:
                 best_hyperparams = hyperparams
                 best_score = cv_score
                 logger.info(f'new best score={cv_score}, hparams = {hyperparams}')
 
             if (time.time() - start_time) > self.max_hpo_time * (len(xtrain) / 1000) + 20:
+                # we always give at least 20 seconds, and the time scales with train_size
                 break
 
         if math.isnan(best_score):
             best_hyperparams = predictor.default_hyperparams
 
+        logger.info(f'Finished {t} rounds')            
         logger.info(f'Best hyperparams = {best_hyperparams} Score = {best_score}')
         self.predictor.hyperparams = best_hyperparams
 

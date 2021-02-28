@@ -2,8 +2,7 @@
 # This is an implementation of gcn predictor for NAS from the paper:
 # Shi et al., 2020. Bridging the Gap between Sample-based and
 # One-shot Neural Architecture Search with BONAS
-# The original repo uses a fixed 0.001 lr for gcn training, 
-# However a 0.0001 lr with cosine schedule works better.
+# We added cosine annealing.
 
 import itertools
 import os
@@ -20,6 +19,7 @@ from torch.utils.data import DataLoader
 from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
+from naslib.predictors.trees.ngb import loguniform
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
@@ -168,18 +168,29 @@ class GCN(nn.Module):
 
 
 class BonasPredictor(Predictor):
-    def __init__(self, encoding_type='bonas', ss_type=None):
+    def __init__(self, encoding_type='bonas', ss_type=None, hpo_wrapper=False):
         self.encoding_type = encoding_type
         if ss_type is not None:
             self.ss_type = ss_type
-
+        self.hpo_wrapper = hpo_wrapper
+        self.default_hyperparams = {'gcn_hidden':64, 
+                                    'batch_size':128, 
+                                    'lr':1e-4}
+        self.hyperparams = None
+            
     def get_model(self, **kwargs):
         predictor = GCN(**kwargs)
         return predictor
 
     def fit(self, xtrain, ytrain, train_info=None,
-            gcn_hidden=64,seed=0,batch_size=128,
-            epochs=100,lr=1e-4,wd=0):
+            epochs=100, wd=0):
+
+        if self.hyperparams is None:
+            self.hyperparams = self.default_hyperparams.copy()
+
+        batch_size = self.hyperparams['batch_size']
+        gcn_hidden = self.hyperparams['gcn_hidden']
+        lr = self.hyperparams['lr']
 
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
@@ -237,3 +248,17 @@ class BonasPredictor(Predictor):
 
         pred = np.concatenate(pred)
         return pred * self.std + self.mean
+
+    def set_random_hyperparams(self):
+
+        if self.hyperparams is None:
+            params = self.default_hyperparams.copy()
+
+        else:
+            params = {
+                'gcn_hidden': int(loguniform(16, 128)), 
+                'batch_size': int(loguniform(32, 256)), 
+                'lr': loguniform(.00001, .1)}
+
+        self.hyperparams = params
+        return params
