@@ -3,7 +3,7 @@ cython
 hyperopt==0.1.2
 pyyaml
 numpy==1.16.4
-torch>=1.2.0
+torch==1.5.0
 torchvision>=0.4.0
 fvcore
 matplotlib
@@ -18,4 +18,4 @@ lightgbm
 ngboost==0.3.7
 xgboost
 -e git://github.com/automl/pybnn.git@master#egg=pybnn
-pyro-ppl
+pyro-ppl==1.4.0
