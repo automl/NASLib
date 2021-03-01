@@ -11,7 +11,7 @@ from naslib.predictors.utils.models import nasbench2 as nas201_arch
 from naslib.predictors.utils.models import nasbench1 as nas101_arch
 from naslib.predictors.utils.models import nasbench1_spec
 from naslib.predictors.utils.pruners import predictive
-
+import math
 from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,9 @@ class ZeroCostEstimators(Predictor):
             score = predictive.find_measures(network, self.train_loader,
                                              (self.dataload, self.num_imgs_or_batches, self.num_classes),
                                              self.device, measure_names=[self.method_type])
+            if math.isnan(score):
+                score = -1e8
+
             test_set_scores.append(score)
             torch.cuda.empty_cache()
             # gc.collect()
