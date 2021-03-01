@@ -20,6 +20,7 @@ from torch.utils.data import DataLoader
 from naslib.utils.utils import AverageMeterGroup, AverageMeter
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
+from naslib.predictors.trees.ngb import loguniform
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
@@ -655,11 +656,16 @@ def generate_synthetic_controller_data(model, base_arch=None, random_arch=0,ss_t
     return synthetic_input, synthetic_target
 
 class SemiNASPredictor(Predictor):
-    def __init__(self, encoding_type='gcn', ss_type=None, semi=False):
+    def __init__(self, encoding_type='gcn', ss_type=None, semi=False, hpo_wrapper=False):
         self.encoding_type = encoding_type
         self.semi = semi
         if ss_type is not None:
             self.ss_type = ss_type
+        self.hpo_wrapper = hpo_wrapper
+        self.default_hyperparams = {'gcn_hidden':64, 
+                                    'batch_size':100, 
+                                    'lr':1e-3}
+        self.hyperparams = None
 
     def get_model(self, **kwargs):
         # old API, not being used 
@@ -672,14 +678,16 @@ class SemiNASPredictor(Predictor):
         return predictor
 
     def fit(self, xtrain, ytrain, train_info=None,
-            gcn_hidden=64, 
-            batch_size=100, 
-            lr=1e-3,
-            wd=0, 
-            iteration=1, 
-            epochs=50,
+            wd=0, iteration=1, epochs=50,
             pretrain_epochs=50, 
             synthetic_factor=1):
+        
+        if self.hyperparams is None:
+            self.hyperparams = self.default_hyperparams.copy()
+
+        batch_size = self.hyperparams['batch_size']
+        gcn_hidden = self.hyperparams['gcn_hidden']
+        lr = self.hyperparams['lr']
 
         up_sample_ratio = 10
         if self.ss_type == 'nasbench101':
@@ -782,3 +790,17 @@ class SemiNASPredictor(Predictor):
 
         pred = np.concatenate(pred)
         return np.squeeze(pred * self.std + self.mean)
+
+    def set_random_hyperparams(self):
+
+        if self.hyperparams is None:
+            params = self.default_hyperparams.copy()
+
+        else:
+            params = {
+                'gcn_hidden': int(loguniform(16, 128)), 
+                'batch_size': int(loguniform(32, 256)), 
+                'lr': loguniform(.00001, .1)}
+
+        self.hyperparams = params
+        return params
