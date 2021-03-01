@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH -p alldlc_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
+#SBATCH -p ml_gpu-teslaP100 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH --gres=gpu:1          # reserves one GPU
 #SBATCH -o logs_bo-201-c10/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs_bo-201-c10/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -D .
-#SBATCH -a 0-99 # array size
+#SBATCH -a 17-23 # array size
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";

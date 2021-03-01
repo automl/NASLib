@@ -29,6 +29,6 @@ predictors201=(omni_xgb)
 for predictor in ${predictors201[@]}
 do
     sbatch -J c10-${predictor} slurm_job-nb201-c10.sh $predictor
-    sbatch -J im-${predictor} slurm_job-nb201-imagenet.sh $predictor
+    #sbatch -J im-${predictor} slurm_job-nb201-imagenet.sh $predictor
 done
 
