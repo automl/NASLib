@@ -454,6 +454,11 @@ def cross_validation(xtrain, ytrain, predictor, split_indices, score_metric='ken
 
         predictor.fit(xtrain_i, ytrain_i)
         ypred_i = predictor.query(xval_i)
+        
+        #If the predictor is an ensemble, take the mean
+        if len(ypred_i.shape) > 1:
+            ypred_i = np.mean(ypred_i, axis=0)
+        
         # use Pearson correlation to be the metric -> maximise Pearson correlation
         if score_metric == 'pearson':
             score_i = np.abs(np.corrcoef(yval_i, ypred_i)[1,0])

@@ -152,6 +152,7 @@ class PredictorEvaluator(object):
                 for lc_key in lc_related_keys:
                     info_dict[lc_key] = info_dict[lc_key][:fidelity]
 
+        self.predictor.reset_hyperparams()
         fit_time_start = time.time()
         cv_score = 0
         if self.max_hpo_time > 0 and len(xtrain) > 5 and self.predictor.get_hpo_wrapper():
@@ -315,6 +316,7 @@ class PredictorEvaluator(object):
             if np.isnan(cv_score) or cv_score < 0:
                 # todo: this will not work for mae/rmse
                 cv_score = 0
+
             if cv_score > best_score or t == 0:
                 best_hyperparams = hyperparams
                 best_score = cv_score

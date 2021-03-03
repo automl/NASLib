@@ -20,11 +20,15 @@ class Ensemble(Predictor):
                  encoding_type=None,
                  num_ensemble=3, 
                  predictor_type='feedforward',
-                 ss_type='nasbench201'):
+                 ss_type='nasbench201', 
+                 hpo_wrapper=True):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
         self.encoding_type = encoding_type
         self.ss_type = ss_type
+        self.hpo_wrapper = hpo_wrapper
+        self.hyperparams = None
+        self.ensemble = self.get_ensemble()
 
     def get_ensemble(self):
         # TODO: if encoding_type is not None, set the encoding type
@@ -80,8 +84,13 @@ class Ensemble(Predictor):
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]
 
     def fit(self, xtrain, ytrain, train_info=None):
-        
-        self.ensemble = self.get_ensemble()
+
+        if self.hyperparams is None and hasattr(self.ensemble[0], 'default_hyperparams'):
+            # todo: ideally should implement get_default_hyperparams() for all predictors
+            self.hyperparams = self.ensemble[0].default_hyperparams.copy()
+            
+        self.set_hyperparams(self.hyperparams)
+
         train_errors = []
         for i in range(self.num_ensemble):
             train_error = self.ensemble[i].fit(xtrain, ytrain, train_info)
@@ -96,3 +105,24 @@ class Ensemble(Predictor):
             predictions.append(prediction)
             
         return np.array(predictions)
+    
+    def set_hyperparams(self, params):
+        for model in self.ensemble:
+            model.set_hyperparams(params)
+
+        self.hyperparams = params        
+
+    def set_random_hyperparams(self):
+
+        if self.hyperparams is None and hasattr(self.ensemble[0], 'default_hyperparams'):
+            # todo: ideally should implement get_default_hyperparams() for all predictors
+            params = self.ensemble[0].default_hyperparams.copy()
+            
+        elif self.hyperparams is None:
+            params = None
+
+        else:
+            params = self.ensemble[0].set_random_hyperparams()
+
+        self.set_hyperparams(params)
+        return params

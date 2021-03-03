@@ -63,6 +63,9 @@ class Predictor:
             print('no hyperparams set')
             return None
         
+    def reset_hyperparams(self):
+        self.hyperparams = None
+        
     def get_hpo_wrapper(self):
         if hasattr(self, 'hpo_wrapper'):
             return self.hpo_wrapper
