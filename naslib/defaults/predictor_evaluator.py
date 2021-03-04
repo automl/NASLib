@@ -155,7 +155,7 @@ class PredictorEvaluator(object):
         self.predictor.reset_hyperparams()
         fit_time_start = time.time()
         cv_score = 0
-        if self.max_hpo_time > 0 and len(xtrain) > 5 and self.predictor.get_hpo_wrapper():
+        if self.max_hpo_time > 0 and len(xtrain) >= 10 and self.predictor.get_hpo_wrapper():
             """
             run cross validation here. TODO: cross validation is not set up for all
             predictors yet in this branch. 
