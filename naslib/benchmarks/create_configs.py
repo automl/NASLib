@@ -99,7 +99,7 @@ def main(args):
                 'test_size': args.test_size,
                 'experiment_type': args.experiment_type,
                 'train_size_list': train_size_list,
-                'train_size_single': args.train_size_single,
+                'train_size_single': max_train_size,
                 'fidelity_single': args.fidelity_single,
                 'fidelity_list': fidelity_list,
                 'max_hpo_time': 900,
