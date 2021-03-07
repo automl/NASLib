@@ -1,3 +1,6 @@
+# This code is from https://github.com/automl/pylearningcurvepredictor
+# pylearningcurvepredictor author: Tobias Domhan, tdomhan
+
 import numpy as np
 from scipy.stats import norm
 import time

@@ -1,5 +1,7 @@
-import numpy as np
+# This code is mostly from https://github.com/automl/pylearningcurvepredictor
+# pylearningcurvepredictor author: Tobias Domhan, tdomhan
 
+import numpy as np
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lce.parametric_model import model_name_list, model_config, construct_parametric_model
@@ -39,8 +41,9 @@ class LCEPredictor(Predictor):
                 print('nan or finite')
                 prediction = default_guess + np.random.rand()
             predictions.append(prediction)
-            
+
         predictions = np.squeeze(np.array(predictions))
+
         return predictions
 
     def get_data_reqs(self):

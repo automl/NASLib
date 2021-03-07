@@ -17,5 +17,6 @@ keras==2.3.1
 lightgbm
 ngboost==0.3.7
 xgboost
--e git://github.com/automl/pybnn.git@master#egg=pybnn
+emcee==2.2.1
+pybnn
 pyro-ppl

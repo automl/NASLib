@@ -50,7 +50,7 @@ supported_predictors = {
     'rf': RandomForestPredictor(encoding_type='adjacency_one_hot', hpo_wrapper=True),
     'dngo': DNGOPredictor(encoding_type='adjacency_one_hot'),
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
-    'lcnet': LCNetPredictor(encoding_type='adjacency_one_hot'),
+    'lcnet': LCNetPredictor(metric=Metric.VAL_ACCURACY),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
     'seminas': SemiNASPredictor(encoding_type='seminas', semi=True, hpo_wrapper=True),
     'nao': SemiNASPredictor(encoding_type='seminas', semi=False, hpo_wrapper=True),

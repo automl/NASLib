@@ -9,8 +9,9 @@ from .soloss import SoLosspredictor
 from .lcsvr import SVR_Estimator
 from .zerocost_estimators import ZeroCostEstimators
 from .lce import LCEPredictor
+from .lcnet import LCNetPredictor
 from .trees import XGBoost, NGBoost, GBDTPredictor, RandomForestPredictor
-from .bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression, LCNetPredictor
+from .bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression
 from .gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 from .oneshot import OneShotPredictor
 from .omni import OmniPredictor
