@@ -34,7 +34,13 @@ class PredictorEvaluator(object):
         self.train_size_list = config.train_size_list        
         self.fidelity_single = config.fidelity_single
         self.fidelity_list = config.fidelity_list
+        self.uniform_random = config.uniform_random
         self.max_hpo_time = config.max_hpo_time
+        
+        # mutation parameters
+        self.mutate_pool = 10
+        self.num_arches_to_mutate = 5
+        self.max_mutation_rate = 3
 
         self.dataset = config.dataset
         self.metric = Metric.VAL_ACCURACY
@@ -60,7 +66,44 @@ class PredictorEvaluator(object):
             self.hyperparameters = True
         else:
             raise NotImplementedError('This search space is not yet implemented in PredictorEvaluator.')
+            
+    def get_full_arch_info(self, arch):
+        """
+        Given an arch, return the accuracy, train_time,
+        and a dict of extra info if required by the predictor
+        """
+        info_dict = {}
+        accuracy = arch.query(metric=self.metric, 
+                              dataset=self.dataset, 
+                              dataset_api=self.dataset_api)
+        train_time = arch.query(metric=Metric.TRAIN_TIME, 
+                                dataset=self.dataset, 
+                                dataset_api=self.dataset_api)
+        data_reqs = self.predictor.get_data_reqs()
+        if data_reqs['requires_partial_lc']:
+            # add partial learning curve if applicable
+            assert self.full_lc, 'This predictor requires learning curve info'
+            if type(data_reqs['metric']) is list:
+                for metric_i in data_reqs['metric']:
+                    metric_lc = arch.query(metric=metric_i,
+                                    full_lc=True,
+                                    dataset=self.dataset,
+                                    dataset_api=self.dataset_api)
+                    info_dict[f'{metric_i.name}_lc'] = metric_lc
 
+            else:
+                lc = arch.query(metric=data_reqs['metric'],
+                                full_lc=True,
+                                dataset=self.dataset,
+                                dataset_api=self.dataset_api)
+                info_dict['lc'] = lc
+            if data_reqs['requires_hyperparameters']:
+                assert self.hyperparameters, 'This predictor requires querying arch hyperparams'                
+                for hp in data_reqs['hyperparams']:
+                    info_dict[hp] = arch.query(Metric.HP, dataset=self.dataset, 
+                                               dataset_api=self.dataset_api)[hp]
+        return accuracy, train_time, info_dict
+            
     def load_dataset(self, load_labeled=False, data_size=10, arch_hash_map={}):
         """
         There are two ways to load an architecture.
@@ -90,41 +133,102 @@ class PredictorEvaluator(object):
                 continue
             else:
                 arch_hash_map[arch_hash] = True
-
-            accuracy = arch.query(metric=self.metric, 
-                                  dataset=self.dataset, 
-                                  dataset_api=self.dataset_api)
-            train_time = arch.query(metric=Metric.TRAIN_TIME, 
-                                    dataset=self.dataset, 
-                                    dataset_api=self.dataset_api)
-            data_reqs = self.predictor.get_data_reqs()
-            if data_reqs['requires_partial_lc']:
-                info_dict = {}
-                # add partial learning curve if applicable
-                assert self.full_lc, 'This predictor requires learning curve info'
-                if type(data_reqs['metric']) is list:
-                    for metric_i in data_reqs['metric']:
-                        metric_lc = arch.query(metric=metric_i,
-                                        full_lc=True,
-                                        dataset=self.dataset,
-                                        dataset_api=self.dataset_api)
-                        info_dict[f'{metric_i.name}_lc'] = metric_lc
-
-                else:
-                    lc = arch.query(metric=data_reqs['metric'],
-                                    full_lc=True,
-                                    dataset=self.dataset,
-                                    dataset_api=self.dataset_api)
-                    info_dict['lc'] = lc
-                if data_reqs['requires_hyperparameters']:
-                    assert self.hyperparameters, 'This predictor requires querying arch hyperparams'                
-                    for hp in data_reqs['hyperparams']:
-                        info_dict[hp] = arch.query(Metric.HP, dataset=self.dataset, 
-                                                   dataset_api=self.dataset_api)[hp]
-                info.append(info_dict)
+            
+            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
             xdata.append(arch)
             ydata.append(accuracy)
+            info.append(info_dict)
             train_times.append(train_time)
+
+        return [xdata, ydata, info, train_times], arch_hash_map
+
+    def load_mutated_test(self, data_size=10, arch_hash_map={}):
+        """
+        Load a test set not uniformly at random, but by picking some random
+        architectures and then mutation the best ones. This better emulates
+        distributions in local or mutation-based NAS algorithms.
+        """
+        assert self.load_labeled == False, 'Mutation is only implemented for load_labeled = False'
+        xdata = []
+        ydata = []
+        info = []
+        train_times = []
+        
+        # step 1: create a large pool of architectures
+        while len(xdata) < self.mutate_pool:
+            arch = self.search_space.clone()
+            arch.sample_random_architecture(dataset_api=self.dataset_api)
+            arch_hash = arch.get_hash()
+            if arch_hash in arch_hash_map:
+                continue
+            else:
+                arch_hash_map[arch_hash] = True
+            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
+            xdata.append(arch)
+            ydata.append(accuracy)
+            info.append(info_dict)
+            train_times.append(train_time)
+            
+        # step 2: prune the pool down to the top 5 architectures
+        indices = np.flip(np.argsort(ydata))[:self.num_arches_to_mutate]
+        xdata = [xdata[i] for i in indices]
+        ydata = [ydata[i] for i in indices]
+        info = [info[i] for i in indices]
+        train_times = [train_times[i] for i in indices]
+
+        # step 3: mutate the top architectures to generate the full list
+        while len(xdata) < data_size:
+            idx = np.random.choice(self.num_arches_to_mutate)
+            arch = xdata[idx].clone()
+            mutation_factor = np.random.choice(self.max_mutation_rate) + 1
+            for i in range(mutation_factor):
+                new_arch = self.search_space.clone()
+                new_arch.mutate(arch, dataset_api=self.dataset_api)
+                arch = new_arch
+
+            arch_hash = arch.get_hash()
+            if arch_hash in arch_hash_map:
+                continue
+            else:
+                arch_hash_map[arch_hash] = True
+            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
+            xdata.append(arch)
+            ydata.append(accuracy)
+            info.append(info_dict)
+            train_times.append(train_time)
+
+        return [xdata, ydata, info, train_times], arch_hash_map
+    
+    def load_mutated_train(self, data_size=10, arch_hash_map={}, 
+                           test_data=[]):
+        """
+        Load a training set not uniformly at random, but by picking architectures
+        from the test set and mutating the best ones. There is still no overlap
+        between the training and test sets. This better emulates local or
+        mutation-based NAS algorithms.
+        """
+        assert self.load_labeled == False, 'Mutation is only implemented for load_labeled = False'
+        xdata = []
+        ydata = []
+        info = []
+        train_times = []
+        
+        while len(xdata) < data_size:
+            idx = np.random.choice(len(test_data[0]))
+            parent = test_data[0][idx]
+            arch = self.search_space.clone()
+            arch.mutate(parent, dataset_api=self.dataset_api)
+            arch_hash = arch.get_hash()
+            if arch_hash in arch_hash_map:
+                continue
+            else:
+                arch_hash_map[arch_hash] = True
+            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
+            xdata.append(arch)
+            ydata.append(accuracy)
+            info.append(info_dict)
+            train_times.append(train_time)
+
         return [xdata, ydata, info, train_times], arch_hash_map
 
     def single_evaluate(self, train_data, test_data, fidelity):
@@ -206,55 +310,50 @@ class PredictorEvaluator(object):
         self.predictor.pre_process()
 
         logger.info("Load the test set")
-        test_data, arch_hash_map = self.load_dataset(load_labeled=self.load_labeled, data_size=self.test_size)
+        if self.uniform_random:
+            test_data, arch_hash_map = self.load_dataset(load_labeled=self.load_labeled, 
+                                                         data_size=self.test_size)
+        else:
+            test_data, arch_hash_map = self.load_mutated_test(data_size=self.test_size)
+            
+        logger.info("Load the trianing set")
+        max_train_size = self.train_size_single
+        if self.experiment_type == 'vary_train_size':
+            max_train_size = self.train_size_list[-1]
+        
+        if self.uniform_random:
+            full_train_data, _ = self.load_dataset(load_labeled=self.load_labeled,
+                                                   data_size=max_train_size, 
+                                                   arch_hash_map=arch_hash_map)
+        else:
+            full_train_data, _ = self.load_mutated_train(data_size=max_train_size, 
+                                                         arch_hash_map=arch_hash_map, 
+                                                         test_data=test_data)
 
+        self.predictor.pre_compute(full_train_data[0], test_data[0])
+        
         if self.experiment_type == 'single':
             train_size = self.train_size_single
             fidelity = self.fidelity_single
-            logger.info("Load the training set")
-            train_data, _ = self.load_dataset(load_labeled=self.load_labeled,
-                                              data_size=train_size, arch_hash_map=arch_hash_map)
-
-            self.predictor.pre_compute(train_data[0], test_data[0])
-            self.single_evaluate(train_data, test_data, fidelity=fidelity)
+            self.single_evaluate(full_train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_train_size':
-            logger.info("Load the training set")
-            full_train_data, _ = self.load_dataset(load_labeled=self.load_labeled,
-                                                   data_size=self.train_size_list[-1], 
-                                                   arch_hash_map=arch_hash_map)
-       
-            self.predictor.pre_compute(full_train_data[0], test_data[0])
             fidelity = self.fidelity_single
-
             for train_size in self.train_size_list:
                 train_data = [data[:train_size] for data in full_train_data]
                 self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_fidelity':
             train_size = self.train_size_single
-            logger.info("Load the training set")
-            train_data, _ = self.load_dataset(load_labeled=self.load_labeled,
-                                              data_size=self.train_size_single, 
-                                              arch_hash_map=arch_hash_map)
-
-            self.predictor.pre_compute(train_data[0], test_data[0])
             for fidelity in self.fidelity_list:
-                self.single_evaluate(train_data, test_data, fidelity=fidelity)
+                self.single_evaluate(full_train_data, test_data, fidelity=fidelity)
 
         elif self.experiment_type == 'vary_both':
-            logger.info("Load the training set")
-            full_train_data, _ = self.load_dataset(load_labeled=self.load_labeled,
-                                                   data_size=self.train_size_list[-1], 
-                                                   arch_hash_map=arch_hash_map)
-
-            self.predictor.pre_compute(full_train_data[0], test_data[0])
-
             for train_size in self.train_size_list:
                 train_data = [data[:train_size] for data in full_train_data]
 
                 for fidelity in self.fidelity_list:
-                    self.single_evaluate(train_data, test_data, fidelity=fidelity)                
+                    self.single_evaluate(train_data, test_data, fidelity=fidelity)
 
         else:
             raise NotImplementedError()
