@@ -657,7 +657,7 @@ def discretize(x, upper_bounds=[-3,-2,-1,0,1,2,3], one_hot=False):
 
 class SemiNASJCPredictor(Predictor):
     def __init__(self, encoding_type='seminas', ss_type=None, semi=False, hpo_wrapper=False, 
-                 config=None, run_pre_compute = True):
+                 config=None, run_pre_compute=True, jacov_onehot=True):
         self.encoding_type = encoding_type
         self.semi = True #semi
         if ss_type is not None:
@@ -671,7 +671,7 @@ class SemiNASJCPredictor(Predictor):
         self.config = config
         self.zero_cost = ['jacov']
         self.run_pre_compute = run_pre_compute
-        self.jacov_onehot = True # one_hot encoding works better
+        self.jacov_onehot = jacov_onehot # one_hot encoding works better
         print('jacov onehot encoding: {}'.format(self.jacov_onehot))
         self.jacov_bins = [-6479.906262535439, -1048.4814023716435, -478.08807967011205,
                            -354.1177984864107, -302.3988674730198, -283.3622277685421, 

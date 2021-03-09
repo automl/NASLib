@@ -319,7 +319,7 @@ class PredictorEvaluator(object):
         logger.info("Load the training set")
         max_train_size = self.train_size_single
 
-        if self.experiment_type == 'vary_train_size' or self.experiment_type == 'vary_both':
+        if self.experiment_type in ['vary_train_size', 'vary_both']:
             max_train_size = self.train_size_list[-1]
 
         if self.uniform_random:
