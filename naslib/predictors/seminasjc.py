@@ -671,7 +671,7 @@ class SemiNASJCPredictor(Predictor):
         self.config = config
         self.zero_cost = ['jacov']
         self.run_pre_compute = run_pre_compute
-        self.jacov_onehot = False
+        self.jacov_onehot = True # one_hot encoding works better
         print('jacov onehot encoding: {}'.format(self.jacov_onehot))
         self.jacov_bins = [-6479.906262535439, -1048.4814023716435, -478.08807967011205,
                            -354.1177984864107, -302.3988674730198, -283.3622277685421, 
@@ -867,7 +867,7 @@ class SemiNASJCPredictor(Predictor):
             else:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
                 seq.append(jac_encoded)
-            print(seq)
+            #print(seq)
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
 
@@ -932,7 +932,7 @@ class SemiNASJCPredictor(Predictor):
             else:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
                 seq.append(jac_encoded)
-            print(seq)
+            #print(seq)
             test_seq_pool.append(seq)
 
         test_dataset = ControllerDataset(test_seq_pool, None, False)
