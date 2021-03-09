@@ -19,8 +19,8 @@ class Ensemble(Predictor):
     def __init__(self, 
                  encoding_type=None,
                  num_ensemble=3, 
-                 predictor_type='feedforward',
-                 ss_type='nasbench201', 
+                 predictor_type=None,
+                 ss_type=None, 
                  hpo_wrapper=True):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
@@ -28,7 +28,7 @@ class Ensemble(Predictor):
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
         self.hyperparams = None
-        self.ensemble = self.get_ensemble()
+        self.ensemble = None
 
     def get_ensemble(self):
         # TODO: if encoding_type is not None, set the encoding type
@@ -84,6 +84,8 @@ class Ensemble(Predictor):
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]
 
     def fit(self, xtrain, ytrain, train_info=None):
+        if self.ensemble is None:
+            self.ensemble = self.get_ensemble()
 
         if self.hyperparams is None and hasattr(self.ensemble[0], 'default_hyperparams'):
             # todo: ideally should implement get_default_hyperparams() for all predictors
@@ -107,12 +109,17 @@ class Ensemble(Predictor):
         return np.array(predictions)
     
     def set_hyperparams(self, params):
+        if self.ensemble is None:
+            self.ensemble = self.get_ensemble()
+
         for model in self.ensemble:
             model.set_hyperparams(params)
 
         self.hyperparams = params        
 
     def set_random_hyperparams(self):
+        if self.ensemble is None:
+            self.ensemble = self.get_ensemble()
 
         if self.hyperparams is None and hasattr(self.ensemble[0], 'default_hyperparams'):
             # todo: ideally should implement get_default_hyperparams() for all predictors

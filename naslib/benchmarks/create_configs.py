@@ -97,6 +97,7 @@ def main(args):
                 'out_dir': args.out_dir,
                 'predictor': args.predictor,
                 'test_size': args.test_size,
+                'uniform_random': args.uniform_random,
                 'experiment_type': args.experiment_type,
                 'train_size_list': train_size_list,
                 'train_size_single': args.train_size_single,
@@ -162,7 +163,8 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default='rs', help="which optimizer")
     parser.add_argument("--predictor", type=str, default='full', help="which predictor")
     parser.add_argument("--test_size", type=int, default=30, help="Test set size for predictor")
-    parser.add_argument("--train_size_single", type=int, default=1000, help="Train size if exp type is single")
+    parser.add_argument("--uniform_random", type=bool, default=True, help="Train/test set generation type")
+    parser.add_argument("--train_size_single", type=int, default=10, help="Train size if exp type is single")
     parser.add_argument("--fidelity_single", type=int, default=5, help="Fidelity if exp type is single")
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")
     parser.add_argument("--out_dir", type=str, default='run', help="Output directory")

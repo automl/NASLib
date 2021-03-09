@@ -77,6 +77,11 @@ class ZeroCostEstimators(Predictor):
                                              self.device, measure_names=[self.method_type])
             if math.isnan(score):
                 score = -1e8
+                
+            if 'nasbench101' in self.config.search_space and self.method_type == 'jacov':
+                score = -score
+            elif 'darts' in self.config.search_space and self.method_type in ['fisher', 'grad_norm', 'synflow', 'snip']:
+                score = -score
 
             test_set_scores.append(score)
             torch.cuda.empty_cache()
