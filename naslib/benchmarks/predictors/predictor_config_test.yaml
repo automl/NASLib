@@ -5,15 +5,15 @@ search_space: darts #nasbench201
 search_space: nasbench201
 #search_space: nasbench101
 predictor: seminasjc #omni_xgb
-test_size: 10 #100
+test_size: 100 #100
 #test_size: 100
-seed: 1007
+seed: 1009
 
 dataset: cifar10
 out_dir: run
 
 train_size_list: [8, 12, 20, 32, 50, 80, 128, 203, 322, 512]
-train_size_single: 10 #100
+train_size_single: 100
 #train_size_single: 100
 
 fidelity_list: [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180, 190]
