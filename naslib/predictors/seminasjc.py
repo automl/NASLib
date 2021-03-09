@@ -656,7 +656,7 @@ def discretize(x, upper_bounds=[-3,-2,-1,0,1,2,3], one_hot=False):
         return len(upper_bounds) + 1
 
 class SemiNASJCPredictor(Predictor):
-    def __init__(self, encoding_type='gcn', ss_type=None, semi=False, hpo_wrapper=False, 
+    def __init__(self, encoding_type='seminas', ss_type=None, semi=False, hpo_wrapper=False, 
                  config=None, run_pre_compute = True):
         self.encoding_type = encoding_type
         self.semi = True #semi
@@ -713,7 +713,7 @@ class SemiNASJCPredictor(Predictor):
                 print(upper_bounds)
                 if self.jacov_bins is None:
                     self.jacov_bins = upper_bounds
-                    
+
                 if self.jacov_train_mean is None:
                     self.jacov_train_mean = np.mean(np.array(xtrain_zc_scores)) 
                     self.jacov_train_std = np.std((np.array(xtrain_zc_scores)))
