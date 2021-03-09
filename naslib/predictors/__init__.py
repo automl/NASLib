@@ -5,6 +5,7 @@ from .feedforward import FeedforwardPredictor
 from .gcn import GCNPredictor
 from .bonas import BonasPredictor
 from .seminas import SemiNASPredictor
+from .seminasjc import SemiNASJCPredictor
 from .soloss import SoLosspredictor
 from .lcsvr import SVR_Estimator
 from .zerocost_estimators import ZeroCostEstimators

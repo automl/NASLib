@@ -95,7 +95,7 @@ class OmniXGBPredictor(Predictor):
         scores = cross_val_score(model, xtrain, ytrain, cv=3)
         return np.mean(scores)
 
-    def prepare_features(self, xdata, info, train=True):
+    def prepare_features(self, xdata, info=None, train=True):
         # prepare training data features
         full_xdata = [[] for _ in range(len(xdata))]
         if len(self.zero_cost) > 0 and self.train_size <= self.max_zerocost: 
@@ -133,7 +133,7 @@ class OmniXGBPredictor(Predictor):
 
         return np.array(full_xdata)
         
-    def fit(self, xtrain, ytrain, train_info, learn_hyper=True):
+    def fit(self, xtrain, ytrain, train_info=None, learn_hyper=True):
 
         # if we are below the min train size, use the zero_cost and lce info
         if len(xtrain) < self.min_train_size:
