@@ -316,11 +316,12 @@ class PredictorEvaluator(object):
         else:
             test_data, arch_hash_map = self.load_mutated_test(data_size=self.test_size)
             
-        logger.info("Load the trianing set")
+        logger.info("Load the training set")
         max_train_size = self.train_size_single
-        if self.experiment_type == 'vary_train_size' or 'vary_both':
+
+        if self.experiment_type == 'vary_train_size' or self.experiment_type == 'vary_both':
             max_train_size = self.train_size_list[-1]
-        
+
         if self.uniform_random:
             full_train_data, _ = self.load_dataset(load_labeled=self.load_labeled,
                                                    data_size=max_train_size, 

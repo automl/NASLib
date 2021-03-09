@@ -9,7 +9,7 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
-BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, \
+BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, SemiNASJCPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
 LCEPredictor, OmniPredictor, OmniXGBPredictor
 
@@ -34,6 +34,8 @@ supported_predictors = {
     'bonas': BonasPredictor(encoding_type='bonas', hpo_wrapper=True),
     'nao': SemiNASPredictor(encoding_type='seminas', semi=False, hpo_wrapper=True),    
     'seminas': SemiNASPredictor(encoding_type='seminas', semi=True, hpo_wrapper=True),
+    'seminasjc': SemiNASJCPredictor(encoding_type='seminas', semi=True, hpo_wrapper=True,
+                                    config=config),
     'dngo': DNGOPredictor(encoding_type='adjacency_one_hot'),
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
