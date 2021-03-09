@@ -671,18 +671,18 @@ class SemiNASJCPredictor(Predictor):
         self.config = config
         self.zero_cost = ['jacov']
         self.run_pre_compute = run_pre_compute
-        self.jacov_onehot = True #False
+        self.jacov_onehot = False
         print('jacov onehot encoding: {}'.format(self.jacov_onehot))
-        self.jacov_bins = [-100000000.0, -6479.906262535439, -1048.4814023716435, 
-                           -478.08807967011205, -354.1177984864107, -302.3988674730198, 
-                           -283.3622277685421, -280.84198418968407, -279.2643230054042, 
-                           -277.87210246240795]
+        self.jacov_bins = [-6479.906262535439, -1048.4814023716435, -478.08807967011205,
+                           -354.1177984864107, -302.3988674730198, -283.3622277685421, 
+                           -280.84198418968407, -279.2643230054042, -277.87210246240795]
 
         if self.jacov_bins is None:
             self.bins = 10 # use 10 bins by default
         else:
             self.bins = len(self.jacov_bins) + 1
-        self.jacov_vocab = 2 if self.jacov_onehot else self.bins
+        print(self.bins)
+        self.jacov_vocab = 2 if self.jacov_onehot else self.bins + 1
         self.jacov_length =  self.bins if self.jacov_onehot else 1
         self.jacov_train_mean = None
         self.jacov_train_std = None
@@ -707,7 +707,7 @@ class SemiNASJCPredictor(Predictor):
                 xtest_zc_scores = zc_method.query(xtest)
                 xtrain_zc_scores_raw = copy.copy(xtrain_zc_scores)
                 upper_bounds = []
-                for i in range(0,10):
+                for i in range(1,10):
                     upper_bounds.append(np.quantile(xtrain_zc_scores_raw,i/10.0))
                 print('estimated upper bounds:')
                 print(upper_bounds)
@@ -843,7 +843,7 @@ class SemiNASJCPredictor(Predictor):
         self.encoder_length += self.jacov_length
         self.decoder_length += self.jacov_length
         self.vocab_size += self.jacov_vocab
-
+        print(self.vocab_size)
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
@@ -867,7 +867,7 @@ class SemiNASJCPredictor(Predictor):
             else:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
                 seq.append(jac_encoded)
-            #print(seq)
+            print(seq)
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
 
@@ -932,7 +932,7 @@ class SemiNASJCPredictor(Predictor):
             else:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
                 seq.append(jac_encoded)
-            #print(seq)
+            print(seq)
             test_seq_pool.append(seq)
 
         test_dataset = ControllerDataset(test_seq_pool, None, False)
