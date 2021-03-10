@@ -659,7 +659,7 @@ class SemiNASJCPredictor(Predictor):
     def __init__(self, encoding_type='seminas', ss_type=None, semi=False, hpo_wrapper=False, 
                  config=None, run_pre_compute=True, jacov_onehot=True):
         self.encoding_type = encoding_type
-        self.semi = True #semi
+        self.semi = semi
         if ss_type is not None:
             self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
@@ -911,10 +911,6 @@ class SemiNASJCPredictor(Predictor):
                 print('Train EPD')
                 train_controller(self.model, all_encoder_input, all_encoder_target, epochs)
                 print('Finish training EPD')
-            
-        train_pred = np.squeeze(self.query(xtrain))
-        train_error = np.mean(abs(train_pred-ytrain))
-        return train_error
 
     def query(self, xtest, info=None, eval_batch_size=100):
 
