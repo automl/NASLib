@@ -776,7 +776,7 @@ class SemiNASJCPredictor(Predictor):
                 arch = copy.deepcopy(naslib_object)
                 convert_op_indices_to_naslib(op,arch)
                 archs.append(arch)
-            print(self.train_info)
+            
             jacovs = self.prepare_features(archs, self.train_info, train=False)
             random_synthetic_input_no_jc = copy.deepcopy(random_synthetic_input)
             random_synthetic_input = []
