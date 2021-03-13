@@ -1,9 +1,17 @@
-import random
+"""
+This contains implementations of:
+synflow, grad_norm, fisher, and grasp, and variants of jacov and snip 
+based on https://github.com/mohsaied/zero-cost-nas
+Note that zerocost_v1.py contains the original implementations
+of jacov and snip. Particularly, the original jacov implementation tends to
+perform better than the one in this file.
+"""
 
+import random
 import numpy as np
 import torch
 import logging
-# import gc
+
 from naslib.predictors.predictor import Predictor
 from naslib.utils.utils import get_project_root, get_train_val_loaders
 from naslib.predictors.utils.models.build_darts_net import NetworkCIFAR
@@ -15,7 +23,7 @@ import math
 from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 logger = logging.getLogger(__name__)
 
-class ZeroCostEstimators(Predictor):
+class ZeroCostV2(Predictor):
 
     def __init__(self, config, batch_size = 64, method_type='jacov'):
         # available zero-cost method types: 'jacov', 'snip', 'synflow', 'grad_norm', 'fisher', 'grasp'
@@ -85,6 +93,5 @@ class ZeroCostEstimators(Predictor):
 
             test_set_scores.append(score)
             torch.cuda.empty_cache()
-            # gc.collect()
 
         return np.array(test_set_scores)

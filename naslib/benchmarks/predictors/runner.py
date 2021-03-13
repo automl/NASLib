@@ -7,7 +7,7 @@ import naslib as nl
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
-EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostEstimators, SoLosspredictor, \
+EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostV1, ZeroCostV2, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, SemiNASJCPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
@@ -56,12 +56,12 @@ supported_predictors = {
     'lce': LCEPredictor(metric=Metric.VAL_ACCURACY),
     'lcnet': LCNetPredictor(metric=Metric.VAL_ACCURACY),
     'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False),    
-    'jacov': ZeroCostEstimators(config, batch_size=64, method_type='jacov'),
-    'snip': ZeroCostEstimators(config, batch_size=64, method_type='snip'),
-    'grad_norm': ZeroCostEstimators(config, batch_size=64, method_type='grad_norm'),
-    'fisher': ZeroCostEstimators(config, batch_size=64, method_type='fisher'),
-    'grasp': ZeroCostEstimators(config, batch_size=64, method_type='grasp'),
-    'synflow': ZeroCostEstimators(config, batch_size=64, method_type='synflow'),
+    'jacov': ZeroCostV1(config, batch_size=64, method_type='jacov'),
+    'snip': ZeroCostV2(config, batch_size=64, method_type='snip'),
+    'grad_norm': ZeroCostV2(config, batch_size=64, method_type='grad_norm'),
+    'fisher': ZeroCostV2(config, batch_size=64, method_type='fisher'),
+    'grasp': ZeroCostV2(config, batch_size=64, method_type='grasp'),
+    'synflow': ZeroCostV2(config, batch_size=64, method_type='synflow'),
     'gbdt_path': GBDTPredictor(encoding_type='path', hpo_wrapper=False),
     'ngb_path': NGBoost(encoding_type='path', hpo_wrapper=False),
     'dngo_path': DNGOPredictor(encoding_type='path'),

@@ -10,7 +10,7 @@ from ngboost.scores import LogScore
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
-from naslib.predictors.zerocost_estimators import ZeroCostEstimators
+from naslib.predictors.zerocost_v1 import ZeroCostV1
 from naslib.predictors.utils.encodings import encode
 from naslib.utils import utils
 from naslib.search_spaces.core.query_metrics import Metric
@@ -56,7 +56,7 @@ class OmniPredictor(Predictor):
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
             for method_name in self.zero_cost:
-                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type=method_name)
+                zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 xtrain_zc_scores = zc_method.query(xtrain)
                 xtest_zc_scores = zc_method.query(xtest)

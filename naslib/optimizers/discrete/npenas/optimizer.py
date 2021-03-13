@@ -8,7 +8,7 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.bananas.acquisition_functions import acquisition_function
 
 from naslib.predictors.ensemble import Ensemble
-from naslib.predictors.zerocost_estimators import ZeroCostEstimators
+from naslib.predictors.zerocost_v1 import ZeroCostV1
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -65,7 +65,7 @@ class Npenas(MetaOptimizer):
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
             if self.zc and len(self.train_data) <= self.max_zerocost:                
-                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type='jacov')
+                zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 score = zc_method.query([model.arch])
                 model.zc_score = np.squeeze(score)
@@ -109,7 +109,7 @@ class Npenas(MetaOptimizer):
                         candidates.append(candidate)
 
                 if self.zc and len(self.train_data) <= self.max_zerocost:
-                    zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type='jacov')
+                    zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
                     zc_method.train_loader = copy.deepcopy(self.train_loader)
                     zc_scores = zc_method.query(candidates)
                     values = [acq_fn(enc, score) for enc, score in zip(candidates, zc_scores)]
@@ -124,7 +124,7 @@ class Npenas(MetaOptimizer):
             model.arch = self.next_batch.pop()
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
             if self.zc and len(self.train_data) <= self.max_zerocost:                
-                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type='jacov')
+                zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 score = zc_method.query([model.arch])
                 model.zc_score = np.squeeze(score)

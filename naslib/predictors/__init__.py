@@ -8,7 +8,8 @@ from .seminas import SemiNASPredictor
 from .seminasjc import SemiNASJCPredictor
 from .soloss import SoLosspredictor
 from .lcsvr import SVR_Estimator
-from .zerocost_estimators import ZeroCostEstimators
+from .zerocost_v1 import ZeroCostV1
+from .zerocost_v2 import ZeroCostV2
 from .lce import LCEPredictor
 from .lcnet import LCNetPredictor
 from .trees import XGBoost, NGBoost, GBDTPredictor, RandomForestPredictor
