@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 import copy
 import itertools
 import os
@@ -18,17 +19,16 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
+from naslib.utils import utils
 from naslib.utils.utils import AverageMeterGroup, AverageMeter
+
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
-
-
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
-from naslib.predictors.zerocost_estimators import ZeroCostEstimators
-#from naslib.predictors.utils.encodings import encode
-from naslib.utils import utils
+from naslib.predictors.zerocost_v1 import ZeroCostV1
+
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib
 from naslib.search_spaces import NasBench201SearchSpace
@@ -36,12 +36,7 @@ from naslib.search_spaces import NasBench201SearchSpace
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
 
-import logging
-import math
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
+"""
 # default parameters from the paper
 n = 1100
 # m = 10000
@@ -66,6 +61,8 @@ batch_size = 100
 lr = 0.001
 optimizer = 'adam'
 grad_bound = 5.0  
+"""
+
 
 nb201_adj_matrix = np.array(
             [[0, 1, 1, 1, 0, 0, 0, 0],
@@ -170,7 +167,8 @@ class Encoder(nn.Module):
         
         self.embedding = nn.Embedding(self.vocab_size, self.hidden_size)
         self.dropout = dropout
-        self.rnn = nn.LSTM(self.hidden_size, self.hidden_size, self.layers, batch_first=True, dropout=dropout, bidirectional=True)
+        self.rnn = nn.LSTM(self.hidden_size, self.hidden_size, self.layers, batch_first=True, 
+                           dropout=dropout, bidirectional=True)
         self.out_proj = nn.Linear(self.hidden_size * 2, self.hidden_size, bias=True)
         self.mlp = nn.ModuleList([])
         for i in range(self.mlp_layers):
@@ -224,7 +222,8 @@ class Encoder(nn.Module):
     
     def infer(self, x, predict_lambda, direction='-'):
         encoder_outputs, encoder_hidden, arch_emb, predict_value = self(x)
-        grads_on_outputs = torch.autograd.grad(predict_value, encoder_outputs, torch.ones_like(predict_value))[0]
+        grads_on_outputs = torch.autograd.grad(predict_value, encoder_outputs, 
+                                               torch.ones_like(predict_value))[0]
         if direction == '+':
             new_encoder_outputs = encoder_outputs + predict_lambda * grads_on_outputs
         elif direction == '-':
@@ -235,7 +234,8 @@ class Encoder(nn.Module):
         new_arch_emb = torch.mean(new_encoder_outputs, dim=1)
         new_arch_emb = F.normalize(new_arch_emb, 2, dim=-1)
         new_predict_value = self.forward_predictor(new_arch_emb)
-        return encoder_outputs, encoder_hidden, arch_emb, predict_value, new_encoder_outputs, new_arch_emb, new_predict_value
+        return encoder_outputs, encoder_hidden, arch_emb, predict_value, new_encoder_outputs, \
+    new_arch_emb, new_predict_value
 
 SOS_ID = 0
 EOS_ID = 0
@@ -273,7 +273,8 @@ class Attention(nn.Module):
         # concat -> (batch, tgt_len, source_dim + input_dim)
         combined = torch.cat((mix, input), dim=2)
         # output -> (batch, tgt_len, output_dim)
-        output = torch.tanh(self.output_proj(combined.view(-1, self.input_dim + self.source_dim))).view(batch_size, -1, self.output_dim)
+        output = torch.tanh(self.output_proj(combined.view(-1, self.input_dim + self.source_dim)))\
+        .view(batch_size, -1, self.output_dim)
         
         return output, attn
 
@@ -291,7 +292,8 @@ class Decoder(nn.Module):
         self.hidden_size = hidden_size
         self.length = length
         self.vocab_size = vocab_size
-        self.rnn = nn.LSTM(self.hidden_size, self.hidden_size, self.layers, batch_first=True, dropout=dropout)
+        self.rnn = nn.LSTM(self.hidden_size, self.hidden_size, self.layers, 
+                           batch_first=True, dropout=dropout)
         self.sos_id = SOS_ID
         self.eos_id = EOS_ID
         self.init_input = None
@@ -320,7 +322,6 @@ class Decoder(nn.Module):
             predicted_softmax = F.log_softmax(self.out(x.view(-1, self.hidden_size)), dim=-1)
             predicted_softmax = predicted_softmax.view(bsz, tgt_len, -1)
             return predicted_softmax, None
-
 
         # inference
         assert x is None
@@ -411,14 +412,14 @@ class NAO(nn.Module):
         return predict_value, decoder_outputs, archs
     
     def generate_new_arch(self, input_variable, predict_lambda=1, direction='-'):
-        encoder_outputs, encoder_hidden, arch_emb, predict_value, new_encoder_outputs, new_arch_emb, new_predict_value = self.encoder.infer(
+        encoder_outputs, encoder_hidden, arch_emb, predict_value, \
+        new_encoder_outputs, new_arch_emb, new_predict_value = self.encoder.infer(
             input_variable, predict_lambda, direction=direction)
         new_encoder_hidden = (new_arch_emb.unsqueeze(0), new_arch_emb.unsqueeze(0))
         decoder_outputs, new_archs = self.decoder(None, new_encoder_hidden, new_encoder_outputs)
         return new_archs, new_predict_value
 
 def controller_train(train_queue, model, optimizer):
-
 
     objs = AverageMeter()
     mse = AverageMeter()
@@ -709,7 +710,7 @@ class SemiNASJCPredictor(Predictor):
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
             for method_name in self.zero_cost:
-                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type=method_name)
+                zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 xtrain_zc_scores = zc_method.query(xtrain)
                 xtest_zc_scores = zc_method.query(xtest)
@@ -741,18 +742,8 @@ class SemiNASJCPredictor(Predictor):
         
         return np.array(full_xdata)
 
-    # old API, not being used 
-    def get_model(self, **kwargs):
-        if self.ss_type == 'nasbench101':
-            predictor = NAO(encoder_length=27,decoder_length=27)
-        elif self.ss_type == 'nasbench201':
-            predictor = NAO(encoder_length=35,decoder_length=35)
-        elif self.ss_type == 'darts':
-            predictor = NAO(encoder_length=629,decoder_length=629,vocab_size=12)
-        return predictor
-
     # currently only works for nb201 
-    def generate_synthetic_controller_data(self, model, base_arch=None, random_arch=0,ss_type=None):
+    def generate_synthetic_controller_data(self, model, base_arch=None, random_arch=0, ss_type=None):
         '''
         This method is used to generate synthetic samples for SemiNAS training
         model: a predictor model, to predict the performance of generated architectures
@@ -792,7 +783,8 @@ class SemiNASJCPredictor(Predictor):
                 random_synthetic_input.append(seq)
 
             nao_synthetic_dataset = ControllerDataset(random_synthetic_input, None, False)
-            nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True, drop_last=False)
+            nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), 
+                                                              shuffle=False, pin_memory=True, drop_last=False)
 
             with torch.no_grad():
                 model.eval()
@@ -929,7 +921,8 @@ class SemiNASJCPredictor(Predictor):
             test_seq_pool.append(seq)
 
         test_dataset = ControllerDataset(test_seq_pool, None, False)
-        test_queue = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, drop_last=False) 
+        test_queue = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, 
+                                                 pin_memory=True, drop_last=False) 
 
         self.model.eval()
         pred = []
