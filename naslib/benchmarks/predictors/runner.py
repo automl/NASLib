@@ -9,7 +9,7 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostV1, ZeroCostV2, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
-BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, SemiNASJCPredictor, \
+BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, OMNISemiNASPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
 LCEPredictor, OmniPredictor, OmniXGBPredictor
 
@@ -34,8 +34,6 @@ supported_predictors = {
     'bonas': BonasPredictor(encoding_type='bonas', hpo_wrapper=True),
     'nao': SemiNASPredictor(encoding_type='seminas', semi=False, hpo_wrapper=True),    
     'seminas': SemiNASPredictor(encoding_type='seminas', semi=True, hpo_wrapper=True),
-    'seminasjc': SemiNASJCPredictor(encoding_type='seminas', semi=False, hpo_wrapper=True,
-                                    jacov_onehot=True, config=config),
     'dngo': DNGOPredictor(encoding_type='adjacency_one_hot'),
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
@@ -72,6 +70,8 @@ supported_predictors = {
                           config=config),
     'omni_xgb': OmniXGBPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                  config=config),
+    'omni_seminas': OMNISemiNASPredictor(encoding_type='seminas', semi=False, hpo_wrapper=True,
+                                         jacov_onehot=True, config=config),
     'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
                                config=config),
     'omni_lofi': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 

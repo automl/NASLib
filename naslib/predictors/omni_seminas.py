@@ -36,7 +36,6 @@ from naslib.search_spaces import NasBench201SearchSpace
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
 
-"""
 # default parameters from the paper
 n = 1100
 # m = 10000
@@ -60,9 +59,7 @@ up_sample_ratio = 10
 batch_size = 100 
 lr = 0.001
 optimizer = 'adam'
-grad_bound = 5.0  
-"""
-
+grad_bound = 5.0
 
 nb201_adj_matrix = np.array(
             [[0, 1, 1, 1, 0, 0, 0, 0],
@@ -665,7 +662,7 @@ def discretize(x, upper_bounds=[-3,-2,-1,0,1,2,3], one_hot=False):
                 return i
         return len(upper_bounds) + 1
 
-class SemiNASJCPredictor(Predictor):
+class OMNISemiNASPredictor(Predictor):
     def __init__(self, encoding_type='seminas', ss_type=None, semi=False, hpo_wrapper=False, 
                  config=None, run_pre_compute=True, jacov_onehot=True):
         self.encoding_type = encoding_type
