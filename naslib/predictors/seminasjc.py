@@ -66,11 +66,6 @@ batch_size = 100
 lr = 0.001
 optimizer = 'adam'
 grad_bound = 5.0  
-# iteration = 3
-
-use_cuda = True
-# pretrain_epochs = 1000
-# epochs = 1000
 
 nb201_adj_matrix = np.array(
             [[0, 1, 1, 1, 0, 0, 0, 0],
@@ -82,11 +77,13 @@ nb201_adj_matrix = np.array(
             [0, 0, 0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
 
+# helper to move object to cuda when available
 def move_to_cuda(tensor):
     if torch.cuda.is_available():
         return tensor.cuda()
     return tensor
 
+# conver adjacenty matrix + ops encoding to seminas sequence
 def convert_arch_to_seq(matrix, ops, max_n=8):
     seq = []
     n = len(matrix)
@@ -104,6 +101,7 @@ def convert_arch_to_seq(matrix, ops, max_n=8):
     assert len(seq) == (max_n+2)*(max_n-1)/2
     return seq
 
+# convert seminas sequence back to adjacenty matrix + ops encoding
 def convert_seq_to_arch(seq):
     n = int(math.floor(math.sqrt((len(seq) + 1) * 2)))
     matrix = [[0 for _ in range(n)] for _ in range(n)]
@@ -115,6 +113,7 @@ def convert_seq_to_arch(seq):
         ops.append(seq[offset+i+1]-2)
     return matrix, ops
 
+# NAO dataset
 class ControllerDataset(torch.utils.data.Dataset):
     def __init__(self, inputs, targets=None, train=True, sos_id=0, eos_id=0):
         super(ControllerDataset, self).__init__()
@@ -241,7 +240,7 @@ class Encoder(nn.Module):
 SOS_ID = 0
 EOS_ID = 0
 
-
+# attention module
 class Attention(nn.Module):
     def __init__(self, input_dim, source_dim=None, output_dim=None, bias=False):
         super(Attention, self).__init__()
@@ -277,7 +276,6 @@ class Attention(nn.Module):
         output = torch.tanh(self.output_proj(combined.view(-1, self.input_dim + self.source_dim))).view(batch_size, -1, self.output_dim)
         
         return output, attn
-
 
 class Decoder(nn.Module):
     
@@ -364,6 +362,7 @@ class Decoder(nn.Module):
             encoder_hidden = encoder_hidden
         return encoder_hidden
 
+# NAO predictor with Encoder and Decoder
 class NAO(nn.Module):
     def __init__(self,
                  encoder_layers,
@@ -486,6 +485,7 @@ NUM_VERTICES = 7
 OP_SPOTS = NUM_VERTICES - 2
 MAX_EDGES = 9
 
+# NB 101 utility
 def get_utilized(matrix):
     # return the sets of utilized edges and nodes
     # first, compute all paths
@@ -515,9 +515,8 @@ def get_utilized(matrix):
                 utilized_nodes.append(i)
 
     return utilized_edges, utilized_nodes
-#for nb 101
 
-
+# NB 101 utility
 def num_edges_and_vertices(matrix):
     # return the true number of edges and vertices
     edges, nodes = get_utilized(matrix)
@@ -544,6 +543,10 @@ def sample_random_architecture_nb101():
         return {'matrix':matrix, 'ops':ops}
 
 def encode_darts(arch):
+    '''
+    encode DARTS architectures
+    arch: the cell encoded architecture
+    '''
     matrices = []
     ops = []
     for cell in arch:
@@ -598,6 +601,9 @@ def add_global_node( mx, ifAdj):
     return mx
 
 def transform_matrix(cell):
+    '''
+    converts DARTS cell encoding to adjacency matrix + operations encoding
+    '''
     normal = cell
 
     node_num = len(normal)+3
@@ -618,6 +624,7 @@ def transform_matrix(cell):
     ops[-1][-1] = 1
     return adj, ops
 
+# generates architecture of specified search space (ss_type)
 def generate_arch(ss_type,info=None):
     ops = []
     if ss_type == 'nasbench101':
@@ -637,9 +644,11 @@ def generate_arch(ss_type,info=None):
 
     return seq,ops
 
-
+# simple discretization function to discretize continuous numbers 
+# One hot and categorical encodings are supported
 def discretize(x, upper_bounds=[-3,-2,-1,0,1,2,3], one_hot=False):
     assert upper_bounds is not None and len(upper_bounds) >= 1
+
     if one_hot:
         cat = len(upper_bounds) + 1
         discretized = [0 for _ in range(cat)]
@@ -673,6 +682,7 @@ class SemiNASJCPredictor(Predictor):
         self.run_pre_compute = run_pre_compute
         self.jacov_onehot = jacov_onehot # one_hot encoding works better
         print('jacov onehot encoding: {}'.format(self.jacov_onehot))
+        # current bins estimated from a single 1000-sample run of jacov computaton
         self.jacov_bins = [-6479.906262535439, -1048.4814023716435, -478.08807967011205,
                            -354.1177984864107, -302.3988674730198, -283.3622277685421, 
                            -280.84198418968407, -279.2643230054042, -277.87210246240795]
@@ -681,11 +691,10 @@ class SemiNASJCPredictor(Predictor):
             self.bins = 10 # use 10 bins by default
         else:
             self.bins = len(self.jacov_bins) + 1
-        print(self.bins)
+        
+        # set additional feature length and vocabulary size based on encoding type and number of bins
         self.jacov_vocab = 2 if self.jacov_onehot else self.bins + 1
         self.jacov_length =  self.bins if self.jacov_onehot else 1
-        self.jacov_train_mean = None
-        self.jacov_train_std = None
 
     def pre_compute(self, xtrain, xtest):
         """
@@ -700,7 +709,6 @@ class SemiNASJCPredictor(Predictor):
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
             for method_name in self.zero_cost:
-                #print('pre computing')
                 zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 xtrain_zc_scores = zc_method.query(xtrain)
@@ -714,18 +722,11 @@ class SemiNASJCPredictor(Predictor):
                 if self.jacov_bins is None:
                     self.jacov_bins = upper_bounds
 
-                if self.jacov_train_mean is None:
-                    self.jacov_train_mean = np.mean(np.array(xtrain_zc_scores)) 
-                    self.jacov_train_std = np.std((np.array(xtrain_zc_scores)))
-                
-                #normalized_train = (np.array(xtrain_zc_scores) - self.jacov_train_mean)/self.jacov_train_std
-                #normalized_test = (np.array(xtest_zc_scores) - self.jacov_train_mean)/self.jacov_train_std
-                
                 self.xtrain_zc_info[f'{method_name}_scores'] = xtrain_zc_scores #normalized_train
                 self.xtest_zc_info[f'{method_name}_scores'] = xtest_zc_scores #normalized_test
-
+    
+    # prepare training data features
     def prepare_features(self, xdata, info, train=True):
-        # prepare training data features
         full_xdata = [[] for _ in range(len(xdata))]
         if len(self.zero_cost) > 0: # and self.train_size <= self.max_zerocost: 
             if self.run_pre_compute:
@@ -737,12 +738,11 @@ class SemiNASJCPredictor(Predictor):
             else:
                 # if the zero_cost scores were not precomputed, they are in info
                 full_xdata = [[*x, info[i]] for i, x in enumerate(full_xdata)]
-            #print(full_xdata)
         
         return np.array(full_xdata)
 
+    # old API, not being used 
     def get_model(self, **kwargs):
-        # old API, not being used 
         if self.ss_type == 'nasbench101':
             predictor = NAO(encoder_length=27,decoder_length=27)
         elif self.ss_type == 'nasbench201':
@@ -754,7 +754,11 @@ class SemiNASJCPredictor(Predictor):
     # currently only works for nb201 
     def generate_synthetic_controller_data(self, model, base_arch=None, random_arch=0,ss_type=None):
         '''
-        base_arch: a list of seq 
+        This method is used to generate synthetic samples for SemiNAS training
+        model: a predictor model, to predict the performance of generated architectures
+        base_arch: a list of sequences that is already in the training set.
+        random_arch: number of new random architectures to generate
+        ss_type: search space type
         '''
         ops = []
         random_synthetic_input = []
@@ -772,11 +776,11 @@ class SemiNASJCPredictor(Predictor):
                 arch = copy.deepcopy(naslib_object)
                 convert_op_indices_to_naslib(op,arch)
                 archs.append(arch)
-            jacovs = self.prepare_features(archs, self.train_info, train=True)
+            
+            jacovs = self.prepare_features(archs, self.train_info, train=False)
             random_synthetic_input_no_jc = copy.deepcopy(random_synthetic_input)
             random_synthetic_input = []
             for i, seq in enumerate(random_synthetic_input_no_jc):
-                #print("jacov:{}".format(jacovs[i]))
                 if self.jacov_onehot:
                     jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) 
                     jac_encoded = [jac +self.jacov_offset for jac in jac_encoded]
@@ -784,8 +788,7 @@ class SemiNASJCPredictor(Predictor):
                 else:
                     jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins, one_hot=self.jacov_onehot) + self.jacov_offset
                     seq.append(jac_encoded)
-                #print("synthetic seq")
-                #print(seq)
+
                 random_synthetic_input.append(seq)
 
             nao_synthetic_dataset = ControllerDataset(random_synthetic_input, None, False)
@@ -794,12 +797,10 @@ class SemiNASJCPredictor(Predictor):
             with torch.no_grad():
                 model.eval()
                 for sample in nao_synthetic_queue:
-                    if use_cuda:
-                        encoder_input = move_to_cuda(sample['encoder_input'])
-                    else:
-                        encoder_input = sample['encoder_input']
+                    encoder_input = move_to_cuda(sample['encoder_input'])    
                     _, _, _, predict_value = model.encoder(encoder_input)
                     random_synthetic_target += predict_value.data.squeeze().tolist()
+                    
             assert len(random_synthetic_input) == len(random_synthetic_target)
 
         synthetic_input = random_synthetic_input
@@ -852,14 +853,11 @@ class SemiNASJCPredictor(Predictor):
         train_seq_pool = []
         train_target_pool = []
         jacovs = self.prepare_features(xtrain, self.train_info, train=True)
-        #print('original training set:')
+
         for i, arch in enumerate(xtrain):
-            #print("architecture")
-            #print(arch)
             encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
             seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'],max_n=self.max_n)
-            #print(seq)
-            #print(len(seq.append(jacovs[i])))
+
             if self.jacov_onehot:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) 
                 jac_encoded = [jac +self.jacov_offset for jac in jac_encoded]
@@ -867,22 +865,21 @@ class SemiNASJCPredictor(Predictor):
             else:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
                 seq.append(jac_encoded)
-            #print(seq)
+
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
 
-        self.model = NAO(
-            encoder_layers,
-            decoder_layers,
-            mlp_layers,
-            hidden_size,
-            mlp_hidden_size,
-            self.vocab_size,
-            dropout,
-            source_length,
-            self.encoder_length,
-            self.decoder_length,
-        ).to(device)
+        self.model = NAO(encoder_layers,
+                         decoder_layers,
+                         mlp_layers,
+                         hidden_size,
+                         mlp_hidden_size,
+                         self.vocab_size,
+                         dropout,
+                         source_length,
+                         self.encoder_length,
+                         self.decoder_length
+                         ).to(device)
 
         for i in range(iteration):
             print('Iteration {}'.format(i+1))
@@ -913,14 +910,14 @@ class SemiNASJCPredictor(Predictor):
                 print('Finish training EPD')
 
     def query(self, xtest, info=None, eval_batch_size=100):
-
         test_seq_pool = []
         jacovs = self.prepare_features(xtest, info, train=False)
-        #print("test seqs:")
+
         for i, arch in enumerate(xtest):
-            #print("jacov:{}".format(jacovs[i]))
+            
             encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
             seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'],max_n=self.max_n)
+            
             if self.jacov_onehot:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) 
                 jac_encoded = [jac +self.jacov_offset for jac in jac_encoded]
@@ -928,7 +925,7 @@ class SemiNASJCPredictor(Predictor):
             else:
                 jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
                 seq.append(jac_encoded)
-            #print(seq)
+
             test_seq_pool.append(seq)
 
         test_dataset = ControllerDataset(test_seq_pool, None, False)
@@ -938,7 +935,7 @@ class SemiNASJCPredictor(Predictor):
         pred = []
         with torch.no_grad():
             for _, sample in enumerate(test_queue):
-                #print(sample)
+                
                 encoder_input = move_to_cuda(sample['encoder_input'])
                 decoder_target = move_to_cuda(sample['decoder_target'])
                 prediction, _, _ = self.model(encoder_input, decoder_target)
