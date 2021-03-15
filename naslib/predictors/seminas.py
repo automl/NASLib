@@ -5,6 +5,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 import itertools
 import os
 import random
@@ -24,12 +25,6 @@ from naslib.predictors.trees.ngb import loguniform
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
-
-import logging
-import math
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
 # default parameters from the paper
 n = 1100
@@ -55,21 +50,11 @@ batch_size = 100
 lr = 0.001
 optimizer = 'adam'
 grad_bound = 5.0  
-# iteration = 3
+# iterations = 3
 
 use_cuda = True
 # pretrain_epochs = 1000
 # epochs = 1000
-
-nb201_adj_matrix = np.array(
-            [[0, 1, 1, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
 
 def move_to_cuda(tensor):
     if torch.cuda.is_available():
@@ -185,8 +170,6 @@ class Encoder(nn.Module):
         return predict_value
 
     def forward(self, x):
-        # print("x shape: \n{}".format(x.shape))
-        # print('x max: \n {}'.format(torch.max(torch.tensor(x))))
         x = self.embedding(x)
         x = F.dropout(x, self.dropout, training=self.training)
         residual = x
@@ -353,6 +336,7 @@ class Decoder(nn.Module):
             encoder_hidden = encoder_hidden
         return encoder_hidden
 
+
 class NAO(nn.Module):
     def __init__(self,
                  encoder_layers,
@@ -409,7 +393,6 @@ class NAO(nn.Module):
 
 def controller_train(train_queue, model, optimizer):
 
-
     objs = AverageMeter()
     mse = AverageMeter()
     nll = AverageMeter()
@@ -461,204 +444,13 @@ def train_controller(model, train_input, train_target, epochs):
     for epoch in range(1, epochs + 1):
         loss, mse, ce = controller_train(controller_train_queue, model, optimizer)
         if epoch % 10 == 0:
-            print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
-
-# for nb 101
-INPUT = 'input'
-OUTPUT = 'output'
-CONV3X3 = 'conv3x3-bn-relu'
-CONV1X1 = 'conv1x1-bn-relu'
-MAXPOOL3X3 = 'maxpool3x3'
-OPS = [CONV3X3, CONV1X1, MAXPOOL3X3]
-
-NUM_VERTICES = 7
-OP_SPOTS = NUM_VERTICES - 2
-MAX_EDGES = 9
-
-def get_utilized(matrix):
-    # return the sets of utilized edges and nodes
-    # first, compute all paths
-    n = np.shape(matrix)[0]
-    sub_paths = []
-    for j in range(0, n):
-        sub_paths.append([[(0, j)]]) if matrix[0][j] else sub_paths.append([])
-    
-    # create paths sequentially
-    for i in range(1, n - 1):
-        for j in range(1, n):
-            if matrix[i][j]:
-                for sub_path in sub_paths[i]:
-                    sub_paths[j].append([*sub_path, (i, j)])
-    paths = sub_paths[-1]
-
-    utilized_edges = []
-    for path in paths:
-        for edge in path:
-            if edge not in utilized_edges:
-                utilized_edges.append(edge)
-
-    utilized_nodes = []
-    for i in range(NUM_VERTICES):
-        for edge in utilized_edges:
-            if i in edge and i not in utilized_nodes:
-                utilized_nodes.append(i)
-
-    return utilized_edges, utilized_nodes
-#for nb 101
-
-
-def num_edges_and_vertices(matrix):
-    # return the true number of edges and vertices
-    edges, nodes = get_utilized(matrix)
-    return len(edges), len(nodes) 
-
-def sample_random_architecture_nb101():
-        """
-        This will sample a random architecture and update the edges in the
-        naslib object accordingly.
-        From the NASBench repository:
-        one-hot adjacency matrix
-        draw [0,1] for each slot in the adjacency matrix
-        """
-        while True:
-            matrix = np.random.choice(
-                [0, 1], size=(NUM_VERTICES, NUM_VERTICES))
-            matrix = np.triu(matrix, 1)
-            ops = np.random.choice([2,3,4], size=NUM_VERTICES).tolist()
-            ops[0] = 0 #INPUT
-            ops[-1] = 1 #OUTPUT
-            num_edges, num_vertices = num_edges_and_vertices(matrix)
-            if num_edges > 1 and num_edges < 10:
-                break      
-        return {'matrix':matrix, 'ops':ops}
-
-def encode_darts(arch):
-    matrices = []
-    ops = []
-    for cell in arch:
-        mat,op = transform_matrix(cell)
-        matrices.append(mat)
-        ops.append(op)
-
-    matrices[0] = add_global_node(matrices[0],True)
-    matrices[1] = add_global_node(matrices[1],True)
-    matrices[0] = np.transpose(matrices[0])
-    matrices[1] = np.transpose(matrices[1])
-    
-    ops[0] = add_global_node(ops[0],False)
-    ops[1] = add_global_node(ops[1],False)
-
-    mat_length = len(matrices[0][0])
-    merged_length = len(matrices[0][0])*2
-    matrix_final = np.zeros((merged_length,merged_length))
-
-    for col in range(mat_length):
-        for row in range(col):
-            matrix_final[row,col] = matrices[0][row,col]
-            matrix_final[row+mat_length,col+mat_length] = matrices[1][row,col]
-
-    ops_onehot = np.concatenate((ops[0],ops[1]),axis=0)
-
-    matrix_final = add_global_node(matrix_final,True)
-    ops_onehot = add_global_node(ops_onehot,False)
-    
-    matrix_final = np.array(matrix_final,dtype=np.float32)
-    ops_onehot = np.array(ops_onehot,dtype=np.float32)
-    ops = [np.where(r==1)[0][0] for r in ops_onehot]
-
-    dic = {
-        'adjacency': matrix_final,
-        'operations': ops,
-        'val_acc': 0.0
-    }
-    return dic
-
-def add_global_node( mx, ifAdj):
-    """add a global node to operation or adjacency matrixs, fill diagonal for adj and transpose adjs"""
-    if (ifAdj):
-        mx = np.column_stack((mx, np.ones(mx.shape[0], dtype=np.float32)))
-        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
-        np.fill_diagonal(mx, 1)
-        mx = mx.T
-    else:
-        mx = np.column_stack((mx, np.zeros(mx.shape[0], dtype=np.float32)))
-        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
-        mx[mx.shape[0] - 1][mx.shape[1] - 1] = 1
-    return mx
-
-def transform_matrix(cell):
-    normal = cell
-
-    node_num = len(normal)+3
-
-    adj = np.zeros((node_num, node_num))
-
-    ops = np.zeros((node_num, 8)) # 6+2 operations 
-    for i in range(len(normal)):
-        connect, op = normal[i]
-        if connect == 0 or connect==1:
-            adj[connect][i+2] = 1
-        else:
-            adj[(connect-2)*2+2][i+2] = 1
-            adj[(connect-2)*2+3][i+2] = 1
-        ops[i+2][op] = 1
-    adj[2:-1, -1] = 1
-    ops[0:2, 0] = 1
-    ops[-1][-1] = 1
-    return adj, ops
-
-def generate_arch(ss_type):
-    if ss_type == 'nasbench101':
-        spec = sample_random_architecture_nb101()
-        seq = convert_arch_to_seq(spec['matrix'],spec['ops'],max_n=7)
-    elif ss_type == 'nasbench201':
-        ops = [random.randint(1,5) for _ in range(6)]
-        ops = [0, *ops, 6]
-        seq = convert_arch_to_seq(nb201_adj_matrix, ops)
-    elif ss_type == 'darts':
-        cell_norm = [( random.randint(0,i//2+1), random.randint(0,6) ) for i in range(8)]
-        cell_reduct = [( random.randint(0,i//2+1), random.randint(0,6) ) for i in range(8)]
-        cells = [cell_norm, cell_reduct]
-        arch = encode_darts(cells)
-        seq = convert_arch_to_seq(arch['adjacency'],arch['operations'],max_n=35)
-    return seq
-
-# currently only works for nb201 
-def generate_synthetic_controller_data(model, base_arch=None, random_arch=0,ss_type=None):
-    '''
-    base_arch: a list of seq 
-    '''
-    random_synthetic_input = []
-    random_synthetic_target = []
-    if random_arch > 0:
-        while len(random_synthetic_input) < random_arch:
-            seq = generate_arch(ss_type=ss_type)
-            if seq not in random_synthetic_input and seq not in base_arch:
-                random_synthetic_input.append(seq)
-
-        nao_synthetic_dataset = ControllerDataset(random_synthetic_input, None, False)
-        nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), shuffle=False, pin_memory=True, drop_last=False)
-
-        with torch.no_grad():
-            model.eval()
-            for sample in nao_synthetic_queue:
-                if use_cuda:
-                    encoder_input = move_to_cuda(sample['encoder_input'])
-                else:
-                    encoder_input = sample['encoder_input']
-                _, _, _, predict_value = model.encoder(encoder_input)
-                random_synthetic_target += predict_value.data.squeeze().tolist()
-        assert len(random_synthetic_input) == len(random_synthetic_target)
-
-    synthetic_input = random_synthetic_input
-    synthetic_target = random_synthetic_target
-    assert len(synthetic_input) == len(synthetic_target)
-    return synthetic_input, synthetic_target
+            print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce))
 
 class SemiNASPredictor(Predictor):
-    def __init__(self, encoding_type='gcn', ss_type=None, semi=False, hpo_wrapper=False):
+    def __init__(self, encoding_type='seminas', ss_type=None, semi=False, hpo_wrapper=False, synthetic_factor=1):
         self.encoding_type = encoding_type
         self.semi = semi
+        self.synthetic_factor = synthetic_factor
         if ss_type is not None:
             self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
@@ -666,61 +458,77 @@ class SemiNASPredictor(Predictor):
                                     'batch_size':100, 
                                     'lr':1e-3}
         self.hyperparams = None
+        
+    def generate_synthetic_data(self, model, num_synthetic):
+        synthetic_input = []
+        synthetic_target = []
 
-    def get_model(self, **kwargs):
-        # old API, not being used 
-        if self.ss_type == 'nasbench101':
-            predictor = NAO(encoder_length=27,decoder_length=27)
-        elif self.ss_type == 'nasbench201':
-            predictor = NAO(encoder_length=35,decoder_length=35)
-        elif self.ss_type == 'darts':
-            predictor = NAO(encoder_length=629,decoder_length=629,vocab_size=12)
-        return predictor
+        # convert the architectures in self.unlabeled to the right encoding
+        for i in range(num_synthetic):
+            arch = self.unlabeled[i]
+            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+            seq = convert_arch_to_seq(encoded['adjacency'], encoded['operations'], max_n=self.max_n)
+            synthetic_input.append(seq)
+
+        # use the model to label the synthetic data
+        synthetic_dataset = ControllerDataset(synthetic_input, None, False)
+        synthetic_queue = torch.utils.data.DataLoader(synthetic_dataset, batch_size=len(synthetic_dataset), 
+                                                      shuffle=False, pin_memory=True, drop_last=False)
+
+        with torch.no_grad():
+            model.eval()
+            for sample in synthetic_queue:
+                if use_cuda:
+                    encoder_input = move_to_cuda(sample['encoder_input'])
+                else:
+                    encoder_input = sample['encoder_input']
+                _, _, _, predict_value = model.encoder(encoder_input)
+                synthetic_target += predict_value.data.squeeze().tolist()
+        assert len(synthetic_input) == len(synthetic_target)
+        return synthetic_input, synthetic_target
 
     def fit(self, xtrain, ytrain, train_info=None,
-            wd=0, iteration=1, epochs=50,
-            pretrain_epochs=50, 
-            synthetic_factor=1):
-        
+            wd=0, iterations=1, epochs=50,
+            pretrain_epochs=50):
+
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
 
         batch_size = self.hyperparams['batch_size']
         gcn_hidden = self.hyperparams['gcn_hidden']
         lr = self.hyperparams['lr']
-
         up_sample_ratio = 10
+
         if self.ss_type == 'nasbench101':
             self.max_n = 7
+            encoder_length=27
+            decoder_length=27
+            vocab_size=7
+
         elif self.ss_type == 'nasbench201':
             self.max_n = 8
+            encoder_length=35
+            decoder_length=35
+            vocab_size=9
+
         elif self.ss_type == 'darts':
-            self.max_n = 35    
+            self.max_n = 35
+            encoder_length=629
+            decoder_length=629
+            vocab_size=13
+
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
-        ytrain_normed = (ytrain - self.mean)/self.std
+        ytrain_normed = (ytrain - self.mean) / self.std
         # encode data in seq
         train_seq_pool = []
         train_target_pool = []
         for i, arch in enumerate(xtrain):
             encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-            seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'],max_n=self.max_n)
+            seq = convert_arch_to_seq(encoded['adjacency'], encoded['operations'], max_n=self.max_n)
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
-
-        if self.ss_type == 'nasbench101':
-            encoder_length=27
-            decoder_length=27
-            vocab_size=7
-        elif self.ss_type == 'nasbench201':
-            encoder_length=35
-            decoder_length=35
-            vocab_size=9
-        elif self.ss_type == 'darts':
-            encoder_length=629
-            decoder_length=629
-            vocab_size=13
 
         self.model = NAO(
             encoder_layers,
@@ -732,10 +540,10 @@ class SemiNASPredictor(Predictor):
             dropout,
             source_length,
             encoder_length,
-            decoder_length,
+            decoder_length
         ).to(device)
 
-        for i in range(iteration):
+        for i in range(iterations):
             print('Iteration {}'.format(i+1))
 
             train_encoder_input = train_seq_pool
@@ -747,10 +555,10 @@ class SemiNASPredictor(Predictor):
             print('Finish pre-training EPD')
             
             if self.semi:
-                # Generate synthetic data
-                print('Generate synthetic data for EPD')
-                m = synthetic_factor * len(xtrain)
-                synthetic_encoder_input, synthetic_encoder_target = generate_synthetic_controller_data(self.model, train_encoder_input, m,self.ss_type)
+                num_synthetic = self.synthetic_factor * len(train_encoder_input)
+                synthetic_data = self.generate_synthetic_data(self.model, num_synthetic)
+                synthetic_encoder_input, synthetic_encoder_target = synthetic_data
+                
                 if up_sample_ratio is None:
                     up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)
                 else:
@@ -758,7 +566,6 @@ class SemiNASPredictor(Predictor):
 
                 all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
                 all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
-                # Train
                 print('Train EPD')
                 train_controller(self.model, all_encoder_input, all_encoder_target, epochs)
                 print('Finish training EPD')
@@ -782,7 +589,6 @@ class SemiNASPredictor(Predictor):
         pred = []
         with torch.no_grad():
             for _, sample in enumerate(test_queue):
-                #print(sample)
                 encoder_input = move_to_cuda(sample['encoder_input'])
                 decoder_target = move_to_cuda(sample['decoder_target'])
                 prediction, _, _ = self.model(encoder_input, decoder_target)
@@ -790,7 +596,7 @@ class SemiNASPredictor(Predictor):
 
         pred = np.concatenate(pred)
         return np.squeeze(pred * self.std + self.mean)
-
+    
     def set_random_hyperparams(self):
 
         if self.hyperparams is None:
@@ -804,3 +610,24 @@ class SemiNASPredictor(Predictor):
 
         self.hyperparams = params
         return params
+    
+    def pre_compute(self, xtrain, xtest, unlabeled):
+        """
+        This method is used to pass in unlabeled architectures
+        for SemiNAS to use
+        """
+        self.unlabeled = unlabeled
+        
+    def get_data_reqs(self):
+        """
+        Returns a dictionary with info about whether the predictor needs
+        extra info to train/query, such as a partial learning curve,
+        hyperparameters, or how much unlabeled data it needs
+        """
+        reqs = {'requires_partial_lc':False, 
+                'metric':None, 
+                'requires_hyperparameters':False, 
+                'hyperparams':{}, 
+                'unlabeled':self.semi, 
+                'unlabeled_factor':self.synthetic_factor}
+        return reqs

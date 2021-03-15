@@ -331,8 +331,19 @@ class PredictorEvaluator(object):
                                                          arch_hash_map=arch_hash_map, 
                                                          test_data=test_data)
 
-        self.predictor.pre_compute(full_train_data[0], test_data[0])
-        
+        # if the predictor requires unlabeled data (e.g. SemiNAS), generate it:
+        reqs = self.predictor.get_data_reqs()
+        unlabeled_data = None
+        if reqs['unlabeled']:
+            logger.info("Load unlabeled data")
+            unlabeled_size = max_train_size * reqs['unlabeled_factor']
+            [unlabeled_data, _, _, _], _ = self.load_dataset(load_labeled=self.load_labeled,
+                                                             data_size=unlabeled_size, 
+                                                             arch_hash_map=arch_hash_map)
+
+        # some of the predictors have a pre-computation step to save time in batch experiments
+        self.predictor.pre_compute(full_train_data[0], test_data[0], unlabeled_data)
+
         if self.experiment_type == 'single':
             train_size = self.train_size_single
             fidelity = self.fidelity_single

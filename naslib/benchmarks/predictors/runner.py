@@ -70,7 +70,7 @@ supported_predictors = {
                           config=config),
     'omni_xgb': OmniXGBPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                  config=config),
-    'omni_seminas': OMNISemiNASPredictor(encoding_type='seminas', semi=False, hpo_wrapper=True,
+    'omni_seminas': OMNISemiNASPredictor(encoding_type='seminas', semi=True, hpo_wrapper=False,
                                          jacov_onehot=True, config=config),
     'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
                                config=config),

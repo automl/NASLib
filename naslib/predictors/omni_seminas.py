@@ -61,16 +61,6 @@ lr = 0.001
 optimizer = 'adam'
 grad_bound = 5.0
 
-nb201_adj_matrix = np.array(
-            [[0, 1, 1, 1, 0, 0, 0, 0],
-            [0, 0, 0, 0, 1, 1, 0, 0],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 1, 0],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0]],dtype=np.float32)
-
 # helper to move object to cuda when available
 def move_to_cuda(tensor):
     if torch.cuda.is_available():
@@ -190,8 +180,6 @@ class Encoder(nn.Module):
         return predict_value
 
     def forward(self, x):
-        # print("x shape: \n{}".format(x.shape))
-        # print('x max: \n {}'.format(torch.max(torch.tensor(x))))
         x = self.embedding(x)
         x = F.dropout(x, self.dropout, training=self.training)
         residual = x
@@ -461,7 +449,6 @@ def controller_infer(queue, model, step, direction='+'):
 
 def train_controller(model, train_input, train_target, epochs):
 
-    logging.info('Train data: {}'.format(len(train_input)))
     controller_train_dataset = ControllerDataset(train_input, train_target, True)
     controller_train_queue = torch.utils.data.DataLoader(
         controller_train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, drop_last=False)
@@ -471,180 +458,10 @@ def train_controller(model, train_input, train_target, epochs):
         if epoch % 10 == 0:
             print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
 
-# for nb 101
-INPUT = 'input'
-OUTPUT = 'output'
-CONV3X3 = 'conv3x3-bn-relu'
-CONV1X1 = 'conv1x1-bn-relu'
-MAXPOOL3X3 = 'maxpool3x3'
-OPS = [CONV3X3, CONV1X1, MAXPOOL3X3]
 
-NUM_VERTICES = 7
-OP_SPOTS = NUM_VERTICES - 2
-MAX_EDGES = 9
-
-# NB 101 utility
-def get_utilized(matrix):
-    # return the sets of utilized edges and nodes
-    # first, compute all paths
-    n = np.shape(matrix)[0]
-    sub_paths = []
-    for j in range(0, n):
-        sub_paths.append([[(0, j)]]) if matrix[0][j] else sub_paths.append([])
-    
-    # create paths sequentially
-    for i in range(1, n - 1):
-        for j in range(1, n):
-            if matrix[i][j]:
-                for sub_path in sub_paths[i]:
-                    sub_paths[j].append([*sub_path, (i, j)])
-    paths = sub_paths[-1]
-
-    utilized_edges = []
-    for path in paths:
-        for edge in path:
-            if edge not in utilized_edges:
-                utilized_edges.append(edge)
-
-    utilized_nodes = []
-    for i in range(NUM_VERTICES):
-        for edge in utilized_edges:
-            if i in edge and i not in utilized_nodes:
-                utilized_nodes.append(i)
-
-    return utilized_edges, utilized_nodes
-
-# NB 101 utility
-def num_edges_and_vertices(matrix):
-    # return the true number of edges and vertices
-    edges, nodes = get_utilized(matrix)
-    return len(edges), len(nodes) 
-
-def sample_random_architecture_nb101():
-        """
-        This will sample a random architecture and update the edges in the
-        naslib object accordingly.
-        From the NASBench repository:
-        one-hot adjacency matrix
-        draw [0,1] for each slot in the adjacency matrix
-        """
-        while True:
-            matrix = np.random.choice(
-                [0, 1], size=(NUM_VERTICES, NUM_VERTICES))
-            matrix = np.triu(matrix, 1)
-            ops = np.random.choice([2,3,4], size=NUM_VERTICES).tolist()
-            ops[0] = 0 #INPUT
-            ops[-1] = 1 #OUTPUT
-            num_edges, num_vertices = num_edges_and_vertices(matrix)
-            if num_edges > 1 and num_edges < 10:
-                break      
-        return {'matrix':matrix, 'ops':ops}
-
-def encode_darts(arch):
-    '''
-    encode DARTS architectures
-    arch: the cell encoded architecture
-    '''
-    matrices = []
-    ops = []
-    for cell in arch:
-        mat,op = transform_matrix(cell)
-        matrices.append(mat)
-        ops.append(op)
-
-    matrices[0] = add_global_node(matrices[0],True)
-    matrices[1] = add_global_node(matrices[1],True)
-    matrices[0] = np.transpose(matrices[0])
-    matrices[1] = np.transpose(matrices[1])
-    
-    ops[0] = add_global_node(ops[0],False)
-    ops[1] = add_global_node(ops[1],False)
-
-    mat_length = len(matrices[0][0])
-    merged_length = len(matrices[0][0])*2
-    matrix_final = np.zeros((merged_length,merged_length))
-
-    for col in range(mat_length):
-        for row in range(col):
-            matrix_final[row,col] = matrices[0][row,col]
-            matrix_final[row+mat_length,col+mat_length] = matrices[1][row,col]
-
-    ops_onehot = np.concatenate((ops[0],ops[1]),axis=0)
-
-    matrix_final = add_global_node(matrix_final,True)
-    ops_onehot = add_global_node(ops_onehot,False)
-    
-    matrix_final = np.array(matrix_final,dtype=np.float32)
-    ops_onehot = np.array(ops_onehot,dtype=np.float32)
-    ops = [np.where(r==1)[0][0] for r in ops_onehot]
-
-    dic = {
-        'adjacency': matrix_final,
-        'operations': ops,
-        'val_acc': 0.0
-    }
-    return dic
-
-def add_global_node( mx, ifAdj):
-    """add a global node to operation or adjacency matrixs, fill diagonal for adj and transpose adjs"""
-    if (ifAdj):
-        mx = np.column_stack((mx, np.ones(mx.shape[0], dtype=np.float32)))
-        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
-        np.fill_diagonal(mx, 1)
-        mx = mx.T
-    else:
-        mx = np.column_stack((mx, np.zeros(mx.shape[0], dtype=np.float32)))
-        mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
-        mx[mx.shape[0] - 1][mx.shape[1] - 1] = 1
-    return mx
-
-def transform_matrix(cell):
-    '''
-    converts DARTS cell encoding to adjacency matrix + operations encoding
-    '''
-    normal = cell
-
-    node_num = len(normal)+3
-
-    adj = np.zeros((node_num, node_num))
-
-    ops = np.zeros((node_num, 8)) # 6+2 operations 
-    for i in range(len(normal)):
-        connect, op = normal[i]
-        if connect == 0 or connect==1:
-            adj[connect][i+2] = 1
-        else:
-            adj[(connect-2)*2+2][i+2] = 1
-            adj[(connect-2)*2+3][i+2] = 1
-        ops[i+2][op] = 1
-    adj[2:-1, -1] = 1
-    ops[0:2, 0] = 1
-    ops[-1][-1] = 1
-    return adj, ops
-
-# generates architecture of specified search space (ss_type)
-def generate_arch(ss_type,info=None):
-    ops = []
-    if ss_type == 'nasbench101':
-        spec = sample_random_architecture_nb101()
-        seq = convert_arch_to_seq(spec['matrix'],spec['ops'],max_n=7)
-    elif ss_type == 'nasbench201':
-        ops = [random.randint(1,5) for _ in range(6)]
-        ops_padded = [0, *ops, 6]
-        ops = [op - 1  for op in ops]  #zero index for later conversion
-        seq = convert_arch_to_seq(nb201_adj_matrix, ops_padded)
-    elif ss_type == 'darts':
-        cell_norm = [( random.randint(0,i//2+1), random.randint(0,6) ) for i in range(8)]
-        cell_reduct = [( random.randint(0,i//2+1), random.randint(0,6) ) for i in range(8)]
-        cells = [cell_norm, cell_reduct]
-        arch = encode_darts(cells)
-        seq = convert_arch_to_seq(arch['adjacency'],arch['operations'],max_n=35)
-
-    return seq,ops
-
-# simple discretization function to discretize continuous numbers 
-# One hot and categorical encodings are supported
-def discretize(x, upper_bounds=[-3,-2,-1,0,1,2,3], one_hot=False):
+def discretize(x, upper_bounds=None, one_hot=False):
+    # return discretization based on upper_bounds
+    # supports one_hot or categorical output
     assert upper_bounds is not None and len(upper_bounds) >= 1
 
     if one_hot:
@@ -662,157 +479,126 @@ def discretize(x, upper_bounds=[-3,-2,-1,0,1,2,3], one_hot=False):
                 return i
         return len(upper_bounds) + 1
 
+def get_bins(zero_cost, train_size):
+    """
+    The SemiNAS predictor uses a discrete encoding, so we must discretize the (continuous) 
+    zero-cost features. We do this by putting them into bins. In a real experiment, we 
+    would need to estimate the upper bounds for each bin during the search. To save time, 
+    we precomputed the bins and then add the runtime of this precomputation later.
+    """
+    if zero_cost == 'jacov':
+        if train_size < 10:
+            # precomputation based on 100 jacov values (366 seconds)
+            bins = [-19838.279, -906.12, -444.588, -366.404, -316.694, 
+                    -285.499, -283.021, -280.614, -278.303]
+        else:
+            # precomputed based on 1000 jacov values (3660 seconds)
+            bins = [-20893.873, -1179.832, -518.407, -373.523, -317.264, 
+                    -284.944, -281.242, -279.503, -278.083]
+    else:
+        raise NotImplementedError('Currently no other zero-cost methods are supported')
+    
+    return bins
+
+
 class OMNISemiNASPredictor(Predictor):
+    # todo: make the code general to support any zerocost predictors
     def __init__(self, encoding_type='seminas', ss_type=None, semi=False, hpo_wrapper=False, 
-                 config=None, run_pre_compute=True, jacov_onehot=True):
+                 config=None, run_pre_compute=True, jacov_onehot=True, synthetic_factor=1, 
+                 max_zerocost=np.inf):
         self.encoding_type = encoding_type
         self.semi = semi
+        self.synthetic_factor = synthetic_factor
         if ss_type is not None:
             self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
+        self.max_zerocost = max_zerocost
         self.default_hyperparams = {'gcn_hidden':64, 
                                     'batch_size':100, 
                                     'lr':1e-3}
         self.hyperparams = None
-
         self.config = config
         self.zero_cost = ['jacov']
         self.run_pre_compute = run_pre_compute
-        self.jacov_onehot = jacov_onehot # one_hot encoding works better
-        print('jacov onehot encoding: {}'.format(self.jacov_onehot))
-        # current bins estimated from a single 1000-sample run of jacov computaton
-        self.jacov_bins = [-6479.906262535439, -1048.4814023716435, -478.08807967011205,
-                           -354.1177984864107, -302.3988674730198, -283.3622277685421, 
-                           -280.84198418968407, -279.2643230054042, -277.87210246240795]
+        self.jacov_onehot = jacov_onehot
 
-        if self.jacov_bins is None:
-            self.bins = 10 # use 10 bins by default
-        else:
-            self.bins = len(self.jacov_bins) + 1
-        
+        self.jacov_bins = get_bins('jacov', 100) # todo: this should go into fit()
+        self.bins = len(self.jacov_bins) + 1
+
         # set additional feature length and vocabulary size based on encoding type and number of bins
         self.jacov_vocab = 2 if self.jacov_onehot else self.bins + 1
         self.jacov_length =  self.bins if self.jacov_onehot else 1
 
-    def pre_compute(self, xtrain, xtest):
-        """
-        All of this computation could go into fit() and query(), but we do it
-        here to save time, so that we don't have to re-compute Jacobian covariances
-        for all train_sizes when running experiment_types that vary train size or fidelity.        
-        """
-        self.xtrain_zc_info = {}
-        self.xtest_zc_info = {}
-
-        if len(self.zero_cost) > 0:
-            self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
-
-            for method_name in self.zero_cost:
-                zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
-                zc_method.train_loader = copy.deepcopy(self.train_loader)
-                xtrain_zc_scores = zc_method.query(xtrain)
-                xtest_zc_scores = zc_method.query(xtest)
-                xtrain_zc_scores_raw = copy.copy(xtrain_zc_scores)
-                upper_bounds = []
-                for i in range(1,10):
-                    upper_bounds.append(np.quantile(xtrain_zc_scores_raw,i/10.0))
-                print('estimated upper bounds:')
-                print(upper_bounds)
-                if self.jacov_bins is None:
-                    self.jacov_bins = upper_bounds
-
-                self.xtrain_zc_info[f'{method_name}_scores'] = xtrain_zc_scores #normalized_train
-                self.xtest_zc_info[f'{method_name}_scores'] = xtest_zc_scores #normalized_test
-    
-    # prepare training data features
-    def prepare_features(self, xdata, info, train=True):
+    def prepare_features(self, xdata, info=None):
+        # this concatenates architecture features with zero-cost features        
         full_xdata = [[] for _ in range(len(xdata))]
-        if len(self.zero_cost) > 0: # and self.train_size <= self.max_zerocost: 
+                
+        if self.encoding_type is not None:
+            # convert the architecture to a categorical encoding
+            for i, arch in enumerate(xdata):
+                encoded = encode(arch, encoding_type=self.encoding_type, 
+                                 ss_type=self.ss_type)
+                seq = convert_arch_to_seq(encoded['adjacency'], 
+                                          encoded['operations'], 
+                                          max_n=self.max_n)
+                full_xdata[i] = [*full_xdata[i], *seq]
+
+        if len(self.zero_cost) > 0 and self.train_size <= self.max_zerocost: 
+            # add zero_cost features here
             if self.run_pre_compute:
-                for key in self.xtrain_zc_info:
-                    if train:
-                        full_xdata = [[*x, self.xtrain_zc_info[key][i]] for i, x in enumerate(full_xdata)]
-                    else:
-                        full_xdata = [[*x, self.xtest_zc_info[key][i]] for i, x in enumerate(full_xdata)]
+                for key in self.zero_cost:
+                    for i, arch in enumerate(xdata):
+                        # todo: the following code is still specific to jacov. Make it for any zerocost
+                        if self.jacov_onehot:
+                            jac_encoded = discretize(info['jacov_scores'][i], upper_bounds=self.jacov_bins, 
+                                                     one_hot=self.jacov_onehot) 
+                            jac_encoded = [jac + self.jacov_offset for jac in jac_encoded]
+                        else:
+                            jac_encoded = discretize(info['jacov_scores'][i], upper_bounds=self.jacov_bins, 
+                                                     one_hot=self.jacov_onehot) + self.jacov_offset
+
+                        full_xdata[i] = [*full_xdata[i], *jac_encoded]
+
             else:
-                # if the zero_cost scores were not precomputed, they are in info
-                full_xdata = [[*x, info[i]] for i, x in enumerate(full_xdata)]
-        
-        return np.array(full_xdata)
+                # this is another way that the zero_cost features can be passed in
+                # todo: set up run_pre_compute=False to work (for NAS)
+                raise NotImplementedError()
 
-    # currently only works for nb201 
-    def generate_synthetic_controller_data(self, model, base_arch=None, random_arch=0, ss_type=None):
-        '''
-        This method is used to generate synthetic samples for SemiNAS training
-        model: a predictor model, to predict the performance of generated architectures
-        base_arch: a list of sequences that is already in the training set.
-        random_arch: number of new random architectures to generate
-        ss_type: search space type
-        '''
-        ops = []
-        random_synthetic_input = []
-        random_synthetic_target = []
-        if random_arch > 0:
-            while len(random_synthetic_input) < random_arch:
-                seq,op = generate_arch(ss_type=ss_type)
-                if seq not in random_synthetic_input and seq not in base_arch:
-                    random_synthetic_input.append(seq)
-                    ops.append(op)
+        # todo: add option to append sotl-e here
 
-            naslib_object = NasBench201SearchSpace()
-            archs = []
-            for i, op in enumerate(ops):
-                arch = copy.deepcopy(naslib_object)
-                convert_op_indices_to_naslib(op,arch)
-                archs.append(arch)
-            
-            jacovs = self.prepare_features(archs, self.train_info, train=False)
-            random_synthetic_input_no_jc = copy.deepcopy(random_synthetic_input)
-            random_synthetic_input = []
-            for i, seq in enumerate(random_synthetic_input_no_jc):
-                if self.jacov_onehot:
-                    jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) 
-                    jac_encoded = [jac +self.jacov_offset for jac in jac_encoded]
-                    seq.extend(jac_encoded)
-                else:
-                    jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins, one_hot=self.jacov_onehot) + self.jacov_offset
-                    seq.append(jac_encoded)
+        return full_xdata
 
-                random_synthetic_input.append(seq)
+    def generate_synthetic_labels(self, model, synthetic_input):
 
-            nao_synthetic_dataset = ControllerDataset(random_synthetic_input, None, False)
-            nao_synthetic_queue = torch.utils.data.DataLoader(nao_synthetic_dataset, batch_size=len(nao_synthetic_dataset), 
-                                                              shuffle=False, pin_memory=True, drop_last=False)
+        # use the model to label the synthetic data
+        synthetic_dataset = ControllerDataset(synthetic_input, None, False)
+        synthetic_queue = torch.utils.data.DataLoader(synthetic_dataset, batch_size=len(synthetic_dataset), 
+                                                      shuffle=False, pin_memory=True, drop_last=False)
 
-            with torch.no_grad():
-                model.eval()
-                for sample in nao_synthetic_queue:
-                    encoder_input = move_to_cuda(sample['encoder_input'])    
-                    _, _, _, predict_value = model.encoder(encoder_input)
-                    random_synthetic_target += predict_value.data.squeeze().tolist()
-                    
-            assert len(random_synthetic_input) == len(random_synthetic_target)
-
-        synthetic_input = random_synthetic_input
-        synthetic_target = random_synthetic_target
+        synthetic_target = []
+        with torch.no_grad():
+            model.eval()
+            for sample in synthetic_queue:
+                encoder_input = move_to_cuda(sample['encoder_input'])
+                _, _, _, predict_value = model.encoder(encoder_input)
+                synthetic_target += predict_value.data.squeeze().tolist()
         assert len(synthetic_input) == len(synthetic_target)
-        return synthetic_input, synthetic_target
+        return synthetic_target
 
     def fit(self, xtrain, ytrain, train_info=None,
-            wd=0, iteration=1, epochs=50,
-            pretrain_epochs=50, 
-            synthetic_factor=1):
+            wd=0, iterations=1, epochs=50,
+            pretrain_epochs=50):
         
+        self.train_size = len(xtrain)
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
-
-        self.train_info = train_info
 
         batch_size = self.hyperparams['batch_size']
         gcn_hidden = self.hyperparams['gcn_hidden']
         lr = self.hyperparams['lr']
-
         up_sample_ratio = 10
 
+        # todo: can these be non self?
         if self.ss_type == 'nasbench101':
             self.max_n = 7
             self.encoder_length=27
@@ -833,31 +619,12 @@ class OMNISemiNASPredictor(Predictor):
         self.encoder_length += self.jacov_length
         self.decoder_length += self.jacov_length
         self.vocab_size += self.jacov_vocab
-        print(self.vocab_size)
+
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
-        ytrain_normed = (ytrain - self.mean)/self.std
-        # encode data in seq
-        train_seq_pool = []
-        train_target_pool = []
-        jacovs = self.prepare_features(xtrain, self.train_info, train=True)
-
-        for i, arch in enumerate(xtrain):
-            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-            seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'],max_n=self.max_n)
-
-            if self.jacov_onehot:
-                jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) 
-                jac_encoded = [jac +self.jacov_offset for jac in jac_encoded]
-                seq.extend(jac_encoded)
-            else:
-                jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
-                seq.append(jac_encoded)
-
-            train_seq_pool.append(seq)
-            train_target_pool.append(ytrain_normed[i])
-
+        ytrain_normed = (ytrain - self.mean) / self.std
+        
         self.model = NAO(encoder_layers,
                          decoder_layers,
                          mlp_layers,
@@ -870,54 +637,38 @@ class OMNISemiNASPredictor(Predictor):
                          self.decoder_length
                          ).to(device)
 
-        for i in range(iteration):
-            print('Iteration {}'.format(i+1))
+        xtrain_full_features = self.prepare_features(xtrain, self.xtrain_zc_info)
 
-            train_encoder_input = train_seq_pool
-            train_encoder_target = train_target_pool
+        for i in range(iterations):
+            print('Iteration {}'.format(i+1))
 
             # Pre-train
             print('Pre-train EPD')
-            train_controller(self.model, train_encoder_input, train_encoder_target, pretrain_epochs)
+            train_controller(self.model, xtrain_full_features, ytrain_normed, pretrain_epochs)
             print('Finish pre-training EPD')
-            
+
             if self.semi:
                 # Generate synthetic data
                 print('Generate synthetic data for EPD')
-                m = synthetic_factor * len(xtrain)
-                synthetic_encoder_input, synthetic_encoder_target = self.generate_synthetic_controller_data(self.model, train_encoder_input, m,self.ss_type)
+                num_synthetic = self.synthetic_factor * len(xtrain)
+                synthetic_full_features = self.prepare_features(self.unlabeled, self.unlabeled_zc_info)
+                synthetic_full_features = synthetic_full_features[:num_synthetic]
+                synthetic_target = self.generate_synthetic_labels(self.model, synthetic_full_features)
                 if up_sample_ratio is None:
-                    up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(np.int)
+                    up_sample_ratio = np.ceil(m / len(xtrain_full_features)).astype(np.int)
                 else:
                     up_sample_ratio = up_sample_ratio
-
-                all_encoder_input = train_encoder_input * up_sample_ratio + synthetic_encoder_input
-                all_encoder_target = train_encoder_target * up_sample_ratio + synthetic_encoder_target
-                # Train
+                    
+                combined_input = xtrain_full_features * up_sample_ratio + synthetic_full_features
+                combined_target = list(ytrain_normed) * up_sample_ratio + synthetic_target
                 print('Train EPD')
-                train_controller(self.model, all_encoder_input, all_encoder_target, epochs)
+                train_controller(self.model, combined_input, combined_target, epochs)
                 print('Finish training EPD')
 
-    def query(self, xtest, info=None, eval_batch_size=100):
-        test_seq_pool = []
-        jacovs = self.prepare_features(xtest, info, train=False)
-
-        for i, arch in enumerate(xtest):
-            
-            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-            seq = convert_arch_to_seq(encoded['adjacency'],encoded['operations'],max_n=self.max_n)
-            
-            if self.jacov_onehot:
-                jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) 
-                jac_encoded = [jac +self.jacov_offset for jac in jac_encoded]
-                seq.extend(jac_encoded)
-            else:
-                jac_encoded = discretize(jacovs[i],upper_bounds=self.jacov_bins,one_hot=self.jacov_onehot) + self.jacov_offset
-                seq.append(jac_encoded)
-
-            test_seq_pool.append(seq)
-
-        test_dataset = ControllerDataset(test_seq_pool, None, False)
+    def query(self, xtest, info=None, batch_size=100):
+        
+        test_data = self.prepare_features(xtest, self.xtest_zc_info)
+        test_dataset = ControllerDataset(test_data, None, False)
         test_queue = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, 
                                                  pin_memory=True, drop_last=False) 
 
@@ -925,7 +676,6 @@ class OMNISemiNASPredictor(Predictor):
         pred = []
         with torch.no_grad():
             for _, sample in enumerate(test_queue):
-                
                 encoder_input = move_to_cuda(sample['encoder_input'])
                 decoder_target = move_to_cuda(sample['decoder_target'])
                 prediction, _, _ = self.model(encoder_input, decoder_target)
@@ -947,3 +697,45 @@ class OMNISemiNASPredictor(Predictor):
 
         self.hyperparams = params
         return params
+    
+    def pre_compute(self, xtrain, xtest, unlabeled):
+        """
+        All of this computation could go into fit() and query(), but we do it
+        here to save time, so that we don't have to re-compute Jacobian covariances
+        for all train_sizes when running experiment_types that vary train size or fidelity.        
+        
+        This method computes zerocost info for the train set, test set, and synthetic set
+        (if applicable). It also stores the synthetic architectures.
+        """
+        self.xtrain_zc_info = {}
+        self.xtest_zc_info = {}
+        self.unlabeled_zc_info = {}
+        self.unlabeled = unlabeled
+
+        if len(self.zero_cost) > 0:
+            self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
+
+            for method_name in self.zero_cost:
+                # todo: allow ZeroCostV2 as well
+                zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
+                zc_method.train_loader = copy.deepcopy(self.train_loader)
+                
+                # save the raw scores, since bucketing depends on the train set size
+                self.xtrain_zc_info[f'{method_name}_scores'] = zc_method.query(xtrain)
+                self.xtest_zc_info[f'{method_name}_scores'] = zc_method.query(xtest)
+                if unlabeled is not None:
+                    self.unlabeled_zc_info[f'{method_name}_scores'] = zc_method.query(unlabeled)
+
+    def get_data_reqs(self):
+        """
+        Returns a dictionary with info about whether the predictor needs
+        extra info to train/query, such as a partial learning curve,
+        or hyperparameters of the architecture
+        """
+        reqs = {'requires_partial_lc':False, 
+                'metric':None, 
+                'requires_hyperparameters':False, 
+                'hyperparams':{}, 
+                'unlabeled':self.semi, 
+                'unlabeled_factor':self.synthetic_factor}
+        return reqs

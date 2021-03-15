@@ -113,7 +113,7 @@ class OmniXGBPredictor(Predictor):
             train_losses = np.array([lcs['TRAIN_LOSS_lc'][-1] for lcs in info])
             mean = np.mean(train_losses)
             std = np.std(train_losses)
-            normalized = (train_losses - mean)/std
+            normalized = (train_losses - mean) / std
             full_xdata = [[*x, normalized[i]] for i, x in enumerate(full_xdata)]
             
         elif 'sotle' in self.lce and len(info[0]['TRAIN_LOSS_lc']) < 3:
