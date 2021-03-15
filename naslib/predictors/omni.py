@@ -32,7 +32,6 @@ class OmniPredictor(Predictor):
                  n_hypers=35, run_pre_compute=True, min_train_size=0, max_zerocost=np.inf):
         
         self.zero_cost = zero_cost
-        self.lce = lce
         self.encoding_type = encoding_type
         self.config = config
         self.n_hypers = n_hypers

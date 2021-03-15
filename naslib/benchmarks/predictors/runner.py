@@ -9,7 +9,7 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.predictors import Ensemble, FeedforwardPredictor, GBDTPredictor, \
 EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostV1, ZeroCostV2, SoLosspredictor, \
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
-BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, OMNISemiNASPredictor, \
+BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, OmniSemiNASPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
 LCEPredictor, OmniPredictor, OmniXGBPredictor
 
@@ -70,7 +70,7 @@ supported_predictors = {
                           config=config),
     'omni_xgb': OmniXGBPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                  config=config),
-    'omni_seminas': OMNISemiNASPredictor(encoding_type='seminas', semi=True, hpo_wrapper=False,
+    'omni_seminas': OmniSemiNASPredictor(encoding_type='seminas', semi=False, hpo_wrapper=False,
                                          jacov_onehot=True, config=config),
     'omni_both': OmniPredictor(zero_cost=['jacov', 'snip'], lce=['sotle', 'valacc'], encoding_type='adjacency_one_hot',
                                config=config),

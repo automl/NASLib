@@ -46,15 +46,18 @@ class Npenas(MetaOptimizer):
         self.history = torch.nn.ModuleList()
 
         self.zc = ('omni' in self.predictor_type)
+        self.semi = ('semi' in self.predictor_type)
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
-        assert search_space.QUERYABLE, "Bananas is currently only implemented for benchmarks."
+        assert search_space.QUERYABLE, "Npenas is currently only implemented for benchmarks."
         
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE      
         self.dataset_api = dataset_api
         if self.zc:
             self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode='train')
+        if self.semi:
+            self.unlabeled = []
     
     def new_epoch(self, epoch):
 
@@ -81,10 +84,32 @@ class Npenas(MetaOptimizer):
                 ensemble = Ensemble(num_ensemble=1,
                                     ss_type=self.search_space.get_type(),
                                     predictor_type=self.predictor_type)
-                zc_scores = None
+
                 if self.zc and len(self.train_data) <= self.max_zerocost:
-                    zc_scores = [m.zc_score for m in self.train_data]
-                train_error = ensemble.fit(xtrain, ytrain, train_info=zc_scores)
+                    # pass the zero-cost scores to the predictor
+                    train_info = {'jacov_scores':[m.zc_score for m in self.train_data]}
+                    ensemble.set_pre_computations(xtrain_zc_info=train_info)
+                    
+                if self.semi:
+                    # create unlabeled data and pass it to the predictor
+                    while len(self.unlabeled) < len(xtrain):
+                        model = torch.nn.Module()
+                        model.arch = self.search_space.clone()
+                        model.arch.sample_random_architecture(dataset_api=self.dataset_api)
+                        if self.zc and len(self.train_data) <= self.max_zerocost:
+                            zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
+                            zc_method.train_loader = copy.deepcopy(self.train_loader)
+                            score = zc_method.query([model.arch])
+                            model.zc_score = np.squeeze(score)
+
+                        self.unlabeled.append(model)
+                    ensemble.set_pre_computations(unlabeled=[m.arch for m in self.unlabeled])
+                
+                if self.zc and self.semi:
+                    unlabeled_zc_info = {'jacov_scores':[m.zc_score for m in self.unlabeled]}
+                    ensemble.set_pre_computations(unlabeled_zc_info=unlabeled_zc_info)
+
+                train_error = ensemble.fit(xtrain, ytrain)
 
                 # define an acquisition function
                 acq_fn = acquisition_function(ensemble=ensemble, 
@@ -112,7 +137,7 @@ class Npenas(MetaOptimizer):
                     zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
                     zc_method.train_loader = copy.deepcopy(self.train_loader)
                     zc_scores = zc_method.query(candidates)
-                    values = [acq_fn(enc, score) for enc, score in zip(candidates, zc_scores)]
+                    values = [acq_fn(enc, {'jacov_scores':[score]}) for enc, score in zip(candidates, zc_scores)]
                 else:
                     values = [acq_fn(encoding) for encoding in candidates]
                 sorted_indices = np.argsort(values)

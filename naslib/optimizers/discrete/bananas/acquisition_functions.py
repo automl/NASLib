@@ -26,7 +26,7 @@ def acquisition_function(ensemble,
         # Independent Thompson sampling (ITS) acquisition function
         
         def its(arch_encoding, info=None):
-            predictions = ensemble.query([arch_encoding], [info])
+            predictions = ensemble.query([arch_encoding], info)
             predictions = np.squeeze(predictions)
             mean = np.mean(predictions)
             std = np.std(predictions)
@@ -38,7 +38,7 @@ def acquisition_function(ensemble,
         # Upper confidence bound (UCB) acquisition function
         
         def ucb(arch_encoding, info=None):
-            predictions = ensemble.query([arch_encoding], [info])
+            predictions = ensemble.query([arch_encoding], info)
             mean = np.mean(predictions)
             std = np.std(predictions)
             return mean + explore_factor * std
@@ -48,7 +48,7 @@ def acquisition_function(ensemble,
         # Expected improvement (EI) acquisition function
         
         def ei(arch_encoding, info=None):
-            predictions = ensemble.query([arch_encoding], [info])
+            predictions = ensemble.query([arch_encoding], info)
             mean = np.mean(predictions)
             std = np.std(predictions)
             factored_std = std / ei_calibration_factor
@@ -62,7 +62,7 @@ def acquisition_function(ensemble,
         # Expected improvement (EI) acquisition function
         
         def exploit(arch_encoding, info=None):
-            predictions = ensemble.query([arch_encoding], [info])
+            predictions = ensemble.query([arch_encoding], info)
             return np.mean(predictions)
         return exploit
     

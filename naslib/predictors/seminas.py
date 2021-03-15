@@ -614,9 +614,19 @@ class SemiNASPredictor(Predictor):
     def pre_compute(self, xtrain, xtest, unlabeled):
         """
         This method is used to pass in unlabeled architectures
-        for SemiNAS to use
+        for SemiNAS to use, in standalone predictor experiments.
         """
         self.unlabeled = unlabeled
+        
+    def set_pre_computations(self, unlabeled=None, xtrain_zc_info=None, 
+                             xtest_zc_info=None, unlabeled_zc_info=None):
+        """
+        This is the method to pass in unlabeled architectures during
+        NAS. The reason we need this method and pre_compute() is to be
+        consistent with omni_seminas, where the methods do different things.
+        """
+        if unlabeled is not None:
+            self.unlabeled = unlabeled  
         
     def get_data_reqs(self):
         """

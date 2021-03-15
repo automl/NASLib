@@ -13,6 +13,7 @@ from naslib.predictors.seminas import SemiNASPredictor
 from naslib.predictors.gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 from naslib.predictors.omni import OmniPredictor
 from naslib.predictors.omni_xgb import OmniXGBPredictor
+from naslib.predictors.omni_seminas import OmniSemiNASPredictor
 
 class Ensemble(Predictor):
     
@@ -73,12 +74,15 @@ class Ensemble(Predictor):
             'omni': OmniPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                   ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
                                   min_train_size=0, max_zerocost=100),
+            'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
+                                    ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
+                                    min_train_size=0, max_zerocost=0),
             'omni_xgb': OmniXGBPredictor(zero_cost=['jacov'], lce=[], encoding_type='adjacency_one_hot', 
                                          ss_type=self.ss_type, run_pre_compute=False, n_hypers=0, 
                                          min_train_size=0, max_zerocost=1000),
-            'ngb_hp': OmniPredictor(zero_cost=[], lce=[], encoding_type='adjacency_one_hot', 
-                                    ss_type=self.ss_type, run_pre_compute=False, n_hypers=25, 
-                                    min_train_size=0, max_zerocost=0)
+            'omni_seminas': OmniSemiNASPredictor(zero_cost=['jacov'], encoding_type='seminas', 
+                                                 ss_type=self.ss_type, run_pre_compute=False, semi=True,
+                                                 max_zerocost=1000),
         }
 
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]
@@ -127,9 +131,27 @@ class Ensemble(Predictor):
             
         elif self.hyperparams is None:
             params = None
-
         else:
             params = self.ensemble[0].set_random_hyperparams()
 
         self.set_hyperparams(params)
         return params
+    
+    def set_pre_computations(self, unlabeled=None, xtrain_zc_info=None, 
+                             xtest_zc_info=None, unlabeled_zc_info=None):
+        """
+        Some predictors have pre_computation steps that are performed outside the
+        predictor. E.g., omni needs zerocost metrics computed, and unlabeled data
+        generated. In the case of an ensemble, this method relays that info to
+        the predictor.
+        """
+        if self.ensemble is None:
+            self.ensemble = self.get_ensemble()
+
+        for model in self.ensemble:
+            assert hasattr(model, 'set_pre_computations'), \
+            'set_pre_computations() not implemented'
+            model.set_pre_computations(unlabeled=unlabeled, 
+                                       xtrain_zc_info=xtrain_zc_info, 
+                                       xtest_zc_info=xtest_zc_info, 
+                                       unlabeled_zc_info=unlabeled_zc_info)

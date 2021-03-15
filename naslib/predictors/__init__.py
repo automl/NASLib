@@ -17,4 +17,4 @@ from .gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
 from .oneshot import OneShotPredictor
 from .omni import OmniPredictor
 from .omni_xgb import OmniXGBPredictor
-from .omni_seminas import OMNISemiNASPredictor
+from .omni_seminas import OmniSemiNASPredictor
