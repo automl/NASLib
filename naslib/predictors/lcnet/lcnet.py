@@ -64,6 +64,8 @@ class LCNetPredictor(Predictor):
         reqs = {'requires_partial_lc':True, 
                 'metric':self.metric, 
                 'requires_hyperparameters':False, 
-                'hyperparams':None
+                'hyperparams':None,
+                'unlabeled':False, 
+                'unlabeled_factor':0
                }
         return reqs

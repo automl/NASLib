@@ -148,7 +148,9 @@ class SVR_Estimator(Predictor):
         reqs = {'requires_partial_lc':True, 
                 'metric':self.metric, 
                 'requires_hyperparameters':True, 
-                'hyperparams':['flops', 'latency', 'params']
+                'hyperparams':['flops', 'latency', 'params'],
+                'unlabeled':False, 
+                'unlabeled_factor':0
                }
         return reqs
         

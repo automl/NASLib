@@ -163,7 +163,7 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default='rs', help="which optimizer")
     parser.add_argument("--predictor", type=str, default='full', help="which predictor")
     parser.add_argument("--test_size", type=int, default=30, help="Test set size for predictor")
-    parser.add_argument("--uniform_random", type=bool, default=True, help="Train/test set generation type")
+    parser.add_argument("--uniform_random", type=int, default=1, help="Train/test set generation type (bool)")
     parser.add_argument("--train_size_single", type=int, default=10, help="Train size if exp type is single")
     parser.add_argument("--fidelity_single", type=int, default=5, help="Fidelity if exp type is single")
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")

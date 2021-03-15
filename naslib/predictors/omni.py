@@ -191,7 +191,9 @@ class OmniPredictor(Predictor):
             reqs = {'requires_partial_lc':True, 
                     'metric':self.metric, 
                     'requires_hyperparameters':False, 
-                    'hyperparams':{}
+                    'hyperparams':{}, 
+                    'unlabeled':False, 
+                    'unlabeled_factor':0
                    }
         else:
             reqs = super().get_data_reqs()

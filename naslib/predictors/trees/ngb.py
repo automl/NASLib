@@ -29,8 +29,6 @@ class NGBoost(BaseTree):
             'param:learning_rate': 0.08127053060223186,
             'base:max_depth': 6,
             'base:max_features': 0.7920456318712875,
-            #'base:min_samples_leaf': 15,
-            #'base:min_samples_split': 20,
             #'early_stopping_rounds': 100,
             #'verbose': -1
         }
@@ -45,7 +43,7 @@ class NGBoost(BaseTree):
             'param:n_estimators': int(loguniform(128, 512)),
             'param:learning_rate': loguniform(.001, .1),
             'base:max_depth': np.random.choice(24) + 1,
-            'base:max_features': np.random.uniform(.1, 1)
+            'base:max_features': np.random.uniform(.1, 1),
             }
         self.hyperparams = params
         return params

@@ -4,7 +4,7 @@ experiment_type: single
 search_space: nasbench201
 predictor: xgb
 test_size: 200
-uniform_random: True
+uniform_random: 1
 seed: 1000
 max_hpo_time: 0
 
