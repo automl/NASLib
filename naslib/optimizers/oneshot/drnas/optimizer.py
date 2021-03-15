@@ -39,10 +39,8 @@ class DrNASOptimizer(DARTSOptimizer):
     def sample_alphas(edge):
         #? check if we need to unsqueeze here? -- torch.unsqueeze(edge.data.alpha, dim=0)
         beta = F.elu(edge.data.alpha) + 1
-        # what to do about masking and pruning?
         weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
         edge.data.set('sampled_arch_weight', weights, shared = True)
-        # check if argmax is being used somewhere else
 
     @staticmethod
     def remove_sampled_alphas(edge):
@@ -82,7 +80,7 @@ class DrNASOptimizer(DARTSOptimizer):
     def adapt_search_space(self, search_space, scope=None):
         """
         Same as in darts with a different mixop.
-        Just add dirichlet parameter as buffer so it is checkpointed.
+        If you want to checkpoint the dirichlet 'concentration' parameter (beta) add it to the buffer here.
         """
         super().adapt_search_space(search_space, scope)
 
@@ -90,7 +88,7 @@ class DrNASOptimizer(DARTSOptimizer):
         input_train, target_train = data_train
         input_val, target_val = data_val
 
-        # sample alphas and set to edges
+        # sample weights (alphas) from the dirichlet distribution (parameterized by beta) and set to edges
         self.graph.update_edges(
             update_func=lambda edge: self.sample_alphas(edge),
             scope=self.scope,
@@ -134,7 +132,6 @@ class DrNASOptimizer(DARTSOptimizer):
         return logits_train, logits_val, train_loss, val_loss
 
     def get_final_architecture(self):
-        #change this for DrNAS
         logger.info("Arch weights before discretization: {}".format([a for a in self.architectural_weights]))
         graph = self.graph.clone().unparse()
         graph.prepare_discretization()
