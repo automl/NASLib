@@ -133,6 +133,24 @@ class DrNASOptimizer(DARTSOptimizer):
         
         return logits_train, logits_val, train_loss, val_loss
 
+    def get_final_architecture(self):
+        #change this for DrNAS
+        logger.info("Arch weights before discretization: {}".format([a for a in self.architectural_weights]))
+        graph = self.graph.clone().unparse()
+        graph.prepare_discretization()
+
+        def discretize_ops(edge):
+            if edge.data.has('alpha'):
+                primitives = edge.data.op.get_embedded_ops()
+                alphas = edge.data.alpha.detach().cpu()
+                edge.data.set('op', primitives[np.argmax(alphas)])
+
+        graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
+        graph.prepare_evaluation()
+        graph.parse()
+        graph = graph.cuda() if torch.cuda.is_available() else graph.cpu()
+        return graph
+
 class DrNASMixedOp(AbstractPrimitive):
 
     def __init__(self, primitives, min_cuda_memory=False):
