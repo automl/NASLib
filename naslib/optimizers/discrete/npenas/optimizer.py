@@ -83,7 +83,8 @@ class Npenas(MetaOptimizer):
                 ytrain = [m.accuracy for m in self.train_data]
                 ensemble = Ensemble(num_ensemble=1,
                                     ss_type=self.search_space.get_type(),
-                                    predictor_type=self.predictor_type)
+                                    predictor_type=self.predictor_type, 
+                                    config=self.config)
 
                 if self.zc and len(self.train_data) <= self.max_zerocost:
                     # pass the zero-cost scores to the predictor

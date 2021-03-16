@@ -22,12 +22,14 @@ class Ensemble(Predictor):
                  num_ensemble=3, 
                  predictor_type=None,
                  ss_type=None, 
-                 hpo_wrapper=True):
+                 hpo_wrapper=True, 
+                 config=None):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
         self.encoding_type = encoding_type
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
+        self.config = config
         self.hyperparams = None
         self.ensemble = None
 
@@ -82,7 +84,7 @@ class Ensemble(Predictor):
                                          min_train_size=0, max_zerocost=1000),
             'omni_seminas': OmniSemiNASPredictor(zero_cost=['jacov'], encoding_type='seminas', 
                                                  ss_type=self.ss_type, run_pre_compute=False, semi=True,
-                                                 max_zerocost=1000),
+                                                 max_zerocost=1000, config=self.config),
         }
 
         return [copy.deepcopy(trainable_predictors[self.predictor_type]) for _ in range(self.num_ensemble)]

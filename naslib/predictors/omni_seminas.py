@@ -23,6 +23,7 @@ from naslib.utils import utils
 from naslib.utils.utils import AverageMeterGroup, AverageMeter
 
 from naslib.predictors.utils.encodings import encode
+from naslib.predictors.utils.bin_thresholds import discretize, get_bins, get_lce_bins
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
 from naslib.predictors.predictor import Predictor
@@ -33,6 +34,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib
 from naslib.search_spaces import NasBench201SearchSpace
 
+logger = logging.getLogger(__name__)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print('device:', device)
 
@@ -459,59 +461,16 @@ def train_controller(model, train_input, train_target, epochs):
             print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce) )
 
 
-def discretize(x, upper_bounds=None, one_hot=False):
-    # return discretization based on upper_bounds
-    # supports one_hot or categorical output
-    assert upper_bounds is not None and len(upper_bounds) >= 1
-
-    if one_hot:
-        cat = len(upper_bounds) + 1
-        discretized = [0 for _ in range(cat)]
-        for i, ub in enumerate(upper_bounds):
-            if x < ub:
-                discretized[i] = 1
-                return discretized
-        discretized[-1] =  1
-        return discretized
-    else:
-        for i, ub in enumerate(upper_bounds):
-            if x < ub:
-                return i
-        return len(upper_bounds) + 1
-
-def get_bins(zero_cost, train_size):
-    """
-    The SemiNAS predictor uses a discrete encoding, so we must discretize the (continuous) 
-    zero-cost features. We do this by putting them into bins. In a real experiment, we 
-    would need to estimate the upper bounds for each bin during the search. To save time, 
-    we precomputed the bins and then add the runtime of this precomputation later.
-    """
-    if zero_cost == 'jacov':
-        if train_size < 10:
-            # precomputation based on 100 jacov values (366 seconds)
-            bins = [-19838.279, -906.12, -444.588, -366.404, -316.694, 
-                    -285.499, -283.021, -280.614, -278.303]
-        else:
-            # precomputed based on 1000 jacov values (3660 seconds)
-            bins = [-20893.873, -1179.832, -518.407, -373.523, -317.264, 
-                    -284.944, -281.242, -279.503, -278.083]
-    else:
-        raise NotImplementedError('Currently no other zero-cost methods are supported')
-    
-    return bins
-
-
 class OmniSemiNASPredictor(Predictor):
     # todo: make the code general to support any zerocost predictors
     def __init__(self, encoding_type='seminas', ss_type=None, semi=True, hpo_wrapper=False, 
                  config=None, run_pre_compute=True, jacov_onehot=True, synthetic_factor=1, 
-                 max_zerocost=np.inf, zero_cost=['jacov'], lce=[]):
+                 max_zerocost=np.inf, zero_cost=[], lce=[]):
         self.encoding_type = encoding_type
         self.semi = semi
         self.synthetic_factor = synthetic_factor
         self.lce = lce
-        if ss_type is not None:
-            self.ss_type = ss_type
+        self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
         self.max_zerocost = max_zerocost
         self.default_hyperparams = {'gcn_hidden':64, 
@@ -519,21 +478,18 @@ class OmniSemiNASPredictor(Predictor):
                                     'lr':1e-3}
         self.hyperparams = None
         self.config = config
+        self.dataset = config.dataset
         self.zero_cost = zero_cost
         self.run_pre_compute = run_pre_compute
+        self.min_fidelity = 3
+        
+        # todo: this should be generalized to any zero-cost method
         self.jacov_onehot = jacov_onehot
 
-        self.jacov_bins = get_bins('jacov', 100) # todo: this should go into fit()
-        self.bins = len(self.jacov_bins) + 1
-
-        # set additional feature length and vocabulary size based on encoding type and number of bins
-        self.jacov_vocab = 2 if self.jacov_onehot else self.bins + 1
-        self.jacov_length =  self.bins if self.jacov_onehot else 1
-
-    def prepare_features(self, xdata, info=None):
+    def prepare_features(self, xdata, zc_info=None, lc_info=None):
         # this concatenates architecture features with zero-cost features        
         full_xdata = [[] for _ in range(len(xdata))]
-                
+
         if self.encoding_type is not None:
             # convert the architecture to a categorical encoding
             for i, arch in enumerate(xdata):
@@ -545,27 +501,23 @@ class OmniSemiNASPredictor(Predictor):
                 full_xdata[i] = [*full_xdata[i], *seq]
 
         if len(self.zero_cost) > 0 and self.train_size <= self.max_zerocost: 
-            # add zero_cost features here
+            # add zero_cost features
             for key in self.zero_cost:
-                for i, arch in enumerate(xdata):
+                for i in range(len(xdata)):
                     # todo: the following code is still specific to jacov. Make it for any zerocost
-                    if self.jacov_onehot:
-                        jac_encoded = discretize(info['jacov_scores'][i], upper_bounds=self.jacov_bins, 
-                                                    one_hot=self.jacov_onehot) 
-                        jac_encoded = [jac + self.jacov_offset for jac in jac_encoded]
-                    else:
-                        jac_encoded = discretize(info['jacov_scores'][i], upper_bounds=self.jacov_bins, 
-                                                 one_hot=self.jacov_onehot) + self.jacov_offset
-
+                    # currently only one_hot zc features are supported
+                    jac_encoded = discretize(zc_info['jacov_scores'][i], upper_bounds=self.jacov_bins, 
+                                             one_hot=self.jacov_onehot)
+                    jac_encoded = [jac + self.zc_offset for jac in jac_encoded]
                     full_xdata[i] = [*full_xdata[i], *jac_encoded]
 
-        if 'sotle' in self.lce and len(info[0]['TRAIN_LOSS_lc']) >= 3:
-            train_losses = np.array([lcs['TRAIN_LOSS_lc'][-1] for lcs in info])
-            # todo: discretize train_losses
-            full_xdata = [[*x, train_losses[i]] for i, x in enumerate(full_xdata)]
-
-        elif 'sotle' in self.lce and len(info[0]['TRAIN_LOSS_lc']) < 3:
-            logger.info('Not enough fidelities to use train loss')
+        if self.add_lce:
+            # add LCE features
+            for i in range(len(xdata)):
+                sotle_encoded = discretize(lc_info[i]['TRAIN_LOSS_lc'][-1], 
+                                           upper_bounds=self.lce_bins)
+                sotle_encoded = [s + self.lce_offset for s in sotle_encoded]
+                full_xdata[i] = [*full_xdata[i], *sotle_encoded]
 
         return full_xdata
 
@@ -586,11 +538,24 @@ class OmniSemiNASPredictor(Predictor):
         assert len(synthetic_input) == len(synthetic_target)
         return synthetic_target
 
+    def check_fidelity(self, train_info, key='TRAIN_LOSS_lc'):
+        # check if we will be using SoTL in the features
+        if train_info is None:
+            return False
+        elif key not in train_info[0]:
+            return False
+        elif len(train_info[0][key]) < self.min_fidelity:
+            return False
+        return True
+    
     def fit(self, xtrain, ytrain, train_info=None,
             wd=0, iterations=1, epochs=50,
             pretrain_epochs=50):
         
         self.train_size = len(xtrain)
+        self.add_lce = self.check_fidelity(train_info)
+        print('using lce:', self.add_lce)
+
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
 
@@ -616,29 +581,51 @@ class OmniSemiNASPredictor(Predictor):
             self.decoder_length=629
             self.vocab_size=13
 
-        self.jacov_offset = copy.copy(self.vocab_size)
-        self.encoder_length += self.jacov_length
-        self.decoder_length += self.jacov_length
-        self.vocab_size += self.jacov_vocab
+        full_vocab_size = self.vocab_size
+            
+        if len(self.zero_cost) > 0:
+            # todo: this should be generalized to any zero-cost method
+            self.jacov_bins = get_bins('jacov', 
+                                       train_size=len(xtrain), 
+                                       ss_type=self.ss_type, 
+                                       dataset=self.dataset)
 
-        # get mean and std, normlize accuracies
-        self.mean = np.mean(ytrain)
-        self.std = np.std(ytrain)
-        ytrain_normed = (ytrain - self.mean) / self.std
-        
+            # modify feature length and vocab size based on encoding type and num bins
+            assert self.jacov_onehot, 'Zero-cost categorical currently not supported'
+            self.encoder_length += len(self.jacov_bins) + 1
+            self.decoder_length += len(self.jacov_bins) + 1
+            self.zc_offset = full_vocab_size
+            full_vocab_size += 2
+
+        self.lce_bins = []
+        if self.add_lce:
+            self.lce_bins = get_lce_bins(train_info)
+            self.encoder_length += len(self.lce_bins) + 1
+            self.decoder_length += len(self.lce_bins) + 1
+            self.lce_offset = full_vocab_size
+            full_vocab_size += 2
+
         self.model = NAO(encoder_layers,
                          decoder_layers,
                          mlp_layers,
                          hidden_size,
                          mlp_hidden_size,
-                         self.vocab_size,
+                         full_vocab_size,
                          dropout,
                          source_length,
                          self.encoder_length,
                          self.decoder_length
                          ).to(device)
 
-        xtrain_full_features = self.prepare_features(xtrain, info=self.xtrain_zc_info)
+        # get mean and std, normlize accuracies
+        self.mean = np.mean(ytrain)
+        self.std = np.std(ytrain)
+        ytrain_normed = (ytrain - self.mean) / self.std
+        
+        # encode the training data (including zero cost if applicable)
+        xtrain_full_features = self.prepare_features(xtrain, 
+                                                     zc_info=self.xtrain_zc_info, 
+                                                     lc_info=train_info)
 
         for i in range(iterations):
             print('Iteration {}'.format(i+1))
@@ -648,13 +635,14 @@ class OmniSemiNASPredictor(Predictor):
             train_controller(self.model, xtrain_full_features, ytrain_normed, pretrain_epochs)
             print('Finish pre-training EPD')
 
-            if self.semi:
+            if self.semi and not self.add_lce:
                 # Check that we have unlabeled data from either pre_compute() or set_pre_compute()
                 assert self.unlabeled is not None, 'Unlabeled data was never generated'
                 print('Generate synthetic data for EPD')
                 num_synthetic = self.synthetic_factor * len(xtrain)
-                synthetic_full_features = self.prepare_features(self.unlabeled, self.unlabeled_zc_info)
-                synthetic_full_features = synthetic_full_features[:num_synthetic]
+                synthetic_full_features = self.prepare_features(self.unlabeled[:num_synthetic], 
+                                                                zc_info=self.unlabeled_zc_info)
+                print('in synth', synthetic_full_features)
                 synthetic_target = self.generate_synthetic_labels(self.model, synthetic_full_features)
                 if up_sample_ratio is None:
                     up_sample_ratio = np.ceil(m / len(xtrain_full_features)).astype(np.int)
@@ -671,13 +659,15 @@ class OmniSemiNASPredictor(Predictor):
 
         if self.run_pre_compute:
             # if we ran pre_compute(), the xtest zc scores are in self.xtest_zc_info
-            test_data = self.prepare_features(xtest, info=self.xtest_zc_info)
+            test_data = self.prepare_features(xtest, 
+                                              zc_info=self.xtest_zc_info, 
+                                              lc_info=info)
         else:
             # otherwise, they will be in info (often used during NAS experiments)
-            test_data = self.prepare_features(xtest, info=info)            
+            test_data = self.prepare_features(xtest, zc_info=info)            
         test_dataset = ControllerDataset(test_data, None, False)
         test_queue = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, 
-                                                 pin_memory=True, drop_last=False) 
+                                                 pin_memory=True, drop_last=False)
 
         self.model.eval()
         pred = []
@@ -732,7 +722,7 @@ class OmniSemiNASPredictor(Predictor):
                 self.xtest_zc_info[f'{method_name}_scores'] = zc_method.query(xtest)
                 if unlabeled is not None:
                     self.unlabeled_zc_info[f'{method_name}_scores'] = zc_method.query(unlabeled)
-        
+
     def set_pre_computations(self, unlabeled=None, xtrain_zc_info=None, 
                              xtest_zc_info=None, unlabeled_zc_info=None):
         """
@@ -755,23 +745,17 @@ class OmniSemiNASPredictor(Predictor):
         extra info to train/query, such as a partial learning curve,
         or hyperparameters of the architecture
         """
+        self.metric = None
         if len(self.lce) > 0:
             # add the metrics needed for the lce predictors
-            required_metric_dict = {'sotle':Metric.TRAIN_LOSS, 'valacc':Metric.VAL_ACCURACY}
+            required_metric_dict = {'sotle':Metric.TRAIN_LOSS}
             self.metric = [required_metric_dict[key] for key in self.lce]
 
-            reqs = {'requires_partial_lc':True, 
-                    'metric':self.metric, 
-                    'requires_hyperparameters':False, 
-                    'hyperparams':{}, 
-                    'unlabeled':self.semi, 
-                    'unlabeled_factor':self.synthetic_factor
-                   }
-        else:
-            reqs = {'requires_partial_lc':False, 
-                    'metric':None, 
-                    'requires_hyperparameters':False, 
-                    'hyperparams':{}, 
-                    'unlabeled':self.semi, 
-                    'unlabeled_factor':self.synthetic_factor}
+        reqs = {'requires_partial_lc':len(self.lce) > 0, 
+                'metric':self.metric, 
+                'requires_hyperparameters':False, 
+                'hyperparams':{}, 
+                'unlabeled':self.semi, 
+                'unlabeled_factor':self.synthetic_factor
+                }
         return reqs
