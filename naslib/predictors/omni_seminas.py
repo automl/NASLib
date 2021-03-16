@@ -626,7 +626,6 @@ class OmniSemiNASPredictor(Predictor):
         xtrain_full_features = self.prepare_features(xtrain, 
                                                      zc_info=self.xtrain_zc_info, 
                                                      lc_info=train_info)
-
         for i in range(iterations):
             print('Iteration {}'.format(i+1))
 
@@ -642,7 +641,6 @@ class OmniSemiNASPredictor(Predictor):
                 num_synthetic = self.synthetic_factor * len(xtrain)
                 synthetic_full_features = self.prepare_features(self.unlabeled[:num_synthetic], 
                                                                 zc_info=self.unlabeled_zc_info)
-                print('in synth', synthetic_full_features)
                 synthetic_target = self.generate_synthetic_labels(self.model, synthetic_full_features)
                 if up_sample_ratio is None:
                     up_sample_ratio = np.ceil(m / len(xtrain_full_features)).astype(np.int)
