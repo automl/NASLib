@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import logging
 from torch.autograd import Variable
+from torch.distributions.kl import kl_divergence
 
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
@@ -69,8 +70,11 @@ class DrNASOptimizer(DARTSOptimizer):
             
         """
         super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
-        
-        ## check if 'beta' must be added as a parameter here
+        # beta_hat in the paper: regularization term for the betas
+        self.anchor = Dirichlet(torch.ones_like(self.architectural_weights).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+        self.reg_type = 'kl'
+        self.reg_scale = 1e-3
+        # self.reg_scale = config.reg_scale
         self.epochs = config.search.epochs
 
     def new_epoch(self, epoch):
@@ -99,7 +103,11 @@ class DrNASOptimizer(DARTSOptimizer):
         self.arch_optimizer.zero_grad()
         logits_val = self.graph(input_val)
         val_loss = self.loss(logits_val, target_val)
-        val_loss.backward()
+
+        if self.reg_type == 'kl':
+            val_loss += self._get_kl_reg()
+            val_loss.backward()
+            
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(self.architectural_weights.parameters(), self.grad_clip)
         self.arch_optimizer.step()
@@ -130,6 +138,13 @@ class DrNASOptimizer(DARTSOptimizer):
         )
         
         return logits_train, logits_val, train_loss, val_loss
+
+    def _get_kl_reg(self):
+        cons = (F.elu(self.architectural_weights) + 1)
+        q = Dirichlet(cons)
+        p = self.anchor
+        kl_reg = self.reg_scale * torch.sum(kl_divergence(q, p))
+        return kl_reg
 
     def get_final_architecture(self):
         logger.info("Arch weights before discretization: {}".format([a for a in self.architectural_weights]))
