@@ -29,6 +29,7 @@ from naslib.predictors.trees.ngb import loguniform
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
 from naslib.predictors.zerocost_v1 import ZeroCostV1
+from naslib.predictors.zerocost_v2 import ZeroCostV2
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib
@@ -711,8 +712,10 @@ class OmniSemiNASPredictor(Predictor):
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
             for method_name in self.zero_cost:
-                # todo: allow ZeroCostV2 as well
-                zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
+                if self.ss_type in ['darts']:
+                    zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
+                else:
+                    zc_method = ZeroCostV2(self.config, batch_size=64, method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 
                 # save the raw scores, since bucketing depends on the train set size
