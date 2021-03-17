@@ -90,19 +90,19 @@ def get_bins(zero_cost, train_size, ss_type, dataset):
 
     # placeholder
     elif ss_type == 'nasbench101' and zero_cost == 'jacov':
-        # precomputation based on 100 jacov values (366 sec on a CPU)
+        # precomputation based on 100 jacov values (1608 sec on a CPU)
         if train_size <= 10:
-            bins = [-317.264]
+            bins = [270.813]
         elif train_size <= 20:
-            bins = [-459.05, -282.091]
+            bins = [270.413, 271.319]
         elif train_size <= 40:
-            bins = [-697.812, -320.036, -280.607]
+            bins = [270.238, 270.813, 271.676]
         elif train_size <= 80:
-            bins = [-2142.063, -459.471, -321.118, -282.115, -279.427]
+            bins = [270.055, 270.409, 270.809, 271.305, 272.303]
         else:
-            # precompution based on 1000 jacov values (3660 sec on a CPU)
-            bins = [-20893.873, -1179.832, -518.407, -373.523, -317.264, 
-                    -284.944, -281.242, -279.503, -278.083]
+            # precompution based on 1000 jacov values (16080 sec on a CPU)
+            bins = [269.919, 270.126, 270.35, 270.548, 270.813, \
+                    271.123, 271.433, 272.017, 272.824]
             
     # placeholder
     elif ss_type == 'darts' and zero_cost == 'jacov':
