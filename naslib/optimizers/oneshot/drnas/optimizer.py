@@ -23,11 +23,6 @@ class DrNASOptimizer(DARTSOptimizer):
     note: many functions are similar to the DARTS optimizer so it makes sense to inherit this class directly 
     from DARTSOptimizer instead of MetaOptimizer
     """
-    """
-    questions:
-    1: an additional loss criterion: auxilary loss, penalty on the betas
-    2: how can we implement growing the network, widening + pruning
-    """
 
     @staticmethod
     def add_alphas(edge):
@@ -40,7 +35,6 @@ class DrNASOptimizer(DARTSOptimizer):
 
     @staticmethod
     def sample_alphas(edge):
-        #? check if we need to unsqueeze here? -- torch.unsqueeze(edge.data.alpha, dim=0)
         beta = F.elu(edge.data.alpha) + 1
         weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
         edge.data.set('sampled_arch_weight', weights, shared = True)
