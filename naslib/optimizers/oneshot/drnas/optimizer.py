@@ -2,7 +2,9 @@ import numpy as np
 import torch
 import logging
 from torch.autograd import Variable
+from torch.distributions.dirichlet import Dirichlet
 from torch.distributions.kl import kl_divergence
+import torch.nn.functional as F
 
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
@@ -70,8 +72,6 @@ class DrNASOptimizer(DARTSOptimizer):
             
         """
         super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
-        # beta_hat in the paper: regularization term for the betas
-        self.anchor = Dirichlet(torch.ones_like(self.architectural_weights).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
         self.reg_type = 'kl'
         self.reg_scale = 1e-3
         # self.reg_scale = config.reg_scale
@@ -87,6 +87,7 @@ class DrNASOptimizer(DARTSOptimizer):
         If you want to checkpoint the dirichlet 'concentration' parameter (beta) add it to the buffer here.
         """
         super().adapt_search_space(search_space, scope)
+        self.anchor = Dirichlet(torch.ones_like(torch.nn.utils.parameters_to_vector(self.architectural_weights)).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
@@ -106,7 +107,8 @@ class DrNASOptimizer(DARTSOptimizer):
 
         if self.reg_type == 'kl':
             val_loss += self._get_kl_reg()
-            val_loss.backward()
+        
+        val_loss.backward()
             
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(self.architectural_weights.parameters(), self.grad_clip)
@@ -140,7 +142,7 @@ class DrNASOptimizer(DARTSOptimizer):
         return logits_train, logits_val, train_loss, val_loss
 
     def _get_kl_reg(self):
-        cons = (F.elu(self.architectural_weights) + 1)
+        cons = (F.elu(torch.nn.utils.parameters_to_vector(self.architectural_weights)) + 1)
         q = Dirichlet(cons)
         p = self.anchor
         kl_reg = self.reg_scale * torch.sum(kl_divergence(q, p))
