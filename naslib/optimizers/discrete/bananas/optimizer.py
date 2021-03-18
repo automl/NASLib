@@ -9,6 +9,7 @@ from naslib.optimizers.discrete.bananas.acquisition_functions import acquisition
 
 from naslib.predictors.ensemble import Ensemble
 from naslib.predictors.zerocost_v1 import ZeroCostV1
+from naslib.predictors.zerocost_v2 import ZeroCostV2
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -62,6 +63,12 @@ class Bananas(MetaOptimizer):
         if self.semi:
             self.unlabeled = []
 
+    def get_zc_method(self):
+        if self.ss_type in ['nasbench101', 'darts']:
+            return ZeroCostV2(self.config, batch_size=64, method_type='jacov')
+        else:
+            return ZeroCostV1(self.config, batch_size=64, method_type='jacov')    
+
     def new_epoch(self, epoch):
 
         if epoch < self.num_init:
@@ -71,7 +78,7 @@ class Bananas(MetaOptimizer):
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
             if self.zc and len(self.train_data) <= self.max_zerocost:                
-                zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
+                zc_method = self.get_zc_method()
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 score = zc_method.query([model.arch])
                 model.zc_score = np.squeeze(score)
@@ -101,7 +108,7 @@ class Bananas(MetaOptimizer):
                         model.arch = self.search_space.clone()
                         model.arch.sample_random_architecture(dataset_api=self.dataset_api)
                         if self.zc and len(self.train_data) <= self.max_zerocost:
-                            zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
+                            zc_method = self.get_zc_method()
                             zc_method.train_loader = copy.deepcopy(self.train_loader)
                             score = zc_method.query([model.arch])
                             model.zc_score = np.squeeze(score)
@@ -149,7 +156,7 @@ class Bananas(MetaOptimizer):
                     raise NotImplementedError()
 
                 if self.zc and len(self.train_data) <= self.max_zerocost:
-                    zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
+                    zc_method = self.get_zc_method()
                     zc_method.train_loader = copy.deepcopy(self.train_loader)
                     zc_scores = zc_method.query(candidates)
                     values = [acq_fn(enc, {'jacov_scores':[score]}) for enc, score in zip(candidates, zc_scores)]
@@ -164,7 +171,7 @@ class Bananas(MetaOptimizer):
             model.arch = self.next_batch.pop()
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
             if self.zc and len(self.train_data) <= self.max_zerocost:                
-                zc_method = ZeroCostV1(self.config, batch_size=64, method_type='jacov')
+                zc_method = self.get_zc_method()
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 score = zc_method.query([model.arch])
                 model.zc_score = np.squeeze(score)

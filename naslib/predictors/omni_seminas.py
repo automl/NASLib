@@ -712,10 +712,10 @@ class OmniSemiNASPredictor(Predictor):
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
             for method_name in self.zero_cost:
-                if self.ss_type in ['darts']:
-                    zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
-                else:
+                if self.ss_type in ['nasbench101', 'darts']:
                     zc_method = ZeroCostV2(self.config, batch_size=64, method_type=method_name)
+                else:
+                    zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 
                 # save the raw scores, since bucketing depends on the train set size
