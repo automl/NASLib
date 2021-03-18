@@ -88,7 +88,6 @@ def get_bins(zero_cost, train_size, ss_type, dataset):
             bins = [-438912.007, -2943.312, -980.615, -634.461, -520.024, \
                     -439.222, -426.982, -418.229, -411.365]
 
-    # placeholder
     elif ss_type == 'nasbench101' and zero_cost == 'jacov':
         # precomputation based on 100 jacov values (1608 sec on a CPU)
         if train_size <= 10:
@@ -103,22 +102,21 @@ def get_bins(zero_cost, train_size, ss_type, dataset):
             # precompution based on 1000 jacov values (16080 sec on a CPU)
             bins = [269.919, 270.126, 270.35, 270.548, 270.813, \
                     271.123, 271.433, 272.017, 272.824]
-            
-    # placeholder
+
     elif ss_type == 'darts' and zero_cost == 'jacov':
-        # precomputation based on 100 jacov values (366 sec on a CPU)
+        # precomputation based on 100 jacov values (3414 sec on a CPU)
         if train_size <= 10:
-            bins = [-317.264]
+            bins = [-273.487]
         elif train_size <= 20:
-            bins = [-459.05, -282.091]
+            bins = [-273.826, -273.197]
         elif train_size <= 40:
-            bins = [-697.812, -320.036, -280.607]
+            bins = [-274.038, -273.487, -272.994]
         elif train_size <= 80:
-            bins = [-2142.063, -459.471, -321.118, -282.115, -279.427]
+            bins = [-274.262, -273.827, -273.491, -273.198, -272.776]
         else:
-            # precompution based on 1000 jacov values (3660 sec on a CPU)
-            bins = [-20893.873, -1179.832, -518.407, -373.523, -317.264, 
-                    -284.944, -281.242, -279.503, -278.083]            
+            # precompution based on 1000 jacov values (34140 sec on a CPU)
+            bins = [-274.506, -274.163, -273.897, -273.673, -273.487, \
+                    -273.343, -273.112, -272.856, -272.408]            
             
     else:
         raise NotImplementedError('Currently no other zero-cost methods are supported')
