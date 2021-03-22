@@ -16,16 +16,24 @@ import naslib.search_spaces.core.primitives as ops
 logger = logging.getLogger(__name__)
 
 
-class DrNASOptimizer(DARTSOptimizer):
+class DrNASGrowOptimizer(DARTSOptimizer):
     """
     Implementation of DrNAS optimizer introduced in the paper
         DrNAS: Dirichlet Neural Architecture Search (ICLR2021)
-    note: many functions are similar to the DARTS optimizer so it makes sense to inherit this class directly 
-    from DARTSOptimizer instead of MetaOptimizer
     """
 
     @staticmethod
+    def add_alphas(edge):
+        """
+        Function to add the architectural weights to the edges.
+        """
+        len_primitives = len(edge.data.op)
+        alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
+        edge.data.set('alpha', alpha, shared=True)
+
+    @staticmethod
     def sample_alphas(edge):
+        #? check if we need to unsqueeze here? -- torch.unsqueeze(edge.data.alpha, dim=0)
         beta = F.elu(edge.data.alpha) + 1
         weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
         edge.data.set('sampled_arch_weight', weights, shared = True)
@@ -67,11 +75,55 @@ class DrNASOptimizer(DARTSOptimizer):
 
 
     def adapt_search_space(self, search_space, scope=None):
-        """
-        Same as in darts with a different mixop.
-        If you want to checkpoint the dirichlet 'concentration' parameter (beta) add it to the buffer here.
-        """
-        super().adapt_search_space(search_space, scope)
+        # We are going to modify the search space
+        self.search_space = search_space
+        graph = search_space.clone()
+
+        # If there is no scope defined, let's use the search space default one
+        if not scope:
+            scope = graph.OPTIMIZER_SCOPE
+
+        # 1. add alphas
+        graph.update_edges(
+            self.__class__.add_alphas,
+            scope=scope,
+            private_edge_data=False
+        )
+
+        # 2. replace primitives with mixed_op
+        graph.update_edges(
+            self.__class__.update_ops, 
+            scope=scope,
+            private_edge_data=True
+        )
+
+        for alpha in graph.get_all_edge_data('alpha'):
+            self.architectural_weights.append(alpha)
+
+        graph.parse()
+        logger.info("Parsed graph:\n" + graph.modules_str())
+
+        # Init optimizers
+        if self.arch_optimizer is not None:
+            self.arch_optimizer = self.arch_optimizer(
+                self.architectural_weights.parameters(),
+                lr=self.config.search.arch_learning_rate,
+                betas=(0.5, 0.999),
+                weight_decay=self.config.search.arch_weight_decay
+            )
+
+        self.op_optimizer = self.op_optimizer(
+            graph.parameters(),
+            lr=self.config.search.learning_rate,
+            momentum=self.config.search.momentum,
+            weight_decay=self.config.search.weight_decay
+        )
+
+        graph.train()
+        
+        self.graph = graph
+        self.scope = scope
+    
         self.anchor = Dirichlet(torch.ones_like(torch.nn.utils.parameters_to_vector(self.architectural_weights)).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
 
     def step(self, data_train, data_val):

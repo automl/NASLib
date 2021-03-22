@@ -12,6 +12,8 @@
 # slurm scripts
 slurm_scripts/*
 
+src/*
+
 # Everything stored in subfolders of benchmark
 naslib/benchmarks/*/*/
 examples/*/

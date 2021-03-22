@@ -2,7 +2,7 @@ import logging
 import sys
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, RandomSearch, \
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, DrNASGrowOptimizer, RandomSearch, \
 RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
 from naslib.search_spaces import (
@@ -29,6 +29,7 @@ supported_optimizers = {
     'darts': DARTSOptimizer(config),
     'gdas': GDASOptimizer(config),
     'drnas': DrNASOptimizer(config),
+    'drnas-grow': DrNASGrowOptimizer(config),
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
     'ls': LocalSearch(config),
@@ -45,7 +46,7 @@ search_space = SimpleCellSearchSpace()
 
 # Changing the optimizer is one line of code
 # optimizer = supported_optimizers[config.optimizer]
-optimizer = supported_optimizers['drnas']
+optimizer = supported_optimizers['drnas-grow']
 optimizer.adapt_search_space(search_space)
 
 # Start the search and evaluation
