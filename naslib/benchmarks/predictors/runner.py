@@ -53,7 +53,7 @@ supported_predictors = {
     'sotlema': SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option='SoTLEMA'),
     'lce': LCEPredictor(metric=Metric.VAL_ACCURACY),
     'lcnet': LCNetPredictor(metric=Metric.VAL_ACCURACY),
-    'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False),    
+    'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False, require_hyper=False),
     'jacov': ZeroCostV1(config, batch_size=64, method_type='jacov'),
     'snip': ZeroCostV2(config, batch_size=64, method_type='snip'),
     'grad_norm': ZeroCostV2(config, batch_size=64, method_type='grad_norm'),

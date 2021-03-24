@@ -28,7 +28,7 @@ class SVR_Estimator(Predictor):
         self.best_hyper = best_hyper
         self.name = 'LcSVR'
         self.metric=metric
-        self.require_hyperparameters = False
+        self.require_hyperparameters = require_hyper
 
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
