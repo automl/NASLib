@@ -38,7 +38,9 @@ class ZeroCostV2(Predictor):
         config.data = "{}/data".format(get_project_root())
         self.config = config
         num_classes_dic = {'cifar10': 10, 'cifar100': 100, 'ImageNet16-120': 120}
-        self.num_classes = num_classes_dic[self.config.dataset]
+        self.num_classes = None
+        if self.config.dataset in num_classes_dic:
+            self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
 

@@ -13,7 +13,7 @@ BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, OmniSemiN
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
 LCEPredictor, OmniPredictor, OmniXGBPredictor
 
-from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace
+from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace, NasBenchNLPSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -89,10 +89,11 @@ supported_predictors = {
 supported_search_spaces = {
     'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
-    'darts': DartsSearchSpace()
+    'darts': DartsSearchSpace(),
+    'nlp': NasBenchNLPSearchSpace()
 }
 
-load_labeled = (True if config.search_space == 'darts' else False)
+load_labeled = (True if config.search_space in ['darts', 'nlp'] else False)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 utils.set_seed(config.seed)
 
