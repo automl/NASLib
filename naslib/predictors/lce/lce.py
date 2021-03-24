@@ -28,6 +28,10 @@ class LCEPredictor(Predictor):
             final_epoch = 98
             default_guess = 93.0
             N = 1000
+        elif self.ss_type == 'nlp':
+            final_epoch = 50
+            default_guess = 94.83
+            N = 1000
         else:
             raise NotImplementedError()
 

@@ -24,6 +24,9 @@ class LCNetPredictor(Predictor):
         elif self.ss_type == 'darts':
             final_epoch = 98
             default_guess = 93.0
+        elif self.ss_type == 'nlp':
+            final_epoch = 50
+            default_guess = 94.83
         else:
             raise NotImplementedError()
 

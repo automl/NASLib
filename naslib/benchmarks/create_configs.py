@@ -65,6 +65,9 @@ def main(args):
         elif args.search_space == 'darts':
             total_epochs = 96 - 1
             max_train_size = 500
+        elif args.search_space == 'nlp':
+            total_epochs = 50 - 1
+            max_train_size = 1000
 
         train_size_list = [int(j) for j in np.logspace(start=np.log(5.1)/np.log(2), 
                                                        stop=np.log(max_train_size)/np.log(2), 
@@ -72,6 +75,10 @@ def main(args):
         fidelity_list = [int(j) for j in np.logspace(start=0.9, 
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]
+
+        if args.search_space == 'nlp':
+            fidelity_list.pop(2)
+            fidelity_list.insert(5, 6)
 
         if 'svr' in args.predictor:
             train_size_list.pop(0)
