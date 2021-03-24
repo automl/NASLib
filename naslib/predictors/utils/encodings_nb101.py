@@ -114,8 +114,6 @@ def encode_bonas(spec):
     op_map = [INPUT, *OPS, OUTPUT]
     ops_onehot = np.array([[i == op_map.index(op) for i in range(len(op_map))] for op in ops], dtype=np.float32)
 
-    # np.fill_diagonal(matrix, 1)
-    # matrix = np.transpose(matrix)
     matrix = add_global_node(matrix, True)
     ops_onehot = add_global_node(ops_onehot,False)
     matrix = np.array(matrix,dtype=np.float32)
@@ -175,5 +173,5 @@ def encode_101(arch, encoding_type='path'):
 
     else:
         print('{} is not yet implemented as an encoding type \
-         for darts'.format(encoding_type))
+         for nb101'.format(encoding_type))
         raise NotImplementedError()

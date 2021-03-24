@@ -516,6 +516,12 @@ class SemiNASPredictor(Predictor):
             encoder_length=629
             decoder_length=629
             vocab_size=13
+            
+        elif self.ss_type == 'nlp':
+            self.max_n = 25
+            encoder_length = 324
+            decoder_length = 324
+            vocab_size = 12
 
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)

@@ -54,24 +54,28 @@ class NasBenchNLPSearchSpace(Graph):
         """
         try:
             assert metric in [Metric.TRAIN_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_ACCURACY, \
-                          Metric.TEST_ACCURACY, Metric.TRAIN_TIME, ]
+                          Metric.TEST_ACCURACY, Metric.TRAIN_TIME]
         except:
             print('hold')
         query_results = dataset_api['nlp_data'][self.compact]
 
+        sign = 1
+        if metric == Metric.TRAIN_LOSS:
+            sign = -1
+        
         if metric == Metric.TRAIN_TIME:
             return query_results[metric_to_nlp[metric]]
         elif metric == Metric.HP:
             # todo: compute flops/params/latency for each arch
             return {'flops': 15, 'params': 0.1, 'latency': 0.01}
         elif full_lc and epoch == -1:
-            return [100 - loss for loss in query_results[metric_to_nlp[metric]]]
+            return [sign * (100 - loss) for loss in query_results[metric_to_nlp[metric]]]
         elif full_lc and epoch != -1:
-            return [100 - loss for loss in query_results[metric_to_nlp[metric]][:epoch]]
+            return [sign * (100 - loss) for loss in query_results[metric_to_nlp[metric]][:epoch]]
         else:
             # return the value of the metric only at the specified epoch
-            return 100 - query_results[metric_to_nlp[metric]][epoch]
-    
+            return sign * (100 - query_results[metric_to_nlp[metric]][epoch])
+
     def get_compact(self):
         assert self.compact is not None
         return self.compact

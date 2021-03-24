@@ -165,8 +165,6 @@ def encode_seminas_nasbench201(arch):
     # offset ops list by one, add input and output to ops list
     ops = [op+1 for op in ops]
     ops = [0, *ops, 6]
-    #print(ops)
-    #ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
     matrix = np.array(
             [[0, 1, 1, 1, 0, 0, 0, 0],
             [0, 0, 0, 0, 1, 1, 0, 0],

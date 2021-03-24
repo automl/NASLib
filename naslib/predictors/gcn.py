@@ -110,6 +110,11 @@ class GCNPredictor(Predictor):
             initial_hidden = 7
         elif self.ss_type == 'darts':
             initial_hidden = 9
+        elif self.ss_type == 'nlp':
+            initial_hidden = 8
+        else:
+            raise NotImplementedError()
+
         predictor = NeuralPredictorModel(initial_hidden=initial_hidden)
         return predictor
 
