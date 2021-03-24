@@ -20,7 +20,7 @@ def loguniform(low=0, high=1, size=None):
 
 class SVR_Estimator(Predictor):
 
-    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=True, model_name='svr',best_hyper=None, n_hypers=1000):
+    def __init__(self, metric=Metric.VAL_ACCURACY, all_curve=True, model_name='svr',best_hyper=None, n_hypers=1000, require_hyper=True):
 
         self.n_hypers = n_hypers
         self.all_curve = all_curve
@@ -28,6 +28,7 @@ class SVR_Estimator(Predictor):
         self.best_hyper = best_hyper
         self.name = 'LcSVR'
         self.metric=metric
+        self.require_hyperparameters = False
 
     def fit(self, xtrain, ytrain, info, learn_hyper=True):
 
@@ -146,8 +147,8 @@ class SVR_Estimator(Predictor):
         extra info to train/query.
         """
         reqs = {'requires_partial_lc':True, 
-                'metric':self.metric, 
-                'requires_hyperparameters':True, 
+                'metric': self.metric,
+                'requires_hyperparameters':self.require_hyperparameters,
                 'hyperparams':['flops', 'latency', 'params'],
                 'unlabeled':False, 
                 'unlabeled_factor':0
@@ -161,7 +162,8 @@ class SVR_Estimator(Predictor):
         
         for i in range(len(info)):
             acc_metric = info[i]['lc']
-            arch_hp = [info[i][hp] for hp in ['flops', 'latency', 'params']]
+            if self.require_hyperparameters:
+                arch_hp = [info[i][hp] for hp in ['flops', 'latency', 'params']]
+                arch_params.append(arch_hp)
             val_acc_curve.append(acc_metric)
-            arch_params.append(arch_hp)
         return self.collate_inputs(val_acc_curve, arch_params)

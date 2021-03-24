@@ -42,7 +42,9 @@ class NasBenchNLPSearchSpace(Graph):
             Metric.TRAIN_ACCURACY: 'train_losses',
             Metric.VAL_ACCURACY: 'val_losses',
             Metric.TEST_ACCURACY: 'test_losses',
-            Metric.TRAIN_TIME: 'wall_times'
+            Metric.TRAIN_TIME: 'wall_times',
+            Metric.TRAIN_LOSS: 'train_losses',
+
         }
         
         assert self.load_labeled
@@ -50,8 +52,11 @@ class NasBenchNLPSearchSpace(Graph):
         If we loaded the architecture from the nas-bench-nlp data (using 
         load_labeled_architecture()), then self.compact will contain the architecture spec.
         """
-        assert metric in [Metric.TRAIN_ACCURACY, Metric.VAL_ACCURACY, \
-                          Metric.TEST_ACCURACY, Metric.TRAIN_TIME]
+        try:
+            assert metric in [Metric.TRAIN_ACCURACY, Metric.TRAIN_LOSS, Metric.VAL_ACCURACY, \
+                          Metric.TEST_ACCURACY, Metric.TRAIN_TIME, ]
+        except:
+            print('hold')
         query_results = dataset_api['nlp_data'][self.compact]
 
         if metric == Metric.TRAIN_TIME:
