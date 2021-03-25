@@ -58,6 +58,7 @@ class Bananas(MetaOptimizer):
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE      
         self.dataset_api = dataset_api
+        self.ss_type = self.search_space.get_type()
         if self.zc:
             self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode='train')
         if self.semi:
@@ -92,7 +93,7 @@ class Bananas(MetaOptimizer):
                 xtrain = [m.arch for m in self.train_data]
                 ytrain = [m.accuracy for m in self.train_data]
                 ensemble = Ensemble(num_ensemble=self.num_ensemble,
-                                    ss_type=self.search_space.get_type(),
+                                    ss_type=self.ss_type,
                                     predictor_type=self.predictor_type, 
                                     config=self.config)
 
