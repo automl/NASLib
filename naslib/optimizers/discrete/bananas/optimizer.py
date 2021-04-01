@@ -116,8 +116,8 @@ class Bananas(MetaOptimizer):
 
                         self.unlabeled.append(model)
                     ensemble.set_pre_computations(unlabeled=[m.arch for m in self.unlabeled])
-                
-                if self.zc and self.semi:
+
+                if self.semi and (self.zc and len(self.train_data) <= self.max_zerocost):
                     unlabeled_zc_info = {'jacov_scores':[m.zc_score for m in self.unlabeled]}
                     ensemble.set_pre_computations(unlabeled_zc_info=unlabeled_zc_info)
 
