@@ -7,6 +7,8 @@ NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilita
 > :warning: **This library is under construction** and there is no official release yet. Feel 
 > free to play around and have a look but be aware that the *APIs will be changed* until we have a first release.
 
+> :warning: The readme and code for [How Powerful are Performance Predictors in Neural Architecture Search?](https://arxiv.org/abs/2104.01177) will be released very soon!
+
 It is designed to be modular, extensible and easy to use.
 
 ![naslib-overview](images/naslib-overview.png)
@@ -64,12 +66,19 @@ The test coverage can be seen with `coverage report`.
 
 ## Cite
 
-If you use this code in your own work, please cite NASLib using the following bibtex entry:
+If you use this code in your own work, please use the following bibtex entries:
 
-```
+```bibtex
 @misc{naslib-2020, 
   title={NASLib: A Modular and Flexible Neural Architecture Search Library}, 
   author={Ruchte, Michael and Zela, Arber and Siems, Julien and Grabocka, Josif and Hutter, Frank}, 
   year={2020}, publisher={GitHub}, 
   howpublished={\url{https://github.com/automl/NASLib}} }
+  
+@article{white2021powerful,
+  title={How Powerful are Performance Predictors in Neural Architecture Search?},
+  author={White, Colin and Zela, Arber and Ru, Binxin and Liu, Yang and Hutter, Frank},
+  journal={arXiv preprint arXiv:2104.01177},
+  year={2021}
+}
 ```
