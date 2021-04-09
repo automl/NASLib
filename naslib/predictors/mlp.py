@@ -52,7 +52,7 @@ class FeedforwardNet(nn.Module):
         return x
 
 
-class FeedforwardPredictor(Predictor):
+class MLPPredictor(Predictor):
 
     def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', hpo_wrapper=False):
         self.encoding_type = encoding_type

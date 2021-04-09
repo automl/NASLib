@@ -7,9 +7,9 @@ import numpy as np
 from scipy.optimize import nnls
 from scipy.stats import norm
 
-from naslib.predictors.lcnet.curvefunctions import curve_combination_models, \
+from naslib.predictors.lce_m.curvefunctions import curve_combination_models, \
     model_defaults, all_models
-from naslib.predictors.lcnet.curvemodels import MLCurveModel
+from naslib.predictors.lce_m.curvemodels import MLCurveModel
 
 
 def recency_weights(num):

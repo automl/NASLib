@@ -4,10 +4,10 @@
 import numpy as np
 
 from naslib.predictors.predictor import Predictor
-from naslib.predictors.lcnet.learning_curves import MCMCCurveModelCombination
+from naslib.predictors.lce_m.learning_curves import MCMCCurveModelCombination
 
 
-class LCNetPredictor(Predictor):
+class LCEMPredictor(Predictor):
     
     def __init__(self, metric=None):
         self.metric = metric

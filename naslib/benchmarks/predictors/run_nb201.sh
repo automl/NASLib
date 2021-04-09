@@ -1,14 +1,14 @@
-predictors=(jacov snip \
-valloss valacc sotl sotle lce \
-lcsvr omni_both \
-bonas bananas mlp gcn seminas nao \
-ngb rf xgb gbdt \
-dngo bohamiann bayes_lin_reg \
+predictors=(fisher grad_norm grasp jacov snip synflow \
+lce lce_m sotl sotle valacc valloss \
+lcsvr omni_ngb omni_seminas \
+bananas bonas gcn mlp nao seminas \
+lgb ngb rf xgb \
+bayes_lin_reg bohamiann dngo \
 gp sparse_gp var_sparse_gp)
 
-experiment_types=(single single \
-vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_fidelity \
-vary_both vary_both \
+experiment_types=(single single single single single single \
+vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_fidelity \
+vary_both vary_both vary_both \
 vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size \

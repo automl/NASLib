@@ -18,28 +18,21 @@ def get_nasbench101_api(dataset=None):
 
 def get_nasbench201_api(dataset=None):
     """
-    Load the original nasbench201 dataset (which does not include full LC info)
-    TODO: this is a subset of the full LC datasets, so it is possible to get rid of this dataset.
-    """
-    with open(os.path.join(get_project_root(), 'data', 'nb201_all.pickle'), 'rb') as f:
-        nb201_data = pickle.load(f)
-
-    """
-    Now load the full LC info. These files are large, so we only load one for the specific dataset.
+    Load the NAS-Bench-201 data
     """
     if dataset == 'cifar10':
         with open(os.path.join(get_project_root(), 'data', 'nb201_cifar10_full_training.pickle'), 'rb') as f:
-            full_lc_data = pickle.load(f)
+            data = pickle.load(f)
 
     elif dataset == 'cifar100':
         with open(os.path.join(get_project_root(), 'data', 'nb201_cifar100_full_training.pickle'), 'rb') as f:
-            full_lc_data = pickle.load(f)
+            data = pickle.load(f)
 
     elif dataset == 'ImageNet16-120':
         with open(os.path.join(get_project_root(), 'data', 'nb201_ImageNet16_full_training.pickle'), 'rb') as f:
-            full_lc_data = pickle.load(f)
+            data = pickle.load(f)
 
-    return {'raw_data':nb201_data, 'full_lc_data':full_lc_data}
+    return {'nb201_data':data}
 
 
 def get_darts_api(dataset=None):

@@ -1,5 +1,5 @@
 optimizer=npenas
-predictors=(bananas feedforward gbdt gcn xgb ngb rf dngo \
+predictors=(bananas mlp lgb gcn xgb ngb rf dngo \
 bohamiann bayes_lin_reg seminas nao gp sparse_gp var_sparse_gp)
 
 start_seed=$1

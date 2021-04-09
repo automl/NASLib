@@ -1,16 +1,16 @@
-predictors=(valacc sotl sotle \
-lce lcnet lcsvr 
-ngb rf xgb gbdt \
-dngo bohamiann bayes_lin_reg \
-gp sparse_gp var_sparse_gp \
-feedforward gcn seminas nao)
+predictors=(lce lce_m sotl sotle valacc valloss \
+lcsvr \
+gcn mlp nao seminas \
+lgb ngb rf xgb \
+bayes_lin_reg bohamiann dngo \
+gp sparse_gp var_sparse_gp)
 
-experiment_types=(vary_fidelity vary_fidelity vary_fidelity \
-vary_fidelity vary_fidelity vary_both \
+experiment_types=(vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_fidelity \
+vary_both \
+vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_train_size vary_train_size)
+vary_train_size vary_train_size vary_train_size)
 
 start_seed=$1
 if [ -z "$start_seed" ]

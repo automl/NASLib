@@ -479,7 +479,8 @@ class OmniSemiNASPredictor(Predictor):
                                     'lr':1e-3}
         self.hyperparams = None
         self.config = config
-        self.dataset = config.dataset
+        if config is not None:
+            self.dataset = config.dataset
         self.zero_cost = zero_cost
         self.run_pre_compute = run_pre_compute
         self.min_fidelity = 3
