@@ -236,6 +236,37 @@ def encode_seminas(arch):
     }
     return dic
 
+def encode_gcn(arch):
+    matrices = []
+    ops = []
+
+    for cell in arch:
+        mat,op = transform_matrix(cell)
+        matrices.append(mat)
+        ops.append(op)
+
+    mat_length = len(matrices[0][0])
+    merged_length = len(matrices[0][0])*2
+    matrix_final = np.zeros((merged_length,merged_length))
+
+    for col in range(mat_length):
+        for row in range(col):
+            matrix_final[row,col] = matrices[0][row,col]
+            matrix_final[row+mat_length,col+mat_length] = matrices[1][row,col]
+
+    ops_onehot = np.concatenate((ops[0],ops[1]),axis=0)
+
+    matrix_final = np.array(matrix_final,dtype=np.float32)
+    ops_onehot = np.array(ops_onehot,dtype=np.float32)
+    
+    dic = {
+        'num_vertices': 22,
+        'adjacency': matrix_final,
+        'operations': ops_onehot,
+        'val_acc': 0.0
+    }
+    return dic
+
 def encode_darts(arch, encoding_type='path'):
     
     compact = arch.get_compact()
@@ -254,6 +285,9 @@ def encode_darts(arch, encoding_type='path'):
 
     elif encoding_type == 'seminas':
         return encode_seminas(arch=compact)
+
+    elif encoding_type == 'gcn':
+        return encode_gcn(arch=compact)
 
     else:
         print('{} is not yet implemented as an encoding type \

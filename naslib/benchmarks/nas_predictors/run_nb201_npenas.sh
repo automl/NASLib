@@ -1,6 +1,6 @@
 optimizer=npenas
-predictors=(nao seminas bananas feedforward gbdt gcn bonas xgb ngb rf dngo \
-bohamiann bayes_lin_reg gp sparse_gp var_sparse_gp)
+predictors=(omni_seminas bananas mlp lgb gcn bonas xgb ngb rf dngo \
+bohamiann bayes_lin_reg gp seminas sparse_gp var_sparse_gp nao)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -10,7 +10,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=bo201_c10_feb3
+s3_folder=np201
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:

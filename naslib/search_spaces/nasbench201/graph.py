@@ -149,16 +149,16 @@ class NasBench201SearchSpace(Graph):
         
         if metric == Metric.RAW:
             # return all data
-            return dataset_api['raw_data'][arch_str]
+            return dataset_api['nb201_data'][arch_str]
 
         if dataset in ['cifar10', 'cifar10-valid']:
-            query_results = dataset_api['full_lc_data'][arch_str]
+            query_results = dataset_api['nb201_data'][arch_str]
             # set correct cifar10 dataset
             dataset = 'cifar10-valid'
         elif dataset == 'cifar100':
-            query_results = dataset_api['full_lc_data'][arch_str]
+            query_results = dataset_api['nb201_data'][arch_str]
         elif dataset == 'ImageNet16-120':
-            query_results = dataset_api['full_lc_data'][arch_str]
+            query_results = dataset_api['nb201_data'][arch_str]
         else:
             raise NotImplementedError('Invalid dataset')
 
@@ -180,6 +180,9 @@ class NasBench201SearchSpace(Graph):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
+    
+    def get_hash(self):
+        return tuple(self.get_op_indices())
 
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices

@@ -65,6 +65,9 @@ def main(args):
         elif args.search_space == 'darts':
             total_epochs = 96 - 1
             max_train_size = 500
+        elif args.search_space == 'nlp':
+            total_epochs = 50 - 1
+            max_train_size = 1000
 
         train_size_list = [int(j) for j in np.logspace(start=np.log(5.1)/np.log(2), 
                                                        stop=np.log(max_train_size)/np.log(2), 
@@ -72,6 +75,10 @@ def main(args):
         fidelity_list = [int(j) for j in np.logspace(start=0.9, 
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]
+
+        if args.search_space == 'nlp':
+            fidelity_list.pop(2)
+            fidelity_list.insert(5, 6)
 
         if 'svr' in args.predictor:
             train_size_list.pop(0)
@@ -97,11 +104,13 @@ def main(args):
                 'out_dir': args.out_dir,
                 'predictor': args.predictor,
                 'test_size': args.test_size,
+                'uniform_random': args.uniform_random,
                 'experiment_type': args.experiment_type,
                 'train_size_list': train_size_list,
                 'train_size_single': args.train_size_single,
                 'fidelity_single': args.fidelity_single,
                 'fidelity_list': fidelity_list,
+                'max_hpo_time': 900,
             }
 
             with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
@@ -161,7 +170,8 @@ if __name__ == "__main__":
     parser.add_argument("--optimizer", type=str, default='rs', help="which optimizer")
     parser.add_argument("--predictor", type=str, default='full', help="which predictor")
     parser.add_argument("--test_size", type=int, default=30, help="Test set size for predictor")
-    parser.add_argument("--train_size_single", type=int, default=5, help="Train size if exp type is single")
+    parser.add_argument("--uniform_random", type=int, default=1, help="Train/test set generation type (bool)")
+    parser.add_argument("--train_size_single", type=int, default=10, help="Train size if exp type is single")
     parser.add_argument("--fidelity_single", type=int, default=5, help="Fidelity if exp type is single")
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")
     parser.add_argument("--out_dir", type=str, default='run', help="Output directory")

@@ -1,5 +1,7 @@
-import numpy as np
+# This code is mostly from https://github.com/automl/pylearningcurvepredictor
+# pylearningcurvepredictor author: Tobias Domhan, tdomhan
 
+import numpy as np
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lce.parametric_model import model_name_list, model_config, construct_parametric_model
@@ -26,6 +28,10 @@ class LCEPredictor(Predictor):
             final_epoch = 98
             default_guess = 93.0
             N = 1000
+        elif self.ss_type == 'nlp':
+            final_epoch = 50
+            default_guess = 94.83
+            N = 1000
         else:
             raise NotImplementedError()
 
@@ -39,8 +45,9 @@ class LCEPredictor(Predictor):
                 print('nan or finite')
                 prediction = default_guess + np.random.rand()
             predictions.append(prediction)
-            
+
         predictions = np.squeeze(np.array(predictions))
+
         return predictions
 
     def get_data_reqs(self):
@@ -51,6 +58,8 @@ class LCEPredictor(Predictor):
         reqs = {'requires_partial_lc':True, 
                 'metric':self.metric, 
                 'requires_hyperparameters':False, 
-                'hyperparams':None
+                'hyperparams':None,
+                'unlabeled':False, 
+                'unlabeled_factor':0
                }
         return reqs

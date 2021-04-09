@@ -1,5 +1,18 @@
-predictors=(omni lcsvr jacov snip sotl sotle)
-experiment_types=(vary_both vary_both single single vary_fidelity vary_fidelity)
+predictors=(fisher grad_norm grasp jacov snip synflow \
+lce lce_m sotl sotle valacc valloss \
+lcsvr omni_ngb omni_seminas \
+bananas bonas gcn mlp nao seminas \
+lgb ngb rf xgb \
+bayes_lin_reg bohamiann dngo \
+gp sparse_gp var_sparse_gp)
+
+experiment_types=(single single single single single single \
+vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_fidelity vary_fidelity \
+vary_both vary_both vary_both \
+vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
+vary_train_size vary_train_size vary_train_size vary_train_size \
+vary_train_size vary_train_size vary_train_size \
+vary_train_size vary_train_size vary_train_size)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -9,7 +22,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=p201_im_jan29
+s3_folder=p201_im
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
