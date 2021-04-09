@@ -8,7 +8,7 @@ import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.core.primitives import ReLUConvBN
+from naslib.search_spaces.core.primitives import ReLUConvBN, MaxPool1x1
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench101.conversions import convert_naslib_to_spec, \
 convert_spec_to_naslib, convert_spec_to_tuple
@@ -250,12 +250,13 @@ class NasBench101SearchSpace(Graph):
         return 'nasbench101'
     
 def _set_node_ops(current_edge_data, C):
-    current_edge_data.set('op', [
+    ops = [
         ReLUConvBN(C, C, kernel_size=1),
         # ops.Zero(stride=1),    #! recheck about the hardcoded second operation
         ReLUConvBN(C, C, kernel_size=3),
-        ops.MaxPool1x1(kernel_size=3, stride=1),
-    ])
+        MaxPool1x1(kernel_size=3, stride=1),
+    ]
+    current_edge_data['op'] = ops
 
 def _set_cell_ops(edge, C):
     edge.data.set('op', [
