@@ -2,12 +2,10 @@
 [![Build Status](https://travis-ci.com/automl/NASLib.svg?branch=master)](https://travis-ci.com/automl/NASLib)
 [![codecov](https://codecov.io/gh/automl/NASLib/branch/master/graph/badge.svg?token=RNqATqVvnV)](https://codecov.io/gh/automl/NASLib)
 
-NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilitate NAS research for the community by providing interfaces to several state-of-the-art NAS search spaces
+NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilitate NAS research for the community by providing interfaces to several state-of-the-art NAS search spaces.
 
 > :warning: **This library is under construction** and there is no official release yet. Feel 
 > free to play around and have a look but be aware that the *APIs will be changed* until we have a first release.
-
-> :warning: The readme and code for [How Powerful are Performance Predictors in Neural Architecture Search?](https://arxiv.org/abs/2104.01177) will be released very soon!
 
 It is designed to be modular, extensible and easy to use.
 
@@ -29,6 +27,9 @@ trainer.evaluate()      # Evaluate the best architecture
 For an example file see [`demo.py`](examples/demo.py).
 
 For more extensive documentation see [docs](docs/).
+
+NASLib has been used to run an extensive comparison of 31 performance predictors. See the separate readme: <a href="docs/predictors.md">predictors.md</a>
+and our paper: <a href="https://arxiv.org/abs/2104.01177">How Powerful are Performance Predictors in Neural Architecture Search?</a>
 
 # Requirements
 
