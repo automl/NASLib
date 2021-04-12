@@ -4,7 +4,10 @@
 Colin White, Arber Zela, Robin Ru, Yang Liu, and Frank Hutter.\
 _arXiv:2104.01177_.
 
-Dozens of techniques have been proposed to predict the final performance of neural architectures, however, it is not well-understood how different families of techniques compare to one another. In this repository, we give the first large-scale study of performance predictors by analyzing 31 techniques ranging from learning curve extrapolation, to weight-sharing, to supervised learning, to "zero-cost" proxies. We test a number of correlation- and rank-based performance measures in a variety of settings, as well as the ability of each technique to speed up predictor-based NAS frameworks. We show that certain families of predictors can be combined to achieve even better predictive power, opening up several promising research directions.
+Dozens of techniques have been proposed to predict the final performance of neural architectures, however, it is not well-understood how different families of techniques compare to one another. We give the first large-scale study of performance predictors by analyzing 31 techniques ranging from learning curve extrapolation, to weight-sharing, to supervised learning, to "zero-cost" proxies. We test correlation- and rank-based performance measures in a variety of settings, as well as the ability of each technique to speed up predictor-based NAS frameworks. We show that certain families of predictors can be combined to achieve even better predictive power.
+<p align="center">
+  <img src="../images/predictors.png" alt="predictors" width="90%">
+</p>
 
 # Installation
 
