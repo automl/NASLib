@@ -11,12 +11,8 @@ Dozens of techniques have been proposed to predict the final performance of neur
 
 # Installation
 
-## Install the requirements
-```bash
-cd NASLib
-cat requirements.txt | xargs -n 1 -L 1 pip install
-pip install -e .
-```
+Follow the installation instructions from the <a href="../README.md">main NASLib readme</a>.
+
 ## Install nasbench301 separately
 nasbench301 currently cannot be pip installed because of a few small bugs in that repo. This is how to install nasbench301 as of January 1, 2021 ([this version](https://github.com/automl/nasbench301/commit/48a5f0ca152b83ae2fa31365116c0fb480466fb1)):
 ```bash
