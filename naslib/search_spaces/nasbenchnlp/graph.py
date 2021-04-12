@@ -44,7 +44,6 @@ class NasBenchNLPSearchSpace(Graph):
             Metric.TEST_ACCURACY: 'test_losses',
             Metric.TRAIN_TIME: 'wall_times',
             Metric.TRAIN_LOSS: 'train_losses',
-
         }
         
         assert self.load_labeled
@@ -66,7 +65,7 @@ class NasBenchNLPSearchSpace(Graph):
         if metric == Metric.TRAIN_TIME:
             return query_results[metric_to_nlp[metric]]
         elif metric == Metric.HP:
-            # todo: compute flops/params/latency for each arch
+            # todo: compute flops/params/latency for each arch. These are placeholders
             return {'flops': 15, 'params': 0.1, 'latency': 0.01}
         elif full_lc and epoch == -1:
             return [sign * (100 - loss) for loss in query_results[metric_to_nlp[metric]]]

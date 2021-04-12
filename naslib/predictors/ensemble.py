@@ -14,6 +14,7 @@ from naslib.predictors.gp import GPPredictor, SparseGPPredictor, VarSparseGPPred
 from naslib.predictors.omni_ngb import OmniNGBPredictor
 from naslib.predictors.omni_seminas import OmniSemiNASPredictor
 
+
 class Ensemble(Predictor):
     
     def __init__(self, 

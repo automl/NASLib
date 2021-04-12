@@ -9,8 +9,8 @@ from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors import Predictor
 
-#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device('cpu') #NOTE: faster on CPU
+# NOTE: faster on CPU
+device = torch.device('cpu')
 print('device:', device)
 
 def accuracy_mse(prediction, target, scale=100.):

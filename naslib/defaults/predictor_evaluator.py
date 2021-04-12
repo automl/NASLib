@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 class PredictorEvaluator(object):
     """
-    Evaluate a chosen predictor.
+    This class will evaluate a chosen predictor based on
+    correlation and rank correlation metrics, for the given
+    initialization times and query times.
     """
 
     def __init__(self, predictor, config=None):
-        """
-        Initializes the Evaluator.
-        """
+
         self.predictor = predictor
         self.config = config
         self.experiment_type = config.experiment_type
@@ -34,18 +34,18 @@ class PredictorEvaluator(object):
         self.train_size_list = config.train_size_list        
         self.fidelity_single = config.fidelity_single
         self.fidelity_list = config.fidelity_list
-        self.uniform_random = config.uniform_random
         self.max_hpo_time = config.max_hpo_time
-        
-        # mutation parameters
-        self.mutate_pool = 10
-        self.num_arches_to_mutate = 5
-        self.max_mutation_rate = 3
 
         self.dataset = config.dataset
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results = [config]
+
+        # mutation parameters
+        self.uniform_random = config.uniform_random
+        self.mutate_pool = 10
+        self.num_arches_to_mutate = 5
+        self.max_mutation_rate = 3
 
     def adapt_search_space(self, search_space, load_labeled, scope=None, dataset_api=None):
         self.search_space = search_space.clone()
@@ -53,8 +53,8 @@ class PredictorEvaluator(object):
         self.predictor.set_ss_type(self.search_space.get_type())
         self.load_labeled = load_labeled
         self.dataset_api = dataset_api
-        
-        # todo: see if we can query 'flops', 'latency', 'params' in darts
+
+        # nasbench101 does not have full learning curves or hyperparameters
         if self.search_space.get_type() == 'nasbench101':
             self.full_lc = False
             self.hyperparameters = False
@@ -73,7 +73,7 @@ class PredictorEvaluator(object):
     def get_full_arch_info(self, arch):
         """
         Given an arch, return the accuracy, train_time,
-        and a dict of extra info if required by the predictor
+        and also a dict of extra info if required by the predictor
         """
         info_dict = {}
         accuracy = arch.query(metric=self.metric, 
@@ -235,6 +235,9 @@ class PredictorEvaluator(object):
         return [xdata, ydata, info, train_times], arch_hash_map
 
     def single_evaluate(self, train_data, test_data, fidelity):
+        """
+        Evaluate the predictor for a single (train_data / fidelity) pair
+        """
         xtrain, ytrain, train_info, train_times = train_data
         xtest, ytest, test_info, _ = test_data
         train_size = len(xtrain)
@@ -263,10 +266,8 @@ class PredictorEvaluator(object):
         fit_time_start = time.time()
         cv_score = 0
         if self.max_hpo_time > 0 and len(xtrain) >= 10 and self.predictor.get_hpo_wrapper():
-            """
-            run cross validation here. TODO: cross validation is not set up for all
-            predictors yet in this branch. 
-            """
+
+            # run cross-validation (for model-based predictors)
             hyperparams, cv_score = self.run_hpo(xtrain, ytrain, train_info, 
                                                  start_time=fit_time_start, 
                                                  metric='kendalltau')
@@ -310,6 +311,7 @@ class PredictorEvaluator(object):
         """
 
     def evaluate(self):
+
         self.predictor.pre_process()
 
         logger.info("Load the test set")
@@ -344,7 +346,7 @@ class PredictorEvaluator(object):
                                                              data_size=unlabeled_size, 
                                                              arch_hash_map=arch_hash_map)
 
-        # some of the predictors have a pre-computation step to save time in batch experiments
+        # some of the predictors use a pre-computation step to save time in batch experiments:
         self.predictor.pre_compute(full_train_data[0], test_data[0], unlabeled_data)
 
         if self.experiment_type == 'single':
@@ -399,18 +401,11 @@ class PredictorEvaluator(object):
             for metric in METRICS:
                 metrics_dict[metric] = float('nan')
         if np.isnan(metrics_dict['pearson']) or not np.isfinite(metrics_dict['pearson']):
-            logger.info('Error when computing metrics. Ytest and test_pred are:')
+            logger.info('Error when computing metrics. ytest and test_pred are:')
             logger.info(ytest)
             logger.info(test_pred)
 
         return metrics_dict
-
-    def _log_to_json(self):
-        """log statistics to json file"""
-        if not os.path.exists(self.config.save):
-            os.makedirs(self.config.save)
-        with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
-            json.dump(self.results, file, separators=(',', ':'))
 
     def run_hpo(self, xtrain, ytrain, train_info, start_time, metric='kendalltau', max_iters=5000):
         logger.info(f'Starting cross validation')
@@ -448,3 +443,10 @@ class PredictorEvaluator(object):
         self.predictor.hyperparams = best_hyperparams
 
         return best_hyperparams.copy(), best_score
+    
+    def _log_to_json(self):
+        """log statistics to json file"""
+        if not os.path.exists(self.config.save):
+            os.makedirs(self.config.save)
+        with codecs.open(os.path.join(self.config.save, 'errors.json'), 'w', encoding='utf-8') as file:
+            json.dump(self.results, file, separators=(',', ':'))

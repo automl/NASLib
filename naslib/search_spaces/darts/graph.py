@@ -304,8 +304,7 @@ class DartsSearchSpace(Graph):
     
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
-        Query results from nasbench 301. Currently we only provide the 
-        genotype query as list but we will integrate nb301 in the future.
+        Query results from nasbench 301
         """
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: 'train_losses',
@@ -326,7 +325,7 @@ class DartsSearchSpace(Graph):
             if metric == Metric.TRAIN_TIME:
                 return query_results[metric_to_nb301[metric]]
             elif metric == Metric.HP:
-                # todo: compute flops/params/latency for each arch
+                # todo: compute flops/params/latency for each arch. These are placeholders
                 return {'flops': 15, 'params': 0.1, 'latency': 0.01}
             elif full_lc and epoch == -1:
                 return query_results[metric_to_nb301[metric]]

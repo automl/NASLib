@@ -99,14 +99,16 @@ class NasBench101SearchSpace(Graph):
         self.edges[2, 3].set('op', cell.copy().set_scope('cell'))
 
     def query(self, metric=None, dataset='cifar10', path=None, epoch=-1, full_lc=False, dataset_api=None):
-
+        """
+        Query results from nasbench 101
+        """
         assert isinstance(metric, Metric)
         assert dataset in ['cifar10', None], "Unknown dataset: {}".format(dataset)
         if metric in [Metric.ALL, Metric.HP]:
             raise NotImplementedError()
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query nasbench101')
-        assert epoch in [-1, 4, 12, 36, 108, None], 'nasbench101 does not have full learning curve information'
+        assert epoch in [-1, 4, 12, 36, 108, None], 'nasbench101 does not have full learning curve info'
     
         metric_to_nb101 = {
             Metric.TRAIN_ACCURACY: 'train_accuracy',
@@ -117,7 +119,6 @@ class NasBench101SearchSpace(Graph):
         }
 
         if self.spec is None:
-            #matrix, ops = convert_naslib_to_spec(self)
             raise NotImplementedError('Cannot yet query directly from the naslib object')
         api_spec = dataset_api['api'].ModelSpec(**self.spec)
     

@@ -57,7 +57,6 @@ class ZeroCostV1(Predictor):
             self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
-
         self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode='train')
 
     def query(self, xtest, info=None):
@@ -117,7 +116,6 @@ class ZeroCostV1(Predictor):
                     if hasattr(self, 'ss_type') and self.ss_type == 'darts':
                         score = -score
 
-            # print(f'nclass={self.num_classes}, scores={score}')
             test_set_scores.append(score)
             network, data_iterator, x, target, jacobs, labels = None, None, None, None, None, None
             torch.cuda.empty_cache()

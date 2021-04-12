@@ -4,7 +4,8 @@
 import numpy as np
 
 from naslib.predictors.predictor import Predictor
-from naslib.predictors.lce.parametric_model import model_name_list, model_config, construct_parametric_model
+from naslib.predictors.lce.parametric_model import model_name_list, \
+model_config, construct_parametric_model
 from naslib.predictors.lce.parametric_ensemble import ParametricEnsemble
 
 

@@ -43,7 +43,6 @@ class ZeroCostV2(Predictor):
             self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
-
         self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode='train')
 
     def query(self, xtest, info=None):

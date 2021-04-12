@@ -1,4 +1,5 @@
 # This is an implementation of Bayesian Linear Regression
+
 from pybnn.bayesian_linear_regression import BayesianLinearRegression as BLR
 from pybnn.bayesian_linear_regression import linear_basis_func, quadratic_basis_func
 

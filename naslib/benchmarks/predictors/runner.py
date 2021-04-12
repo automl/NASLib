@@ -3,7 +3,6 @@ import sys
 import os
 import naslib as nl
 
-
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 from naslib.predictors import BayesianLinearRegression, BOHAMIANN, BonasPredictor, \
@@ -25,7 +24,6 @@ config = utils.get_config_from_args(config_type='predictor')
 utils.set_seed(config.seed)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
-
 utils.log_args(config)
 
 supported_predictors = {
@@ -103,10 +101,12 @@ set load_labeled=True
 load_labeled = (True if config.search_space in ['darts', 'nlp'] else False)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
-# set up the search space and predictor
+# initialize the search space and predictor
 utils.set_seed(config.seed)
 predictor = supported_predictors[config.predictor]
 search_space = supported_search_spaces[config.search_space]
+
+# initialize the PredictorEvaluator class
 predictor_evaluator = PredictorEvaluator(predictor, config=config)
 predictor_evaluator.adapt_search_space(search_space, load_labeled=load_labeled, 
                                        dataset_api=dataset_api)

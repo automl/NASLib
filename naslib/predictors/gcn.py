@@ -1,6 +1,7 @@
 # Author: Yang Liu @ Abacus.ai
 # This is an implementation of gcn predictor for NAS from the paper:
 # Wen et al., 2019. Neural Predictor for Neural Architecture Search
+
 import itertools
 import os
 import random
@@ -142,7 +143,8 @@ class GCNPredictor(Predictor):
         train_data = np.array(train_data)
 
         self.model = self.get_model(gcn_hidden=gcn_hidden)
-        data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True)
+        data_loader = DataLoader(train_data, batch_size=batch_size, 
+                                 shuffle=True, drop_last=True)
 
         self.model.to(device)
         criterion = nn.MSELoss().to(device)
