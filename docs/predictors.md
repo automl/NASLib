@@ -13,7 +13,7 @@ Dozens of techniques have been proposed to predict the final performance of neur
 
 ## Install the requirements
 ```bash
-cd performance_predictors_submit
+cd NASLib
 cat requirements.txt | xargs -n 1 -L 1 pip install
 pip install -e .
 ```
