@@ -30,6 +30,9 @@ For more extensive documentation see [docs](docs/).
 
 NASLib has been used to run an extensive comparison of 31 performance predictors. See the separate readme: <a href="docs/predictors.md">predictors.md</a>
 and our paper: <a href="https://arxiv.org/abs/2104.01177">How Powerful are Performance Predictors in Neural Architecture Search?</a>
+<p align="center">
+  <img src="images/predictors.png" alt="predictors" width="75%">
+</p>
 
 # Requirements
 
