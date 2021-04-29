@@ -13,21 +13,13 @@ Dozens of techniques have been proposed to predict the final performance of neur
 
 Follow the installation instructions from the <a href="../README.md">main NASLib readme</a>.
 
-## Install nasbench301 separately
-nasbench301 currently cannot be pip installed because of a few small bugs in that repo. This is how to install nasbench301 as of January 1, 2021 ([this version](https://github.com/automl/nasbench301/commit/48a5f0ca152b83ae2fa31365116c0fb480466fb1)):
+## Install nasbench301 from source
 ```bash
 git clone git@github.com:automl/nasbench301.git
 cd nasbench301
-pip install -e .
 cat requirements.txt | xargs -n 1 -L 1 pip install
+pip install .
 ```
-- In `nasbench301/surrogate_models/gnn/models/gcn_lib/sparse/torch_nn.py`, line 3, change the line to `from nasbench301.surrogate_models`...
-
-- In `nasbench301/surrogate_models/surrogate_model.py`, line 32, change the line to
-
-`self.config_loader=utils.ConfigLoader(os.path.expanduser('~/nasbench301/configspace.json'))`
-
-- In `nasbench301/surrogate_models/utils.py`, comment out NuSVR/SVR on lines 24-25 and 50-51
 
 ## Download all datasets
 ```bash
