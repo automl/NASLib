@@ -148,6 +148,8 @@ class DartsSearchSpace(Graph):
         self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=11, affine=False)
 
         self._set_cell_ops(reduction_cell_indices)
+        from IPython import embed
+        embed()
 
 
     def _set_makrograph_ops(self, channel_map_from, channel_map_to, reduction_cell_indices, max_index, affine=True):

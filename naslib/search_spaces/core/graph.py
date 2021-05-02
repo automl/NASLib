@@ -573,6 +573,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                         raise ValueError("Unkown format of op: {}".format(op))
 
 
+    @staticmethod
     def _verify_update_function(update_func: callable, private_edge_data: bool):
         """
         Verify that the update function actually modifies only

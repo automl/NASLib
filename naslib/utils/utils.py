@@ -139,7 +139,6 @@ def get_config_from_args(args=None, config_type='nas'):
 
     if args is None:
         args = parse_args()
-    print(args)
     logger.info("Command line args: {}".format(args))
 
     # load config file

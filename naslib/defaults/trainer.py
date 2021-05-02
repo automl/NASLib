@@ -115,10 +115,10 @@ class Trainer(object):
                     self._store_accuracies(logits_val, data_val[1], 'val')
 
                     log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}".format(
-                        e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
+                        e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=1)
                     
                     if torch.cuda.is_available():
-                        log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
+                        log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=1)
 
                     self.train_loss.update(float(train_loss.detach().cpu()))
                     self.val_loss.update(float(val_loss.detach().cpu()))
