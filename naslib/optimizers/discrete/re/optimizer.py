@@ -85,9 +85,10 @@ class RegularizedEvolution(MetaOptimizer):
     def train_statistics(self):
         best_arch = self.get_final_architecture()
         return (
-            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api), 
+            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api),
+            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api),
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api),
+            best_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api),
         )
 
     def test_statistics(self):

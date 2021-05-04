@@ -60,15 +60,11 @@ def default_argument_parser():
     """
 
     parser = argparse.ArgumentParser(
-        epilog=f"""
-Examples:
-Run on single machine:
-    $ {sys.argv[0]} --config-file cfg.yaml dataset 'cifar100' seed 1
-""",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     # parser.add_argument("--config-file", default="{}/benchmarks/predictors/predictor_config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
-    parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file",
+                        default="{}/benchmarks/nas_predictors/discrete_config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
@@ -94,6 +90,8 @@ Run on single machine:
 
 
 def parse_args(parser=default_argument_parser(), args=sys.argv[1:]):
+    if '-f' in args:
+        args = args[2:]
     return parser.parse_args(args)
 
 
@@ -150,22 +148,27 @@ def get_config_from_args(args=None, config_type='nas'):
              #config[k] = AttrDict(v)
 
     # Override file args with ones from command line
-    for arg, value in pairwise(args.opts):
-        if '.' in arg:
-            arg1, arg2 = arg.split('.')
-            config[arg1][arg2] = type(config[arg1][arg2])(value)
-        else:
+    try:
+        for arg, value in pairwise(args.opts):
+            if '.' in arg:
+                arg1, arg2 = arg.split('.')
+                config[arg1][arg2] = type(config[arg1][arg2])(value)
+            else:
+                config[arg] = value
+
+        config.eval_only = args.eval_only
+        config.resume = args.resume
+        config.model_path = args.model_path
+        if config_type != 'nas_predictor':
+            config.seed = args.seed
+
+        # load config file
+        config.merge_from_file(args.config_file)
+        config.merge_from_list(args.opts)
+    except AttributeError:
+        for arg, value in pairwise(args):
             config[arg] = value
 
-    config.eval_only = args.eval_only
-    config.resume = args.resume
-    config.model_path = args.model_path
-    if config_type != 'nas_predictor':
-        config.seed = args.seed
-
-    # load config file
-    config.merge_from_file(args.config_file)
-    config.merge_from_list(args.opts)
 
     # prepare the output directories
     if config_type == 'nas':

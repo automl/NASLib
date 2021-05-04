@@ -36,13 +36,18 @@ with open(version_path, 'w') as f:
     f.write("__version__ = '{}'\n".format(version))
 
 requires = [
+    "cycler>=0.10",
+    "kiwisolver>=1.0.1",
+    "iopath>=0.1.7",
+    "tabulate",
+    "tqdm",
+    "yacs>=0.1.6",
     "ConfigSpace",
     "cython",
     "hyperopt==0.1.2",
     "pyyaml",
-    "numpy==1.16.4",
-    "torch>=1.2.0",
-    "torchvision>=0.4.0",
+    "numpy",
+    "scikit-learn",
     "fvcore",
     "matplotlib",
     "pandas",
@@ -50,6 +55,14 @@ requires = [
     "pytest-cov",
     "codecov",
     "coverage",
+    "keras==2.3.1",
+    "lightgbm",
+    "ngboost==0.3.7",
+    "xgboost",
+    "emcee==2.2.1",
+    "pybnn",
+    "pyro-ppl",
+    "tensorflow==1.15.4"
 ]
 
 import subprocess
