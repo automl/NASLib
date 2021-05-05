@@ -46,8 +46,8 @@ requires = [
     "cython",
     "hyperopt==0.1.2",
     "pyyaml",
-    "numpy",
-    "scikit-learn",
+    "numpy==1.17.0",
+    "scikit-learn==0.23.0",
     "fvcore",
     "matplotlib",
     "pandas",
@@ -61,7 +61,7 @@ requires = [
     "xgboost",
     "emcee==2.2.1",
     "pybnn",
-    "pyro-ppl",
+    "pyro-ppl==1.4.0",
     "tensorflow==1.15.4"
 ]
 
