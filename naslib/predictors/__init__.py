@@ -13,7 +13,7 @@ from .lce import LCEPredictor
 from .lcnet import LCNetPredictor
 from .trees import XGBoost, NGBoost, GBDTPredictor, RandomForestPredictor
 from .bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression
-from .gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
+from .gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor, GPWLPredictor
 from .oneshot import OneShotPredictor
 from .omni import OmniPredictor
 from .omni_xgb import OmniXGBPredictor

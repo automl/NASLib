@@ -11,7 +11,7 @@ EarlyStopping, GCNPredictor, BonasPredictor, ZeroCostV1, ZeroCostV2, SoLosspredi
 SVR_Estimator, XGBoost, NGBoost, RandomForestPredictor, DNGOPredictor, \
 BOHAMIANN, BayesianLinearRegression, LCNetPredictor, SemiNASPredictor, OmniSemiNASPredictor, \
 GPPredictor, SparseGPPredictor, VarSparseGPPredictor, \
-LCEPredictor, OmniPredictor, OmniXGBPredictor
+LCEPredictor, OmniPredictor, OmniXGBPredictor, GPWLPredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, DartsSearchSpace, NasBenchNLPSearchSpace
 from naslib.search_spaces.core.query_metrics import Metric
@@ -28,6 +28,9 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
+    'gpwloaauto': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h='auto'),
+    'gpwl1': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h=1),
+    'gpwl2': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h=2),
     'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot', hpo_wrapper=True),
     'bananas': Ensemble(predictor_type='bananas', num_ensemble=3, hpo_wrapper=True),
     'gcn': GCNPredictor(encoding_type='gcn', hpo_wrapper=True),
