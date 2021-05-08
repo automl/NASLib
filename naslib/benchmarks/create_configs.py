@@ -58,7 +58,7 @@ def main(args):
         
         if args.search_space == 'nasbench101':
             total_epochs = 108 - 1
-            max_train_size = 347
+            max_train_size = 1000
         elif args.search_space == 'nasbench201':
             total_epochs = 200 - 1
             max_train_size = 1000
@@ -69,7 +69,7 @@ def main(args):
         train_size_list = [int(j) for j in np.logspace(start=np.log(5.1)/np.log(2), 
                                                        stop=np.log(max_train_size)/np.log(2), 
                                                        num=11, endpoint=True, base=2.0)]
-        train_size_list = [i for i in train_size_list if i < 230]
+        # train_size_list = [i for i in train_size_list if i < 230]
         fidelity_list = [int(j) for j in np.logspace(start=0.9, 
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]

@@ -2,15 +2,14 @@
 # Ru, B., Wan, X., et al., 2021. "Interpretable Neural Architecture Search via Bayesian Optimisation using Weisfeiler-Lehman Kernels". In ICLR 2021.
 
 
-from naslib.predictors.gp import BaseGPModel
-import torch, numpy as np
-import networkx as nx
 from copy import deepcopy
-from naslib.predictors.gp.gpwl_utils import *
+
 from grakel.utils import graph_from_networkx
+
+from naslib.predictors.gp import BaseGPModel
+from naslib.predictors.gp.gpwl_utils.convert import *
 from naslib.predictors.gp.gpwl_utils.vertex_histogram import CustomVertexHistogram
 from naslib.predictors.gp.gpwl_utils.wl_kernel import WeisfeilerLehman
-from naslib.predictors.gp.gpwl_utils.convert import *
 
 
 def _normalize(y):
@@ -322,18 +321,6 @@ class GPWLPredictor(BaseGPModel):
     def query(self, xtest, info=None):
         """alias for predict"""
         return self.predict(xtest)
-
-    # def get_data_reqs(self):
-    #     """
-    #     Returns a dictionary with info about whether the predictor needs
-    #     extra info to train/query.
-    #     """
-    #     reqs = {'requires_partial_lc': False,
-    #             'metric': None,
-    #             'requires_hyperparameters': False,
-    #             'hyperparams': None
-    #             }
-    #     return reqs
 
 
 if __name__ == '__main__':
