@@ -1,4 +1,4 @@
-# Author: Xingchen Wan @ University of Oxford
+# Author: Xingchen Wan & Binxin Ru @ University of Oxford
 # Ru, B., Wan, X., et al., 2021. "Interpretable Neural Architecture Search via Bayesian Optimisation using Weisfeiler-Lehman Kernels". In ICLR 2021.
 
 
@@ -197,10 +197,7 @@ class GraphGP:
         return mu_s, cov_s
 
     def fit(self):
-        # if self.space == 'nasbench301' or self.space == 'darts':
-        #     xtrain_grakel = [list(graph_from_networkx(x, self.node_label, )) for x in self.x]
-        # else:
-        #     xtrain_grakel = list(graph_from_networkx(self.x, self.node_label, ))
+
         xtrain_grakel = self.xtrain_converted
         # Valid values of h are non-negative integers. Here we test each of them once, and pick the one that leads to
         # the highest marginal likelihood of the GP model.
@@ -305,9 +302,7 @@ class GPWLPredictor(BaseGPModel):
         # if not isinstance(xtrain[0], nx.DiGraph):
         xtrain_conv = self._convert_data(xtrain)
         ytrain_transformed = _transform(ytrain)
-        # if self.model is not None:
-        #     self.model.fit()
-        # else:
+
         self.model = GraphGP(xtrain_conv, ytrain_transformed, self.kernel_type, h=self.h, num_steps=self.num_steps,
                              optimize_noise_var=self.optimize_gp_hyper, space=self.ss_type)
         # fit the model
