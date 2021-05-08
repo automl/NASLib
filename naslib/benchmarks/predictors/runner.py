@@ -29,7 +29,6 @@ utils.log_args(config)
 supported_predictors = {
     'gpwloaauto': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h='auto'),
     'gpwl1': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h=1),
-    'feedforward': FeedforwardPredictor(encoding_type='adjacency_one_hot', hpo_wrapper=True),
     'bananas': Ensemble(predictor_type='bananas', num_ensemble=3, hpo_wrapper=True),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),

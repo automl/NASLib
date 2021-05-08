@@ -313,8 +313,8 @@ class GPWLPredictor(BaseGPModel):
         # fit the model
         self.model.fit()
         print('Finished fitting GP')
-        # predict
-        train_pred = _untransform(self.query(xtrain).squeeze())
+        # predict on training data for checking
+        train_pred = self.query(xtrain).squeeze()
         train_error = np.mean(abs(train_pred - ytrain))
         return train_error
 
