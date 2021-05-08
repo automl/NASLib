@@ -27,8 +27,6 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    'gpwloaauto': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h='auto'),
-    'gpwl1': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h=1),
     'bananas': Ensemble(predictor_type='bananas', num_ensemble=3, hpo_wrapper=True),
     'bayes_lin_reg': BayesianLinearRegression(encoding_type='adjacency_one_hot'),
     'bohamiann': BOHAMIANN(encoding_type='adjacency_one_hot'),
@@ -37,6 +35,7 @@ supported_predictors = {
     'fisher': ZeroCostV2(config, batch_size=64, method_type='fisher'),
     'gcn': GCNPredictor(encoding_type='gcn', hpo_wrapper=True),
     'gp': GPPredictor(encoding_type='adjacency_one_hot'),
+    'gpwl': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h='auto'),
     'grad_norm': ZeroCostV2(config, batch_size=64, method_type='grad_norm'),
     'grasp': ZeroCostV2(config, batch_size=64, method_type='grasp'),
     'jacov': ZeroCostV1(config, batch_size=64, method_type='jacov'),

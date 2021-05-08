@@ -316,12 +316,3 @@ class GPWLPredictor(BaseGPModel):
     def query(self, xtest, info=None):
         """alias for predict"""
         return self.predict(xtest)
-
-
-if __name__ == '__main__':
-    import pickle
-
-    xtrain = pickle.load(open('xtrain.pickle', 'rb'))
-    ytrain = pickle.load(open('ytrain_transformed.pickle', 'rb'))
-    pred = GPWLPredictor(ss_type='nasbench101')
-    print(pred.fit(xtrain, ytrain))
