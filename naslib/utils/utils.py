@@ -139,6 +139,9 @@ def get_config_from_args(args=None, config_type='nas'):
 
     if args is None:
         args = parse_args()
+    else:
+        parser = default_argument_parser()
+        args = parser.parse_args(args)
     print(args)
     logger.info("Command line args: {}".format(args))
 
@@ -164,7 +167,7 @@ def get_config_from_args(args=None, config_type='nas'):
         config.seed = args.seed
 
     # load config file
-    config.merge_from_file(args.config_file)
+    config.merge_from_file(os.path.join(get_project_root(),args.config_file))
     config.merge_from_list(args.opts)
 
     # prepare the output directories
