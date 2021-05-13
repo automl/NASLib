@@ -60,6 +60,8 @@ def setup_logger(
         logging.Logger: a logger
     """
     logger = logging.getLogger(name)
+    # Remove all stream handlers
+    logger.handlers = []
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
 
