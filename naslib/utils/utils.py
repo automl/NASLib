@@ -166,8 +166,10 @@ def get_config_from_args(args=None, config_type='nas'):
         config.merge_from_file(args.config_file)
         config.merge_from_list(args.opts)
     except AttributeError:
-        for arg, value in pairwise(args):
-            config[arg] = value
+        #for arg, value in pairwise(args):
+        #    config[arg] = value
+        with open(args[1]) as f:
+            config = CfgNode.load_cfg(f)
 
 
     # prepare the output directories
