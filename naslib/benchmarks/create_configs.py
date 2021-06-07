@@ -72,6 +72,7 @@ def main(args):
         train_size_list = [int(j) for j in np.logspace(start=np.log(5.1)/np.log(2), 
                                                        stop=np.log(max_train_size)/np.log(2), 
                                                        num=11, endpoint=True, base=2.0)]
+        # train_size_list = [i for i in train_size_list if i < 230]
         fidelity_list = [int(j) for j in np.logspace(start=0.9, 
                                                      stop=np.log(total_epochs)/np.log(2), 
                                                      num=15, endpoint=True, base=2.0)]

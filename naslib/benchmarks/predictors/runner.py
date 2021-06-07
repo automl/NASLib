@@ -10,7 +10,7 @@ DNGOPredictor, EarlyStopping, Ensemble, GCNPredictor, GPPredictor, \
 LCEPredictor, LCEMPredictor, LGBoost, MLPPredictor, NGBoost, OmniNGBPredictor, \
 OmniSemiNASPredictor, RandomForestPredictor, SVR_Estimator, SemiNASPredictor, \
 SoLosspredictor, SparseGPPredictor, VarSparseGPPredictor, XGBoost, ZeroCostV1, \
-ZeroCostV2
+ZeroCostV2, GPWLPredictor
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
@@ -35,12 +35,13 @@ supported_predictors = {
     'fisher': ZeroCostV2(config, batch_size=64, method_type='fisher'),
     'gcn': GCNPredictor(encoding_type='gcn', hpo_wrapper=True),
     'gp': GPPredictor(encoding_type='adjacency_one_hot'),
+    'gpwl': GPWLPredictor(ss_type=config.search_space, kernel_type='wloa', optimize_gp_hyper=True, h='auto'),
     'grad_norm': ZeroCostV2(config, batch_size=64, method_type='grad_norm'),
     'grasp': ZeroCostV2(config, batch_size=64, method_type='grasp'),
     'jacov': ZeroCostV1(config, batch_size=64, method_type='jacov'),
     'lce': LCEPredictor(metric=Metric.VAL_ACCURACY),
     'lce_m': LCEMPredictor(metric=Metric.VAL_ACCURACY),
-    'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False, 
+    'lcsvr': SVR_Estimator(metric=Metric.VAL_ACCURACY, all_curve=False,
                            require_hyper=False),
     'lgb': LGBoost(encoding_type='adjacency_one_hot', hpo_wrapper=False),
     'mlp': MLPPredictor(encoding_type='adjacency_one_hot', hpo_wrapper=True),
@@ -58,32 +59,32 @@ supported_predictors = {
     'valacc': EarlyStopping(metric=Metric.VAL_ACCURACY),
     'valloss': EarlyStopping(metric=Metric.VAL_LOSS),
     'var_sparse_gp': VarSparseGPPredictor(encoding_type='adjacency_one_hot',
-                                          optimize_gp_hyper=True, num_steps=200),    
+                                          optimize_gp_hyper=True, num_steps=200),
     'xgb': XGBoost(encoding_type='adjacency_one_hot', hpo_wrapper=False),
     # path encoding experiments:
     'bayes_lin_reg_path': BayesianLinearRegression(encoding_type='path'),
     'bohamiann_path': BOHAMIANN(encoding_type='path'),
-    'dngo_path': DNGOPredictor(encoding_type='path'),  
+    'dngo_path': DNGOPredictor(encoding_type='path'),
     'gp_path': GPPredictor(encoding_type='path'),
     'lgb_path': LGBoost(encoding_type='path', hpo_wrapper=False),
-    'ngb_path': NGBoost(encoding_type='path', hpo_wrapper=False),    
+    'ngb_path': NGBoost(encoding_type='path', hpo_wrapper=False),
     # omni:
-    'omni_ngb': OmniNGBPredictor(encoding_type='adjacency_one_hot', config=config, 
+    'omni_ngb': OmniNGBPredictor(encoding_type='adjacency_one_hot', config=config,
                                  zero_cost=['jacov'], lce=['sotle']),
-    'omni_seminas': OmniSemiNASPredictor(encoding_type='seminas', config=config, 
-                                         semi=True, hpo_wrapper=False, 
-                                         zero_cost=['jacov'], lce=['sotle'], 
+    'omni_seminas': OmniSemiNASPredictor(encoding_type='seminas', config=config,
+                                         semi=True, hpo_wrapper=False,
+                                         zero_cost=['jacov'], lce=['sotle'],
                                          jacov_onehot=True),
     # omni ablation studies:
-    'omni_ngb_no_lce': OmniNGBPredictor(encoding_type='adjacency_one_hot', 
+    'omni_ngb_no_lce': OmniNGBPredictor(encoding_type='adjacency_one_hot',
                                         config=config, zero_cost=['jacov'], lce=[]),
-    'omni_seminas_no_lce': OmniSemiNASPredictor(encoding_type='seminas', config=config, 
-                                                semi=True, hpo_wrapper=False, 
-                                                zero_cost=['jacov'], lce=[], 
+    'omni_seminas_no_lce': OmniSemiNASPredictor(encoding_type='seminas', config=config,
+                                                semi=True, hpo_wrapper=False,
+                                                zero_cost=['jacov'], lce=[],
                                                 jacov_onehot=True),
-    'omni_ngb_no_zerocost': OmniNGBPredictor(encoding_type='adjacency_one_hot', 
+    'omni_ngb_no_zerocost': OmniNGBPredictor(encoding_type='adjacency_one_hot',
                                              config=config, zero_cost=[], lce=['sotle']),
-    'omni_ngb_no_encoding': OmniNGBPredictor(encoding_type=None, config=config, 
+    'omni_ngb_no_encoding': OmniNGBPredictor(encoding_type=None, config=config,
                                              zero_cost=['jacov'], lce=['sotle']),
 }
 
@@ -108,7 +109,7 @@ search_space = supported_search_spaces[config.search_space]
 
 # initialize the PredictorEvaluator class
 predictor_evaluator = PredictorEvaluator(predictor, config=config)
-predictor_evaluator.adapt_search_space(search_space, load_labeled=load_labeled, 
+predictor_evaluator.adapt_search_space(search_space, load_labeled=load_labeled,
                                        dataset_api=dataset_api)
 
 # evaluate the predictor

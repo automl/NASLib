@@ -10,10 +10,10 @@ from naslib.predictors.bonas import BonasPredictor
 from naslib.predictors.bnn import DNGOPredictor, BOHAMIANN, \
 BayesianLinearRegression
 from naslib.predictors.seminas import SemiNASPredictor
-from naslib.predictors.gp import GPPredictor, SparseGPPredictor, VarSparseGPPredictor
+from naslib.predictors.gp import GPPredictor, SparseGPPredictor, \
+VarSparseGPPredictor, GPWLPredictor
 from naslib.predictors.omni_ngb import OmniNGBPredictor
 from naslib.predictors.omni_seminas import OmniSemiNASPredictor
-
 
 class Ensemble(Predictor):
     
@@ -53,6 +53,8 @@ class Ensemble(Predictor):
                                 encoding_type='gcn'),
             'gp': GPPredictor(ss_type=self.ss_type,
                               encoding_type='adjacency_one_hot'),
+            'gpwl': GPWLPredictor(ss_type=self.ss_type, kernel_type='wloa', 
+                                  optimize_gp_hyper=True, h='auto'),
             'mlp': MLPPredictor(ss_type=self.ss_type,
                                         encoding_type='adjacency_one_hot'),
             'nao': SemiNASPredictor(ss_type=self.ss_type, semi=False,
