@@ -1,6 +1,7 @@
 # This is an implementation of the BOHAMIANN predictor from the paper:
 # Springenberg et al., 2016. Bayesian Optimization with Robust Bayesian Neural
 # Networks
+
 import torch.nn as nn
 from pybnn.bohamiann import Bohamiann, nll, get_default_network
 

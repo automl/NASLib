@@ -14,7 +14,7 @@ class Predictor:
         """
         pass
     
-    def pre_compute(self, xtrain, xtest):
+    def pre_compute(self, xtrain, xtest, unlabeled=None):
         """
         This method is used to make batch predictions
         more efficient. Perform a computation on the train/test
@@ -49,7 +49,9 @@ class Predictor:
         reqs = {'requires_partial_lc':False, 
                 'metric':None, 
                 'requires_hyperparameters':False, 
-                'hyperparams':{}}
+                'hyperparams':{}, 
+                'unlabeled':False, 
+                'unlabeled_factor':0}
         return reqs
 
     def set_hyperparams(self, hyperparams):
@@ -62,6 +64,9 @@ class Predictor:
             # TODO: set hyperparams (at least to None) for all predictors
             print('no hyperparams set')
             return None
+        
+    def reset_hyperparams(self):
+        self.hyperparams = None
         
     def get_hpo_wrapper(self):
         if hasattr(self, 'hpo_wrapper'):

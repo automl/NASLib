@@ -1,5 +1,6 @@
 # This is an implementation of the DNGO predictor from the paper:
 # Snoek et al., 2015. Scalable Bayesian Optimization using DNNs
+
 from pybnn.dngo import DNGO
 
 from naslib.predictors.bnn.bnn_base import BNN

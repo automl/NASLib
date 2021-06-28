@@ -8,7 +8,7 @@ from naslib.predictors.trees.ngb import loguniform
 
 from naslib.predictors.trees import BaseTree
 
-class GBDTPredictor(BaseTree):
+class LGBoost(BaseTree):
 
     @property
     def default_hyperparams(self, params=None):
@@ -64,5 +64,5 @@ class GBDTPredictor(BaseTree):
     def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
-        return super(GBDTPredictor, self).fit(xtrain, ytrain, train_info, params, **kwargs)
+        return super(LGBoost, self).fit(xtrain, ytrain, train_info, params, **kwargs)
 

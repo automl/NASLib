@@ -16,7 +16,7 @@ Code below from NASBench-01 and slighly adapted
 class ReLUConvBN(AbstractPrimitive):
 
     def __init__(self, C_in, C, kernel_size, stride=1, affine=False):
-        super().__init__()
+        super().__init__(locals())
         self.kernel_size = kernel_size
         pad = 0 if stride == 1 and kernel_size == 1 else 1
         self.op = nn.Sequential(

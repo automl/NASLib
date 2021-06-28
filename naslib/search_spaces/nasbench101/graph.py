@@ -8,7 +8,7 @@ import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.primitives import ReLUConvBN, MaxPool1x1
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench101.conversions import convert_naslib_to_spec, \
 convert_spec_to_naslib, convert_spec_to_tuple
@@ -35,9 +35,8 @@ class NasBench101SearchSpace(Graph):
     """
 
     OPTIMIZER_SCOPE = [
-        "stack_1",
-        "stack_2",
-        "stack_3",
+        "node",
+        "cell",
     ]
 
     QUERYABLE = True
@@ -46,11 +45,14 @@ class NasBench101SearchSpace(Graph):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         
+        # creating a dummy graph!
+        channels = [128, 256, 512]
         #
         # Cell definition
         #
         node_pair = Graph()
         node_pair.name = "node_pair"    # Use the same name for all cells with shared attributes
+        node_pair.set_scope("node")
 
         # need to add subgraphs on the nodes, each subgraph has option for 3 ops
         # Input node
@@ -61,21 +63,31 @@ class NasBench101SearchSpace(Graph):
         cell = Graph()
         cell.name = 'cell'
 
+        node_pair.update_edges(
+            update_func=lambda edge: _set_node_ops(edge, C=channels[0]),
+            private_edge_data=True
+        )
+
         cell.add_node(1)    # input node
-        cell.add_node(2, subgraph=node_pair.set_scope("stack_1").set_input([1]))
-        cell.add_node(3, subgraph=node_pair.copy().set_scope("stack_1"))
-        cell.add_node(4, subgraph=node_pair.copy().set_scope("stack_1"))
-        cell.add_node(5, subgraph=node_pair.copy().set_scope("stack_1"))
-        cell.add_node(6, subgraph=node_pair.copy().set_scope("stack_1"))
+        cell.add_node(2, subgraph=node_pair.set_input([1]))
+        cell.add_node(3, subgraph=node_pair.copy())
+        cell.add_node(4, subgraph=node_pair.copy())
+        cell.add_node(5, subgraph=node_pair.copy())
+        cell.add_node(6, subgraph=node_pair.copy())
         cell.add_node(7)    # output
+        cell.set_scope('cell', recursively=False)
 
         # Edges
         cell.add_edges_densly()
-
+        
+        cell.update_edges(
+            update_func=lambda edge: _set_cell_ops(edge, C=channels[0]),
+            scope="cell",
+            private_edge_data=True
+        )
         #
         # dummy Makrograph definition for RE for benchmark queries
         #
-        channels = [128, 256, 512]
         
         self.name = "makrograph"
 
@@ -84,29 +96,19 @@ class NasBench101SearchSpace(Graph):
         self.add_edges_from([(i, i+1) for i in range(1, total_num_nodes)])
 
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
-        self.edges[2, 3].set('op', cell.copy().set_scope('stage_1'))
-        
-        node_pair.update_edges(
-            update_func=lambda current_edge_data: _set_node_ops(current_edge_data, C=channels[0]),
-            scope="node",
-            private_edge_data=True
-        )
-        
-        cell.update_edges(
-            update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, C=channels[0]),
-            scope="cell",
-            private_edge_data=True
-        )
+        self.edges[2, 3].set('op', cell.copy().set_scope('cell'))
 
     def query(self, metric=None, dataset='cifar10', path=None, epoch=-1, full_lc=False, dataset_api=None):
-
+        """
+        Query results from nasbench 101
+        """
         assert isinstance(metric, Metric)
         assert dataset in ['cifar10', None], "Unknown dataset: {}".format(dataset)
         if metric in [Metric.ALL, Metric.HP]:
             raise NotImplementedError()
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query nasbench101')
-        assert epoch in [-1, 4, 12, 36, 108, None], 'nasbench101 does not have full learning curve information'
+        assert epoch in [-1, 4, 12, 36, 108, None], 'nasbench101 does not have full learning curve info'
     
         metric_to_nb101 = {
             Metric.TRAIN_ACCURACY: 'train_accuracy',
@@ -117,7 +119,6 @@ class NasBench101SearchSpace(Graph):
         }
 
         if self.spec is None:
-            #matrix, ops = convert_naslib_to_spec(self)
             raise NotImplementedError('Cannot yet query directly from the naslib object')
         api_spec = dataset_api['api'].ModelSpec(**self.spec)
     
@@ -250,15 +251,16 @@ class NasBench101SearchSpace(Graph):
         return 'nasbench101'
     
 def _set_node_ops(current_edge_data, C):
-    current_edge_data.set('op', [
+    ops = [
         ReLUConvBN(C, C, kernel_size=1),
         # ops.Zero(stride=1),    #! recheck about the hardcoded second operation
         ReLUConvBN(C, C, kernel_size=3),
-        ops.MaxPool1x1(kernel_size=3, stride=1),
-    ])
+        MaxPool1x1(kernel_size=3, stride=1),
+    ]
+    current_edge_data['op'] = ops
 
-def _set_cell_ops(current_edge_data, C):
-    current_edge_data.set('op', [
+def _set_cell_ops(edge, C):
+    edge.data.set('op', [
         ops.Identity(),
         ops.Zero(stride=1), 
     ])

@@ -1,16 +1,14 @@
-predictors=(bonas gcn \
-ngb rf xgb gbdt \
-bananas mlp seminas nao \
-dngo bohamiann bayes_lin_reg \
-gp sparse_gp var_sparse_gp\
-gbdt_path gp_path dngo_path bohamiann_path bayes_lin_reg_path)
+predictors=(fisher grad_norm grasp jacov snip synflow \
+bananas bonas gcn mlp nao seminas \
+lgb ngb rf xgb \
+bayes_lin_reg bohamiann dngo \
+gp sparse_gp var_sparse_gp)
 
-experiment_types=(vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_train_size vary_train_size
+experiment_types=(single single single single single single \
+vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size vary_train_size \
 vary_train_size vary_train_size vary_train_size \
-vary_train_size vary_train_size vary_train_size\
-vary_train_size vary_train_size vary_train_size vary_train_size vary_train_size)
+vary_train_size vary_train_size vary_train_size)
 
 start_seed=$1
 if [ -z "$start_seed" ]

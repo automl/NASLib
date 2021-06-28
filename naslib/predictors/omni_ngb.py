@@ -4,12 +4,13 @@ import copy
 import logging
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import cross_val_score
-
-import xgboost as xgb
+from ngboost import NGBRegressor
+from ngboost.distns import Normal
+from ngboost.scores import LogScore
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
-from naslib.predictors.zerocost_estimators import ZeroCostEstimators
+from naslib.predictors.zerocost_v1 import ZeroCostV1
 from naslib.predictors.utils.encodings import encode
 from naslib.utils import utils
 from naslib.search_spaces.core.query_metrics import Metric
@@ -25,14 +26,12 @@ def parse_params(params, identifier):
     return to_return
 
 
-class OmniXGBPredictor(Predictor):
+class OmniNGBPredictor(Predictor):
 
     def __init__(self, zero_cost, lce, encoding_type, ss_type=None, config=None, 
-                 n_hypers=0, run_pre_compute=True, min_train_size=0, 
-                 max_zerocost=np.inf):
+                 n_hypers=35, run_pre_compute=True, min_train_size=0, max_zerocost=np.inf):
         
         self.zero_cost = zero_cost
-        self.lce = lce
         self.encoding_type = encoding_type
         self.config = config
         self.n_hypers = n_hypers
@@ -56,7 +55,7 @@ class OmniXGBPredictor(Predictor):
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(self.config, mode='train')
 
             for method_name in self.zero_cost:
-                zc_method = ZeroCostEstimators(self.config, batch_size=64, method_type=method_name)
+                zc_method = ZeroCostV1(self.config, batch_size=64, method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 xtrain_zc_scores = zc_method.query(xtrain)
                 xtest_zc_scores = zc_method.query(xtest)
@@ -69,6 +68,18 @@ class OmniXGBPredictor(Predictor):
                 
                 self.xtrain_zc_info[f'{method_name}_scores'] = normalized_train
                 self.xtest_zc_info[f'{method_name}_scores'] = normalized_test
+
+    def get_random_params(self):
+        params = {
+            'param:n_estimators': int(loguniform(128, 512)),
+            'param:learning_rate': loguniform(.001, .1),
+            'param:minibatch_frac': np.random.uniform(.1, 1),
+            'base:max_depth': np.random.choice(24) + 1,
+            'base:max_features': np.random.uniform(.1, 1),
+            'base:min_samples_leaf': np.random.choice(18) + 2,
+            'base:min_samples_split': np.random.choice(18) + 2,
+        }
+        return params
     
     def run_hpo(self, xtrain, ytrain):
         min_score = 100000
@@ -147,21 +158,21 @@ class OmniXGBPredictor(Predictor):
         self.std = np.std(ytrain)
         ytrain = (np.array(ytrain)-self.mean)/self.std
         xtrain = self.prepare_features(xtrain, train_info, train=True)
-        if self.n_hypers > 0:
-            # todo: not implemented
-            #params = self.run_hpo(xtrain, ytrain)
-            params = self.get_default_params()
-        else:
-            params = self.get_default_params()
-            
-        train_data = xgb.DMatrix(xtrain, label=ytrain)
-        self.model = xgb.train(params, train_data, num_boost_round=500)
+        params = self.run_hpo(xtrain, ytrain)
 
+        # todo: this code is repeated in cross_validate
+        base_learner = DecisionTreeRegressor(criterion='friedman_mse',
+                                             random_state=None,
+                                             splitter='best',
+                                             **parse_params(params, 'base:'))
+        self.model = NGBRegressor(Dist=Normal, Base=base_learner, Score=LogScore,
+                                  verbose=True, **parse_params(params, 'param:'))
+        self.model.fit(xtrain, ytrain)
 
     def query(self, xtest, info):
         if self.trained:
             test_data = self.prepare_features(xtest, info, train=False)
-            return np.squeeze(self.model.predict(xgb.DMatrix(test_data))) * self.std + self.mean
+            return np.squeeze(self.model.predict(test_data)) * self.std + self.mean
         else:
             logger.info('below the train size, so returning info')
             return info
@@ -179,34 +190,11 @@ class OmniXGBPredictor(Predictor):
             reqs = {'requires_partial_lc':True, 
                     'metric':self.metric, 
                     'requires_hyperparameters':False, 
-                    'hyperparams':{}
+                    'hyperparams':{}, 
+                    'unlabeled':False, 
+                    'unlabeled_factor':0
                    }
         else:
             reqs = super().get_data_reqs()
 
         return reqs
-    
-    def get_default_params(self):
-        params = {
-            'objective': 'reg:squarederror',
-            'eval_metric': "rmse",
-            'booster': 'gbtree', 
-            'max_depth': 6,
-            'min_child_weight': 1,
-            'colsample_bytree': 1,
-            'learning_rate': .3,
-            'colsample_bylevel': 1
-        }
-        return params
-    
-    def get_random_params(self):
-        params = {
-            'param:n_estimators': int(loguniform(128, 512)),
-            'param:learning_rate': loguniform(.001, .1),
-            'param:minibatch_frac': np.random.uniform(.1, 1),
-            'base:max_depth': np.random.choice(24) + 1,
-            'base:max_features': np.random.uniform(.1, 1),
-            'base:min_samples_leaf': np.random.choice(18) + 2,
-            'base:min_samples_split': np.random.choice(18) + 2,
-        }
-        return params

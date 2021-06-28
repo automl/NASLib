@@ -1,5 +1,4 @@
 predictors=(rf)
-
 experiment_types=(single)
 
 start_seed=$1

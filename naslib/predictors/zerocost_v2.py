@@ -1,9 +1,17 @@
-import random
+"""
+This contains implementations of:
+synflow, grad_norm, fisher, and grasp, and variants of jacov and snip 
+based on https://github.com/mohsaied/zero-cost-nas
+Note that zerocost_v1.py contains the original implementations
+of jacov and snip. Particularly, the original jacov implementation tends to
+perform better than the one in this file.
+"""
 
+import random
 import numpy as np
 import torch
 import logging
-# import gc
+
 from naslib.predictors.predictor import Predictor
 from naslib.utils.utils import get_project_root, get_train_val_loaders
 from naslib.predictors.utils.models.build_darts_net import NetworkCIFAR
@@ -15,7 +23,7 @@ import math
 from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 logger = logging.getLogger(__name__)
 
-class ZeroCostEstimators(Predictor):
+class ZeroCostV2(Predictor):
 
     def __init__(self, config, batch_size = 64, method_type='jacov'):
         # available zero-cost method types: 'jacov', 'snip', 'synflow', 'grad_norm', 'fisher', 'grasp'
@@ -30,10 +38,11 @@ class ZeroCostEstimators(Predictor):
         config.data = "{}/data".format(get_project_root())
         self.config = config
         num_classes_dic = {'cifar10': 10, 'cifar100': 100, 'ImageNet16-120': 120}
-        self.num_classes = num_classes_dic[self.config.dataset]
+        self.num_classes = None
+        if self.config.dataset in num_classes_dic:
+            self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
-
         self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode='train')
 
     def query(self, xtest, info=None):
@@ -77,9 +86,13 @@ class ZeroCostEstimators(Predictor):
                                              self.device, measure_names=[self.method_type])
             if math.isnan(score):
                 score = -1e8
+                
+            if 'nasbench101' in self.config.search_space and self.method_type == 'jacov':
+                score = -score
+            elif 'darts' in self.config.search_space and self.method_type in ['fisher', 'grad_norm', 'synflow', 'snip']:
+                score = -score
 
             test_set_scores.append(score)
             torch.cuda.empty_cache()
-            # gc.collect()
 
         return np.array(test_set_scores)

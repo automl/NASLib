@@ -1,3 +1,6 @@
+# This code is from https://github.com/automl/pylearningcurvepredictor
+# pylearningcurvepredictor author: Tobias Domhan, tdomhan
+
 import numpy as np
 from scipy.optimize import minimize
 
@@ -94,7 +97,7 @@ def ilog2(params, x):
     a, c, _ = params
     return c - (a / np.log(x + 1))
 
-model_name_list = [
+model_name_list_original = [
     'vapor_pressure',
     'pow3',
     'logloglinear',
@@ -105,6 +108,14 @@ model_name_list = [
     'janoschek',
     'weibull',
     'ilog2',
+    'hill3'
+]
+
+# note: removing some of the models was found to improve performance
+model_name_list = [
+    'logloglinear',
+    'logpower',
+    'mmf',
     'hill3'
 ]
 

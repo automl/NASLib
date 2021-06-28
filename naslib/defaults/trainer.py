@@ -160,6 +160,7 @@ class Trainer(object):
                         e, anytime_results), n=5)
 
             self._log_to_json()
+
             self._log_and_reset_accuracies(e)
 
         self.optimizer.after_training()

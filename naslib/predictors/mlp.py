@@ -9,8 +9,8 @@ from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors import Predictor
 
-#device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = torch.device('cpu') #NOTE: faster on CPU
+# NOTE: faster on CPU
+device = torch.device('cpu')
 print('device:', device)
 
 def accuracy_mse(prediction, target, scale=100.):
@@ -52,7 +52,7 @@ class FeedforwardNet(nn.Module):
         return x
 
 
-class FeedforwardPredictor(Predictor):
+class MLPPredictor(Predictor):
 
     def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', hpo_wrapper=False):
         self.encoding_type = encoding_type

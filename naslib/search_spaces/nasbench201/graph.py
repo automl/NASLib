@@ -119,7 +119,7 @@ class NasBench201SearchSpace(Graph):
         
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
-            Return e.g.: '|avg_pool_3x3~0|+|nor_conv_1x1~0|skip_connect~1|+|nor_conv_1x1~0|skip_connect~1|skip_connect~2|'
+        Query results from nasbench 201
         """
         assert isinstance(metric, Metric)
         if metric == Metric.ALL:
@@ -128,7 +128,7 @@ class NasBench201SearchSpace(Graph):
             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query nasbench201')
-                
+
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: 'train_acc1es',
             Metric.VAL_ACCURACY: 'eval_acc1es',
@@ -146,19 +146,19 @@ class NasBench201SearchSpace(Graph):
         }
 
         arch_str = convert_naslib_to_str(self)
-        
+
         if metric == Metric.RAW:
             # return all data
-            return dataset_api['raw_data'][arch_str]
+            return dataset_api['nb201_data'][arch_str]
 
         if dataset in ['cifar10', 'cifar10-valid']:
-            query_results = dataset_api['full_lc_data'][arch_str]
+            query_results = dataset_api['nb201_data'][arch_str]
             # set correct cifar10 dataset
             dataset = 'cifar10-valid'
         elif dataset == 'cifar100':
-            query_results = dataset_api['full_lc_data'][arch_str]
+            query_results = dataset_api['nb201_data'][arch_str]
         elif dataset == 'ImageNet16-120':
-            query_results = dataset_api['full_lc_data'][arch_str]
+            query_results = dataset_api['nb201_data'][arch_str]
         else:
             raise NotImplementedError('Invalid dataset')
 
