@@ -10,7 +10,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=bo201
+s3_folder=bo201_may19
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
@@ -19,7 +19,7 @@ dataset=cifar10
 search_epochs=500
 
 # trials / seeds:
-trials=100
+trials=200
 end_seed=$(($start_seed + $trials - 1))
 save_to_s3=true
 
