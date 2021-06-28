@@ -124,28 +124,38 @@ class DartsSearchSpace(Graph):
 
         self.add_node(1)    # input node
         self.add_node(2)    # preprocessing
-        self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
-        self.add_node(4, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 3]))
-        self.add_node(5, subgraph=reduction_cell.set_scope("r_stage_1").set_input([3, 4]))
-        self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 5]))
-        self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
-        self.add_node(8, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([6, 7]))
-        self.add_node(9, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([7, 8]))
-        self.add_node(10, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 9]))
-        self.add_node(11)   # output
+        self.add_node(3)
 
-        self.add_edges_from([(i, i+1) for i in range(1, 11)])
-        self.add_edges_from([(i, i+2) for i in range(2, 9)])
- 
+        # cells
+        self.add_node(4, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 3]))
+        self.add_node(5, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 4]))
+        self.add_node(6, subgraph=reduction_cell.set_scope("r_stage_1").set_input([4, 5]))
+        self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
+        self.add_node(8, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([6, 7]))
+        self.add_node(9, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([7, 8]))
+        self.add_node(10, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 9]))
+        self.add_node(11, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([9, 10]))
+
+        # output
+        self.add_node(12)
+
+        # chain connections
+        self.add_edges_from([(i, i+1) for i in range(1, 12)])
+
+        # skip connections
+        self.add_edges_from([(i, i+2) for i in range(4, 10)])
+        self.add_edge(2, 4)
+        self.add_edge(2, 5)
+
         #
         # Operations at the makrograph edges
         #
         self.num_in_edges = 4
-        reduction_cell_indices = [5, 8]
+        reduction_cell_indices = [6, 9]
 
-        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
+        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=12)
 
-        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=11, affine=False)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=12, affine=False)
 
         self._set_cell_ops(reduction_cell_indices)
 
@@ -159,6 +169,8 @@ class DartsSearchSpace(Graph):
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
             if u > 1 and v < max_index:
+                if u == 3:
+                    continue
                 C_in = self.channels[channel_map_from[u]]
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
@@ -168,7 +180,7 @@ class DartsSearchSpace(Graph):
                     data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1, affine=affine))
                 else:
                     data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out, affine=affine))
-        
+
         # post-processing
         _, _, data = sorted(self.edges(data=True))[-1]
         data.set('op', ops.Sequential(
