@@ -164,6 +164,7 @@ def get_config_from_args(args=None, config_type='nas'):
         config.seed = args.seed
 
     # load config file
+    config.set_new_allowed(True)
     config.merge_from_file(args.config_file)
     config.merge_from_list(args.opts)
 

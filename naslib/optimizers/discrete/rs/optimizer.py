@@ -34,6 +34,7 @@ class RandomSearch(MetaOptimizer):
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
         self.fidelity = config.search.fidelity
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         
         self.sampled_archs = []
@@ -65,7 +66,7 @@ class RandomSearch(MetaOptimizer):
         # required if we want to train the models and not only query.
         # architecture_i.parse()
         # architecture_i.train()
-        # architecture_i = architecture_i.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+        # architecture_i = architecture_i.to(self.device)
         # self.sampled_archs.append(architecture_i)
         # self.weight_optimizers.append(self.weight_optimizer(architecture_i.parameters(), 0.01))
 

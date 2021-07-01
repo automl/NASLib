@@ -59,6 +59,7 @@ class DARTSOptimizer(MetaOptimizer):
         self.grad_clip = self.config.search.grad_clip
 
         self.architectural_weights = torch.nn.ParameterList()
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         self.perturb_alphas = None
         self.epsilon = 0
@@ -130,8 +131,8 @@ class DARTSOptimizer(MetaOptimizer):
         """
         Move the graph into cuda memory if available.
         """
-        self.graph = self.graph.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
-        self.architectural_weights = self.architectural_weights.to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu"))
+        self.graph = self.graph.to(self.device)
+        self.architectural_weights = self.architectural_weights.to(self.device)
     
 
     def new_epoch(self, epoch):
@@ -190,7 +191,7 @@ class DARTSOptimizer(MetaOptimizer):
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
         graph.parse()
-        graph = graph.cuda() if torch.cuda.is_available() else graph.cpu()
+        graph = graph.to(self.device)
         return graph
 
 
@@ -296,7 +297,9 @@ class DARTSOptimizer(MetaOptimizer):
         assert offset == len(theta)
         model_dict.update(params)
         model_new.load_state_dict(model_dict)
-        return model_new.cuda()
+        model_new = model_new.to(self.device)
+
+        return model_new
 
     def _hessian_vector_product(self, model, criterion, vector, input, target, r=1e-2):
         R = r / _concat(vector).norm()

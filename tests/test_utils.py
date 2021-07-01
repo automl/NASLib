@@ -14,7 +14,7 @@ from naslib.utils import utils, setup_logger
 class UtilsTest(unittest.TestCase):
 
     def test_get_config_from_args_config_file(self):
-        args = utils.parse_args(args=['--config-file', 'tests/assets/config.yaml', '--resume'])
+        args = utils.parse_args(args=['--config-file', 'assets/config.yaml', '--resume'])
         config = utils.get_config_from_args(args)
 
         self.assertTrue(args.resume)
