@@ -40,7 +40,7 @@ requires = [
     "cython",
     "hyperopt==0.1.2",
     "pyyaml",
-    "numpy==1.16.4",
+    "numpy==1.18.5",
     "torch>=1.2.0",
     "torchvision>=0.4.0",
     "fvcore",
