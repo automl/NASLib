@@ -62,8 +62,8 @@ def default_argument_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default="{}/benchmarks/predictors/predictor_config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
-    # parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
+    # parser.add_argument("--config-file", default="{}/benchmarks/predictors/predictor_config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
