@@ -10,6 +10,7 @@ from naslib.utils import utils, setup_logger
 
 logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
 logger.handlers[0].setLevel(logging.FATAL)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 config = utils.AttrDict()
 config.dataset = 'cifar10'
@@ -24,12 +25,8 @@ config.search.tau_max = 10
 config.search.tau_min = 1
 config.search.epochs = 2
 
-data_train = (torch.ones([2, 3, 32, 32]), torch.ones([2]).long())
-data_val = (torch.ones([2, 3, 32, 32]), torch.ones([2]).long())
-
-if torch.cuda.is_available():
-    data_train = tuple(x.cuda() for x in data_train)
-    data_val = tuple(x.cuda() for x in data_val)
+data_train = (torch.ones([2, 3, 32, 32]).to(device), torch.ones([2]).to(device).long())
+data_val = (torch.ones([2, 3, 32, 32]).to(device), torch.ones([2]).to(device).long())
 
 
 class SimpleCellDartsIntegrationTest(unittest.TestCase):
