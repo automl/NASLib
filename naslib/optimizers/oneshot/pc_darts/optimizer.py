@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import logging
 from torch.autograd import Variable
-
+import torch.nn.functional as F
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 from naslib.utils.utils import count_parameters_in_MB
@@ -37,7 +37,7 @@ class PCDARTSOptimizer(DARTSOptimizer):
     @staticmethod
     def sample_alphas(edge):
         #? check if we need to unsqueeze here? -- torch.unsqueeze(edge.data.alpha, dim=0)
-        beta = F.elu(edge.data.alpha) + 1
+        beta = F.relu(edge.data.alpha) + 1
         # what to do about masking and pruning?
         weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
         edge.data.set('sampled_arch_weight', weights, shared = True)
@@ -95,7 +95,7 @@ class PCDARTSOptimizer(DARTSOptimizer):
             scope=self.scope,
             private_edge_data=False
         )
-        
+        self.graph.to(self.device)
         # Update architecture weights
         self.arch_optimizer.zero_grad()
         logits_val = self.graph(input_val)

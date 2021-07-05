@@ -38,9 +38,9 @@ with open(version_path, 'w') as f:
 requires = [
     "ConfigSpace",
     "cython",
-    "hyperopt==0.1.2",
+    "hyperopt",
     "pyyaml",
-    "numpy==1.18.5",
+    "numpy",
     "torch>=1.2.0",
     "torchvision>=0.4.0",
     "fvcore",

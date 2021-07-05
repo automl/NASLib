@@ -2,6 +2,7 @@ from .oneshot.darts.optimizer import DARTSOptimizer
 from .oneshot.oneshot_train.optimizer import OneShotNASOptimizer
 from .oneshot.rs_ws.optimizer import RandomNASOptimizer
 from .oneshot.gdas.optimizer import GDASOptimizer
+from .oneshot.pc_darts.optimizer import PCDARTSOptimizer
 from .oneshot.drnas.optimizer import DrNASOptimizer
 from .oneshot.drnas.optimizer_progressive_growing import DrNASGrowOptimizer
 from .discrete.rs.optimizer import RandomSearch

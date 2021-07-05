@@ -24,7 +24,6 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(config.search.batch_size, 300)
         self.assertEqual(config.evaluation.batch_size, 200)
 
-
     def test_get_config_from_args_config_args(self):
         args = utils.parse_args(args=['seed', '1', 'search.epochs', '42',
                                       'out_dir', 'tmp/util_test'])

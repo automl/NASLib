@@ -4,12 +4,13 @@ import torch
 import os
 
 from naslib.search_spaces import HierarchicalSearchSpace
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, RandomNASOptimizer, PCDARTSOptimizer, \
+    DrNASGrowOptimizer
 from naslib.utils import utils, setup_logger
-
 
 logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
 logger.handlers[0].setLevel(logging.FATAL)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 config = utils.AttrDict()
 config.dataset = 'cifar10'
@@ -24,12 +25,8 @@ config.search.tau_max = 10
 config.search.tau_min = 1
 config.search.epochs = 2
 
-data_train = (torch.ones([2, 3, 32, 32]), torch.ones([2]).long())
-data_val = (torch.ones([2, 3, 32, 32]), torch.ones([2]).long())
-
-if torch.cuda.is_available():
-    data_train = tuple(x.cuda() for x in data_train)
-    data_val = tuple(x.cuda() for x in data_val)
+data_train = (torch.ones([2, 3, 32, 32]).to(device), torch.ones([2]).to(device).long())
+data_val = (torch.ones([2, 3, 32, 32]).to(device), torch.ones([2]).to(device).long())
 
 
 class HierarchicalDartsIntegrationTest(unittest.TestCase):
@@ -39,14 +36,12 @@ class HierarchicalDartsIntegrationTest(unittest.TestCase):
         self.optimizer = DARTSOptimizer(config)
         self.optimizer.adapt_search_space(HierarchicalSearchSpace())
         self.optimizer.before_training()
-        
 
     def test_update(self):
         stats = self.optimizer.step(data_train, data_val)
         self.assertTrue(len(stats) == 4)
         self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.4094, places=3)
         self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.4094, places=3)
-
 
     def test_feed_forward(self):
         final_arch = self.optimizer.get_final_architecture()
@@ -62,7 +57,6 @@ class HierarchicalGdasIntegrationTest(unittest.TestCase):
         self.optimizer = GDASOptimizer(config)
         self.optimizer.adapt_search_space(HierarchicalSearchSpace())
         self.optimizer.before_training()
-        
 
     def test_update(self):
         stats = self.optimizer.step(data_train, data_val)
@@ -70,12 +64,68 @@ class HierarchicalGdasIntegrationTest(unittest.TestCase):
         self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.4094, places=3)
         self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.4094, places=3)
 
+    def test_feed_forward(self):
+        final_arch = self.optimizer.get_final_architecture()
+        logits = final_arch(data_train[0])
+        self.assertTrue(logits.shape == (2, 10))
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), -0.0545, places=3)
+
+
+class HierarchicalDrNasIntegrationTest(unittest.TestCase):
+
+    def setUp(self):
+        utils.set_seed(1)
+        self.optimizer = DrNASOptimizer(config)
+        self.optimizer.adapt_search_space(HierarchicalSearchSpace())
+        self.optimizer.before_training()
+
+    def test_update(self):
+        stats = self.optimizer.step(data_train, data_val)
+        self.assertTrue(len(stats) == 4)
+        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.4094, places=3)
+        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.4094, places=3)
 
     def test_feed_forward(self):
         final_arch = self.optimizer.get_final_architecture()
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
         self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), -0.0545, places=3)
+
+
+class HierarchicalDrNASGrowOptimizer(unittest.TestCase):
+
+    def setUp(self):
+        utils.set_seed(1)
+        self.optimizer = DrNASGrowOptimizer(config)
+        self.optimizer.adapt_search_space(HierarchicalSearchSpace())
+        self.optimizer.before_training()
+
+    def test_update(self):
+        stats = self.optimizer.step(data_train, data_val)
+        self.assertTrue(len(stats) == 4)
+        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.4094, places=3)
+        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.4094, places=3)
+
+    def test_feed_forward(self):
+        final_arch = self.optimizer.get_final_architecture()
+        logits = final_arch(data_train[0])
+        self.assertTrue(logits.shape == (2, 10))
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), -0.0545, places=3)
+
+
+class HierarchicalPCDartsIntegrationTest(unittest.TestCase):
+
+    def setUp(self):
+        utils.set_seed(1)
+        self.optimizer = PCDARTSOptimizer(config)
+        self.optimizer.adapt_search_space(HierarchicalSearchSpace())
+        self.optimizer.before_training()
+
+    def test_update(self):
+        stats = self.optimizer.step(data_train, data_val)
+        self.assertTrue(len(stats) == 4)
+        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.4094, places=3)
+        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.4094, places=3)
 
 
 if __name__ == '__main__':
