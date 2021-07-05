@@ -493,8 +493,8 @@ def _set_ops(edge, C, stride):
     edge.data.set('op', [
         ops.Identity() if stride==1 else FactorizedReduce(C, C, stride, affine=False),
         ops.Zero(stride=stride),
-        ops.MaxPool(3, stride),
-        ops.AvgPool(3, stride),
+        ops.MaxPool(C, 3, stride),
+        ops.AvgPool(C, 3, stride),
         ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
         ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
         ops.DilConv(C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),

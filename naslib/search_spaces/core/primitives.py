@@ -216,9 +216,12 @@ class Sequential(AbstractPrimitive):
 
 
 class MaxPool(AbstractPrimitive):
-    def __init__(self, kernel_size, stride, **kwargs):
+    def __init__(self, C, kernel_size, stride, **kwargs):
         super().__init__(locals())
-        self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
+        self.maxpool = nn.Sequential(
+            nn.MaxPool2d(kernel_size, stride=stride, padding=1),
+            nn.BatchNorm2d(C, affine=False),
+        )
 
     def forward(self, x, edge_data):
         x = self.maxpool(x)
@@ -260,9 +263,12 @@ class AvgPool(AbstractPrimitive):
     Implementation of Avergae Pooling.
     """
 
-    def __init__(self, kernel_size, stride, **kwargs):
+    def __init__(self, C, kernel_size, stride, **kwargs):
         super().__init__(locals())
-        self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
+        self.avgpool = nn.Sequential(
+                            nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
+                            nn.BatchNorm2d(C, affine=False)
+        )
        
     def forward(self, x, edge_data):
         x = self.avgpool(x)
