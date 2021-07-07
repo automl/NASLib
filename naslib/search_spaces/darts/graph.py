@@ -501,7 +501,7 @@ def _truncate_input_edges(node, in_edges, out_edges):
             for _, data in in_edges:
                 if data.has('final') and data.final:
                     return  # We are looking at an out node
-                data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+                data.alpha.data[1] = -float("Inf")   # Zero op should never be max alpha
             sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
             keep_edges, _ = zip(*sorted_edge_ids[:k])
             for edge_id, edge_data in in_edges:
