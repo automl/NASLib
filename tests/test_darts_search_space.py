@@ -2,13 +2,11 @@ import unittest
 import logging
 import torch
 import os
-import numpy.testing
 
 from naslib.search_spaces import SimpleCellSearchSpace, DartsSearchSpace, HierarchicalSearchSpace, \
     NasBench201SearchSpace
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, RandomNASOptimizer, PCDARTSOptimizer, \
-    DrNASGrowOptimizer, RegularizedEvolution
-from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, RandomNASOptimizer
+from naslib.utils import utils, setup_logger
 
 logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
 logger.handlers[0].setLevel(logging.FATAL)
@@ -100,6 +98,21 @@ class DartsDrNasIntegrationTest(unittest.TestCase):
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
         self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.0225, places=3)
+
+
+class DartsRSWSIntegrationTest(unittest.TestCase):
+
+    def setUp(self):
+        utils.set_seed(1)
+        self.optimizer = RandomNASOptimizer(config)
+        self.optimizer.adapt_search_space(DartsSearchSpace())
+        self.optimizer.before_training()
+
+    def test_update(self):
+        stats = self.optimizer.step(data_train, data_val)
+        self.assertTrue(len(stats) == 4)
+        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.0017, places=3)
+        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.0017, places=3)
 
 
 if __name__ == '__main__':

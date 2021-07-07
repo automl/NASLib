@@ -4,8 +4,7 @@ import torch
 import os
 
 from naslib.search_spaces import SimpleCellSearchSpace
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, DrNASGrowOptimizer, RandomNASOptimizer, \
-    PCDARTSOptimizer
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer
 from naslib.utils import utils, setup_logger
 
 logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
