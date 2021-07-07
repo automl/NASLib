@@ -60,15 +60,11 @@ def default_argument_parser():
     """
 
     parser = argparse.ArgumentParser(
-        epilog=f"""
-Examples:
-Run on single machine:
-    $ {sys.argv[0]} --config-file cfg.yaml dataset 'cifar100' seed 1
-""",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default="{}/benchmarks/predictors/predictor_config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
-    # parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
+    # parser.add_argument("--config-file", default="{}/benchmarks/predictors/predictor_config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()),
+                        metavar="FILE", help="path to config file")
     parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
     parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
@@ -94,6 +90,8 @@ Run on single machine:
 
 
 def parse_args(parser=default_argument_parser(), args=sys.argv[1:]):
+    if '-f' in args:
+        args = args[2:]
     return parser.parse_args(args)
 
 
@@ -129,13 +127,12 @@ def get_config_from_args(args=None, config_type='nas'):
             config = CfgNode.load_cfg(f)
     elif config_type == 'nas_predictor':
         # load the default base
-        #with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+        # with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
         with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'discrete_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
     elif config_type == 'oneshot':
         with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
             config = CfgNode.load_cfg(f)
-
 
     if args is None:
         args = parse_args()
@@ -143,36 +140,39 @@ def get_config_from_args(args=None, config_type='nas'):
     logger.info("Command line args: {}".format(args))
 
     # load config file
-     #with open(args.config_file, 'r') as f:
-         #config = AttrDict(yaml.safe_load(f))
-     #for k, v in config.items():
-         #if isinstance(v, dict):
-             #config[k] = AttrDict(v)
+    # with open(args.config_file, 'r') as f:
+    # config = AttrDict(yaml.safe_load(f))
+    # for k, v in config.items():
+    # if isinstance(v, dict):
+    # config[k] = AttrDict(v)
 
     # Override file args with ones from command line
-    for arg, value in pairwise(args.opts):
-        if '.' in arg:
-            arg1, arg2 = arg.split('.')
-            config[arg1][arg2] = type(config[arg1][arg2])(value)
-        else:
+    try:
+        for arg, value in pairwise(args.opts):
+            if '.' in arg:
+                arg1, arg2 = arg.split('.')
+                config[arg1][arg2] = type(config[arg1][arg2])(value)
+            else:
+                config[arg] = value
+
+        config.eval_only = args.eval_only
+        config.resume = args.resume
+        config.model_path = args.model_path
+        if config_type != 'nas_predictor':
+            config.seed = args.seed
+
+        # load config file
+        config.merge_from_file(args.config_file)
+        config.merge_from_list(args.opts)
+    except AttributeError:
+        for arg, value in pairwise(args):
             config[arg] = value
-
-    config.eval_only = args.eval_only
-    config.resume = args.resume
-    config.model_path = args.model_path
-    if config_type != 'nas_predictor':
-        config.seed = args.seed
-
-    # load config file
-    config.set_new_allowed(True)
-    config.merge_from_file(args.config_file)
-    config.merge_from_list(args.opts)
 
     # prepare the output directories
     if config_type == 'nas':
-        #config.seed = args.seed
+        # config.seed = args.seed
         config.search.seed = config.seed
-        #config.optimizer = args.optimizer
+        # config.optimizer = args.optimizer
         config.evaluation.world_size = args.world_size
         config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
         config.evaluation.rank = args.rank
@@ -182,11 +182,14 @@ def get_config_from_args(args=None, config_type='nas'):
         config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
     elif config_type == 'predictor':
         if config.predictor == 'lcsvr' and config.experiment_type == 'vary_train_size':
-            config.save = '{}/{}/{}/{}_train/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+            config.save = '{}/{}/{}/{}_train/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor,
+                                                        config.seed)
         elif config.predictor == 'lcsvr' and config.experiment_type == 'vary_fidelity':
-            config.save = '{}/{}/{}/{}_fidelity/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+            config.save = '{}/{}/{}/{}_fidelity/{}'.format(config.out_dir, config.dataset, 'predictors',
+                                                           config.predictor, config.seed)
         else:
-            config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor, config.seed)
+            config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor,
+                                                  config.seed)
     elif config_type == 'nas_predictor':
         config.search.seed = config.seed
         config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
@@ -204,7 +207,7 @@ def get_config_from_args(args=None, config_type='nas'):
     config.data = "{}/data".format(get_project_root())
 
     create_exp_dir(config.save)
-    create_exp_dir(config.save + "/search")     # required for the checkpoints
+    create_exp_dir(config.save + "/search")  # required for the checkpoints
     create_exp_dir(config.save + "/eval")
 
     return config
@@ -217,7 +220,7 @@ def get_train_val_loaders(config, mode):
     data = config.data
     dataset = config.dataset
     seed = config.search.seed
-    config = config.search if mode=='train' else config.evaluation
+    config = config.search if mode == 'train' else config.evaluation
     if dataset == 'cifar10':
         train_transform, valid_transform = _data_transforms_cifar10(config)
         train_data = dset.CIFAR10(root=data, train=True, download=True, transform=train_transform)
@@ -322,9 +325,10 @@ def _data_transforms_cifar100(args):
     ])
     return train_transform, valid_transform
 
+
 def _data_transforms_ImageNet_16_120(args):
     IMAGENET16_MEAN = [x / 255 for x in [122.68, 116.66, 104.01]]
-    IMAGENET16_STD = [x / 255 for x in [63.22,  61.26 , 65.09]]
+    IMAGENET16_STD = [x / 255 for x in [63.22, 61.26, 65.09]]
 
     train_transform = transforms.Compose([
         transforms.RandomCrop(16, padding=2),
@@ -341,6 +345,7 @@ def _data_transforms_ImageNet_16_120(args):
         transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
     ])
     return train_transform, valid_transform
+
 
 class TensorDatasetWithTrans(Dataset):
     """
@@ -442,9 +447,8 @@ def create_exp_dir(path):
         os.makedirs(path, exist_ok=True)
     logger.info('Experiment dir : {}'.format(path))
 
-    
-def cross_validation(xtrain, ytrain, predictor, split_indices, score_metric='kendalltau'):
 
+def cross_validation(xtrain, ytrain, predictor, split_indices, score_metric='kendalltau'):
     validation_score = []
 
     for train_indices, validation_indices in split_indices:
@@ -455,14 +459,14 @@ def cross_validation(xtrain, ytrain, predictor, split_indices, score_metric='ken
 
         predictor.fit(xtrain_i, ytrain_i)
         ypred_i = predictor.query(xval_i)
-        
-        #If the predictor is an ensemble, take the mean
+
+        # If the predictor is an ensemble, take the mean
         if len(ypred_i.shape) > 1:
             ypred_i = np.mean(ypred_i, axis=0)
-        
+
         # use Pearson correlation to be the metric -> maximise Pearson correlation
         if score_metric == 'pearson':
-            score_i = np.abs(np.corrcoef(yval_i, ypred_i)[1,0])
+            score_i = np.abs(np.corrcoef(yval_i, ypred_i)[1, 0])
         elif score_metric == 'mae':
             score_i = np.mean(abs(ypred_i - yval_i))
         elif score_metric == 'rmse':
@@ -505,7 +509,7 @@ def generate_kfold(n, k):
         kfold_indices.append((np.concatenate(training_indices), validation_indices))
 
     return kfold_indices
-    
+
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -517,7 +521,7 @@ class AverageMeterGroup:
     """Average meter group for multiple average meters, ported from Naszilla repo."""
 
     def __init__(self):
-        self.meters =  OrderedDict()
+        self.meters = OrderedDict()
 
     def update(self, data, n=1):
         for k, v in data.items():
@@ -592,7 +596,6 @@ class AverageMeter(object):
         self.avg = self.sum / self.cnt
 
 
-
 class Cutout(object):
     def __init__(self, length, prob=1.0):
         self.length = length
@@ -621,8 +624,8 @@ from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple
 from fvcore.common.file_io import PathManager
 import os
 
-class Checkpointer(fvCheckpointer):
 
+class Checkpointer(fvCheckpointer):
 
     def load(self, path: str, checkpointables: Optional[List[str]] = None) -> object:
         """
@@ -651,7 +654,7 @@ class Checkpointer(fvCheckpointer):
         checkpoint = self._load_file(path)
         incompatible = self._load_model(checkpoint)
         if (
-            incompatible is not None
+                incompatible is not None
         ):  # handle some existing subclasses that returns None
             self._log_incompatible_keys(incompatible)
 

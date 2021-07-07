@@ -38,7 +38,7 @@ class RegularizedEvolution(MetaOptimizer):
         self.dataset_api = dataset_api
 
     def new_epoch(self, epoch):
-        # We sample as many architectures as we need 
+        # We sample as many architectures as we need
         if epoch < self.population_size:
             logger.info("Start sampling architectures to fill the population")
             # If there is no scope defined, let's use the search space default one
@@ -86,6 +86,7 @@ class RegularizedEvolution(MetaOptimizer):
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api),
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api),
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api),
+            best_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api),
         )
 
     def test_statistics(self):
