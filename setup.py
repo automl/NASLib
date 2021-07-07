@@ -6,28 +6,21 @@ from setuptools import setup, find_packages
 VERBOSE_SCRIPT = True
 
 # Check for python version
-if sys.version_info < (3, 7):
+if sys.version_info.major != 3 or sys.version_info.minor < 6 or sys.version_info.minor > 7:
     raise ValueError(
         'Unsupported Python version %d.%d.%d found. NASLib requires Python '
-        '3.7 or higher.' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+        '3.6 or 3.7' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
+
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
-with open("naslib/__version__.py") as fh:
+version_path = os.path.join(cwd, 'naslib', '__version__.py')
+with open(version_path) as fh:
     version = fh.readlines()[-1].split()[-1].strip("\"'")
 
 if VERBOSE_SCRIPT:
-    def report(*args):
-        print(*args)
-else:
-    def report(*args):
-        pass
-
-version_path = os.path.join(cwd, 'naslib', '__init__.py')
-with open(version_path, 'w') as f:
-    report('-- Building version ' + version)
-    f.write("__version__ = '{}'\n".format(version))
+    print('-- Building version ' + version)
 
 with open("README.md", "r") as f:
     long_description = f.read()
@@ -63,7 +56,7 @@ if __name__=='__main__':
         license='Apache License 2.0',
         classifiers=['Development Status :: 1 - Beta'],
         packages=find_packages(),
-        python_requires='>=3.7',
+        python_requires='>=3.6',
         platforms=['Linux'],
         install_requires=requirements,
         keywords=['NAS', 'automl'],
