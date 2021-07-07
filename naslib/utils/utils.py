@@ -141,10 +141,10 @@ def get_config_from_args(args=None, config_type='nas'):
 
     # load config file
     # with open(args.config_file, 'r') as f:
-    # config = AttrDict(yaml.safe_load(f))
+    #     config = AttrDict(yaml.safe_load(f))
     # for k, v in config.items():
-    # if isinstance(v, dict):
-    # config[k] = AttrDict(v)
+    #     if isinstance(v, dict):
+    #         config[k] = AttrDict(v)
 
     # Override file args with ones from command line
     try:
