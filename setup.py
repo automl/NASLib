@@ -13,7 +13,9 @@ if sys.version_info < (3, 7):
     )
 
 cwd = os.path.dirname(os.path.abspath(__file__))
-version = open('.version', 'r').read().strip()
+
+with open("naslib/__version__.py") as fh:
+    version = fh.readlines()[-1].split()[-1].strip("\"'")
 
 if VERBOSE_SCRIPT:
     def report(*args):
