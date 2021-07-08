@@ -4,55 +4,31 @@ import subprocess
 from setuptools import setup, find_packages
 
 VERBOSE_SCRIPT = True
-REQUIRED_MAJOR = 3
-REQUIRED_MINOR = 5
 
 # Check for python version
-if sys.version_info < (REQUIRED_MAJOR, REQUIRED_MINOR):
-    error = (
-        "Your version of python ({major}.{minor}) is too old. You need "
-        "python >= {required_major}.{required_minor}."
-    ).format(
-        major=sys.version_info.major,
-        minor=sys.version_info.minor,
-        required_minor=REQUIRED_MINOR,
-        required_major=REQUIRED_MAJOR,
+if sys.version_info.major != 3 or sys.version_info.minor < 6 or sys.version_info.minor > 7:
+    raise ValueError(
+        'Unsupported Python version %d.%d.%d found. NASLib requires Python '
+        '3.6 or 3.7' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
-    sys.exit(error)
+
 
 cwd = os.path.dirname(os.path.abspath(__file__))
-version = open('.version', 'r').read().strip()
+
+version_path = os.path.join(cwd, 'naslib', '__version__.py')
+with open(version_path) as fh:
+    version = fh.readlines()[-1].split()[-1].strip("\"'")
 
 if VERBOSE_SCRIPT:
-    def report(*args):
-        print(*args)
-else:
-    def report(*args):
-        pass
+    print('-- Building version ' + version)
 
-version_path = os.path.join(cwd, 'naslib', '__init__.py')
-with open(version_path, 'w') as f:
-    report('-- Building version ' + version)
-    f.write("__version__ = '{}'\n".format(version))
+with open("README.md", "r") as f:
+    long_description = f.read()
 
-requires = [
-    "ConfigSpace",
-    "cython",
-    "hyperopt==0.1.2",
-    "pyyaml",
-    "numpy==1.16.4",
-    "torch>=1.2.0",
-    "torchvision>=0.4.0",
-    "fvcore",
-    "matplotlib",
-    "pandas",
-    "pytest",
-    "pytest-cov",
-    "codecov",
-    "coverage",
-]
-
-import subprocess
+requirements = []
+with open("requirements.txt", "r") as f:
+    for line in f:
+        requirements.append(line.strip())
 
 git_nasbench = "git+https://github.com/google-research/nasbench.git@master"
 
@@ -71,14 +47,18 @@ if __name__=='__main__':
     setup(
         name='naslib',
         version=version,
-        description='NASLib: A Neural Architecture Search (NAS) library.',
+        description='NASLib: A modular and extensible Neural Architecture Search (NAS) library.',
+        long_description=long_description,
+        long_description_content_type="text/markdown",
         author='AutoML Freiburg',
         author_email='zelaa@cs.uni-freiburg.de',
         url='https://github.com/automl/NASLib',
         license='Apache License 2.0',
         classifiers=['Development Status :: 1 - Beta'],
         packages=find_packages(),
-        install_requires=requires,
+        python_requires='>=3.6',
+        platforms=['Linux'],
+        install_requires=requirements,
         keywords=['NAS', 'automl'],
-        test_suite='tests'
+        test_suite='pytest'
     )

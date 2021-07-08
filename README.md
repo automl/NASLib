@@ -43,7 +43,7 @@ python3 -m venv naslib
 source naslib/bin/activate
 
 pip install --upgrade pip setuptools wheel
-pip install cython
+pip install cython pytest
 ```
 
 # Installation
@@ -53,9 +53,13 @@ Clone and install.
 If you plan to modify naslib consider adding the `-e` option for `pip install`.
 
 ```
-git clone ...
+git clone https://github.com/automl/NASLib.git
 cd naslib
-pip install .
+python setup.py develop 
+
+pip install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+
+
 ```
 
 To validate the installation, you can run tests:

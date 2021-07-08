@@ -10,6 +10,7 @@ class DropPathWrapper(AbstractPrimitive):
     def __init__(self, op):
         super().__init__(locals())
         self.op = op
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
     def forward(self, x, edge_data):
@@ -17,8 +18,7 @@ class DropPathWrapper(AbstractPrimitive):
         if edge_data.drop_path_prob > 0. and not isinstance(self.op, Identity) and self.training:
             keep_prob = 1. - edge_data.drop_path_prob
             mask = torch.FloatTensor(x.size(0), 1, 1, 1).bernoulli_(keep_prob)
-            if torch.cuda.is_available():
-                mask = mask.cuda()
+            mask = mask.to(self.device)
             x.div_(keep_prob)
             x.mul_(mask)
         return x

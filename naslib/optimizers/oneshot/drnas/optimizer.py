@@ -61,6 +61,7 @@ class DrNASOptimizer(DARTSOptimizer):
         self.reg_scale = 1e-3
         # self.reg_scale = config.reg_scale
         self.epochs = config.search.epochs
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def new_epoch(self, epoch):
       super().new_epoch(epoch)
@@ -72,7 +73,7 @@ class DrNASOptimizer(DARTSOptimizer):
         If you want to checkpoint the dirichlet 'concentration' parameter (beta) add it to the buffer here.
         """
         super().adapt_search_space(search_space, scope)
-        self.anchor = Dirichlet(torch.ones_like(torch.nn.utils.parameters_to_vector(self.architectural_weights)).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+        self.anchor = Dirichlet(torch.ones_like(torch.nn.utils.parameters_to_vector(self.architectural_weights)).to(self.device))
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
@@ -147,7 +148,7 @@ class DrNASOptimizer(DARTSOptimizer):
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
         graph.parse()
-        graph = graph.cuda() if torch.cuda.is_available() else graph.cpu()
+        graph = graph.to(self.device)
         return graph
 
 class DrNASMixedOp(AbstractPrimitive):

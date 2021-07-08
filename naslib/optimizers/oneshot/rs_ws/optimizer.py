@@ -23,7 +23,6 @@ class RandomNASOptimizer(OneShotNASOptimizer):
                                                requires_grad=False))
         edge.data.set('alpha', alpha, shared=True)
 
-
     def step(self, data_train, data_val):
         input_train, target_train = data_train
         input_val, target_val = data_val
@@ -47,7 +46,6 @@ class RandomNASOptimizer(OneShotNASOptimizer):
 
         return logits_train, logits_val, train_loss, val_loss
 
-
     def sample_random_and_update_alphas(self):
         tmp_graph = self.search_space.clone()
         tmp_graph.sample_random_architecture()
@@ -58,6 +56,3 @@ class RandomNASOptimizer(OneShotNASOptimizer):
             sample = convert_compact_to_genotype(tmp_graph.get_compact())
 
         self.set_alphas_from_path(sample)
-
-
-

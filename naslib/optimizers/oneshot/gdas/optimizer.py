@@ -5,7 +5,6 @@ import torch
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -16,11 +15,12 @@ class GDASOptimizer(DARTSOptimizer):
         Dong and Yang (2019): Searching for a Robust Neural Architecture in Four GPU Hours
 
     """
+
     def __init__(self, config,
-            op_optimizer: torch.optim.Optimizer = torch.optim.SGD, 
-            arch_optimizer: torch.optim.Optimizer = torch.optim.Adam, 
-            loss_criteria=torch.nn.CrossEntropyLoss()
-        ):
+                 op_optimizer: torch.optim.Optimizer = torch.optim.SGD,
+                 arch_optimizer: torch.optim.Optimizer = torch.optim.Adam,
+                 loss_criteria=torch.nn.CrossEntropyLoss()
+                 ):
         """
         Instantiate the optimizer
 
@@ -41,9 +41,8 @@ class GDASOptimizer(DARTSOptimizer):
 
         # Linear tau schedule
         self.tau_step = (self.tau_min - self.tau_max) / self.epochs
-        self.tau_curr = torch.Tensor([self.tau_max])      # make it checkpointable
-    
-    
+        self.tau_curr = torch.Tensor([self.tau_max])  # make it checkpointable
+
     @staticmethod
     def update_ops(edge):
         """
@@ -53,7 +52,6 @@ class GDASOptimizer(DARTSOptimizer):
         primitives = edge.data.op
         edge.data.set('op', GDASMixedOp(primitives))
 
-
     def adapt_search_space(self, search_space, scope=None):
         """
         Same as in darts with a different mixop.
@@ -62,7 +60,6 @@ class GDASOptimizer(DARTSOptimizer):
         super().adapt_search_space(search_space, scope)
         self.graph.register_buffer('tau', self.tau_curr)
 
-
     def new_epoch(self, epoch):
         """
         Update the tau softmax parameter at the edges.
@@ -70,10 +67,9 @@ class GDASOptimizer(DARTSOptimizer):
         This is also initially called before epoch 1.
         """
         super().new_epoch(epoch)
-        
+
         self.tau_curr += self.tau_step
         logger.info("tau {}".format(self.tau_curr))
-        
 
     @staticmethod
     def sample_alphas(edge, tau):
@@ -85,18 +81,18 @@ class GDASOptimizer(DARTSOptimizer):
         # from gdas repo
         # https://github.com/D-X-Y/AutoDL-Projects/blob/befa6bcb00e0a8fcfba447d2a1348202759f58c9/lib/models/cell_searchs/search_model_gdas.py#L88
         # https://github.com/D-X-Y/AutoDL-Projects/blob/befa6bcb00e0a8fcfba447d2a1348202759f58c9/lib/models/cell_searchs/search_cells.py#L51
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         arch_parameters = torch.unsqueeze(edge.data.alpha, dim=0)
-        
+
         while True:
             gumbels = -torch.empty_like(arch_parameters).exponential_().log()
-            if torch.cuda.is_available():
-                gumbels = gumbels.cuda()
-                tau = tau.cuda()
-                arch_parameters = arch_parameters.cuda()
-            logits  = (arch_parameters.log_softmax(dim=1) + gumbels) / tau
-            probs   = torch.nn.functional.softmax(logits, dim=1)
-            index   = probs.max(-1, keepdim=True)[1]
-            one_h   = torch.zeros_like(logits).scatter_(-1, index, 1.0)
+            gumbels = gumbels.to(device)
+            tau = tau.to(device)
+            arch_parameters = arch_parameters.to(device)
+            logits = (arch_parameters.log_softmax(dim=1) + gumbels) / tau
+            probs = torch.nn.functional.softmax(logits, dim=1)
+            index = probs.max(-1, keepdim=True)[1]
+            one_h = torch.zeros_like(logits).scatter_(-1, index, 1.0)
             hardwts = one_h - probs.detach() + probs
             if (torch.isinf(gumbels).any()) or (torch.isinf(probs).any()) or (torch.isnan(probs).any()):
                 continue
@@ -109,15 +105,11 @@ class GDASOptimizer(DARTSOptimizer):
         edge.data.set('sampled_arch_weight', weights, shared=True)
         edge.data.set('argmax', argmaxs, shared=True)
 
-        
-    
-
     @staticmethod
     def remove_sampled_alphas(edge):
         if edge.data.has('sampled_arch_weight'):
             edge.data.remove('sampled_arch_weight')
 
-    
     def step(self, data_train, data_val):
         input_train, target_train = data_train
         input_val, target_val = data_val
@@ -128,7 +120,7 @@ class GDASOptimizer(DARTSOptimizer):
             scope=self.scope,
             private_edge_data=False
         )
-        
+
         # Update architecture weights
         self.arch_optimizer.zero_grad()
         logits_val = self.graph(input_val)
@@ -162,7 +154,7 @@ class GDASOptimizer(DARTSOptimizer):
             scope=self.scope,
             private_edge_data=False
         )
-        
+
         return logits_train, logits_val, train_loss, val_loss
 
 
@@ -180,7 +172,6 @@ class GDASMixedOp(AbstractPrimitive):
         for i, primitive in enumerate(primitives):
             self.add_module("primitive-{}".format(i), primitive)
 
-
     def forward(self, x, edge_data):
         """
         Applies the gumbel softmax to the architecture weights
@@ -196,10 +187,5 @@ class GDASMixedOp(AbstractPrimitive):
 
         return weigsum
 
-
-
-
-
-    
     def get_embedded_ops(self):
         return self.primitives

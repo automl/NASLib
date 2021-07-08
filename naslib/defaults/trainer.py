@@ -325,8 +325,8 @@ class Trainer(object):
                     if self.valid_queue:
                         for i, (input_valid, target_valid) in enumerate(self.valid_queue):
                             
-                            input_valid = input_valid.cuda().float()
-                            target_valid = target_valid.cuda().float()
+                            input_valid = input_valid.to(self.device).float()
+                            target_valid = target_valid.to(self.device).float()
 
                             # just log the validation accuracy
                             with torch.no_grad():
