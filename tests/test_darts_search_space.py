@@ -87,8 +87,8 @@ class DartsDrNasIntegrationTest(unittest.TestCase):
         stats = self.optimizer.step(data_train, data_val)
         self.assertTrue(len(stats) == 4)
         if torch.cuda.is_available():
-            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 3.2513, places=3)
-            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.5541, places=3)
+            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.7309, places=3)
+            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.8569, places=3)
         else:
             self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.7775, places=3)
             self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 3.0106, places=3)
