@@ -4,10 +4,10 @@ import subprocess
 from setuptools import setup, find_packages
 
 # Check for python version
-if sys.version_info.major != 3 or sys.version_info.minor < 6 or sys.version_info.minor > 7:
+if sys.version_info.major != 3 or sys.version_info.minor < 6 or sys.version_info.minor > 8:
     raise ValueError(
         'Unsupported Python version %d.%d.%d found. NASLib requires Python '
-        '3.6 or 3.7' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+        '3.6, 3.7 or 3.8' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
 
 
@@ -25,7 +25,7 @@ with open("requirements.txt", "r") as f:
     for line in f:
         requirements.append(line.strip())
 
-git_nasbench = "git+https://github.com/google-research/nasbench.git@master"
+git_nasbench = "git+https://github.com/yashsmehta/nasbench.git@master"
 
 try:
     import nasbench
