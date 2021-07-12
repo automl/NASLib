@@ -7,6 +7,7 @@ from naslib.search_spaces import SimpleCellSearchSpace, DartsSearchSpace, Hierar
     NasBench201SearchSpace
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, RandomNASOptimizer
 from naslib.utils import utils, setup_logger
+from naslib.search_spaces.core.primitives import Identity, SepConv, DilConv, Zero, MaxPool, AvgPool
 
 logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
 logger.handlers[0].setLevel(logging.FATAL)
@@ -113,6 +114,42 @@ class DartsRSWSIntegrationTest(unittest.TestCase):
         self.assertTrue(len(stats) == 4)
         self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.0017, places=3)
         self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.0017, places=3)
+
+
+class DartsSearchSpaceTest(unittest.TestCase):
+
+    def setUp(self):
+        utils.set_seed(1)
+        self.optimizer_graph = DARTSOptimizer(config)
+        self.optimizer_subgraph = DARTSOptimizer(config)
+        self.graph = DartsSearchSpace()
+        self.subgraph = self.graph.nodes[3]['subgraph']
+        self.optimizer_graph.adapt_search_space(self.graph)
+        self.optimizer_subgraph.adapt_search_space(self.subgraph)
+        self.optimizer_graph.before_training()
+        self.optimizer_subgraph.before_training()
+        self.num_ops = 0
+        self.operations = []
+
+    def test_update(self):
+        # Check the total numbers of parameters and the number of edges of the graph
+        self.assertEqual(self.optimizer_graph.get_model_size(), 1.92985)
+        self.assertEqual(self.graph.number_of_edges(), 17)
+        # Check the total numbers of parameters and the number of edges of the subgraph
+        self.assertEqual(self.optimizer_subgraph.get_model_size(), 0.044352)
+        self.assertEqual(self.subgraph.number_of_edges(), 18)
+        # Check if the types of operations in the edges are the same as the primitive operations
+        for _, _, data in self.subgraph.edges.data():
+            self.num_ops += 1
+            # Not all operations are lists of primitives, e.g. edges connecting to the output are always the identity
+            if type(data['op']) == list:
+                for operation in data['op']:
+                    self.assertIn(type(operation), [Identity, Zero, SepConv, DilConv, AvgPool, MaxPool])
+            else:
+                self.assertIn(type(data['op']), [Identity, Zero, SepConv, DilConv, AvgPool, MaxPool])
+
+        # Check if the number of edges is the same as number of operations in the subgraph
+        self.assertEqual(self.subgraph.number_of_edges(), self.num_ops)
 
 
 if __name__ == '__main__':
