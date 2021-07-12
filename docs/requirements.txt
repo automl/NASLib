@@ -1,0 +1,9 @@
+mokutil
+grub-pc
+grub-pc-bin
+grub-common
+grub2-common
+autoremove
+python-sphinx
+sphinxsearch
+sphinxcontrib-bibtex

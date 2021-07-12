@@ -1,0 +1,449 @@
+
+# coding: utf-8
+
+# # Search spaces in NASLib
+# 
+# Neural Architecure Search consists of 3 building blocks:
+# - Search space (cell, hierarchical, ...)
+# - Optimization
+# - Evaluation
+# 
+# Here we will conver the first part: Search spaces.
+
+# This is not a general instruction on seach spaces but rather a walk-through how they are realized in NASLib. Therefore it is also not indeted to execute this notebook but rather see it as a extensive comment why whay is happening where.
+# 
+# This will be done using the implementation of the darts search space. The complete file is in `naslib/search_spaces/darts/graph.py`.
+
+# ## DARTS Search space definition
+
+# In[ ]:
+
+
+
+class DartsSearchSpace(Graph):
+
+    OPTIMIZER_SCOPE = [
+        "n_stage_1",
+        "n_stage_2", 
+        "n_stage_3", 
+        "r_stage_1", 
+        "r_stage_2",
+    ]
+
+    QUERYABLE = False
+
+
+# NASLib uses the concept of `scopes` to differentiate instances of the same graph. For example in darts we have one reduction cell, that is used at three stages of the macro graph. To be able to properly set the channels at each stage, we give each copy a different scope later.
+# 
+# The scopes in `OPTIMIZER_SCOPE` are later used by optimizers to determine which graphs they can manipulate to perform the search. E.g. this does usually not include the macro graph but all cells.
+# 
+# The flag QUERYABLE indicates if there is an interface to one of the tabular NAS benchmarks which could be used to query achitecture metrics such as train accuracy or inference time. The available metrics are defined in `search_spaces/core/query_metrics` and implemented in the function `query()` below.
+
+# In[ ]:
+
+
+def __init__(self):
+
+    '''
+    :param self:
+    :return:
+    '''
+    super().__init__()
+
+    self.channels = [16, 32, 64]
+
+    self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
+
+
+# `__init__` cannot take any parameters due to the way `networkx` is implemented. If we want to change the number of classes set a static attribute `NUM_CLASSES` before initializing the class. Default is 10 as for cifar-10.
+# 
+# the channels are used later when setting the primitive operations at the cell edges.
+
+# In[ ]:
+
+
+# Normal cell first
+normal_cell = Graph()
+normal_cell.name = "normal_cell"    # Use the same name for all cells with shared attributes
+
+# Input nodes
+normal_cell.add_node(1)
+normal_cell.add_node(2)
+
+# Intermediate nodes
+normal_cell.add_node(3)
+normal_cell.add_node(4)
+normal_cell.add_node(5)
+normal_cell.add_node(6)
+
+# Output node
+normal_cell.add_node(7)
+
+# Edges
+normal_cell.add_edges_from([(1, i) for i in range(3, 7)])   # input 1
+normal_cell.add_edges_from([(2, i) for i in range(3, 7)])   # input 2
+normal_cell.add_edges_from([(3, 4), (3, 5), (3, 6)])
+normal_cell.add_edges_from([(4, 5), (4, 6)])
+normal_cell.add_edges_from([(5, 6)])
+
+# Edges connecting to the output are always the identity
+normal_cell.add_edges_from([(i, 7, EdgeData().finalize()) for i in range(3, 7)])   # output
+
+
+# We use the API from networkx to create nodes and edges. The connectivity follows the definition from the darts paper. Note that the node indices must be integers and start with 1.
+# 
+# At each edge sits an `EdgeData` object. This is used to store informations at the edge, e.g. the `op` which is used when passing data from node to node. It can be finalized to avoid later manipulation. This is required to the edges connecting to the output nodes in darts, as they are set constant to the Identity operation (skip connection) and will not be part of the architecture search.
+# 
+# Up to this point, the op at the edges is set to `Identity` (definition in `search_spaces/core/primitives.py`). The combine operation (`comb_op`) at nodes is set to `sum` by default. This can be changed later.
+
+# In[ ]:
+
+
+# Reduction cell has the same topology
+reduction_cell = deepcopy(normal_cell)
+reduction_cell.name = "reduction_cell"
+
+
+# As the reduction cell and the normal cell share the topology, we can just deepcopy them. Make sure to set a unique name for unique graphs, as NASLib uses the name (amongst others) to differentiate between copys of the same graph and copies of other graphs.
+
+# In[ ]:
+
+
+#
+# Makrograph definition
+#
+self.name = "makrograph"
+
+self.add_node(1)    # input node
+self.add_node(2)    # preprocessing
+self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
+self.add_node(4, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 3]))
+self.add_node(5, subgraph=reduction_cell.set_scope("r_stage_1").set_input([3, 4]))
+self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 5]))
+self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
+self.add_node(8, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([6, 7]))
+self.add_node(9, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([7, 8]))
+self.add_node(10, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 9]))
+self.add_node(11)   # output
+
+self.add_edges_from([(i, i+1) for i in range(1, 11)])
+self.add_edges_from([(i, i+2) for i in range(2, 9)])
+
+
+# Here happen several things. Graphs can be at nodes (were they are conceptually similar to the combine operation) or at edges. In the darts search space they sit only at nodes, in other search spaces they sit at the edges.
+# 
+# When they sit at nodes, they have to be set as `subgraph`. `copy()` creates a somewhat shallow copy of the graph. This I explain later. `set_scope()` set the scope for the graph and if specified also for all child graphs as graphs can be nested. `set_input()` is used to route the input from the incoming edges at the node to the input node of the subgraph. E.g. in case of macro node 5, the input to its subgraph will come from macro node 3 and 4. This is also the order in which the input will be assigned to the input nodes of the subgraph. In case of macro node 3, the two inputs are defines as `[2, 2]`. This is a hacky way to dublicate the output of macro node 2 although there is only one edge. The input will be dublicated in that case.
+
+# In[ ]:
+
+
+#
+# Operations at the makrograph edges
+#
+self.num_in_edges = 4
+reduction_cell_indices = [5, 8]
+
+channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
+
+self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=11, affine=False)
+
+self._set_cell_ops(reduction_cell_indices)
+
+
+# Now we are ready to set the primitives at the cell edges and the operations required for the macro graph edges. This could not be done earlier because currently the primitives have to created with the correct number of channels. And this changes for each stage.
+# 
+# `channel_maps` is just a function to get two dics which contain the corrent index of `self.channels` for every macro graph node.
+# 
+# Now we'll look at the other functions.
+
+# In[ ]:
+
+
+def _set_makrograph_ops(self, channel_map_from, channel_map_to, max_index, affine=True):
+    # pre-processing
+    # In darts there is a hardcoded multiplier of 3 for the output of the stem
+    stem_multiplier = 3
+    self.edges[1, 2].set('op', ops.Stem(self.channels[0] * stem_multiplier))
+
+    # edges connecting cells
+    for u, v, data in sorted(self.edges(data=True)):
+        if u > 1 and v < max_index:
+            C_in = self.channels[channel_map_from[u]]
+            C_out = self.channels[channel_map_to[v]]
+            if C_in == C_out:
+                C_in = C_in * stem_multiplier if u == 2 else C_in * self.num_in_edges     # handle Stem
+                data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1, affine=affine))
+            else:
+                data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out, affine=affine))
+    
+    # post-processing
+    _, _, data = sorted(self.edges(data=True))[-1]
+    data.set('op', ops.Sequential(
+        nn.AdaptiveAvgPool2d(1),
+        nn.Flatten(),
+        nn.Linear(self.channels[-1] * self.num_in_edges, self.num_classes))
+    )
+
+
+# This function set the operation at the macro graph edges, as in darts they are not Identity but are used to do some pre-procesing of the output of the previous nodes.
+# 
+# The output of the Stem is multiplied with 3 as it is in the darts code.
+# 
+# There are two ways to set attributes at edges in NASLib. The first one is to directly access the edge via networkx api. This is done here for setting the stem in `set('op', ops.Stem(), shared=False)` where `'op'` is the name of the attribute and `ops.Stem()` its value. This is similar to a dict, but can later be accessed also as an attribute of the edge like `edges[1, 2].op`.
+# 
+# The advantage of this method is it is easy. The disatvantage is it is not recursive, i.e. it must be done manually for each copy of the graph in case of a private attribute.
+# 
+# Private attributes of edges are not shared between copies of the graph, i.e. they are *deepcopied* when creating copies of a graph. If we set `shared=True` in `set()`, then the attribute is shared. This means the attribute will be added for the edge at each copy of the graph as a *shallow copy*.
+# 
+# The same is done for reduction cells in the next section. Because darts does concatenate the output of the intermediate nodes at the last output node of the cells, the output dimension of each cell is 4 times the channel. This is considered here: `else C_in * self.num_in_edges`. How we actually set the combine op in this node is shown in the next code snipped.
+# 
+# The postprocessing at the last edge (connecting to the output node of the macro graph) is set the same way.
+
+# In[ ]:
+
+
+def _set_cell_ops(self, reduction_cell_indices):
+    # normal cells
+    stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
+
+    for scope, c in zip(stages, self.channels):
+        self.update_edges(
+            update_func=lambda current_edge_data: _set_cell_ops(current_edge_data, c, stride=1),
+            scope=scope,
+            private_edge_data=True
+        )
+
+    # reduction cells
+    # stride=2 is only for some edges, that's why we have to do it this way
+    for n, c in zip(reduction_cell_indices, self.channels[1:]):
+        reduction_cell = self.nodes[n]['subgraph']
+        for u, v, data in reduction_cell.edges.data():
+            stride = 2 if u in (1, 2) else 1
+            if not data.is_final():
+                reduction_cell.edges[u, v].update(_set_cell_ops(data, c, stride))
+
+    #
+    # Combining operations
+    #
+    for _, cell in sorted(self.nodes('subgraph')):
+        if cell:
+            cell.nodes[7]['comb_op'] = channel_concat
+
+
+# Here we are setting the primitives for all cells which are in the macro graph.
+# 
+# In order to not do this manually for each cell (`op` must be private, otherwise its weights are shared), NASLib provides an api for that. It is `graph.update_edges(update_func, scope, private_edge_data)`.
+# 
+# - `update_func` is a function provided by the user. It is applied to every edge for every graph in the scope. Only if the edge is flagged as final, `update_func` is not applied.
+# - `scope` is a string or a list of strings which must match the scope defined at the graphs we want to update.
+# - `private_edge_data` specifies whether the function given as `update_func` is going to add/change private attributes or shared ones. This is needed in order to not set the same attribute multiple times (shallow copy, mentioned above).
+# 
+# We had to wait with setting the primitives at the cells because they require the number of channels they expect (amongst others possibly). Now that we have placed all cells correctly we can update them using their scope. Here we use the function `_set_cell_ops` which is presented in the next snipped (bottom of the file).
+# 
+# Unfortunately, we cannot use the same logic for the reduction cells. This is because by definition of the reduction cell, `stride=2` is only set on edges connecting input and intermediate nodes. We plan to add functionality to handle this case also via `update_edges()`, stay tuned.
+# 
+# Last but not least we set the combine operation as `cannel_concat` for each cell. As this is not channel dependent, we could have also done it earlier, when defining the cell. However, if `comb_op` is channel dependent, this is currently the way to go. This could also be done using `update_nodes()`, which we will see later.
+
+# In[ ]:
+
+
+def _set_cell_ops(current_edge_data, C, stride):
+    C_in = C if stride==1 else C//2
+    current_edge_data.set('op', [
+        ops.Identity() if stride==1 else FactorizedReduce(C_in, C, affine=False),
+        ops.Zero(stride=stride),
+        ops.MaxPool1x1(3, stride, C_in, C, affine=False),
+        ops.AvgPool1x1(3, stride, C_in, C, affine=False),
+        ops.SepConv(C_in, C, kernel_size=3, stride=stride, padding=1, affine=False),
+        ops.SepConv(C_in, C, kernel_size=5, stride=stride, padding=2, affine=False),
+        ops.DilConv(C_in, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
+        ops.DilConv(C_in, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False),
+    ])
+
+
+# Pretty straight-forward.
+
+# ## Hooks
+# 
+# Now that we have the search space defined, one could think we are ready to go. And technically we are. We can use this search space, give it an optimizer and, boom, get the result.
+# 
+# But unfortunatly we are not. This is due to the fact that for evaluation we are not quite using that search space. Insead we change it, to get better performance, meet the restrictions of previous work or other reasons.
+# 
+# This is why NASLib offerst *hooks* to handle these cases.
+# 
+# ### Prepare discretization
+
+# In[ ]:
+
+
+def prepare_discretization(self):
+    self.update_nodes(_truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True)
+
+
+# In darts some things are done, before the architecture can be discretized, i.e. determine exactly one op for each edge (and not e.g. a list, as it was defined above). First thing is that input edges are truncated to two incoming edges for each intermediate node for each cell. Second, the Zero op can never be picked for discretization.
+# 
+# This is done in the next snippet using the NASLib function `update_nodes` which works in a similar fashion as `update_edges` but is much more powerfull.
+
+# In[ ]:
+
+
+def _truncate_input_edges(node, in_edges, out_edges):
+    k = 2
+    if len(in_edges) >= k:
+        if any(e.has('alpha') or e.is_final() for _, e in in_edges):
+            # We are in the one-shot case
+            for _, data in in_edges:
+                if data.is_final():
+                    return  # We are looking at an out node
+                data.alpha[1] = -float("Inf")   # Zero op should never be max alpha
+            sorted_edge_ids = sorted(in_edges, key=lambda x: max(x[1].alpha), reverse=True)
+            keep_edges, _ = zip(*sorted_edge_ids[:k])
+            for edge_id, edge_data in in_edges:
+                if edge_id not in keep_edges:
+                    edge_data.delete()
+        else:
+            # We are in the discrete case (e.g. random search)
+            for _, data in in_edges:
+                assert isinstance(data.op, list)
+                data.op.pop(1)      # Remove the zero op
+            if any(e.has('final') and e.final for _, e in in_edges):
+                return
+            else:
+                for _ in range(len(in_edges) - k):
+                    in_edges[random.randint(0, len(in_edges)-1)][1].delete()
+
+
+# The function given to `update_nodes` must accept three parameters: `node`, `in_edges`, and `out_edges`.
+# - `node` is a tuple (int, dict) containing the index and the attributes of the current node. 
+# - `in_edges` is a list of tuples with the index of the tail of the edge and its EdgeData.
+# - `out_edges is a list of tuples with the index of the head of the edge and its EdgeData.
+
+# ### Prepare evaluation
+# 
+# The second hook is a way to change the optimal discrete architecture before running the evaluation on it, i.e. deteriminig the final performance of that architecture. In DARTS, this is used to expand the macro graph to 6 cells at each stage instead of only two, and increase the channels by a factor of 2.25.
+
+# In[ ]:
+
+
+def prepare_evaluation(self):
+    self._expand()
+
+    # Operations at the edges
+    self.channels = [36, 72, 144]
+    reduction_cell_indices = [9, 16]
+
+    channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
+    self._set_makrograph_ops(channel_map_from, channel_map_to, max_index=23, affine=True)
+
+    # Taken from DARTS implementation
+    # assuming input size 8x8
+    self.edges[22, 23].set('op', ops.Sequential(
+        nn.ReLU(inplace=True),
+        nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False), # image size = 2 x 2
+        nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
+        nn.BatchNorm2d(128),
+        nn.ReLU(inplace=True),
+        nn.Conv2d(128, 768, 2, bias=False),
+        nn.BatchNorm2d(768),
+        nn.ReLU(inplace=True),
+        nn.Flatten(),
+        nn.Linear(768, self.num_classes))
+    )
+
+    self.update_edges(
+        update_func=_double_channels,
+        scope=self.OPTIMIZER_SCOPE,
+        private_edge_data=True
+    )
+
+
+# `prepare_evaluation()` is always called after the graph was discretized. Here we first expand the graph (see next snippet), then again set the macro graph operations as described already above.
+# 
+# The evalutaion in darts is performed using auxiliary towers (adding a second loss to some intermediate output of the network). This is what is set at the edge (22, 23).
+# 
+# Last but not least, we double (a little more actually) the channels for each primitive at each edge in the scope (see snippet after the next one).
+
+# In[ ]:
+
+
+def _expand(self):
+    # shift the node indices to make space for 4 more nodes at each stage
+    # and the auxiliary logits
+    mapping = {
+        5: 9,
+        6: 10,
+        7: 11,
+        8: 16,
+        9: 17,
+        10: 18,
+        11: 24,     # 23 is auxiliary
+    }
+    nx.relabel_nodes(self, mapping, copy=False)
+    
+    # fix edges
+    self.remove_edges_from(list(self.edges()))
+    self.add_edges_from([(i, i+1) for i in range(1, 22)])
+    self.add_edges_from([(i, i+2) for i in range(2, 21)])
+    self.add_edge(22, 23)   # auxiliary output
+    self.add_edge(22, 24)   # final output
+    
+    to_insert = [] + list(range(5, 9)) + list(range(12, 16)) + list(range(19, 23))
+    for i in to_insert:
+        normal_cell = self.nodes[i-1]['subgraph']
+        self.add_node(i, subgraph=normal_cell.copy().set_scope(normal_cell.scope).set_input([i-2, i-1]))
+    
+    for i, cell in sorted(self.nodes(data='subgraph')):
+        if cell:
+            if i == 3:
+                cell.input_node_idxs = [2, 2]
+            else:
+                cell.input_node_idxs = [i-2, i-1]
+
+
+# We use again networkx functionality to expand the graph and make space for additional cells at each stage. Because of that we have to reset the edges. Then we can add the nodes in the gaps using the free indices and set their input indices as described above for the search space.
+
+# In[ ]:
+
+
+def _double_channels(current_edge_data):
+    init_params = current_edge_data.op.init_params
+    if 'C_in' in init_params:
+        init_params['C_in'] = int(init_params['C_in'] * 2.25) 
+    if 'C_out' in init_params:
+        init_params['C_out'] = int(init_params['C_out'] * 2.25) 
+    if 'affine' in init_params:
+        init_params['affine'] = True
+    current_edge_data.set('op', current_edge_data.op.__class__(**init_params))
+
+
+# Unfortunately, in NASLib we cannot use native `torch.nn.Module` as operations. This is because of several reasons:
+# - We need to make sure, that we find any subgraphs nested in an op, as it is the case for the hierarchical search space.
+# - We might need to change some attributes of the op which were stored there earlier (this is the case here)
+# - We might need a dedicated name for each op in care we want to make use of tabular benchmarks and query the performance of an architecture.
+
+# ### More than one output
+# 
+# If the model should be trained with an auxiliary head for evaluation, this head must be added to the architecture. The way this is currently done is by adding an intermediate output to the macro graph (the output from node 23).
+# 
+# This is required because when passing data through the graph `logits = awesome_architecture(x)` NASLib is only returning the output of the last node. However, for auxiliary towers (and maybe other applications of NAS) we actually need more than one output. These potential outputs are stored at the graph dictionary as `out_from_` followed by the node index. For auxiliary towers, this is realizes defining an additional function `auxiliary_logits` in this case, which returns this intermediate output and allows the evaluation pipeline to handle it accordingly.
+
+# In[ ]:
+
+
+def auxilary_logits(self):
+    return self.graph['out_from_23']
+
+
+# # Querying
+# 
+# NASLib offers an interface to tabular benchmarks like Nas-Bench 201.
+# 
+# The optimizer or evaluation pipeline can access performance metrics via `awesome_architecture.query(metric, dataset)`. All possible metrics are defined in `search_spaces/core/query_metrics.py` and listed in the next snippet. The dataset is the datset string which is privided by the tabular benchmark.
+
+# In[ ]:
+
+
+def query(self, metric=None, dataset=None):
+    return
+    # nasbench 301 query logic
+

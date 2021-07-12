@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>CoderDocs - Bootstrap 4 Documentation Template For Software Projects</title>
+
+    <!-- Meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="Bootstrap 4 Template For Software Startups">
+    <meta name="author" content="Xiaoying Riley at 3rd Wave Media">
+    <link rel="shortcut icon" href="favicon.ico">
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome JS-->
+    <script defer src="assets/fontawesome/js/all.min.js"></script>
+
+    <!-- Plugins CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.0/styles/default.min.css">
+
+    <!-- Theme CSS -->
+    <link id="theme-style" rel="stylesheet" href="assets/css/theme.css">
+
+</head>
+
+<body class="docs-page">
+    <header class="header fixed-top">
+        <div class="branding docs-branding">
+            <div class="container-fluid position-relative py-2">
+                <div class="docs-logo-wrapper">
+					<button id="docs-sidebar-toggler" class="docs-sidebar-toggler docs-sidebar-visible mr-2 d-xl-none" type="button">
+	                    <span></span>
+	                    <span></span>
+	                    <span></span>
+	                </button>
+	                <div class="site-logo"><a class="navbar-brand" href="index.html"><img class="logo-icon mr-2" src="assets/images/coderdocs-logo.svg" alt="logo"><span class="logo-text">NAS<span class="text-alt">Lib</span></span></a></div>
+                </div><!--//docs-logo-wrapper-->
+	            <div class="docs-top-utilities d-flex justify-content-end align-items-center">
+	                <div class="top-search-box d-none d-lg-flex">
+		                <form class="search-form">
+				            <input type="text" placeholder="Search the docs..." name="search" class="form-control search-input">
+				            <button type="submit" class="btn search-btn" value="Search"><i class="fas fa-search"></i></button>
+				        </form>
+	                </div>
+
+					<ul class="social-list list-inline mx-md-3 mx-lg-5 mb-0 d-none d-lg-flex">
+						<li class="list-inline-item"><a href="https://github.com/automl/NASLib.git"><i class="fab fa-github fa-fw"></i></a></li>
+		       </ul><!--//social-list-->
+		            <a href="https://github.com/automl/NASLib/archive/refs/heads/master.zip" class="btn btn-primary d-none d-lg-flex">Download</a>
+	            </div><!--//docs-top-utilities-->
+            </div><!--//container-->
+        </div><!--//branding-->
+    </header><!--//header-->
+
+    <div class="docs-wrapper">
+	    <div id="docs-sidebar" class="docs-sidebar">
+		    <div class="top-search-box d-lg-none p-3">
+                <form class="search-form">
+		            <input type="text" placeholder="Search the docs..." name="search" class="form-control search-input">
+		            <button type="submit" class="btn search-btn" value="Search"><i class="fas fa-search"></i></button>
+		        </form>
+            </div>
+		    <nav id="docs-nav" class="docs-nav navbar">
+			    <ul class="section-items list-unstyled nav flex-column pb-3">
+				    <li class="nav-item section-title"><a class="nav-link scrollto active" href="#section-1"><span class="theme-icon-holder mr-2"><i class="fas fa-map-signs"></i></span>Introduction to NASLib</a></li>
+				    <li class="nav-item"><a class="nav-link scrollto" href="#item-1-1">Basic Example of Usage</a></li>
+            <li class="nav-item"><a class="nav-link scrollto" href="#item-1-2">Example</a></li>
+				    <li class="nav-item section-title mt-3"><a class="nav-link scrollto" href="#section-2"><span class="theme-icon-holder mr-2"><i class="fas fa-arrow-down"></i></span>Installation Guide</a></li>
+				    <li class="nav-item"><a class="nav-link scrollto" href="#item-2-1">Requirements</a></li>
+            <li class="nav-item"><a class="nav-link scrollto" href="#item-2-2">Using a Virtual Environment</a></li>
+            <li class="nav-item"><a class="nav-link scrollto" href="#item-2-3">Installing NASLib</a></li>
+            <!--  -->
+            <li class="nav-item section-title mt-3"><a class="nav-link scrollto" href="#section-3"><span class="theme-icon-holder mr-2"><i class="fas fa-asterisk"></i></span>Citing NASLib</a></li>
+            <li class="nav-item"><a class="nav-link scrollto" href="#item-3-1">Bibtex entries</a></li>
+            <!-- -->
+				    <!-- <li class="nav-item section-title mt-3"><a class="nav-link scrollto" href="#section-4"><span class="theme-icon-holder mr-2"><i class="fas fa-cogs"></i></span>Integrations</a></li> -->
+				    <!-- <li class="nav-item"><a class="nav-link scrollto" href="#item-4-1">Section Item 4.1</a></li> -->
+			    </ul>
+
+		    </nav><!--//docs-nav-->
+	    </div><!--//docs-sidebar-->
+	    <div class="docs-content">
+		    <div class="container">
+			    <article class="docs-article" id="section-1">
+				    <header class="docs-header">
+					    <h1 class="docs-heading">Introduction to NASLib<span class="docs-time">Last updated: 2019-06-01</span></h1>
+					    <section class="docs-intro">
+						    <p>NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilitate NAS research for the community by providing interfaces to several state-of-the-art NAS search spaces.</p>
+
+            <div class="callout-block callout-block-warning">
+                <div class="content">
+                    <h4 class="callout-title">
+                      <span class="callout-icon-holder mr-1">
+                        <i class="fas fa-bullhorn"></i>
+                    </span><!--//icon-holder-->
+                      Warning
+                  </h4>
+                    <p>This library is under construction and there is no official release yet. Feel free to play around and have a look but be aware that the APIs will be changed until we have a first release.</p>
+                </div><!--//content-->
+            </div><!--//callout-block-->
+            <p>NASLib has been used to run an extensive comparison of 31 performance predictors. The results were published in the paper <a class="theme-link" href="https://arxiv.org/abs/2104.01177" target="_blank">How Powerful are Performance Predictors in Neural Architecture Search?</a><br>
+            <a class="theme-link" href="https://github.com/automl/NASLib/blob/master/docs/predictors.md" target="_blank">For more details take a look at its seperate README.</a></p>
+          </section><!--//docs-intro-->
+
+
+				    <section class="docs-section" id="item-1-1">
+              <h2 class="section-heading">Basic Example of Usage</h2>
+              <div class="docs-code-block">
+  							<!-- ** Embed github code starts ** -->
+                <!-- <script src="https://gist.github.com/shakibamrd/b8630768ba89fcdb8e874952dd7bb640.js"></script> -->
+              <pre class="shadow-lg rounded">
+<code>search_space = SimpleCellSearchSpace()
+
+optimizer = DARTSOptimizer(config)
+optimizer.adapt_search_space(search_space)
+
+trainer = Trainer(optimizer, config)
+trainer.search()        # Search for an architecture
+trainer.evaluate()      # Evaluate the best architecture
+</code></pre>
+              </div><!--//docs-code-block -->
+
+					</section><!--//section-->
+          <section class="docs-section" id="item-1-2">
+            <h2 class="section-heading">Example</h2>
+            <div class="docs-code-block">
+              <!-- ** Embed github code starts ** -->
+              <!-- <script src="https://gist.github.com/shakibamrd/b8630768ba89fcdb8e874952dd7bb640.js"></script> -->
+            <pre class="shadow-lg rounded">
+<code>import logging
+import sys
+
+from naslib.defaults.trainer import Trainer
+from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, DrNASGrowOptimizer, RandomSearch, \
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor
+
+from naslib.search_spaces import (
+    DartsSearchSpace,
+    SimpleCellSearchSpace,
+    NasBench201SearchSpace,
+    HierarchicalSearchSpace,
+)
+
+# from naslib.search_spaces.nasbench101 import graph
+
+from naslib.utils import utils, setup_logger
+
+# Read args and config, setup logger
+config = utils.get_config_from_args()
+utils.set_seed(config.seed)
+
+logger = setup_logger(config.save + "/log.log")
+#logger.setLevel(logging.INFO)   # default DEBUG is very verbose
+
+utils.log_args(config)
+
+supported_optimizers = {
+    'darts': DARTSOptimizer(config),
+    'gdas': GDASOptimizer(config),
+    'drnas': DrNASOptimizer(config),
+    'drnas-grow': DrNASGrowOptimizer(config),
+    'rs': RandomSearch(config),
+    're': RegularizedEvolution(config),
+    'ls': LocalSearch(config),
+    'bananas': Bananas(config),
+    'bp': BasePredictor(config)
+}
+
+# Changing the search space is one line of code
+search_space = SimpleCellSearchSpace()
+# search_space = graph.NasBench101SearchSpace()
+# search_space = HierarchicalSearchSpace()
+# search_space = DartsSearchSpace()
+# search_space = NasBench201SearchSpace()
+
+# Changing the optimizer is one line of code
+# optimizer = supported_optimizers[config.optimizer]
+optimizer = supported_optimizers['drnas-grow']
+optimizer.adapt_search_space(search_space)
+
+# Start the search and evaluation
+trainer = Trainer(optimizer, config)
+
+if not config.eval_only:
+    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
+    trainer.search(resume_from=checkpoint)
+
+checkpoint = utils.get_last_checkpoint(config, search=False) if config.resume else ""
+trainer.evaluate(resume_from=checkpoint)
+</code></pre>
+            </div><!--//docs-code-block -->
+
+        </section><!--//section-->
+          </article>
+
+
+			    <article class="docs-article" id="section-2">
+				    <header class="docs-header">
+					    <h1 class="docs-heading">Installation</h1>
+					    <section class="docs-intro">
+						</section><!--//docs-intro-->
+				    </header>
+
+				     <section class="docs-section" id="item-2-1">
+						<h2 class="section-heading">Requirements</h2>
+            <h5>NASLib has the following requirments:</h5>
+						<ul>
+						    <li><strong class="mr-1">Linux operating system</strong> (for example Ubuntu, Mac OS X)</li>
+						    <li><strong class="mr-1">Python</strong> (>=3.6)</li>
+						    <li><strong class="mr-1">Pytorch</strong></li>
+						</ul>
+          </section><!--//section-->
+
+          <section class="docs-section" id="item-2-2">
+						<h2 class="section-heading">Using a Virtual Environment</h2>
+            <p>We recommend to set up a virtual environment.</p>
+            <div class="docs-code-block">
+              <pre class="shadow-lg rounded">
+<code>python3 -m venv naslib
+source naslib/bin/activate
+</code></pre>
+            </div><!--//docs-code-block-->
+            <div class="callout-block callout-block-info">
+
+                <div class="content">
+                    <h4 class="callout-title">
+                      <span class="callout-icon-holder mr-1">
+                        <i class="fas fa-info-circle"></i>
+                    </span><!--//icon-holder-->
+                      Note
+                  </h4>
+                  <p>Make sure you use the latest version of pip.</p>
+                  <div class="docs-code-block">
+                    <pre class="shadow-lg rounded">
+<code>pip install --upgrade pip setuptools wheel
+pip install cython
+</code></pre>
+                  </div><!--//docs-code-block-->
+                </div><!--//content-->
+            </div><!--//callout-block-->
+					</section><!--//section-->
+
+          <section class="docs-section" id="item-2-3">
+						<h2 class="section-heading">Installing NASLib</h2>
+            <p>Clone and install.</p>
+            <p>If you plan to modify naslib consider adding the -e option for pip install.</p>
+            <div class="docs-code-block">
+            <pre class="shadow-lg rounded">
+<code>git clone ...
+cd naslib
+pip install .
+</code></pre>
+            </div>
+            <p>To validate the installation, you can run tests:</p>
+            <div class="docs-code-block">
+              <pre class="shadow-lg rounded">
+<code>cd tests
+coverage run -m unittest discover
+</code></pre>
+            </div><!--//docs-code-block-->
+
+            <p>The test coverage can be seen with coverage report.</p>
+          </section>
+
+			    </article><!--//docs-article-->
+
+
+			    <article class="docs-article" id="section-3">
+				    <header class="docs-header">
+					    <h1 class="docs-heading">Citing NASLib</h1>
+					    <section class="docs-intro">
+						    <p>If you use this code in your own work, please use the following bibtex entries.</p>
+						</section><!--//docs-intro-->
+            </header>
+            <section class="docs-section" id="item-3-1">
+              <h2 class="section-heading">Bibtex entries</h2>
+             <div class="docs-code-block">
+               <pre class="shadow-lg rounded">
+<code>@misc{naslib-2020,
+ title={NASLib: A Modular and Flexible Neural Architecture Search Library},
+ author={Ruchte, Michael and Zela, Arber and Siems, Julien and Grabocka, Josif and Hutter, Frank},
+ year={2020}, publisher={GitHub},
+ howpublished={\url{https://github.com/automl/NASLib}} }
+
+@article{white2021powerful,
+ title={How Powerful are Performance Predictors in Neural Architecture Search?},
+ author={White, Colin and Zela, Arber and Ru, Binxin and Liu, Yang and Hutter, Frank},
+ journal={arXiv preprint arXiv:2104.01177},
+ year={2021}
+}
+</code></pre>
+             </div><!--//docs-code-block-->
+           </section><!--//section-->
+			    </article><!--//docs-article-->
+
+			    <!-- <article class="docs-article" id="section-4">
+				    <header class="docs-header">
+					    <h1 class="docs-heading">Intergrations</h1>
+					    <section class="docs-intro">
+						    <p>Section intro goes here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque finibus condimentum nisl id vulputate. Praesent aliquet varius eros interdum suscipit. Donec eu purus sed nibh convallis bibendum quis vitae turpis. Duis vestibulum diam lorem, vitae dapibus nibh facilisis a. Fusce in malesuada odio.</p>
+						</section><!--//docs-intro-->
+				    <!-- </header>
+				     <section class="docs-section" id="item-4-1">
+						<h2 class="section-heading">Section Item 4.1</h2>
+						<p>Vivamus efficitur fringilla ullamcorper. Cras condimentum condimentum mauris, vitae facilisis leo. Aliquam sagittis purus nisi, at commodo augue convallis id. Sed interdum turpis quis felis bibendum imperdiet. Mauris pellentesque urna eu leo gravida iaculis. In fringilla odio in felis ultricies porttitor. Donec at purus libero. Vestibulum libero orci, commodo nec arcu sit amet, commodo sollicitudin est. Vestibulum ultricies malesuada tempor.</p> -->
+					<!-- </section> -->
+                <!--//section-->
+			    <!-- </article>
+          <!--//docs-article-->
+        
+
+			    <footer class="footer">
+				    <div class="container text-center py-5">
+					    <!--/* This template is free as long as you keep the footer attribution link. If you'd like to use the template without the attribution link, you can buy the commercial license via our website: themes.3rdwavemedia.com Thank you for your support. :) */-->
+				        <small class="copyright">Designed with <i class="fas fa-heart" style="color: #fb866a;"></i> by <a class="theme-link" href="http://themes.3rdwavemedia.com" target="_blank">Xiaoying Riley</a> for developers</small>
+				        <ul class="social-list list-unstyled pt-4 mb-0">
+						    <li class="list-inline-item"><a href="#"><i class="fab fa-github fa-fw"></i></a></li>
+				            <li class="list-inline-item"><a href="#"><i class="fab fa-twitter fa-fw"></i></a></li>
+				            <li class="list-inline-item"><a href="#"><i class="fab fa-slack fa-fw"></i></a></li>
+				            <li class="list-inline-item"><a href="#"><i class="fab fa-product-hunt fa-fw"></i></a></li>
+				            <li class="list-inline-item"><a href="#"><i class="fab fa-facebook-f fa-fw"></i></a></li>
+				            <li class="list-inline-item"><a href="#"><i class="fab fa-instagram fa-fw"></i></a></li>
+				        </ul><!--//social-list-->
+				    </div>
+			    </footer>
+		    </div>
+	    </div>
+    </div><!--//docs-wrapper-->
+
+
+
+    <!-- Javascript -->
+    <script src="assets/plugins/jquery-3.4.1.min.js"></script>
+    <script src="assets/plugins/popper.min.js"></script>
+    <script src="assets/plugins/bootstrap/js/bootstrap.min.js"></script>
+
+
+    <!-- Page Specific JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.0.0/highlight.min.js"></script>
+    <script src="assets/js/highlight-custom.js"></script>
+    <script src="assets/plugins/jquery.scrollTo.min.js"></script>
+    <script src="assets/plugins/lightbox/dist/ekko-lightbox.min.js"></script>
+    <script src="assets/js/docs.js"></script>
+
+</body>
+</html>
