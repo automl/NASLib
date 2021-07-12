@@ -13,6 +13,13 @@ NASLib uses four representations of darts architectures:
 This file contains all 12 types of conversions from one represenation to another.
 """
 
+def get_cell_of_type(naslib_object, cell_type):
+    for node in naslib_object.nodes:
+        if 'subgraph' in naslib_object.nodes[node] and naslib_object.nodes[node]['subgraph'].name == cell_type:
+            return naslib_object.nodes[node]['subgraph']
+
+    raise Exception(f'Cell of type {cell_type} not found in the graph')
+
 def convert_naslib_to_genotype(naslib_object):
     """convert the naslib representation to Genotype"""
     ops_to_genotype = {
@@ -26,7 +33,7 @@ def convert_naslib_to_genotype(naslib_object):
         'MaxPool': 'max_pool_3x3',
         'Zero': 'zero'
     }
-    cells = [naslib_object.nodes[3]['subgraph'], naslib_object.nodes[5]['subgraph']]
+    cells = [get_cell_of_type(naslib_object, 'normal_cell'), get_cell_of_type(naslib_object, 'reduction_cell')]
     converted_cells = []
     for cell in cells:
         edge_op_dict = {
@@ -39,9 +46,9 @@ def convert_naslib_to_genotype(naslib_object):
     
     return Genotype(
         normal = converted_cells[0],
-        normal_concat = [2, 3, 4, 5, 6],
+        normal_concat = [2, 3, 4, 5, 6], # Why is this [2, 3, 4, 5, 6] instead of [2, 3, 4, 5]?
         reduce = converted_cells[1],
-        reduce_concat = [4, 5, 6]
+        reduce_concat = [4, 5, 6] # Why is this [4, 5, 6] instead of [2, 3, 4, 5]?
     )
 
 
