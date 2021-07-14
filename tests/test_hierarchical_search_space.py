@@ -115,14 +115,9 @@ class HierarchicalSearchSpaceTest(unittest.TestCase):
         for _, _, data in self.subgraph.edges.data():
             self.num_ops += 1
             for _, _, data_ in data['op'][0].edges.data():
-                # Not all operations are lists of primitives
-                if type(data_['op']) == list:
-                    for operation in data_['op']:
-                        self.assertIn(type(operation), [Identity, Zero1x1, DepthwiseConv, ConvBNReLU, AvgPool1x1,
-                                                        MaxPool1x1, SepConv])
-                else:
-                    self.assertIn(type(data_['op']), [Identity, Zero1x1, DepthwiseConv, ConvBNReLU, AvgPool1x1,
-                                                      MaxPool1x1, SepConv])
+                for operation in data_['op']:
+                    self.assertIn(type(operation), [Identity, Zero1x1, DepthwiseConv, ConvBNReLU, AvgPool1x1,
+                                                    MaxPool1x1, SepConv])
 
         # Check if the number of edges is the same as number of operations in the subgraph
         self.assertEqual(self.subgraph.number_of_edges(), self.num_ops)

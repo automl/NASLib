@@ -129,7 +129,6 @@ class DartsSearchSpaceTest(unittest.TestCase):
         self.optimizer_graph.before_training()
         self.optimizer_subgraph.before_training()
         self.num_ops = 0
-        self.operations = []
 
     def test_update(self):
         # Check the total numbers of parameters and the number of edges of the graph
