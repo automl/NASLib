@@ -1,0 +1,1018 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>Search spaces in NASLib &mdash; Sphinx documentation NASLib 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "document", "processHtmlClass": "math|output_area"}}</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Sphinx documentation NASLib
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Online Documentation Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="manual.html">Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="citing.html">Citing NASLib</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributions</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Sphinx documentation NASLib</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Search spaces in NASLib</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/search_spaces.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Search-spaces-in-NASLib">
+<h1>Search spaces in NASLib<a class="headerlink" href="#Search-spaces-in-NASLib" title="Permalink to this headline">¶</a></h1>
+<p>Neural Architecure Search consists of 3 building blocks: - Search space (cell, hierarchical, …) - Optimization - Evaluation</p>
+<p>Here we will conver the first part: Search spaces.</p>
+<p>This is not a general instruction on seach spaces but rather a walk-through how they are realized in NASLib. Therefore it is also not indeted to execute this notebook but rather see it as a extensive comment why whay is happening where.</p>
+<p>This will be done using the implementation of the darts search space. The complete file is in <code class="docutils literal notranslate"><span class="pre">naslib/search_spaces/darts/graph.py</span></code>.</p>
+<div class="section" id="DARTS-Search-space-definition">
+<h2>DARTS Search space definition<a class="headerlink" href="#DARTS-Search-space-definition" title="Permalink to this headline">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">class</span> <span class="nc">DartsSearchSpace</span><span class="p">(</span><span class="n">Graph</span><span class="p">):</span>
+
+    <span class="n">OPTIMIZER_SCOPE</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;n_stage_1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;n_stage_2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;n_stage_3&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;r_stage_1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;r_stage_2&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">QUERYABLE</span> <span class="o">=</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-1-02ee2b8882ee&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-fg">----&gt; 1</span><span class="ansi-red-fg"> </span><span class="ansi-green-fg">class</span> DartsSearchSpace<span class="ansi-blue-fg">(</span>Graph<span class="ansi-blue-fg">)</span><span class="ansi-blue-fg">:</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span>     OPTIMIZER_SCOPE = [
+<span class="ansi-green-intense-fg ansi-bold">      4</span>         <span class="ansi-blue-fg">&#34;n_stage_1&#34;</span><span class="ansi-blue-fg">,</span>
+<span class="ansi-green-intense-fg ansi-bold">      5</span>         <span class="ansi-blue-fg">&#34;n_stage_2&#34;</span><span class="ansi-blue-fg">,</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;Graph&#39; is not defined
+</pre></div></div>
+</div>
+<p>NASLib uses the concept of <code class="docutils literal notranslate"><span class="pre">scopes</span></code> to differentiate instances of the same graph. For example in darts we have one reduction cell, that is used at three stages of the macro graph. To be able to properly set the channels at each stage, we give each copy a different scope later.</p>
+<p>The scopes in <code class="docutils literal notranslate"><span class="pre">OPTIMIZER_SCOPE</span></code> are later used by optimizers to determine which graphs they can manipulate to perform the search. E.g. this does usually not include the macro graph but all cells.</p>
+<p>The flag QUERYABLE indicates if there is an interface to one of the tabular NAS benchmarks which could be used to query achitecture metrics such as train accuracy or inference time. The available metrics are defined in <code class="docutils literal notranslate"><span class="pre">search_spaces/core/query_metrics</span></code> and implemented in the function <code class="docutils literal notranslate"><span class="pre">query()</span></code> below.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">NUM_CLASSES</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;NUM_CLASSES&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="mi">10</span>
+</pre></div>
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">__init__</span></code> cannot take any parameters due to the way <code class="docutils literal notranslate"><span class="pre">networkx</span></code> is implemented. If we want to change the number of classes set a static attribute <code class="docutils literal notranslate"><span class="pre">NUM_CLASSES</span></code> before initializing the class. Default is 10 as for cifar-10.</p>
+<p>the channels are used later when setting the primitive operations at the cell edges.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>        <span class="c1"># Normal cell first</span>
+        <span class="n">normal_cell</span> <span class="o">=</span> <span class="n">Graph</span><span class="p">()</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;normal_cell&quot;</span>    <span class="c1"># Use the same name for all cells with shared attributes</span>
+
+        <span class="c1"># Input nodes</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># Intermediate nodes</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+
+        <span class="c1"># Output node</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">7</span><span class="p">)</span>
+
+        <span class="c1"># Edges</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">)])</span>   <span class="c1"># input 1</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">)])</span>   <span class="c1"># input 2</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">)])</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">)])</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">)])</span>
+
+        <span class="c1"># Edges connecting to the output are always the identity</span>
+        <span class="n">normal_cell</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="n">EdgeData</span><span class="p">()</span><span class="o">.</span><span class="n">finalize</span><span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">)])</span>   <span class="c1"># output</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-3-829f4c346cc8&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> <span class="ansi-red-fg"># Normal cell first</span>
+<span class="ansi-green-fg">----&gt; 2</span><span class="ansi-red-fg"> </span>normal_cell <span class="ansi-blue-fg">=</span> Graph<span class="ansi-blue-fg">(</span><span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span> normal_cell<span class="ansi-blue-fg">.</span>name <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">&#34;normal_cell&#34;</span>    <span class="ansi-red-fg"># Use the same name for all cells with shared attributes</span>
+<span class="ansi-green-intense-fg ansi-bold">      4</span>
+<span class="ansi-green-intense-fg ansi-bold">      5</span> <span class="ansi-red-fg"># Input nodes</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;Graph&#39; is not defined
+</pre></div></div>
+</div>
+<p>We use the API from networkx to create nodes and edges. The connectivity follows the definition from the darts paper. Note that the node indices must be integers and start with 1.</p>
+<p>At each edge sits an <code class="docutils literal notranslate"><span class="pre">EdgeData</span></code> object. This is used to store informations at the edge, e.g. the <code class="docutils literal notranslate"><span class="pre">op</span></code> which is used when passing data from node to node. It can be finalized to avoid later manipulation. This is required to the edges connecting to the output nodes in darts, as they are set constant to the Identity operation (skip connection) and will not be part of the architecture search.</p>
+<p>Up to this point, the op at the edges is set to <code class="docutils literal notranslate"><span class="pre">Identity</span></code> (definition in <code class="docutils literal notranslate"><span class="pre">search_spaces/core/primitives.py</span></code>). The combine operation (<code class="docutils literal notranslate"><span class="pre">comb_op</span></code>) at nodes is set to <code class="docutils literal notranslate"><span class="pre">sum</span></code> by default. This can be changed later.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>        <span class="c1"># Reduction cell has the same topology</span>
+        <span class="n">reduction_cell</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">normal_cell</span><span class="p">)</span>
+        <span class="n">reduction_cell</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;reduction_cell&quot;</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-4-ffbec2ad55dc&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">      1</span> <span class="ansi-red-fg"># Reduction cell has the same topology</span>
+<span class="ansi-green-fg">----&gt; 2</span><span class="ansi-red-fg"> </span>reduction_cell <span class="ansi-blue-fg">=</span> deepcopy<span class="ansi-blue-fg">(</span>normal_cell<span class="ansi-blue-fg">)</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span> reduction_cell<span class="ansi-blue-fg">.</span>name <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">&#34;reduction_cell&#34;</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;deepcopy&#39; is not defined
+</pre></div></div>
+</div>
+<p>As the reduction cell and the normal cell share the topology, we can just deepcopy them. Make sure to set a unique name for unique graphs, as NASLib uses the name (amongst others) to differentiate between copys of the same graph and copies of other graphs.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>        <span class="c1">#</span>
+        <span class="c1"># Makrograph definition</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;makrograph&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># input node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>    <span class="c1"># preprocessing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;n_stage_1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;n_stage_1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">reduction_cell</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;r_stage_1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;n_stage_2&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;n_stage_2&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">reduction_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;r_stage_2&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;n_stage_3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="s2">&quot;n_stage_3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>   <span class="c1"># output</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">9</span><span class="p">)])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-5-98a98a29019c&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span> <span class="ansi-red-fg"># Makrograph definition</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span> <span class="ansi-red-fg">#</span>
+<span class="ansi-green-fg">----&gt; 4</span><span class="ansi-red-fg"> </span>self<span class="ansi-blue-fg">.</span>name <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">&#34;makrograph&#34;</span>
+<span class="ansi-green-intense-fg ansi-bold">      5</span>
+<span class="ansi-green-intense-fg ansi-bold">      6</span> self<span class="ansi-blue-fg">.</span>add_node<span class="ansi-blue-fg">(</span><span class="ansi-cyan-fg">1</span><span class="ansi-blue-fg">)</span>    <span class="ansi-red-fg"># input node</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;self&#39; is not defined
+</pre></div></div>
+</div>
+<p>Here happen several things. Graphs can be at nodes (were they are conceptually similar to the combine operation) or at edges. In the darts search space they sit only at nodes, in other search spaces they sit at the edges.</p>
+<p>When they sit at nodes, they have to be set as <code class="docutils literal notranslate"><span class="pre">subgraph</span></code>. <code class="docutils literal notranslate"><span class="pre">copy()</span></code> creates a somewhat shallow copy of the graph. This I explain later. <code class="docutils literal notranslate"><span class="pre">set_scope()</span></code> set the scope for the graph and if specified also for all child graphs as graphs can be nested. <code class="docutils literal notranslate"><span class="pre">set_input()</span></code> is used to route the input from the incoming edges at the node to the input node of the subgraph. E.g. in case of macro node 5, the input to its subgraph will come from macro node 3 and 4. This is also the order in which the input
+will be assigned to the input nodes of the subgraph. In case of macro node 3, the two inputs are defines as <code class="docutils literal notranslate"><span class="pre">[2,</span> <span class="pre">2]</span></code>. This is a hacky way to dublicate the output of macro node 2 although there is only one edge. The input will be dublicated in that case.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>        <span class="c1">#</span>
+        <span class="c1"># Operations at the makrograph edges</span>
+        <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_in_edges</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="n">reduction_cell_indices</span> <span class="o">=</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+
+        <span class="n">channel_map_from</span><span class="p">,</span> <span class="n">channel_map_to</span> <span class="o">=</span> <span class="n">channel_maps</span><span class="p">(</span><span class="n">reduction_cell_indices</span><span class="p">,</span> <span class="n">max_index</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_makrograph_ops</span><span class="p">(</span><span class="n">channel_map_from</span><span class="p">,</span> <span class="n">channel_map_to</span><span class="p">,</span> <span class="n">max_index</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_cell_ops</span><span class="p">(</span><span class="n">reduction_cell_indices</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-fg">---------------------------------------------------------------------------</span>
+<span class="ansi-red-fg">NameError</span>                                 Traceback (most recent call last)
+<span class="ansi-green-fg">&lt;ipython-input-6-a3bdc157193c&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
+<span class="ansi-green-intense-fg ansi-bold">      2</span> <span class="ansi-red-fg"># Operations at the makrograph edges</span>
+<span class="ansi-green-intense-fg ansi-bold">      3</span> <span class="ansi-red-fg">#</span>
+<span class="ansi-green-fg">----&gt; 4</span><span class="ansi-red-fg"> </span>self<span class="ansi-blue-fg">.</span>num_in_edges <span class="ansi-blue-fg">=</span> <span class="ansi-cyan-fg">4</span>
+<span class="ansi-green-intense-fg ansi-bold">      5</span> reduction_cell_indices <span class="ansi-blue-fg">=</span> <span class="ansi-blue-fg">[</span><span class="ansi-cyan-fg">5</span><span class="ansi-blue-fg">,</span> <span class="ansi-cyan-fg">8</span><span class="ansi-blue-fg">]</span>
+<span class="ansi-green-intense-fg ansi-bold">      6</span>
+
+<span class="ansi-red-fg">NameError</span>: name &#39;self&#39; is not defined
+</pre></div></div>
+</div>
+<p>Now we are ready to set the primitives at the cell edges and the operations required for the macro graph edges. This could not be done earlier because currently the primitives have to created with the correct number of channels. And this changes for each stage.</p>
+<p><code class="docutils literal notranslate"><span class="pre">channel_maps</span></code> is just a function to get two dics which contain the corrent index of <code class="docutils literal notranslate"><span class="pre">self.channels</span></code> for every macro graph node.</p>
+<p>Now we’ll look at the other functions.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>    <span class="k">def</span> <span class="nf">_set_makrograph_ops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel_map_from</span><span class="p">,</span> <span class="n">channel_map_to</span><span class="p">,</span> <span class="n">max_index</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="c1"># pre-processing</span>
+        <span class="c1"># In darts there is a hardcoded multiplier of 3 for the output of the stem</span>
+        <span class="n">stem_multiplier</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="n">ops</span><span class="o">.</span><span class="n">Stem</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">stem_multiplier</span><span class="p">))</span>
+
+        <span class="c1"># edges connecting cells</span>
+        <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">True</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">u</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="n">max_index</span><span class="p">:</span>
+                <span class="n">C_in</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="n">channel_map_from</span><span class="p">[</span><span class="n">u</span><span class="p">]]</span>
+                <span class="n">C_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="n">channel_map_to</span><span class="p">[</span><span class="n">v</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="n">C_in</span> <span class="o">==</span> <span class="n">C_out</span><span class="p">:</span>
+                    <span class="n">C_in</span> <span class="o">=</span> <span class="n">C_in</span> <span class="o">*</span> <span class="n">stem_multiplier</span> <span class="k">if</span> <span class="n">u</span> <span class="o">==</span> <span class="mi">2</span> <span class="k">else</span> <span class="n">C_in</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_in_edges</span>     <span class="c1"># handle Stem</span>
+                    <span class="n">data</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="n">ops</span><span class="o">.</span><span class="n">ReLUConvBN</span><span class="p">(</span><span class="n">C_in</span><span class="p">,</span> <span class="n">C_out</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="n">affine</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="n">FactorizedReduce</span><span class="p">(</span><span class="n">C_in</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_in_edges</span><span class="p">,</span> <span class="n">C_out</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="n">affine</span><span class="p">))</span>
+
+        <span class="c1"># post-processing</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">True</span><span class="p">))[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="n">ops</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">AdaptiveAvgPool2d</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_in_edges</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span><span class="p">))</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>This function set the operation at the macro graph edges, as in darts they are not Identity but are used to do some pre-procesing of the output of the previous nodes.</p>
+<p>The output of the Stem is multiplied with 3 as it is in the darts code.</p>
+<p>There are two ways to set attributes at edges in NASLib. The first one is to directly access the edge via networkx api. This is done here for setting the stem in <code class="docutils literal notranslate"><span class="pre">set('op',</span> <span class="pre">ops.Stem(),</span> <span class="pre">shared=False)</span></code> where <code class="docutils literal notranslate"><span class="pre">'op'</span></code> is the name of the attribute and <code class="docutils literal notranslate"><span class="pre">ops.Stem()</span></code> its value. This is similar to a dict, but can later be accessed also as an attribute of the edge like <code class="docutils literal notranslate"><span class="pre">edges[1,</span> <span class="pre">2].op</span></code>.</p>
+<p>The advantage of this method is it is easy. The disatvantage is it is not recursive, i.e. it must be done manually for each copy of the graph in case of a private attribute.</p>
+<p>Private attributes of edges are not shared between copies of the graph, i.e. they are <em>deepcopied</em> when creating copies of a graph. If we set <code class="docutils literal notranslate"><span class="pre">shared=True</span></code> in <code class="docutils literal notranslate"><span class="pre">set()</span></code>, then the attribute is shared. This means the attribute will be added for the edge at each copy of the graph as a <em>shallow copy</em>.</p>
+<p>The same is done for reduction cells in the next section. Because darts does concatenate the output of the intermediate nodes at the last output node of the cells, the output dimension of each cell is 4 times the channel. This is considered here: <code class="docutils literal notranslate"><span class="pre">else</span> <span class="pre">C_in</span> <span class="pre">*</span> <span class="pre">self.num_in_edges</span></code>. How we actually set the combine op in this node is shown in the next code snipped.</p>
+<p>The postprocessing at the last edge (connecting to the output node of the macro graph) is set the same way.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>    <span class="k">def</span> <span class="nf">_set_cell_ops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reduction_cell_indices</span><span class="p">):</span>
+        <span class="c1"># normal cells</span>
+        <span class="n">stages</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;n_stage_1&quot;</span><span class="p">,</span> <span class="s2">&quot;n_stage_2&quot;</span><span class="p">,</span> <span class="s2">&quot;n_stage_3&quot;</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">scope</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">stages</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">update_edges</span><span class="p">(</span>
+                <span class="n">update_func</span><span class="o">=</span><span class="k">lambda</span> <span class="n">current_edge_data</span><span class="p">:</span> <span class="n">_set_cell_ops</span><span class="p">(</span><span class="n">current_edge_data</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                <span class="n">scope</span><span class="o">=</span><span class="n">scope</span><span class="p">,</span>
+                <span class="n">private_edge_data</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+
+        <span class="c1"># reduction cells</span>
+        <span class="c1"># stride=2 is only for some edges, that&#39;s why we have to do it this way</span>
+        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">reduction_cell_indices</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="mi">1</span><span class="p">:]):</span>
+            <span class="n">reduction_cell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">&#39;subgraph&#39;</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">reduction_cell</span><span class="o">.</span><span class="n">edges</span><span class="o">.</span><span class="n">data</span><span class="p">():</span>
+                <span class="n">stride</span> <span class="o">=</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">u</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">else</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">is_final</span><span class="p">():</span>
+                    <span class="n">reduction_cell</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">_set_cell_ops</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">stride</span><span class="p">))</span>
+
+        <span class="c1">#</span>
+        <span class="c1"># Combining operations</span>
+        <span class="c1">#</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">(</span><span class="s1">&#39;subgraph&#39;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">cell</span><span class="p">:</span>
+                <span class="n">cell</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="s1">&#39;comb_op&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">channel_concat</span>
+</pre></div>
+</div>
+</div>
+<p>Here we are setting the primitives for all cells which are in the macro graph.</p>
+<p>In order to not do this manually for each cell (<code class="docutils literal notranslate"><span class="pre">op</span></code> must be private, otherwise its weights are shared), NASLib provides an api for that. It is <code class="docutils literal notranslate"><span class="pre">graph.update_edges(update_func,</span> <span class="pre">scope,</span> <span class="pre">private_edge_data)</span></code>.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">update_func</span></code> is a function provided by the user. It is applied to every edge for every graph in the scope. Only if the edge is flagged as final, <code class="docutils literal notranslate"><span class="pre">update_func</span></code> is not applied.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scope</span></code> is a string or a list of strings which must match the scope defined at the graphs we want to update.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">private_edge_data</span></code> specifies whether the function given as <code class="docutils literal notranslate"><span class="pre">update_func</span></code> is going to add/change private attributes or shared ones. This is needed in order to not set the same attribute multiple times (shallow copy, mentioned above).</p></li>
+</ul>
+<p>We had to wait with setting the primitives at the cells because they require the number of channels they expect (amongst others possibly). Now that we have placed all cells correctly we can update them using their scope. Here we use the function <code class="docutils literal notranslate"><span class="pre">_set_cell_ops</span></code> which is presented in the next snipped (bottom of the file).</p>
+<p>Unfortunately, we cannot use the same logic for the reduction cells. This is because by definition of the reduction cell, <code class="docutils literal notranslate"><span class="pre">stride=2</span></code> is only set on edges connecting input and intermediate nodes. We plan to add functionality to handle this case also via <code class="docutils literal notranslate"><span class="pre">update_edges()</span></code>, stay tuned.</p>
+<p>Last but not least we set the combine operation as <code class="docutils literal notranslate"><span class="pre">cannel_concat</span></code> for each cell. As this is not channel dependent, we could have also done it earlier, when defining the cell. However, if <code class="docutils literal notranslate"><span class="pre">comb_op</span></code> is channel dependent, this is currently the way to go. This could also be done using <code class="docutils literal notranslate"><span class="pre">update_nodes()</span></code>, which we will see later.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">_set_cell_ops</span><span class="p">(</span><span class="n">current_edge_data</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">stride</span><span class="p">):</span>
+    <span class="n">C_in</span> <span class="o">=</span> <span class="n">C</span> <span class="k">if</span> <span class="n">stride</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">C</span><span class="o">//</span><span class="mi">2</span>
+    <span class="n">current_edge_data</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="p">[</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span> <span class="k">if</span> <span class="n">stride</span><span class="o">==</span><span class="mi">1</span> <span class="k">else</span> <span class="n">FactorizedReduce</span><span class="p">(</span><span class="n">C_in</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">Zero</span><span class="p">(</span><span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">),</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">MaxPool1x1</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">C_in</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">AvgPool1x1</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">C_in</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">SepConv</span><span class="p">(</span><span class="n">C_in</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">SepConv</span><span class="p">(</span><span class="n">C_in</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">DilConv</span><span class="p">(</span><span class="n">C_in</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">dilation</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">DilConv</span><span class="p">(</span><span class="n">C_in</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">dilation</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+    <span class="p">])</span>
+
+</pre></div>
+</div>
+</div>
+<p>Pretty straight-forward.</p>
+</div>
+<div class="section" id="Hooks">
+<h2>Hooks<a class="headerlink" href="#Hooks" title="Permalink to this headline">¶</a></h2>
+<p>Now that we have the search space defined, one could think we are ready to go. And technically we are. We can use this search space, give it an optimizer and, boom, get the result.</p>
+<p>But unfortunatly we are not. This is due to the fact that for evaluation we are not quite using that search space. Insead we change it, to get better performance, meet the restrictions of previous work or other reasons.</p>
+<p>This is why NASLib offerst <em>hooks</em> to handle these cases.</p>
+<div class="section" id="Prepare-discretization">
+<h3>Prepare discretization<a class="headerlink" href="#Prepare-discretization" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">prepare_discretization</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">update_nodes</span><span class="p">(</span><span class="n">_truncate_input_edges</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">OPTIMIZER_SCOPE</span><span class="p">,</span> <span class="n">single_instances</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>In darts some things are done, before the architecture can be discretized, i.e. determine exactly one op for each edge (and not e.g. a list, as it was defined above). First thing is that input edges are truncated to two incoming edges for each intermediate node for each cell. Second, the Zero op can never be picked for discretization.</p>
+<p>This is done in the next snippet using the NASLib function <code class="docutils literal notranslate"><span class="pre">update_nodes</span></code> which works in a similar fashion as <code class="docutils literal notranslate"><span class="pre">update_edges</span></code> but is much more powerfull.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">_truncate_input_edges</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">in_edges</span><span class="p">,</span> <span class="n">out_edges</span><span class="p">):</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_edges</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">k</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;alpha&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="n">e</span><span class="o">.</span><span class="n">is_final</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">in_edges</span><span class="p">):</span>
+            <span class="c1"># We are in the one-shot case</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">in_edges</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">is_final</span><span class="p">():</span>
+                    <span class="k">return</span>  <span class="c1"># We are looking at an out node</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">alpha</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="nb">float</span><span class="p">(</span><span class="s2">&quot;Inf&quot;</span><span class="p">)</span>   <span class="c1"># Zero op should never be max alpha</span>
+            <span class="n">sorted_edge_ids</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">in_edges</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">alpha</span><span class="p">),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">keep_edges</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">sorted_edge_ids</span><span class="p">[:</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">edge_id</span><span class="p">,</span> <span class="n">edge_data</span> <span class="ow">in</span> <span class="n">in_edges</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">edge_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">keep_edges</span><span class="p">:</span>
+                    <span class="n">edge_data</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># We are in the discrete case (e.g. random search)</span>
+            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">in_edges</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">op</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>      <span class="c1"># Remove the zero op</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s1">&#39;final&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">final</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">in_edges</span><span class="p">):</span>
+                <span class="k">return</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">in_edges</span><span class="p">)</span> <span class="o">-</span> <span class="n">k</span><span class="p">):</span>
+                    <span class="n">in_edges</span><span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">in_edges</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<p>The function given to <code class="docutils literal notranslate"><span class="pre">update_nodes</span></code> must accept three parameters: <code class="docutils literal notranslate"><span class="pre">node</span></code>, <code class="docutils literal notranslate"><span class="pre">in_edges</span></code>, and <code class="docutils literal notranslate"><span class="pre">out_edges</span></code>. - <code class="docutils literal notranslate"><span class="pre">node</span></code> is a tuple (int, dict) containing the index and the attributes of the current node. - <code class="docutils literal notranslate"><span class="pre">in_edges</span></code> is a list of tuples with the index of the tail of the edge and its EdgeData. - `out_edges is a list of tuples with the index of the head of the edge and its EdgeData.</p>
+</div>
+<div class="section" id="Prepare-evaluation">
+<h3>Prepare evaluation<a class="headerlink" href="#Prepare-evaluation" title="Permalink to this headline">¶</a></h3>
+<p>The second hook is a way to change the optimal discrete architecture before running the evaluation on it, i.e. deteriminig the final performance of that architecture. In DARTS, this is used to expand the macro graph to 6 cells at each stage instead of only two, and increase the channels by a factor of 2.25.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>    <span class="k">def</span> <span class="nf">prepare_evaluation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_expand</span><span class="p">()</span>
+
+        <span class="c1"># Operations at the edges</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channels</span> <span class="o">=</span> <span class="p">[</span><span class="mi">36</span><span class="p">,</span> <span class="mi">72</span><span class="p">,</span> <span class="mi">144</span><span class="p">]</span>
+        <span class="n">reduction_cell_indices</span> <span class="o">=</span> <span class="p">[</span><span class="mi">9</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+
+        <span class="n">channel_map_from</span><span class="p">,</span> <span class="n">channel_map_to</span> <span class="o">=</span> <span class="n">channel_maps</span><span class="p">(</span><span class="n">reduction_cell_indices</span><span class="p">,</span> <span class="n">max_index</span><span class="o">=</span><span class="mi">23</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_makrograph_ops</span><span class="p">(</span><span class="n">channel_map_from</span><span class="p">,</span> <span class="n">channel_map_to</span><span class="p">,</span> <span class="n">max_index</span><span class="o">=</span><span class="mi">23</span><span class="p">,</span> <span class="n">affine</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Taken from DARTS implementation</span>
+        <span class="c1"># assuming input size 8x8</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="mi">22</span><span class="p">,</span> <span class="mi">23</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="n">ops</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">AvgPool2d</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">count_include_pad</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="c1"># image size = 2 x 2</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channels</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_in_edges</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm2d</span><span class="p">(</span><span class="mi">128</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="mi">768</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">bias</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm2d</span><span class="p">(</span><span class="mi">768</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(),</span>
+            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">768</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_classes</span><span class="p">))</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_edges</span><span class="p">(</span>
+            <span class="n">update_func</span><span class="o">=</span><span class="n">_double_channels</span><span class="p">,</span>
+            <span class="n">scope</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">OPTIMIZER_SCOPE</span><span class="p">,</span>
+            <span class="n">private_edge_data</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">prepare_evaluation()</span></code> is always called after the graph was discretized. Here we first expand the graph (see next snippet), then again set the macro graph operations as described already above.</p>
+<p>The evalutaion in darts is performed using auxiliary towers (adding a second loss to some intermediate output of the network). This is what is set at the edge (22, 23).</p>
+<p>Last but not least, we double (a little more actually) the channels for each primitive at each edge in the scope (see snippet after the next one).</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>    <span class="k">def</span> <span class="nf">_expand</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># shift the node indices to make space for 4 more nodes at each stage</span>
+        <span class="c1"># and the auxiliary logits</span>
+        <span class="n">mapping</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="mi">5</span><span class="p">:</span> <span class="mi">9</span><span class="p">,</span>
+            <span class="mi">6</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+            <span class="mi">7</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span>
+            <span class="mi">8</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+            <span class="mi">9</span><span class="p">:</span> <span class="mi">17</span><span class="p">,</span>
+            <span class="mi">10</span><span class="p">:</span> <span class="mi">18</span><span class="p">,</span>
+            <span class="mi">11</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>     <span class="c1"># 23 is auxiliary</span>
+        <span class="p">}</span>
+        <span class="n">nx</span><span class="o">.</span><span class="n">relabel_nodes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># fix edges</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">remove_edges_from</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edges</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">22</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">([(</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">21</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="mi">23</span><span class="p">)</span>   <span class="c1"># auxiliary output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="mi">22</span><span class="p">,</span> <span class="mi">24</span><span class="p">)</span>   <span class="c1"># final output</span>
+
+        <span class="n">to_insert</span> <span class="o">=</span> <span class="p">[]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">16</span><span class="p">))</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">19</span><span class="p">,</span> <span class="mi">23</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">to_insert</span><span class="p">:</span>
+            <span class="n">normal_cell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;subgraph&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">subgraph</span><span class="o">=</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">set_scope</span><span class="p">(</span><span class="n">normal_cell</span><span class="o">.</span><span class="n">scope</span><span class="p">)</span><span class="o">.</span><span class="n">set_input</span><span class="p">([</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cell</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s1">&#39;subgraph&#39;</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">cell</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="n">cell</span><span class="o">.</span><span class="n">input_node_idxs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cell</span><span class="o">.</span><span class="n">input_node_idxs</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<p>We use again networkx functionality to expand the graph and make space for additional cells at each stage. Because of that we have to reset the edges. Then we can add the nodes in the gaps using the free indices and set their input indices as described above for the search space.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">_double_channels</span><span class="p">(</span><span class="n">current_edge_data</span><span class="p">):</span>
+    <span class="n">init_params</span> <span class="o">=</span> <span class="n">current_edge_data</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">init_params</span>
+    <span class="k">if</span> <span class="s1">&#39;C_in&#39;</span> <span class="ow">in</span> <span class="n">init_params</span><span class="p">:</span>
+        <span class="n">init_params</span><span class="p">[</span><span class="s1">&#39;C_in&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">init_params</span><span class="p">[</span><span class="s1">&#39;C_in&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.25</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;C_out&#39;</span> <span class="ow">in</span> <span class="n">init_params</span><span class="p">:</span>
+        <span class="n">init_params</span><span class="p">[</span><span class="s1">&#39;C_out&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">init_params</span><span class="p">[</span><span class="s1">&#39;C_out&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mf">2.25</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;affine&#39;</span> <span class="ow">in</span> <span class="n">init_params</span><span class="p">:</span>
+        <span class="n">init_params</span><span class="p">[</span><span class="s1">&#39;affine&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">current_edge_data</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s1">&#39;op&#39;</span><span class="p">,</span> <span class="n">current_edge_data</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">init_params</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<p>Unfortunately, in NASLib we cannot use native <code class="docutils literal notranslate"><span class="pre">torch.nn.Module</span></code> as operations. This is because of several reasons: - We need to make sure, that we find any subgraphs nested in an op, as it is the case for the hierarchical search space. - We might need to change some attributes of the op which were stored there earlier (this is the case here) - We might need a dedicated name for each op in care we want to make use of tabular benchmarks and query the performance of an architecture.</p>
+</div>
+<div class="section" id="More-than-one-output">
+<h3>More than one output<a class="headerlink" href="#More-than-one-output" title="Permalink to this headline">¶</a></h3>
+<p>If the model should be trained with an auxiliary head for evaluation, this head must be added to the architecture. The way this is currently done is by adding an intermediate output to the macro graph (the output from node 23).</p>
+<p>This is required because when passing data through the graph <code class="docutils literal notranslate"><span class="pre">logits</span> <span class="pre">=</span> <span class="pre">awesome_architecture(x)</span></code> NASLib is only returning the output of the last node. However, for auxiliary towers (and maybe other applications of NAS) we actually need more than one output. These potential outputs are stored at the graph dictionary as <code class="docutils literal notranslate"><span class="pre">out_from_</span></code> followed by the node index. For auxiliary towers, this is realizes defining an additional function <code class="docutils literal notranslate"><span class="pre">auxiliary_logits</span></code> in this case, which returns this intermediate
+output and allows the evaluation pipeline to handle it accordingly.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>    <span class="k">def</span> <span class="nf">auxilary_logits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="s1">&#39;out_from_23&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="Querying">
+<h1>Querying<a class="headerlink" href="#Querying" title="Permalink to this headline">¶</a></h1>
+<p>NASLib offers an interface to tabular benchmarks like Nas-Bench 201.</p>
+<p>The optimizer or evaluation pipeline can access performance metrics via <code class="docutils literal notranslate"><span class="pre">awesome_architecture.query(metric,</span> <span class="pre">dataset)</span></code>. All possible metrics are defined in <code class="docutils literal notranslate"><span class="pre">search_spaces/core/query_metrics.py</span></code> and listed in the next snippet. The dataset is the datset string which is privided by the tabular benchmark.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>    <span class="k">def</span> <span class="nf">query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dataset</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># nasbench 301 query logic</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-cyan-fg">  File </span><span class="ansi-green-fg">&#34;&lt;ipython-input-16-b626a3389080&gt;&#34;</span><span class="ansi-cyan-fg">, line </span><span class="ansi-green-fg">2</span>
+<span class="ansi-red-fg">    # nasbench 301 query logic</span>
+                              ^
+<span class="ansi-red-fg">SyntaxError</span><span class="ansi-red-fg">:</span> unexpected EOF while parsing
+
+</pre></div></div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, AutoML.org.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
