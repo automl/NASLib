@@ -238,14 +238,14 @@ class DartsSearchSpace(Graph):
         
         # Operations at the edges
         self.channels = [36, 72, 144]
-        reduction_cell_indices = [9, 16]
+        reduction_cell_indices = [10, 17]
 
-        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
-        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=23, affine=True)
+        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=24)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=24, affine=True)
 
         # Taken from DARTS implementation
         # assuming input size 8x8
-        self.edges[22, 23].set('op', ops.Sequential(
+        self.edges[23, 24].set('op', ops.Sequential(
             nn.ReLU(inplace=True),
             nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False), # image size = 2 x 2
             nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
@@ -269,38 +269,39 @@ class DartsSearchSpace(Graph):
         # shift the node indices to make space for 4 more nodes at each stage
         # and the auxiliary logits
         mapping = {
-            5: 9,
             6: 10,
             7: 11,
-            8: 16,
+            8: 12,
             9: 17,
             10: 18,
-            11: 24,     # 23 is auxiliary
+            11: 19,
+            12: 25,     # 24 is auxiliary
         }
         nx.relabel_nodes(self, mapping, copy=False)
-        
+
         # fix edges
         self.remove_edges_from(list(self.edges()))
-        self.add_edges_from([(i, i+1) for i in range(1, 22)])
-        self.add_edges_from([(i, i+2) for i in range(2, 21)])
-        self.add_edge(22, 23)   # auxiliary output
-        self.add_edge(22, 24)   # final output
-        
-        to_insert = [] + list(range(5, 9)) + list(range(12, 16)) + list(range(19, 23))
+        self.add_edges_from([(i, i+1) for i in range(1, 23)])
+        self.add_edges_from([(i, i+2) for i in range(4, 22)])
+        self.add_edges_from([(2, 4), (2, 5)])
+        self.add_edge(23, 24)   # auxiliary output
+        self.add_edge(23, 25)   # final output
+
+        to_insert = [] + list(range(6, 10)) + list(range(13, 17)) + list(range(20, 24))
         for i in to_insert:
             normal_cell = self.nodes[i-1]['subgraph']
             self.add_node(i, subgraph=normal_cell.copy().set_scope(normal_cell.scope).set_input([i-2, i-1]))
         
         for i, cell in sorted(self.nodes(data='subgraph')):
             if cell:
-                if i == 3:
-                    cell.input_node_idxs = [2, 2]
+                if i == 5:
+                    cell.input_node_idxs = [2, 4]
                 else:
                     cell.input_node_idxs = [i-2, i-1]
 
 
     def auxilary_logits(self):
-        return self.graph['out_from_23']
+        return self.graph['out_from_24']
 
     def load_labeled_architecture(self, dataset_api=None):
         """
