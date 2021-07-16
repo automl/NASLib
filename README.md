@@ -1,4 +1,7 @@
-# NASLib
+<div align="center">
+  <img src="images/naslib-logo.png" width="650" height="400">
+</div>
+
 [![Build Status](https://travis-ci.com/automl/NASLib.svg?branch=master)](https://travis-ci.com/automl/NASLib)
 [![codecov](https://codecov.io/gh/automl/NASLib/branch/master/graph/badge.svg?token=RNqATqVvnV)](https://codecov.io/gh/automl/NASLib)
 
