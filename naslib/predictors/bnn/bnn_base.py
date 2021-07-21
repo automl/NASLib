@@ -16,8 +16,11 @@ class BNN(Predictor):
         return NotImplementedError('Training method not defined.')
 
     def fit(self, xtrain, ytrain, train_info=None, **kwargs):
-        _xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                  ss_type=self.ss_type) for arch in xtrain])
+        if self.encoding_type is not None:
+            _xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
+                                       ss_type=self.ss_type) for arch in xtrain])
+        else:
+            _xtrain = xtrain
         _ytrain = np.array(ytrain)
 
         self.model = self.get_model(**kwargs)
@@ -28,8 +31,11 @@ class BNN(Predictor):
         return train_error
 
     def query(self, xtest, info=None):
-        test_data = np.array([encode(arch,encoding_type=self.encoding_type,
-                              ss_type=self.ss_type) for arch in xtest])
+        if self.encoding_type is not None:
+            test_data = np.array([encode(arch, encoding_type=self.encoding_type,
+                                         ss_type=self.ss_type) for arch in xtest])
+        else:
+            test_data = xtest
 
         m, v = self.model.predict(test_data)
         return np.squeeze(m)

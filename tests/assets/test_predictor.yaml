@@ -1,0 +1,21 @@
+experiment_type: single
+search_space: nasbench201
+dataset: cifar10
+predictor: mlp
+uniform_random: 1
+test_size: 10
+train_size_single: 20
+train_size_list: [5, 8, 14, 24, 42, 71, 121, 205]
+fidelity_single: 5
+fidelity_list: [1, 2, 3, 5, 7, 9, 13, 19, 26, 37, 52, 73]
+out_dir: run
+max_hpo_time: 0
+seed: 1000
+search:
+  seed: 1000
+  batch_size: 256
+  data_size: 25000
+  cutout: False
+  cutout_length: 16
+  cutout_prob: 1.0
+  train_portion: 0.7
