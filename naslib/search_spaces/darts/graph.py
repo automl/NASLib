@@ -124,28 +124,38 @@ class DartsSearchSpace(Graph):
 
         self.add_node(1)    # input node
         self.add_node(2)    # preprocessing
-        self.add_node(3, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 2]))
-        self.add_node(4, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 3]))
-        self.add_node(5, subgraph=reduction_cell.set_scope("r_stage_1").set_input([3, 4]))
-        self.add_node(6, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([4, 5]))
-        self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
-        self.add_node(8, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([6, 7]))
-        self.add_node(9, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([7, 8]))
-        self.add_node(10, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 9]))
-        self.add_node(11)   # output
+        self.add_node(3)
 
-        self.add_edges_from([(i, i+1) for i in range(1, 11)])
-        self.add_edges_from([(i, i+2) for i in range(2, 9)])
- 
+        # cells
+        self.add_node(4, subgraph=normal_cell.set_scope("n_stage_1").set_input([2, 3]))
+        self.add_node(5, subgraph=normal_cell.copy().set_scope("n_stage_1").set_input([2, 4]))
+        self.add_node(6, subgraph=reduction_cell.set_scope("r_stage_1").set_input([4, 5]))
+        self.add_node(7, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([5, 6]))
+        self.add_node(8, subgraph=normal_cell.copy().set_scope("n_stage_2").set_input([6, 7]))
+        self.add_node(9, subgraph=reduction_cell.copy().set_scope("r_stage_2").set_input([7, 8]))
+        self.add_node(10, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([8, 9]))
+        self.add_node(11, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([9, 10]))
+
+        # output
+        self.add_node(12)
+
+        # chain connections
+        self.add_edges_from([(i, i+1) for i in range(1, 12)])
+
+        # skip connections
+        self.add_edges_from([(i, i+2) for i in range(4, 10)])
+        self.add_edge(2, 4)
+        self.add_edge(2, 5)
+
         #
         # Operations at the makrograph edges
         #
         self.num_in_edges = 4
-        reduction_cell_indices = [5, 8]
+        reduction_cell_indices = [6, 9]
 
-        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=11)
+        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=12)
 
-        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=11, affine=False)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=12, affine=False)
 
         self._set_cell_ops(reduction_cell_indices)
 
@@ -159,6 +169,8 @@ class DartsSearchSpace(Graph):
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
             if u > 1 and v < max_index:
+                if u == 3:
+                    continue
                 C_in = self.channels[channel_map_from[u]]
                 C_out = self.channels[channel_map_to[v]]
                 if C_in == C_out:
@@ -168,7 +180,7 @@ class DartsSearchSpace(Graph):
                     data.set('op', ops.ReLUConvBN(C_in, C_out, kernel_size=1, affine=affine))
                 else:
                     data.set('op', FactorizedReduce(C_in * self.num_in_edges, C_out, affine=affine))
-        
+
         # post-processing
         _, _, data = sorted(self.edges(data=True))[-1]
         data.set('op', ops.Sequential(
@@ -226,14 +238,14 @@ class DartsSearchSpace(Graph):
         
         # Operations at the edges
         self.channels = [36, 72, 144]
-        reduction_cell_indices = [9, 16]
+        reduction_cell_indices = [10, 17]
 
-        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=23)
-        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=23, affine=True)
+        channel_map_from, channel_map_to = channel_maps(reduction_cell_indices, max_index=24)
+        self._set_makrograph_ops(channel_map_from, channel_map_to, reduction_cell_indices, max_index=24, affine=True)
 
         # Taken from DARTS implementation
         # assuming input size 8x8
-        self.edges[22, 23].set('op', ops.Sequential(
+        self.edges[23, 24].set('op', ops.Sequential(
             nn.ReLU(inplace=True),
             nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False), # image size = 2 x 2
             nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
@@ -257,38 +269,39 @@ class DartsSearchSpace(Graph):
         # shift the node indices to make space for 4 more nodes at each stage
         # and the auxiliary logits
         mapping = {
-            5: 9,
             6: 10,
             7: 11,
-            8: 16,
+            8: 12,
             9: 17,
             10: 18,
-            11: 24,     # 23 is auxiliary
+            11: 19,
+            12: 25,     # 24 is auxiliary
         }
         nx.relabel_nodes(self, mapping, copy=False)
-        
+
         # fix edges
         self.remove_edges_from(list(self.edges()))
-        self.add_edges_from([(i, i+1) for i in range(1, 22)])
-        self.add_edges_from([(i, i+2) for i in range(2, 21)])
-        self.add_edge(22, 23)   # auxiliary output
-        self.add_edge(22, 24)   # final output
-        
-        to_insert = [] + list(range(5, 9)) + list(range(12, 16)) + list(range(19, 23))
+        self.add_edges_from([(i, i+1) for i in range(1, 23)])
+        self.add_edges_from([(i, i+2) for i in range(4, 22)])
+        self.add_edges_from([(2, 4), (2, 5)])
+        self.add_edge(23, 24)   # auxiliary output
+        self.add_edge(23, 25)   # final output
+
+        to_insert = [] + list(range(6, 10)) + list(range(13, 17)) + list(range(20, 24))
         for i in to_insert:
             normal_cell = self.nodes[i-1]['subgraph']
             self.add_node(i, subgraph=normal_cell.copy().set_scope(normal_cell.scope).set_input([i-2, i-1]))
         
         for i, cell in sorted(self.nodes(data='subgraph')):
             if cell:
-                if i == 3:
-                    cell.input_node_idxs = [2, 2]
+                if i == 5:
+                    cell.input_node_idxs = [2, 4]
                 else:
                     cell.input_node_idxs = [i-2, i-1]
 
 
     def auxilary_logits(self):
-        return self.graph['out_from_23']
+        return self.graph['out_from_24']
 
     def load_labeled_architecture(self, dataset_api=None):
         """
@@ -481,8 +494,8 @@ def _set_ops(edge, C, stride):
     edge.data.set('op', [
         ops.Identity() if stride==1 else FactorizedReduce(C, C, stride, affine=False),
         ops.Zero(stride=stride),
-        ops.MaxPool(3, stride),
-        ops.AvgPool(3, stride),
+        ops.MaxPool(C, 3, stride),
+        ops.AvgPool(C, 3, stride),
         ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
         ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
         ops.DilConv(C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False),
