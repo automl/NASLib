@@ -13,16 +13,16 @@ search_space: nasbench201
 dataset: cifar10
 
 # one of the 31 predictors in benchmarks/predictors/runner.py
-predictor: mlp
+predictor: xgb
 
 # 0: mutation-based, or 1: uniformly random, train/test sets
 uniform_random: 1
 
 # test set size
-test_size: 10 # 100
+test_size: 100
 
 # size of the training set (used by model-based predictors)
-train_size_single: 20 # 50
+train_size_single: 50
 train_size_list: [5, 8, 14, 24, 42, 71, 121, 205]
 
 # num. epochs to train the test set arches (used by learning curve methods)

@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import torch
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.search_spaces import NasBench201SearchSpace
 from naslib.predictors import BayesianLinearRegression, BOHAMIANN, BonasPredictor, \
@@ -10,6 +11,7 @@ from naslib.predictors import BayesianLinearRegression, BOHAMIANN, BonasPredicto
     ZeroCostV2, GPWLPredictor
 from naslib.utils import get_dataset_api, utils
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 x_data = np.load('assets/nb201_test_set_x.npy', allow_pickle=True)
 y_data = np.load('assets/nb201_test_set_y.npy', allow_pickle=True)
 info_data = np.load('assets/nb201_test_set_info.npy', allow_pickle=True)
@@ -78,6 +80,32 @@ class PredictorsTest(unittest.TestCase):
         self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 16.09739638867, places=3)
         self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.6415900987808, places=3)
         self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], -0.8857142857142, places=3)
+
+    def test_BohamiannPredictor(self):
+        predictor = BOHAMIANN(encoding_type=None)
+        predictor_evaluator = PredictorEvaluator(predictor, config=self.config)
+        predictor_evaluator.adapt_search_space(self.search_space, load_labeled=self.load_labeled,
+                                               dataset_api=self.dataset_api)
+        predictor_evaluator.single_evaluate(train_data=train_data, test_data=test_data,
+                                            fidelity=self.config.fidelity_single)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], 0.3333333333333, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 4.948659613539, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 6.423134627655, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.39805559977643, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.6, places=3)
+
+    def test_GPPredictor(self):
+        predictor = GPPredictor(encoding_type=None)
+        predictor_evaluator = PredictorEvaluator(predictor, config=self.config)
+        predictor_evaluator.adapt_search_space(self.search_space, load_labeled=self.load_labeled,
+                                               dataset_api=self.dataset_api)
+        predictor_evaluator.single_evaluate(train_data=train_data, test_data=test_data,
+                                            fidelity=self.config.fidelity_single)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], 0.7453559924999, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 4.41141527697, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 5.990029403098, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.9519836508794, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.8196885999705, places=3)
 
 
 if __name__ == '__main__':
