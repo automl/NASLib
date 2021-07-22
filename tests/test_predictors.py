@@ -32,7 +32,7 @@ class PredictorsTest(unittest.TestCase):
         self.search_space = supported_search_spaces[self.config.search_space]
         utils.set_seed(self.config.seed)
         self.load_labeled = (True if self.config.search_space in ['darts', 'nlp'] else False)
-        self.dataset_api = get_dataset_api(self.config.search_space, self.config.dataset)
+        self.dataset_api = get_dataset_api(search_space='test')
 
     def test_configFile(self):
         self.assertEqual(self.config.search_space, 'nasbench201')
@@ -49,11 +49,20 @@ class PredictorsTest(unittest.TestCase):
                                                dataset_api=self.dataset_api)
         predictor_evaluator.single_evaluate(train_data=train_data, test_data=test_data,
                                             fidelity=self.config.fidelity_single)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], -0.9999999999999, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 12.151526794433, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 14.164686342679, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.7905004356299, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], -1.0, places=3)
+        if torch.cuda.is_available():
+            print(torch.cuda.is_available())
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'],  -0.8666666666666, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 13.296716715494, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 15.054979154729, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'],  0.7937371426617, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], -0.942857142857, places=3)
+        else:
+            print('Hina qitu')
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], -0.8666666666666, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 13.296716715494, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 15.054979154729, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.7937371426617, places=3)
+            self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], -0.942857142857, places=3)
 
     def test_LGBPredictor(self):
         predictor = LGBoost(encoding_type=None)
