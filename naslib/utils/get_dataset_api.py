@@ -74,6 +74,9 @@ def get_dataset_api(search_space=None, dataset=None):
     
     elif search_space == 'nlp':
         return get_nlp_api(dataset=dataset)
+
+    elif search_space == 'test':
+        return None
     
     else:
         raise NotImplementedError()

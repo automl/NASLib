@@ -63,8 +63,8 @@ class DartsGdasIntegrationTest(unittest.TestCase):
         stats = self.optimizer.step(data_train, data_val)
         self.assertTrue(len(stats) == 4)
         if torch.cuda.is_available():
-            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 1.7674, places=3) #TODO: Fix the value for CUDA
-            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 5.7394, places=3) #TODO: Fix the value for CUDA
+            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529, places=3)
+            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529, places=3)
         else:
             self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529074, places=3)
             self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529074, places=3)
@@ -88,8 +88,8 @@ class DartsDrNasIntegrationTest(unittest.TestCase):
         stats = self.optimizer.step(data_train, data_val)
         self.assertTrue(len(stats) == 4)
         if torch.cuda.is_available():
-            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.7309, places=3) #TODO: Fix the value for CUDA
-            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.8569, places=3) #TODO: Fix the value for CUDA
+            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529, places=3)
+            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529, places=3)
         else:
             self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529074, places=3)
             self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529074, places=3)

@@ -83,14 +83,15 @@ class MLPPredictor(Predictor):
 
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
-
-        _xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
+        if self.encoding_type is not None:
+            _xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
                                   ss_type=self.ss_type) for arch in xtrain])
+        else:
+            _xtrain = xtrain
         _ytrain = np.array(ytrain)
 
         X_tensor = torch.FloatTensor(_xtrain).to(device)
         y_tensor = torch.FloatTensor(_ytrain).to(device)
-
         train_data = TensorDataset(X_tensor, y_tensor)
         data_loader = DataLoader(train_data, batch_size=batch_size,
                                  shuffle=True, drop_last=False,
@@ -136,7 +137,8 @@ class MLPPredictor(Predictor):
         return train_error
 
     def query(self, xtest, info=None, eval_batch_size=None):
-        xtest = np.array([encode(arch, encoding_type=self.encoding_type,
+        if self.encoding_type is not None:
+            xtest = np.array([encode(arch, encoding_type=self.encoding_type,
                           ss_type=self.ss_type) for arch in xtest])
         X_tensor = torch.FloatTensor(xtest).to(device)
         test_data = TensorDataset(X_tensor)
