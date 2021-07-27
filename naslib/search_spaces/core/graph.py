@@ -727,7 +727,8 @@ class Graph(torch.nn.Module, nx.DiGraph):
         """
 
         def weight_reset(m):
-            if isinstance(m, torch.nn.Conv2d) or isinstance(m, torch.nn.Linear):
+            reset_parameters = getattr(m, "reset_parameters", None)
+            if callable(reset_parameters):
                 m.reset_parameters()
 
         if inplace:
