@@ -2,11 +2,10 @@ name: pre-commit
 
 on:
   push:
-    branches: 
-      - master
-      - Develop
+    branches: [Develop, master]
+  pull_request:
+    branches: [Develop, master]
   
-
 jobs:
   run-all-files:
     runs-on: ubuntu-latest
