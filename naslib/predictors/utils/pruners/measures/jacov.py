@@ -24,8 +24,8 @@ def get_batch_jacobian(net, x, target, device, split_data):
 
     N = x.shape[0]
     for sp in range(split_data):
-        st=sp*N//split_data
-        en=(sp+1)*N//split_data
+        st = sp * N // split_data
+        en = (sp + 1) * N // split_data
         y = net(x[st:en])
         y.backward(torch.ones_like(y))
 
@@ -33,19 +33,23 @@ def get_batch_jacobian(net, x, target, device, split_data):
     x.requires_grad_(False)
     return jacob, target.detach()
 
+
 def eval_score(jacob, labels=None):
     corrs = np.corrcoef(jacob)
-    v, _  = np.linalg.eig(corrs)
+    v, _ = np.linalg.eig(corrs)
     k = 1e-5
-    return -np.sum(np.log(v + k) + 1./(v + k))
+    return -np.sum(np.log(v + k) + 1.0 / (v + k))
 
-@measure('jacov', bn=True)
+
+@measure("jacov", bn=True)
 def compute_jacob_cov(net, inputs, targets, split_data=1, loss_fn=None):
     device = inputs.device
     # Compute gradients (but don't apply them)
     net.zero_grad()
 
-    jacobs, labels = get_batch_jacobian(net, inputs, targets, device, split_data=split_data)
+    jacobs, labels = get_batch_jacobian(
+        net, inputs, targets, device, split_data=split_data
+    )
     jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
 
     try:

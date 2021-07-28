@@ -16,11 +16,13 @@ class GDASOptimizer(DARTSOptimizer):
 
     """
 
-    def __init__(self, config,
-                 op_optimizer: torch.optim.Optimizer = torch.optim.SGD,
-                 arch_optimizer: torch.optim.Optimizer = torch.optim.Adam,
-                 loss_criteria=torch.nn.CrossEntropyLoss()
-                 ):
+    def __init__(
+        self,
+        config,
+        op_optimizer: torch.optim.Optimizer = torch.optim.SGD,
+        arch_optimizer: torch.optim.Optimizer = torch.optim.Adam,
+        loss_criteria=torch.nn.CrossEntropyLoss(),
+    ):
         """
         Instantiate the optimizer
 
@@ -50,7 +52,7 @@ class GDASOptimizer(DARTSOptimizer):
         with the GDAS specific GDASMixedOp.
         """
         primitives = edge.data.op
-        edge.data.set('op', GDASMixedOp(primitives))
+        edge.data.set("op", GDASMixedOp(primitives))
 
     def adapt_search_space(self, search_space, scope=None):
         """
@@ -58,7 +60,7 @@ class GDASOptimizer(DARTSOptimizer):
         Just add tau as buffer so it is checkpointed.
         """
         super().adapt_search_space(search_space, scope)
-        self.graph.register_buffer('tau', self.tau_curr)
+        self.graph.register_buffer("tau", self.tau_curr)
 
     def new_epoch(self, epoch):
         """
@@ -94,7 +96,11 @@ class GDASOptimizer(DARTSOptimizer):
             index = probs.max(-1, keepdim=True)[1]
             one_h = torch.zeros_like(logits).scatter_(-1, index, 1.0)
             hardwts = one_h - probs.detach() + probs
-            if (torch.isinf(gumbels).any()) or (torch.isinf(probs).any()) or (torch.isnan(probs).any()):
+            if (
+                (torch.isinf(gumbels).any())
+                or (torch.isinf(probs).any())
+                or (torch.isnan(probs).any())
+            ):
                 continue
             else:
                 break
@@ -102,13 +108,13 @@ class GDASOptimizer(DARTSOptimizer):
         weights = hardwts[0]
         argmaxs = index[0].item()
 
-        edge.data.set('sampled_arch_weight', weights, shared=True)
-        edge.data.set('argmax', argmaxs, shared=True)
+        edge.data.set("sampled_arch_weight", weights, shared=True)
+        edge.data.set("argmax", argmaxs, shared=True)
 
     @staticmethod
     def remove_sampled_alphas(edge):
-        if edge.data.has('sampled_arch_weight'):
-            edge.data.remove('sampled_arch_weight')
+        if edge.data.has("sampled_arch_weight"):
+            edge.data.remove("sampled_arch_weight")
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
@@ -118,7 +124,7 @@ class GDASOptimizer(DARTSOptimizer):
         self.graph.update_edges(
             update_func=lambda edge: self.sample_alphas(edge, self.tau_curr),
             scope=self.scope,
-            private_edge_data=False
+            private_edge_data=False,
         )
 
         # Update architecture weights
@@ -127,16 +133,18 @@ class GDASOptimizer(DARTSOptimizer):
         val_loss = self.loss(logits_val, target_val)
         val_loss.backward()
         if self.grad_clip:
-            torch.nn.utils.clip_grad_norm_(self.architectural_weights.parameters(), self.grad_clip)
+            torch.nn.utils.clip_grad_norm_(
+                self.architectural_weights.parameters(), self.grad_clip
+            )
         self.arch_optimizer.step()
 
         # has to be done again, cause val_loss.backward() frees the gradient from sampled alphas
-        # TODO: this is not how it is intended because the samples are now different. Another 
+        # TODO: this is not how it is intended because the samples are now different. Another
         # option would be to set val_loss.backward(retain_graph=True) but that requires more memory.
         self.graph.update_edges(
             update_func=lambda edge: self.sample_alphas(edge, self.tau_curr),
             scope=self.scope,
-            private_edge_data=False
+            private_edge_data=False,
         )
 
         # Update op weights
@@ -152,14 +160,13 @@ class GDASOptimizer(DARTSOptimizer):
         self.graph.update_edges(
             update_func=self.remove_sampled_alphas,
             scope=self.scope,
-            private_edge_data=False
+            private_edge_data=False,
         )
 
         return logits_train, logits_val, train_loss, val_loss
 
 
 class GDASMixedOp(AbstractPrimitive):
-
     def __init__(self, primitives, min_cuda_memory=False):
         """
         Initialize the mixed op for GDAS.
@@ -183,7 +190,10 @@ class GDASMixedOp(AbstractPrimitive):
         weights = edge_data.sampled_arch_weight
         argmax = edge_data.argmax
 
-        weigsum = sum(weights[i] * op(x, None) if i == argmax else weights[i] for i, op in enumerate(self.primitives))
+        weigsum = sum(
+            weights[i] * op(x, None) if i == argmax else weights[i]
+            for i, op in enumerate(self.primitives)
+        )
 
         return weigsum
 

@@ -5,10 +5,7 @@ on:
     branches: 
       - master
       - Develop
-  pull_request:
-    branches: 
-      - master
-      - Develop
+  
 
 jobs:
   run-all-files:

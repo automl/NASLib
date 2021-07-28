@@ -22,16 +22,18 @@ from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print('device:', device)
+print("device:", device)
+
 
 def normalize(mx):
     """Row-normalize sparse matrix"""
     rowsum = np.array(mx.sum(1))
     r_inv = np.power(rowsum, -1).flatten()
-    r_inv[np.isinf(r_inv)] = 0.
+    r_inv[np.isinf(r_inv)] = 0.0
     r_mat_inv = np.diag(r_inv)
-    mx = np.dot(r_mat_inv,mx)
+    mx = np.dot(r_mat_inv, mx)
     return mx
+
 
 def normalize_adj(adj):
     # Row-normalize matrix
@@ -39,14 +41,16 @@ def normalize_adj(adj):
     rowsum = adj.sum(2, keepdim=True).repeat(1, 1, last_dim)
     return torch.div(adj, rowsum)
 
-def accuracy_mse(prediction, target, scale=100.):
+
+def accuracy_mse(prediction, target, scale=100.0):
     prediction = prediction.detach() * scale
     target = (target) * scale
     return F.mse_loss(prediction, target)
-    
-def add_global_node( mx, ifAdj):
+
+
+def add_global_node(mx, ifAdj):
     """add a global node to operation or adjacency matrixs, fill diagonal for adj and transpose adjs"""
-    if (ifAdj):
+    if ifAdj:
         mx = np.column_stack((mx, np.ones(mx.shape[0], dtype=np.float32)))
         mx = np.row_stack((mx, np.zeros(mx.shape[1], dtype=np.float32)))
         np.fill_diagonal(mx, 1)
@@ -58,7 +62,7 @@ def add_global_node( mx, ifAdj):
     return mx
 
 
-def padzero( mx, ifAdj, maxsize=7):
+def padzero(mx, ifAdj, maxsize=7):
     if ifAdj:
         while mx.shape[0] < maxsize:
             mx = np.column_stack((mx, np.zeros(mx.shape[0], dtype=np.float32)))
@@ -69,19 +73,19 @@ def padzero( mx, ifAdj, maxsize=7):
     return mx
 
 
-def net_decoder( operations):
+def net_decoder(operations):
     operations = np.array(operations, dtype=np.int32)
     for i in range(len(operations)):
-        if operations[i] == 2: #input
-            operations[i]=3
-        elif operations[i] == 3: #conv1
-            operations[i]=0
-        elif operations[i] == 4: #pool
-            operations[i]=2
-        elif operations[i] == 5: #conv3
-            operations[i]=1
-        elif operations[i] == 6: #output
-            operations[i]=4
+        if operations[i] == 2:  # input
+            operations[i] = 3
+        elif operations[i] == 3:  # conv1
+            operations[i] = 0
+        elif operations[i] == 4:  # pool
+            operations[i] = 2
+        elif operations[i] == 5:  # conv3
+            operations[i] = 1
+        elif operations[i] == 6:  # output
+            operations[i] = 4
     one_hot = np.zeros((len(operations), 5))
     one_hot[np.arange(len(operations)), operations] = 1
     return one_hot
@@ -100,11 +104,11 @@ class GraphConvolution(nn.Module):
         if bias:
             self.bias = nn.Parameter(torch.FloatTensor(out_features))
         else:
-            self.register_parameter('bias', None)
+            self.register_parameter("bias", None)
         self.reset_parameters()
 
     def reset_parameters(self):
-        stdv = 1. / math.sqrt(self.weight.size(1))
+        stdv = 1.0 / math.sqrt(self.weight.size(1))
         self.weight.data.uniform_(-stdv, stdv)
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
@@ -118,13 +122,19 @@ class GraphConvolution(nn.Module):
             return output
 
     def __repr__(self):
-        return self.__class__.__name__ + ' (' \
-               + str(self.in_features) + ' -> ' \
-               + str(self.out_features) + ')'
+        return (
+            self.__class__.__name__
+            + " ("
+            + str(self.in_features)
+            + " -> "
+            + str(self.out_features)
+            + ")"
+        )
+
 
 # nfeat=7 for nasbench 201
 class GCN(nn.Module):
-    def __init__(self, nfeat=7, ifsigmoid=False, gcn_hidden = 64):
+    def __init__(self, nfeat=7, ifsigmoid=False, gcn_hidden=64):
         super(GCN, self).__init__()
         self.ifsigmoid = ifsigmoid
         self.size = gcn_hidden
@@ -168,48 +178,51 @@ class GCN(nn.Module):
 
 
 class BonasPredictor(Predictor):
-    def __init__(self, encoding_type='bonas', ss_type=None, hpo_wrapper=False):
+    def __init__(self, encoding_type="bonas", ss_type=None, hpo_wrapper=False):
         self.encoding_type = encoding_type
         if ss_type is not None:
             self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
-        self.default_hyperparams = {'gcn_hidden':64, 
-                                    'batch_size':128, 
-                                    'lr':1e-4}
+        self.default_hyperparams = {"gcn_hidden": 64, "batch_size": 128, "lr": 1e-4}
         self.hyperparams = None
-            
+
     def get_model(self, **kwargs):
         predictor = GCN(**kwargs)
         return predictor
 
-    def fit(self, xtrain, ytrain, train_info=None,
-            epochs=100, wd=0):
+    def fit(self, xtrain, ytrain, train_info=None, epochs=100, wd=0):
 
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
 
-        batch_size = self.hyperparams['batch_size']
-        gcn_hidden = self.hyperparams['gcn_hidden']
-        lr = self.hyperparams['lr']
+        batch_size = self.hyperparams["batch_size"]
+        gcn_hidden = self.hyperparams["gcn_hidden"]
+        lr = self.hyperparams["lr"]
 
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
-        ytrain_normed = (ytrain - self.mean)/self.std
+        ytrain_normed = (ytrain - self.mean) / self.std
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-            encoded['val_acc'] = float(ytrain_normed[i])
+            encoded = encode(
+                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
+            )
+            encoded["val_acc"] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
-        nfeat = len(train_data[0]['operations'][0])
-        self.model = self.get_model(gcn_hidden=gcn_hidden,nfeat=nfeat)
-        data_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=False)
+        nfeat = len(train_data[0]["operations"][0])
+        self.model = self.get_model(gcn_hidden=gcn_hidden, nfeat=nfeat)
+        data_loader = DataLoader(
+            train_data, batch_size=batch_size, shuffle=True, drop_last=False
+        )
         self.model.to(device)
         criterion = nn.MSELoss().to(device)
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
-        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=0)
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, epochs, eta_min=0
+        )
 
         self.model.train()
 
@@ -217,32 +230,42 @@ class BonasPredictor(Predictor):
             meters = AverageMeterGroup()
             lr = optimizer.param_groups[0]["lr"]
             for _, batch in enumerate(data_loader):
-                feat, adjmat, target =  batch["operations"].to(device), \
-                                        batch["adjacency"].to(device), \
-                                        batch["val_acc"].float().to(device)
+                feat, adjmat, target = (
+                    batch["operations"].to(device),
+                    batch["adjacency"].to(device),
+                    batch["val_acc"].float().to(device),
+                )
                 prediction = self.model(feat, adjmat)
                 # print('predictions:\n{}'.format(prediction))
                 loss = criterion(prediction, target)
                 loss.backward()
                 optimizer.step()
                 mse = accuracy_mse(prediction, target)
-                meters.update({"loss": loss.item(), "mse": mse.item()}, n=target.size(0))
+                meters.update(
+                    {"loss": loss.item(), "mse": mse.item()}, n=target.size(0)
+                )
 
             lr_scheduler.step()
         train_pred = np.squeeze(self.query(xtrain))
-        train_error = np.mean(abs(train_pred-ytrain))
+        train_error = np.mean(abs(train_pred - ytrain))
         return train_error
 
     def query(self, xtest, info=None, eval_batch_size=100):
-        test_data = np.array([encode(arch,encoding_type=self.encoding_type, ss_type=self.ss_type)
-                            for arch in xtest])
-        test_data_loader = DataLoader(test_data, batch_size=eval_batch_size,drop_last=False)
+        test_data = np.array(
+            [
+                encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                for arch in xtest
+            ]
+        )
+        test_data_loader = DataLoader(
+            test_data, batch_size=eval_batch_size, drop_last=False
+        )
 
         self.model.eval()
         pred = []
         with torch.no_grad():
             for _, batch in enumerate(test_data_loader):
-                feat, adjmat =  batch["operations"], batch["adjacency"]
+                feat, adjmat = batch["operations"], batch["adjacency"]
                 prediction = self.model(feat, adjmat)
                 pred.append(prediction.cpu().numpy())
 
@@ -256,9 +279,10 @@ class BonasPredictor(Predictor):
 
         else:
             params = {
-                'gcn_hidden': int(loguniform(16, 128)), 
-                'batch_size': int(loguniform(32, 256)), 
-                'lr': loguniform(.00001, .1)}
+                "gcn_hidden": int(loguniform(16, 128)),
+                "batch_size": int(loguniform(32, 256)),
+                "lr": loguniform(0.00001, 0.1),
+            }
 
         self.hyperparams = params
         return params

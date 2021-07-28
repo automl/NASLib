@@ -50,7 +50,12 @@ class CustomVertexHistogram(Kernel):
 
     """
 
-    def __init__(self, normalize=False, sparse='auto', oa=False,):
+    def __init__(
+        self,
+        normalize=False,
+        sparse="auto",
+        oa=False,
+    ):
         """Initialise a vertex histogram kernel.
 
         require_ordered_features: bool
@@ -62,14 +67,16 @@ class CustomVertexHistogram(Kernel):
             this option on could break the code, as the label in general is non-int.
 
         """
-        super(CustomVertexHistogram, self).__init__(n_jobs=None, normalize=normalize, verbose=False)
+        super(CustomVertexHistogram, self).__init__(
+            n_jobs=None, normalize=normalize, verbose=False
+        )
         # self.as_tensor = as_tensor
         # if self.as_tensor:
         #     self.sparse = False
         # else:
         self.sparse = sparse
         self.oa = oa
-        self._initialized.update({'sparse': True})
+        self._initialized.update({"sparse": True})
 
         self._X_diag = None
         self.X_tensor = None
@@ -79,14 +86,17 @@ class CustomVertexHistogram(Kernel):
         """Initialize all transformer arguments, needing initialization."""
         if not self._initialized["n_jobs"]:
             if self.n_jobs is not None:
-                warn('no implemented parallelization for VertexHistogram')
+                warn("no implemented parallelization for VertexHistogram")
             self._initialized["n_jobs"] = True
         if not self._initialized["sparse"]:
-            if self.sparse not in ['auto', False, True]:
-                TypeError('sparse could be False, True or auto')
+            if self.sparse not in ["auto", False, True]:
+                TypeError("sparse could be False, True or auto")
             self._initialized["sparse"] = True
 
-    def parse_input(self, X, ):
+    def parse_input(
+        self,
+        X,
+    ):
         """Parse and check the given input for VH kernel.
 
         Parameters
@@ -106,7 +116,7 @@ class CustomVertexHistogram(Kernel):
 
         """
         if not isinstance(X, Iterable):
-            raise TypeError('input must be an iterable\n')
+            raise TypeError("input must be an iterable\n")
         else:
             rows, cols, data = list(), list(), list()
             if self._method_calling in [0, 1, 2]:
@@ -121,7 +131,7 @@ class CustomVertexHistogram(Kernel):
                     x = list(x)
                 if is_iter and len(x) in [0, 2, 3]:
                     if len(x) == 0:
-                        warn('Ignoring empty element on index: ' + str(i))
+                        warn("Ignoring empty element on index: " + str(i))
                         continue
                     else:
                         # Our element is an iterable of at least 2 elements
@@ -130,10 +140,12 @@ class CustomVertexHistogram(Kernel):
                     # get labels in any existing format
                     L = x.get_labels(purpose="any")
                 else:
-                    raise TypeError('each element of X must be either a '
-                                    'graph object or a list with at least '
-                                    'a graph like object and node labels '
-                                    'dict \n')
+                    raise TypeError(
+                        "each element of X must be either a "
+                        "graph object or a list with at least "
+                        "a graph like object and node labels "
+                        "dict \n"
+                    )
 
                 # construct the data input for the numpy array
                 for (label, frequency) in iteritems(Counter(itervalues(L))):
@@ -155,13 +167,15 @@ class CustomVertexHistogram(Kernel):
             label_length = len(labels)
 
             if self._method_calling in [0, 1, 2]:
-                if self.sparse == 'auto':
-                    self.sparse_ = (len(cols) / float(ni * label_length) <= 0.5)
+                if self.sparse == "auto":
+                    self.sparse_ = len(cols) / float(ni * label_length) <= 0.5
                 else:
                     self.sparse_ = bool(self.sparse)
 
             if self.sparse_:
-                features = csr_matrix((data, (rows, cols)), shape=(ni, label_length), copy=False)
+                features = csr_matrix(
+                    (data, (rows, cols)), shape=(ni, label_length), copy=False
+                )
             else:
                 # Initialise the feature matrix
                 try:
@@ -169,11 +183,13 @@ class CustomVertexHistogram(Kernel):
                     features[rows, cols] = data
 
                 except MemoryError:
-                    warn('memory-error: switching to sparse')
-                    self.sparse_, features = True, csr_matrix((data, (rows, cols)), shape=(ni, label_length), copy=False)
+                    warn("memory-error: switching to sparse")
+                    self.sparse_, features = True, csr_matrix(
+                        (data, (rows, cols)), shape=(ni, label_length), copy=False
+                    )
 
             if ni == 0:
-                raise ValueError('parsed input is empty')
+                raise ValueError("parsed input is empty")
             return features
 
     def _calculate_kernel_matrix(self, Y=None):
@@ -197,6 +213,7 @@ class CustomVertexHistogram(Kernel):
 
         """
         import numpy as np
+
         if Y is None:
             if self.oa:
                 K = np.zeros((self.X.shape[0], self.X.shape[0]))
@@ -211,16 +228,20 @@ class CustomVertexHistogram(Kernel):
                 K = np.zeros((Y.shape[0], self.X.shape[0]))
                 for i in range(Y.shape[0]):
                     for j in range(self.X.shape[0]):
-                        K[i, j] = np.sum(np.minimum(self.X[j, :], Y[i, :self.X.shape[1]]))
+                        K[i, j] = np.sum(
+                            np.minimum(self.X[j, :], Y[i, : self.X.shape[1]])
+                        )
             else:
-                K = Y[:, :self.X.shape[1]] @ self.X.T
+                K = Y[:, : self.X.shape[1]] @ self.X.T
 
         if self.sparse_:
             return K.toarray()
         else:
             return K
 
-    def diagonal(self,):
+    def diagonal(
+        self,
+    ):
         """Calculate the kernel matrix diagonal of the fitted data.
 
         Parameters
@@ -238,21 +259,21 @@ class CustomVertexHistogram(Kernel):
 
         """
         # Check is fit had been called
-        check_is_fitted(self, ['X', 'sparse_'])
+        check_is_fitted(self, ["X", "sparse_"])
         try:
-            check_is_fitted(self, ['_X_diag'])
+            check_is_fitted(self, ["_X_diag"])
         except NotFittedError:
             # Calculate diagonal of X
             if self.sparse_:
                 self._X_diag = squeeze(array(self.X.multiply(self.X).sum(axis=1)))
             else:
-                self._X_diag = einsum('ij,ij->i', self.X, self.X)
+                self._X_diag = einsum("ij,ij->i", self.X, self.X)
         try:
-            check_is_fitted(self, ['_Y'])
+            check_is_fitted(self, ["_Y"])
             if self.sparse_:
                 Y_diag = squeeze(array(self._Y.multiply(self._Y).sum(axis=1)))
             else:
-                Y_diag = einsum('ij,ij->i', self._Y, self._Y)
+                Y_diag = einsum("ij,ij->i", self._Y, self._Y)
             return self._X_diag, Y_diag
         except NotFittedError:
             return self._X_diag
@@ -284,11 +305,11 @@ class CustomVertexHistogram(Kernel):
         """
         self._method_calling = 3
         # Check is fit had been called
-        check_is_fitted(self, ['X'])
+        check_is_fitted(self, ["X"])
 
         # Input validation and parsing
         if X is None:
-            raise ValueError('`transform` input cannot be None')
+            raise ValueError("`transform` input cannot be None")
         else:
             Y = self.parse_input(X, **kwargs)
         if return_embedding_only:
@@ -374,7 +395,7 @@ class CustomVertexHistogram(Kernel):
 
         # Input validation and parsing
         if X is None:
-            raise ValueError('`fit` input cannot be None')
+            raise ValueError("`fit` input cannot be None")
         else:
             self.X = self.parse_input(X, **kwargs)
 

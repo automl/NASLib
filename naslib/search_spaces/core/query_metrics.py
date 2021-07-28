@@ -1,5 +1,6 @@
 from enum import Enum, auto
 
+
 class Metric(Enum):
     RAW = auto()
     ALL = auto()
@@ -11,7 +12,7 @@ class Metric(Enum):
     TRAIN_LOSS = auto()
     VAL_LOSS = auto()
     TEST_LOSS = auto()
-    
+
     TRAIN_TIME = auto()
     VAL_TIME = auto()
     TEST_TIME = auto()
