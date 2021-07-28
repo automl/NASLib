@@ -20,6 +20,8 @@ pybnn==0.0.5
 grakel==0.1.8
 pyro-ppl==1.6.0
 tensorflow==2.5.0  # needed for NB101 & some parts of zero shot proxy predictors code
+pre-commit==2.13.0
+black==21.7b0
 
 # additional from setup.py prev
 cycler==0.10.0 #matplotlib plots
