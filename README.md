@@ -45,7 +45,6 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.1 -c pytorch -c nvid
 Run setup.py file with the following command, which will install all the packages listed in [`requirements.txt`](requirements.txt)
 ```bash
 pip install --upgrade pip setuptools wheel
-pip install cython pytest
 pip install -e .
 ```
 
@@ -53,7 +52,7 @@ To validate the setup, you can run tests:
 
 ```bash
 cd tests
-coverage run -m unittest discover
+coverage run -m unittest discover -v
 ```
 
 The test coverage can be seen with `coverage report`.
