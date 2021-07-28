@@ -9,4 +9,5 @@ coverage:
 comment: off
 
 codecov:
+  branch: Develop
   require_ci_to_pass: false
