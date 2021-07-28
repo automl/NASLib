@@ -62,23 +62,52 @@ def default_argument_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default="{}/benchmarks/predictors/predictor_config.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
+    parser.add_argument(
+        "--config-file",
+        default="{}/benchmarks/predictors/predictor_config.yaml".format(
+            get_project_root()
+        ),
+        metavar="FILE",
+        help="path to config file",
+    )
     # parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
-    parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
+    parser.add_argument(
+        "--eval-only", action="store_true", help="perform evaluation only"
+    )
     parser.add_argument("--seed", default=0, help="random seed")
-    parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
-    parser.add_argument("--model-path", type=str, default=None, help="Path to saved model weights")
-    parser.add_argument('--world-size', default=1, type=int, help='number of nodes for distributed training')
-    parser.add_argument('--rank', default=0, type=int, help='node rank for distributed training')
-    parser.add_argument('--gpu', default=None, type=int, help='GPU id to use.')
-    parser.add_argument('--dist-url', default='tcp://127.0.0.1:8888',
-                        type=str, help='url used to set up distributed training')
-    parser.add_argument('--dist-backend', default='nccl', type=str, help='distributed backend')
-    parser.add_argument('--multiprocessing-distributed', action='store_true',
-                        help='Use multi-processing distributed training to launch '
-                             'N processes per node, which has N GPUs. This is the '
-                             'fastest way to use PyTorch for either single node or '
-                             'multi node data parallel training')
+    parser.add_argument(
+        "--resume", action="store_true", help="Resume from last checkpoint"
+    )
+    parser.add_argument(
+        "--model-path", type=str, default=None, help="Path to saved model weights"
+    )
+    parser.add_argument(
+        "--world-size",
+        default=1,
+        type=int,
+        help="number of nodes for distributed training",
+    )
+    parser.add_argument(
+        "--rank", default=0, type=int, help="node rank for distributed training"
+    )
+    parser.add_argument("--gpu", default=None, type=int, help="GPU id to use.")
+    parser.add_argument(
+        "--dist-url",
+        default="tcp://127.0.0.1:8888",
+        type=str,
+        help="url used to set up distributed training",
+    )
+    parser.add_argument(
+        "--dist-backend", default="nccl", type=str, help="distributed backend"
+    )
+    parser.add_argument(
+        "--multiprocessing-distributed",
+        action="store_true",
+        help="Use multi-processing distributed training to launch "
+        "N processes per node, which has N GPUs. This is the "
+        "fastest way to use PyTorch for either single node or "
+        "multi node data parallel training",
+    )
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -89,7 +118,7 @@ def default_argument_parser():
 
 
 def parse_args(parser=default_argument_parser(), args=sys.argv[1:]):
-    if '-f' in args:
+    if "-f" in args:
         args = args[2:]
     return parser.parse_args(args)
 
@@ -105,7 +134,7 @@ def pairwise(iterable):
     return zip(a, a)
 
 
-def get_config_from_args(args=None, config_type='nas'):
+def get_config_from_args(args=None, config_type="nas"):
     """
     Parses command line arguments and merges them with the defaults
     from the config file.
@@ -116,21 +145,37 @@ def get_config_from_args(args=None, config_type='nas'):
         args: args from a different argument parser than the default one.
     """
 
-    if config_type == 'nas':
+    if config_type == "nas":
         # load the default base
-        with open(os.path.join(get_project_root(), 'defaults', 'darts_defaults.yaml')) as f:
+        with open(
+            os.path.join(get_project_root(), "defaults", "darts_defaults.yaml")
+        ) as f:
             config = CfgNode.load_cfg(f)
-    elif config_type == 'predictor':
+    elif config_type == "predictor":
         # load the default base
-        with open(os.path.join(get_project_root(), 'benchmarks/predictors', 'predictor_config.yaml')) as f:
+        with open(
+            os.path.join(
+                get_project_root(), "benchmarks/predictors", "predictor_config.yaml"
+            )
+        ) as f:
             config = CfgNode.load_cfg(f)
-    elif config_type == 'nas_predictor':
+    elif config_type == "nas_predictor":
         # load the default base
         # with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
-        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'discrete_config.yaml')) as f:
+        with open(
+            os.path.join(
+                get_project_root(), "benchmarks/nas_predictors", "discrete_config.yaml"
+            )
+        ) as f:
             config = CfgNode.load_cfg(f)
-    elif config_type == 'oneshot':
-        with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
+    elif config_type == "oneshot":
+        with open(
+            os.path.join(
+                get_project_root(),
+                "benchmarks/nas_predictors",
+                "nas_predictor_config.yaml",
+            )
+        ) as f:
             config = CfgNode.load_cfg(f)
 
     if args is None:
@@ -148,8 +193,8 @@ def get_config_from_args(args=None, config_type='nas'):
     # Override file args with ones from command line
     try:
         for arg, value in pairwise(args.opts):
-            if '.' in arg:
-                arg1, arg2 = arg.split('.')
+            if "." in arg:
+                arg1, arg2 = arg.split(".")
                 config[arg1][arg2] = type(config[arg1][arg2])(value)
             else:
                 config[arg] = value
@@ -157,7 +202,7 @@ def get_config_from_args(args=None, config_type='nas'):
         config.eval_only = args.eval_only
         config.resume = args.resume
         config.model_path = args.model_path
-        if config_type != 'nas_predictor':
+        if config_type != "nas_predictor":
             config.seed = args.seed
 
         # load config file
@@ -169,7 +214,7 @@ def get_config_from_args(args=None, config_type='nas'):
             config[arg] = value
 
     # prepare the output directories
-    if config_type == 'nas':
+    if config_type == "nas":
         # config.seed = args.seed
         config.search.seed = config.seed
         # config.optimizer = args.optimizer
@@ -179,30 +224,55 @@ def get_config_from_args(args=None, config_type='nas'):
         config.evaluation.dist_url = args.dist_url
         config.evaluation.dist_backend = args.dist_backend
         config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
-        config.save = '{}/{}/{}/{}'.format(config.out_dir, config.dataset, config.optimizer, config.seed)
-    elif config_type == 'predictor':
-        if config.predictor == 'lcsvr' and config.experiment_type == 'vary_train_size':
-            config.save = '{}/{}/{}/{}_train/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor,
-                                                        config.seed)
-        elif config.predictor == 'lcsvr' and config.experiment_type == 'vary_fidelity':
-            config.save = '{}/{}/{}/{}_fidelity/{}'.format(config.out_dir, config.dataset, 'predictors',
-                                                           config.predictor, config.seed)
+        config.save = "{}/{}/{}/{}".format(
+            config.out_dir, config.dataset, config.optimizer, config.seed
+        )
+    elif config_type == "predictor":
+        if config.predictor == "lcsvr" and config.experiment_type == "vary_train_size":
+            config.save = "{}/{}/{}/{}_train/{}".format(
+                config.out_dir,
+                config.dataset,
+                "predictors",
+                config.predictor,
+                config.seed,
+            )
+        elif config.predictor == "lcsvr" and config.experiment_type == "vary_fidelity":
+            config.save = "{}/{}/{}/{}_fidelity/{}".format(
+                config.out_dir,
+                config.dataset,
+                "predictors",
+                config.predictor,
+                config.seed,
+            )
         else:
-            config.save = '{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'predictors', config.predictor,
-                                                  config.seed)
-    elif config_type == 'nas_predictor':
+            config.save = "{}/{}/{}/{}/{}".format(
+                config.out_dir,
+                config.dataset,
+                "predictors",
+                config.predictor,
+                config.seed,
+            )
+    elif config_type == "nas_predictor":
         config.search.seed = config.seed
-        config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
-                                                 config.search_space,
-                                                 config.search.predictor_type,
-                                                 config.seed)
-    elif config_type == 'oneshot':
-        config.save = '{}/{}/{}/{}/{}/{}'.format(config.out_dir, config.dataset, 'nas_predictors',
-                                                 config.search_space,
-                                                 config.search.predictor_type,
-                                                 config.seed)
+        config.save = "{}/{}/{}/{}/{}/{}".format(
+            config.out_dir,
+            config.dataset,
+            "nas_predictors",
+            config.search_space,
+            config.search.predictor_type,
+            config.seed,
+        )
+    elif config_type == "oneshot":
+        config.save = "{}/{}/{}/{}/{}/{}".format(
+            config.out_dir,
+            config.dataset,
+            "nas_predictors",
+            config.search_space,
+            config.search.predictor_type,
+            config.seed,
+        )
     else:
-        print('invalid config type in utils/utils.py')
+        print("invalid config type in utils/utils.py")
 
     config.data = "{}/data".format(get_project_root())
 
@@ -220,25 +290,48 @@ def get_train_val_loaders(config, mode):
     data = config.data
     dataset = config.dataset
     seed = config.search.seed
-    config = config.search if mode == 'train' else config.evaluation
-    if dataset == 'cifar10':
+    config = config.search if mode == "train" else config.evaluation
+    if dataset == "cifar10":
         train_transform, valid_transform = _data_transforms_cifar10(config)
-        train_data = dset.CIFAR10(root=data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR10(root=data, train=False, download=True, transform=valid_transform)
-    elif dataset == 'cifar100':
+        train_data = dset.CIFAR10(
+            root=data, train=True, download=True, transform=train_transform
+        )
+        test_data = dset.CIFAR10(
+            root=data, train=False, download=True, transform=valid_transform
+        )
+    elif dataset == "cifar100":
         train_transform, valid_transform = _data_transforms_cifar100(config)
-        train_data = dset.CIFAR100(root=data, train=True, download=True, transform=train_transform)
-        test_data = dset.CIFAR100(root=data, train=False, download=True, transform=valid_transform)
-    elif dataset == 'svhn':
+        train_data = dset.CIFAR100(
+            root=data, train=True, download=True, transform=train_transform
+        )
+        test_data = dset.CIFAR100(
+            root=data, train=False, download=True, transform=valid_transform
+        )
+    elif dataset == "svhn":
         train_transform, valid_transform = _data_transforms_svhn(config)
-        train_data = dset.SVHN(root=data, split='train', download=True, transform=train_transform)
-        test_data = dset.SVHN(root=data, split='test', download=True, transform=valid_transform)
-    elif dataset == 'ImageNet16-120':
+        train_data = dset.SVHN(
+            root=data, split="train", download=True, transform=train_transform
+        )
+        test_data = dset.SVHN(
+            root=data, split="test", download=True, transform=valid_transform
+        )
+    elif dataset == "ImageNet16-120":
         from naslib.utils.DownsampledImageNet import ImageNet16
+
         train_transform, valid_transform = _data_transforms_ImageNet_16_120(config)
-        data_folder = f'{data}/{dataset}'
-        train_data = ImageNet16(root=data_folder, train=True, transform=train_transform, use_num_of_class_only=120)
-        test_data = ImageNet16(root=data_folder, train=False, transform=valid_transform, use_num_of_class_only=120)
+        data_folder = f"{data}/{dataset}"
+        train_data = ImageNet16(
+            root=data_folder,
+            train=True,
+            transform=train_transform,
+            use_num_of_class_only=120,
+        )
+        test_data = ImageNet16(
+            root=data_folder,
+            train=False,
+            transform=valid_transform,
+            use_num_of_class_only=120,
+        )
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
@@ -247,18 +340,31 @@ def get_train_val_loaders(config, mode):
     split = int(np.floor(config.train_portion * num_train))
 
     train_queue = torch.utils.data.DataLoader(
-        train_data, batch_size=config.batch_size,
+        train_data,
+        batch_size=config.batch_size,
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
-        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(seed))
+        pin_memory=True,
+        num_workers=0,
+        worker_init_fn=np.random.seed(seed),
+    )
 
     valid_queue = torch.utils.data.DataLoader(
-        train_data, batch_size=config.batch_size,
+        train_data,
+        batch_size=config.batch_size,
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
-        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(seed))
+        pin_memory=True,
+        num_workers=0,
+        worker_init_fn=np.random.seed(seed),
+    )
 
     test_queue = torch.utils.data.DataLoader(
-        test_data, batch_size=config.batch_size, shuffle=False,
-        pin_memory=True, num_workers=0, worker_init_fn=np.random.seed(seed))
+        test_data,
+        batch_size=config.batch_size,
+        shuffle=False,
+        pin_memory=True,
+        num_workers=0,
+        worker_init_fn=np.random.seed(seed),
+    )
 
     return train_queue, valid_queue, test_queue, train_transform, valid_transform
 
@@ -267,20 +373,23 @@ def _data_transforms_cifar10(args):
     CIFAR_MEAN = [0.49139968, 0.48215827, 0.44653124]
     CIFAR_STD = [0.24703233, 0.24348505, 0.26158768]
 
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+        ]
+    )
     if args.cutout:
-        train_transform.transforms.append(Cutout(args.cutout_length,
-                                                 args.cutout_prob))
+        train_transform.transforms.append(Cutout(args.cutout_length, args.cutout_prob))
 
-    valid_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-    ])
+    valid_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+        ]
+    )
     return train_transform, valid_transform
 
 
@@ -288,20 +397,23 @@ def _data_transforms_svhn(args):
     SVHN_MEAN = [0.4377, 0.4438, 0.4728]
     SVHN_STD = [0.1980, 0.2010, 0.1970]
 
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(SVHN_MEAN, SVHN_STD),
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(SVHN_MEAN, SVHN_STD),
+        ]
+    )
     if args.cutout:
-        train_transform.transforms.append(Cutout(args.cutout_length,
-                                                 args.cutout_prob))
+        train_transform.transforms.append(Cutout(args.cutout_length, args.cutout_prob))
 
-    valid_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(SVHN_MEAN, SVHN_STD),
-    ])
+    valid_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize(SVHN_MEAN, SVHN_STD),
+        ]
+    )
     return train_transform, valid_transform
 
 
@@ -309,20 +421,23 @@ def _data_transforms_cifar100(args):
     CIFAR_MEAN = [0.5071, 0.4865, 0.4409]
     CIFAR_STD = [0.2673, 0.2564, 0.2762]
 
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+        ]
+    )
     if args.cutout:
-        train_transform.transforms.append(Cutout(args.cutout_length,
-                                                 args.cutout_prob))
+        train_transform.transforms.append(Cutout(args.cutout_length, args.cutout_prob))
 
-    valid_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-    ])
+    valid_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+        ]
+    )
     return train_transform, valid_transform
 
 
@@ -330,20 +445,23 @@ def _data_transforms_ImageNet_16_120(args):
     IMAGENET16_MEAN = [x / 255 for x in [122.68, 116.66, 104.01]]
     IMAGENET16_STD = [x / 255 for x in [63.22, 61.26, 65.09]]
 
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(16, padding=2),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(16, padding=2),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+        ]
+    )
     if args.cutout:
-        train_transform.transforms.append(Cutout(args.cutout_length,
-                                                 args.cutout_prob))
+        train_transform.transforms.append(Cutout(args.cutout_length, args.cutout_prob))
 
-    valid_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
-    ])
+    valid_transform = transforms.Compose(
+        [
+            transforms.ToTensor(),
+            transforms.Normalize(IMAGENET16_MEAN, IMAGENET16_STD),
+        ]
+    )
     return train_transform, valid_transform
 
 
@@ -397,10 +515,14 @@ def get_last_checkpoint(config, search=True):
         (str): The path to the latest checkpoint file.
     """
     try:
-        path = os.path.join(config.save, "search" if search else "eval", "last_checkpoint")
-        with open(path, 'r') as f:
+        path = os.path.join(
+            config.save, "search" if search else "eval", "last_checkpoint"
+        )
+        with open(path, "r") as f:
             checkpoint_name = f.readline()
-        return os.path.join(config.save, "search" if search else "eval", checkpoint_name)
+        return os.path.join(
+            config.save, "search" if search else "eval", checkpoint_name
+        )
     except:
         return ""
 
@@ -427,8 +549,14 @@ def count_parameters_in_MB(model):
     """
     Returns the model parameters in mega byte.
     """
-    return np.sum(np.prod(v.size()) for name, v in model.named_parameters() if
-                  "auxiliary" not in name) / 1e6
+    return (
+        np.sum(
+            np.prod(v.size())
+            for name, v in model.named_parameters()
+            if "auxiliary" not in name
+        )
+        / 1e6
+    )
 
 
 def log_args(args):
@@ -436,7 +564,7 @@ def log_args(args):
     Log the args in a nice way.
     """
     for arg, val in args.items():
-        logger.info(arg + '.' * (50 - len(arg) - len(str(val))) + str(val))
+        logger.info(arg + "." * (50 - len(arg) - len(str(val))) + str(val))
 
 
 def create_exp_dir(path):
@@ -445,10 +573,12 @@ def create_exp_dir(path):
     """
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
-    logger.info('Experiment dir : {}'.format(path))
+    logger.info("Experiment dir : {}".format(path))
 
 
-def cross_validation(xtrain, ytrain, predictor, split_indices, score_metric='kendalltau'):
+def cross_validation(
+    xtrain, ytrain, predictor, split_indices, score_metric="kendalltau"
+):
     validation_score = []
 
     for train_indices, validation_indices in split_indices:
@@ -465,19 +595,19 @@ def cross_validation(xtrain, ytrain, predictor, split_indices, score_metric='ken
             ypred_i = np.mean(ypred_i, axis=0)
 
         # use Pearson correlation to be the metric -> maximise Pearson correlation
-        if score_metric == 'pearson':
+        if score_metric == "pearson":
             score_i = np.abs(np.corrcoef(yval_i, ypred_i)[1, 0])
-        elif score_metric == 'mae':
+        elif score_metric == "mae":
             score_i = np.mean(abs(ypred_i - yval_i))
-        elif score_metric == 'rmse':
+        elif score_metric == "rmse":
             score_i = metrics.mean_squared_error(yval_i, ypred_i, squared=False)
-        elif score_metric == 'spearman':
+        elif score_metric == "spearman":
             score_i = stats.spearmanr(yval_i, ypred_i)[0]
-        elif score_metric == 'kendalltau':
+        elif score_metric == "kendalltau":
             score_i = stats.kendalltau(yval_i, ypred_i)[0]
-        elif score_metric == 'kt_2dec':
+        elif score_metric == "kt_2dec":
             score_i = stats.kendalltau(yval_i, np.round(ypred_i, decimals=2))[0]
-        elif score_metric == 'kt_1dec':
+        elif score_metric == "kt_1dec":
             score_i = stats.kendalltau(yval_i, np.round(ypred_i, decimals=1))[0]
 
         validation_score.append(score_i)
@@ -486,22 +616,22 @@ def cross_validation(xtrain, ytrain, predictor, split_indices, score_metric='ken
 
 
 def generate_kfold(n, k):
-    '''
+    """
     Input:
         n: number of training examples
         k: number of folds
     Returns:
         kfold_indices: a list of len k. Each entry takes the form
         (training indices, validation indices)
-    '''
+    """
     assert k >= 2
     kfold_indices = []
 
     indices = np.array(range(n))
     fold_size = n // k
 
-    fold_indices = [indices[i * fold_size: (i + 1) * fold_size] for i in range(k - 1)]
-    fold_indices.append(indices[(k - 1) * fold_size:])
+    fold_indices = [indices[i * fold_size : (i + 1) * fold_size] for i in range(k - 1)]
+    fold_indices.append(indices[(k - 1) * fold_size :])
 
     for i in range(k):
         training_indices = [fold_indices[j] for j in range(k) if j != i]
@@ -545,7 +675,7 @@ class AverageMeterGroup:
 class NamedAverageMeter:
     """Computes and stores the average and current value, ported from naszilla repo"""
 
-    def __init__(self, name, fmt=':f'):
+    def __init__(self, name, fmt=":f"):
         """
         Initialization of AverageMeter
         Parameters
@@ -572,16 +702,15 @@ class NamedAverageMeter:
         self.avg = self.sum / self.count
 
     def __str__(self):
-        fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
+        fmtstr = "{name} {val" + self.fmt + "} ({avg" + self.fmt + "})"
         return fmtstr.format(**self.__dict__)
 
     def summary(self):
-        fmtstr = '{name}: {avg' + self.fmt + '}'
+        fmtstr = "{name}: {avg" + self.fmt + "}"
         return fmtstr.format(**self.__dict__)
 
 
 class AverageMeter(object):
-
     def __init__(self):
         self.reset()
 
@@ -613,7 +742,7 @@ class Cutout(object):
             x1 = np.clip(x - self.length // 2, 0, w)
             x2 = np.clip(x + self.length // 2, 0, w)
 
-            mask[y1: y2, x1: x2] = 0.
+            mask[y1:y2, x1:x2] = 0.0
             mask = torch.from_numpy(mask)
             mask = mask.expand_as(img)
             img *= mask
@@ -626,7 +755,6 @@ import os
 
 
 class Checkpointer(fvCheckpointer):
-
     def load(self, path: str, checkpointables: Optional[List[str]] = None) -> object:
         """
         Load from the given checkpoint. When path points to network file, this
@@ -654,7 +782,7 @@ class Checkpointer(fvCheckpointer):
         checkpoint = self._load_file(path)
         incompatible = self._load_model(checkpoint)
         if (
-                incompatible is not None
+            incompatible is not None
         ):  # handle some existing subclasses that returns None
             self._log_incompatible_keys(incompatible)
 

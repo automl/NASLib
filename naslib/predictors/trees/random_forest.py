@@ -6,16 +6,15 @@ from naslib.predictors.trees.ngb import loguniform
 
 
 class RandomForestPredictor(BaseTree):
-
     @property
     def default_hyperparams(self):
-        #NOTE: Copied from NB301
+        # NOTE: Copied from NB301
         params = {
-            'n_estimators': 116,
-            'max_features': 0.17055852159745608,
-            'min_samples_leaf': 2,
-            'min_samples_split': 2,
-            'bootstrap': False,
+            "n_estimators": 116,
+            "max_features": 0.17055852159745608,
+            "min_samples_leaf": 2,
+            "min_samples_split": 2,
+            "bootstrap": False,
             #'verbose': -1
         }
         return params
@@ -26,11 +25,11 @@ class RandomForestPredictor(BaseTree):
             params = self.default_hyperparams.copy()
         else:
             params = {
-                'n_estimators': int(loguniform(16, 128)),
-                'max_features': loguniform(.1, .9),
-                'min_samples_leaf': int(np.random.choice(19) + 1),
-                'min_samples_split': int(np.random.choice(18) + 2),
-                'bootstrap': False,
+                "n_estimators": int(loguniform(16, 128)),
+                "max_features": loguniform(0.1, 0.9),
+                "min_samples_leaf": int(np.random.choice(19) + 1),
+                "min_samples_split": int(np.random.choice(18) + 2),
+                "bootstrap": False,
                 #'verbose': -1
             }
         self.hyperparams = params
@@ -40,15 +39,14 @@ class RandomForestPredictor(BaseTree):
         if labels is None:
             return encodings
         else:
-            return (encodings, (labels-self.mean)/self.std)
+            return (encodings, (labels - self.mean) / self.std)
 
     def train(self, train_data):
         X_train, y_train = train_data
         model = RF(**self.hyperparams)
         return model.fit(X_train, y_train)
-    
+
     def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
         return super(RandomForestPredictor, self).fit(xtrain, ytrain, params, **kwargs)
-
