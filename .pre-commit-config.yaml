@@ -15,4 +15,9 @@ repos:
     rev: stable # Replace by any tag/version: https://github.com/psf/black/tags
     hooks:
       - id: black
-        language_version: python3 # Should be a command that runs python3.6+
+        language_version: python3.8 # Should be a command that runs python3.6+
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.9
+    hooks:
+      - id: flake8
+
