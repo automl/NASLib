@@ -32,7 +32,7 @@ all_models["linear"] = linear
 
 def log_power(x, a, b, c):
     # logistic power
-    return a / (1. + (x / np.exp(b)) ** c)
+    return a / (1.0 + (x / np.exp(b)) ** c)
 
 
 all_models["log_power"] = log_power
@@ -51,53 +51,51 @@ def weibull(x, alpha, beta, kappa, delta):
     k: growth rate
     delta: controls the x-ordinate for the point of inflection
     """
-    return alpha - (alpha - beta) * np.exp(-(kappa * x) ** delta)
+    return alpha - (alpha - beta) * np.exp(-((kappa * x) ** delta))
 
 
 all_models["weibull"] = weibull
-model_defaults["weibull"] = {"alpha": .7, "beta": 0.1, "kappa": 0.01,
-                             "delta": 1}
+model_defaults["weibull"] = {"alpha": 0.7, "beta": 0.1, "kappa": 0.01, "delta": 1}
 display_name_mapping["weibull"] = "Weibull"
 
 
 def mmf(x, alpha, beta, kappa, delta):
     """
-        Morgan-Mercer-Flodin
+    Morgan-Mercer-Flodin
 
-        description:
-        Nonlinear Regression page 342
-        http://bit.ly/1jodG17
-        http://www.pisces-conservation.com/growthhelp/index.html?morgan_mercer_floden.htm
+    description:
+    Nonlinear Regression page 342
+    http://bit.ly/1jodG17
+    http://www.pisces-conservation.com/growthhelp/index.html?morgan_mercer_floden.htm
 
-        alpha: upper asymptote
-        kappa: growth rate
-        beta: initial value
-        delta: controls the point of inflection
+    alpha: upper asymptote
+    kappa: growth rate
+    beta: initial value
+    delta: controls the point of inflection
     """
-    return alpha - (alpha - beta) / (1. + (kappa * x) ** delta)
+    return alpha - (alpha - beta) / (1.0 + (kappa * x) ** delta)
 
 
 all_models["mmf"] = mmf
-model_defaults["mmf"] = {"alpha": .7, "kappa": 0.01, "beta": 0.1, "delta": 5}
+model_defaults["mmf"] = {"alpha": 0.7, "kappa": 0.01, "beta": 0.1, "delta": 5}
 display_name_mapping["mmf"] = "MMF"
 
 
 def janoschek(x, a, beta, k, delta):
     """
-        http://www.pisces-conservation.com/growthhelp/janoschek.htm
+    http://www.pisces-conservation.com/growthhelp/janoschek.htm
     """
     return a - (a - beta) * np.exp(-k * x ** delta)
 
 
 all_models["janoschek"] = janoschek
-model_defaults["janoschek"] = {"a": 0.73, "beta": 0.07, "k": 0.355,
-                               "delta": 0.46}
+model_defaults["janoschek"] = {"a": 0.73, "beta": 0.07, "k": 0.355, "delta": 0.46}
 display_name_mapping["janoschek"] = "Janoschek"
 
 
 def ilog2(x, c, a):
     x = 1 + x
-    assert (np.all(x > 1))
+    assert np.all(x > 1)
     return c - a / np.log(x)
 
 
@@ -112,8 +110,11 @@ def dr_hill_zero_background(x, theta, eta, kappa):
 
 
 all_models["dr_hill_zero_background"] = dr_hill_zero_background
-model_defaults["dr_hill_zero_background"] = {"theta": 0.772320, "eta": 0.586449,
-                                             "kappa": 2.460843}
+model_defaults["dr_hill_zero_background"] = {
+    "theta": 0.772320,
+    "eta": 0.586449,
+    "kappa": 2.460843,
+}
 display_name_mapping["dr_hill_zero_background"] = "Hill$_3$"
 
 
@@ -128,7 +129,7 @@ display_name_mapping["logx_linear"] = "log x linear"
 
 
 def vap(x, a, b, c):
-    """ Vapor pressure model """
+    """Vapor pressure model"""
     return np.exp(a + b / x + c * np.log(x))
 
 
@@ -172,6 +173,7 @@ display_name_mapping["exp4"] = "exp$_4$"
 #    return np.log(a*x + b)
 # all_models["logy_linear"] = logy_linear
 
+
 def pow2(x, a, alpha):
     return a * x ** (-alpha)
 
@@ -186,7 +188,7 @@ def pow4(x, c, a, b, alpha):
 
 
 all_models["pow4"] = pow4
-model_defaults["pow4"] = {"alpha": 0.1, "a": 200, "b": 0., "c": 0.8}
+model_defaults["pow4"] = {"alpha": 0.1, "a": 200, "b": 0.0, "c": 0.8}
 display_name_mapping["pow4"] = "pow$_4$"
 
 
@@ -204,24 +206,28 @@ def dr_hill(x, alpha, theta, eta, kappa):
 
 
 all_models["dr_hill"] = dr_hill
-model_defaults["dr_hill"] = {"alpha": 0.1, "theta": 0.772320, "eta": 0.586449,
-                             "kappa": 2.460843}
+model_defaults["dr_hill"] = {
+    "alpha": 0.1,
+    "theta": 0.772320,
+    "eta": 0.586449,
+    "kappa": 2.460843,
+}
 display_name_mapping["dr_hill"] = "Hill$_4$"
 
 
 def gompertz(x, a, b, c):
     """
-        Gompertz growth function.
+    Gompertz growth function.
 
-        sigmoidal family
-        a is the upper asymptote, since
-        b, c are negative numbers
-        b sets the displacement along the x axis (translates the graph to the left or right)
-        c sets the growth rate (y scaling)
+    sigmoidal family
+    a is the upper asymptote, since
+    b, c are negative numbers
+    b sets the displacement along the x axis (translates the graph to the left or right)
+    c sets the growth rate (y scaling)
 
-        e.g. used to model the growth of tumors
+    e.g. used to model the growth of tumors
 
-        http://en.wikipedia.org/wiki/Gompertz_function
+    http://en.wikipedia.org/wiki/Gompertz_function
     """
     return a * np.exp(-b * np.exp(-c * x))
     # return a + b * np.exp(np.exp(-k*(x-i)))
@@ -234,49 +240,76 @@ display_name_mapping["gompertz"] = "Gompertz"
 
 def logistic_curve(x, a, k, b):
     """
-        a: asymptote
-        k:
-        b: inflection point
-        http://www.pisces-conservation.com/growthhelp/logistic_curve.htm
+    a: asymptote
+    k:
+    b: inflection point
+    http://www.pisces-conservation.com/growthhelp/logistic_curve.htm
     """
-    return a / (1. + np.exp(-k * (x - b)))
+    return a / (1.0 + np.exp(-k * (x - b)))
 
 
 all_models["logistic_curve"] = logistic_curve
-model_defaults["logistic_curve"] = {"a": 0.8, "k": 0.01, "b": 1.}
+model_defaults["logistic_curve"] = {"a": 0.8, "k": 0.01, "b": 1.0}
 display_name_mapping["logistic_curve"] = "logistic curve"
 
 
 def bertalanffy(x, a, k):
     """
-        a: asymptote
-        k: growth rate
-        http://www.pisces-conservation.com/growthhelp/von_bertalanffy.htm
+    a: asymptote
+    k: growth rate
+    http://www.pisces-conservation.com/growthhelp/von_bertalanffy.htm
     """
-    return a * (1. - np.exp(-k * x))
+    return a * (1.0 - np.exp(-k * x))
 
 
 all_models["bertalanffy"] = bertalanffy
 model_defaults["bertalanffy"] = {"a": 0.8, "k": 0.01}
 display_name_mapping["bertalanffy"] = "Bertalanffy"
 
-curve_combination_models_old = ["vap", "ilog2", "weibull", "pow3", "pow4",
-                                "loglog_linear",
-                                "mmf", "janoschek", "dr_hill_zero_background",
-                                "log_power",
-                                "exp4"]
+curve_combination_models_old = [
+    "vap",
+    "ilog2",
+    "weibull",
+    "pow3",
+    "pow4",
+    "loglog_linear",
+    "mmf",
+    "janoschek",
+    "dr_hill_zero_background",
+    "log_power",
+    "exp4",
+]
 
-curve_combination_models_original = ["weibull", "pow4", "mmf", "pow3", 
-                                     "loglog_linear", "janoschek", 
-                                     "dr_hill_zero_background", "log_power",
-                                     "exp4"]
+curve_combination_models_original = [
+    "weibull",
+    "pow4",
+    "mmf",
+    "pow3",
+    "loglog_linear",
+    "janoschek",
+    "dr_hill_zero_background",
+    "log_power",
+    "exp4",
+]
 
 # note: removing some of the models was found to improve performance
-curve_combination_models = ["mmf", "loglog_linear",
-                            "dr_hill_zero_background", "log_power"]
+curve_combination_models = [
+    "mmf",
+    "loglog_linear",
+    "dr_hill_zero_background",
+    "log_power",
+]
 
-curve_ensemble_models = ["vap", "ilog2", "weibull", "pow3", "pow4",
-                         "loglog_linear",
-                         "mmf", "janoschek", "dr_hill_zero_background",
-                         "log_power",
-                         "exp4"]
+curve_ensemble_models = [
+    "vap",
+    "ilog2",
+    "weibull",
+    "pow3",
+    "pow4",
+    "loglog_linear",
+    "mmf",
+    "janoschek",
+    "dr_hill_zero_background",
+    "log_power",
+    "exp4",
+]

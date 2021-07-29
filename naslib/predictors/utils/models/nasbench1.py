@@ -35,15 +35,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class Network(nn.Module):
     def __init__(self, spec, stem_out, num_stacks, num_mods, num_classes, bn=True):
         super(Network, self).__init__()
 
-        self.spec=spec
-        self.stem_out=stem_out 
-        self.num_stacks=num_stacks 
-        self.num_mods=num_mods
-        self.num_classes=num_classes
+        self.spec = spec
+        self.stem_out = stem_out
+        self.num_stacks = num_stacks
+        self.num_mods = num_mods
+        self.num_classes = num_classes
 
         self.layers = nn.ModuleList([])
 
@@ -78,12 +79,19 @@ class Network(nn.Module):
         out = self.classifier(out)
 
         return out
-    
+
     def get_prunable_copy(self, bn=False):
 
-        model_new = Network(self.spec, self.stem_out, self.num_stacks, self.num_mods, self.num_classes, bn=bn)
-        
-        #TODO this is quite brittle and doesn't work with nn.Sequential when bn is different
+        model_new = Network(
+            self.spec,
+            self.stem_out,
+            self.num_stacks,
+            self.num_mods,
+            self.num_classes,
+            bn=bn,
+        )
+
+        # TODO this is quite brittle and doesn't work with nn.Sequential when bn is different
         # it is only required to maintain initialization -- maybe init after get_punable_copy?
         model_new.load_state_dict(self.state_dict(), strict=False)
         model_new.train()
@@ -105,6 +113,7 @@ class Network(nn.Module):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
 
+
 class Cell(nn.Module):
     """
     Builds the model using the adjacency matrix and op labels specified. Channels
@@ -112,6 +121,7 @@ class Cell(nn.Module):
     determined via equally splitting the channel count whenever there is a
     concatenation of Tensors.
     """
+
     def __init__(self, spec, in_channels, out_channels, bn=True):
         super(Cell, self).__init__()
 
@@ -119,20 +129,26 @@ class Cell(nn.Module):
         self.num_vertices = np.shape(self.spec.matrix)[0]
 
         # vertex_channels[i] = number of output channels of vertex i
-        self.vertex_channels = ComputeVertexChannels(in_channels, out_channels, self.spec.matrix)
-        #self.vertex_channels = [in_channels] + [out_channels] * (self.num_vertices - 1)
+        self.vertex_channels = ComputeVertexChannels(
+            in_channels, out_channels, self.spec.matrix
+        )
+        # self.vertex_channels = [in_channels] + [out_channels] * (self.num_vertices - 1)
 
         # operation for each node
         self.vertex_op = nn.ModuleList([None])
-        for t in range(1, self.num_vertices-1):
-            op = OP_MAP[spec.ops[t]](self.vertex_channels[t], self.vertex_channels[t], bn=bn)
+        for t in range(1, self.num_vertices - 1):
+            op = OP_MAP[spec.ops[t]](
+                self.vertex_channels[t], self.vertex_channels[t], bn=bn
+            )
             self.vertex_op.append(op)
 
         # operation for input on each vertex
         self.input_op = nn.ModuleList([None])
         for t in range(1, self.num_vertices):
             if self.spec.matrix[0, t]:
-                self.input_op.append(Projection(in_channels, self.vertex_channels[t], bn=bn))
+                self.input_op.append(
+                    Projection(in_channels, self.vertex_channels[t], bn=bn)
+                )
             else:
                 self.input_op.append(None)
 
@@ -140,57 +156,64 @@ class Cell(nn.Module):
         tensors = [x]
 
         out_concat = []
-        for t in range(1, self.num_vertices-1):
-            fan_in = [Truncate(tensors[src], self.vertex_channels[t]) for src in range(1, t) if self.spec.matrix[src, t]]
+        for t in range(1, self.num_vertices - 1):
+            fan_in = [
+                Truncate(tensors[src], self.vertex_channels[t])
+                for src in range(1, t)
+                if self.spec.matrix[src, t]
+            ]
 
             if self.spec.matrix[0, t]:
                 fan_in.append(self.input_op[t](x))
 
             # perform operation on node
-            #vertex_input = torch.stack(fan_in, dim=0).sum(dim=0)
+            # vertex_input = torch.stack(fan_in, dim=0).sum(dim=0)
             vertex_input = sum(fan_in)
-            #vertex_input = sum(fan_in) / len(fan_in)
+            # vertex_input = sum(fan_in) / len(fan_in)
             vertex_output = self.vertex_op[t](vertex_input)
 
             tensors.append(vertex_output)
-            if self.spec.matrix[t, self.num_vertices-1]:
+            if self.spec.matrix[t, self.num_vertices - 1]:
                 out_concat.append(tensors[t])
 
         if not out_concat:
-            assert self.spec.matrix[0, self.num_vertices-1]
-            outputs = self.input_op[self.num_vertices-1](tensors[0])
+            assert self.spec.matrix[0, self.num_vertices - 1]
+            outputs = self.input_op[self.num_vertices - 1](tensors[0])
         else:
             if len(out_concat) == 1:
                 outputs = out_concat[0]
             else:
                 outputs = torch.cat(out_concat, 1)
 
-            if self.spec.matrix[0, self.num_vertices-1]:
-                outputs += self.input_op[self.num_vertices-1](tensors[0])
+            if self.spec.matrix[0, self.num_vertices - 1]:
+                outputs += self.input_op[self.num_vertices - 1](tensors[0])
 
-            #if self.spec.matrix[0, self.num_vertices-1]:
+            # if self.spec.matrix[0, self.num_vertices-1]:
             #    out_concat.append(self.input_op[self.num_vertices-1](tensors[0]))
-            #outputs = sum(out_concat) / len(out_concat)
+            # outputs = sum(out_concat) / len(out_concat)
 
         return outputs
+
 
 def Projection(in_channels, out_channels, bn=True):
     """1x1 projection (as in ResNet) followed by batch normalization and ReLU."""
     return ConvBnRelu(in_channels, out_channels, 1, bn=bn)
 
+
 def Truncate(inputs, channels):
     """Slice the inputs to channels if necessary."""
     input_channels = inputs.size()[1]
     if input_channels < channels:
-        raise ValueError('input channel < output channels for truncate')
+        raise ValueError("input channel < output channels for truncate")
     elif input_channels == channels:
-        return inputs   # No truncation necessary
+        return inputs  # No truncation necessary
     else:
         # Truncation should only be necessary when channel division leads to
         # vertices with +1 channels. The input vertex should always be projected to
         # the minimum channel count.
         assert input_channels - channels == 1
         return inputs[:, :channels, :, :]
+
 
 def ComputeVertexChannels(in_channels, out_channels, matrix):
     """Computes the number of channels at every vertex.
@@ -221,11 +244,11 @@ def ComputeVertexChannels(in_channels, out_channels, matrix):
 
     # Set channels of vertices that flow directly to output
     for v in range(1, num_vertices - 1):
-      if matrix[v, num_vertices - 1]:
-          vertex_channels[v] = interior_channels
-          if correction:
-              vertex_channels[v] += 1
-              correction -= 1
+        if matrix[v, num_vertices - 1]:
+            vertex_channels[v] = interior_channels
+            if correction:
+                vertex_channels[v] += 1
+                correction -= 1
 
     # Set channels for all other vertices to the max of the out edges, going
     # backwards. (num_vertices - 2) index skipped because it only connects to

@@ -7,7 +7,6 @@ from naslib.predictors.bnn.bnn_base import BNN
 
 
 class DNGOPredictor(BNN):
-
     def get_model(self, **kwargs):
         predictor = DNGO(
             batch_size=10,
@@ -20,12 +19,12 @@ class DNGOPredictor(BNN):
             alpha=1.0,
             beta=1000,
             prior=None,
-            do_mcmc=True, # turn this off for better sample efficiency
+            do_mcmc=True,  # turn this off for better sample efficiency
             n_hypers=20,
             chain_length=2000,
             burnin_steps=2000,
             normalize_input=False,
-            normalize_output=True
+            normalize_output=True,
         )
         return predictor
 
@@ -34,4 +33,3 @@ class DNGOPredictor(BNN):
             self.model.train(xtrain, ytrain, do_optimize=True)
         except ValueError:
             self.model.train(xtrain, ytrain, do_optimize=False)
-

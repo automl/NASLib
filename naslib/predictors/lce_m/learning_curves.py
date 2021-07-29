@@ -7,8 +7,11 @@ import numpy as np
 from scipy.optimize import nnls
 from scipy.stats import norm
 
-from naslib.predictors.lce_m.curvefunctions import curve_combination_models, \
-    model_defaults, all_models
+from naslib.predictors.lce_m.curvefunctions import (
+    curve_combination_models,
+    model_defaults,
+    all_models,
+)
 from naslib.predictors.lce_m.curvemodels import MLCurveModel
 
 
@@ -16,7 +19,7 @@ def recency_weights(num):
     if num == 1:
         return np.ones(1)
     else:
-        recency_weights = [10 ** (1. / num)] * num
+        recency_weights = [10 ** (1.0 / num)] * num
         recency_weights = recency_weights ** (np.arange(0, num))
         return recency_weights
 
@@ -26,34 +29,39 @@ def model_ln_prob(theta, model, x, y):
 
 
 class MCMCCurveModelCombination(object):
-    def __init__(self,
-                 xlim,
-                 ml_curve_models=None,
-                 burn_in=500,
-                 nwalkers=100,
-                 nsamples=2500,
-                 normalize_weights=True,
-                 monotonicity_constraint=True,
-                 soft_monotonicity_constraint=False,
-                 initial_model_weight_ml_estimate=False,
-                 normalized_weights_initialization="constant",
-                 strictly_positive_weights=True,
-                 sanity_check_prior=True,
-                 nthreads=1,
-                 recency_weighting=True):
+    def __init__(
+        self,
+        xlim,
+        ml_curve_models=None,
+        burn_in=500,
+        nwalkers=100,
+        nsamples=2500,
+        normalize_weights=True,
+        monotonicity_constraint=True,
+        soft_monotonicity_constraint=False,
+        initial_model_weight_ml_estimate=False,
+        normalized_weights_initialization="constant",
+        strictly_positive_weights=True,
+        sanity_check_prior=True,
+        nthreads=1,
+        recency_weighting=True,
+    ):
         """
-            xlim: the point on the x axis we eventually want to make predictions for.
+        xlim: the point on the x axis we eventually want to make predictions for.
         """
         if ml_curve_models is None:
             curve_models = []
             for model_name in curve_combination_models:
                 if model_name in model_defaults:
-                    m = MLCurveModel(function=all_models[model_name],
-                                     default_vals=model_defaults[model_name],
-                                     recency_weighting=False)
+                    m = MLCurveModel(
+                        function=all_models[model_name],
+                        default_vals=model_defaults[model_name],
+                        recency_weighting=False,
+                    )
                 else:
-                    m = MLCurveModel(function=all_models[model_name],
-                                     recency_weighting=False)
+                    m = MLCurveModel(
+                        function=all_models[model_name], recency_weighting=False
+                    )
                 curve_models.append(m)
             self.ml_curve_models = curve_models
         else:
@@ -65,7 +73,8 @@ class MCMCCurveModelCombination(object):
         self.nsamples = nsamples
         self.normalize_weights = normalize_weights
         assert not (
-                monotonicity_constraint and soft_monotonicity_constraint), "choose either the monotonicity_constraint or the soft_monotonicity_constraint, but not both"
+            monotonicity_constraint and soft_monotonicity_constraint
+        ), "choose either the monotonicity_constraint or the soft_monotonicity_constraint, but not both"
         self.monotonicity_constraint = monotonicity_constraint
         self.soft_monotonicity_constraint = soft_monotonicity_constraint
         self.initial_model_weight_ml_estimate = initial_model_weight_ml_estimate
@@ -88,9 +97,9 @@ class MCMCCurveModelCombination(object):
     def fit(self, x, y, model_weights=None):
         if self.fit_ml_individual(x, y, model_weights):
             # run MCMC:
-            logging.info('Fitted models!')
+            logging.info("Fitted models!")
             self.fit_mcmc(x, y)
-            logging.info('Fitted mcmc!')
+            logging.info("Fitted mcmc!")
             return True
         else:
             logging.warning("fit_ml_individual failed")
@@ -101,7 +110,7 @@ class MCMCCurveModelCombination(object):
         # HOWEVER: there might be cases where some models might predict value larger than 1.0
         # and this is alright, because in those cases we don't necessarily want to stop a run.
         assert not isinstance(ylim, np.ndarray)
-        if not np.isfinite(ylim) or ylim < 0. or ylim > 100.0:
+        if not np.isfinite(ylim) or ylim < 0.0 or ylim > 100.0:
             return False
         else:
             return True
@@ -111,24 +120,28 @@ class MCMCCurveModelCombination(object):
         # HOWEVER: there might be cases where some models might predict value larger than 1.0
         # and this is alright, because in those cases we don't necessarily want to stop a run.
         assert isinstance(ylim, np.ndarray)
-        return ~(~np.isfinite(ylim) | (ylim < 0.) | (ylim > 100.0))
+        return ~(~np.isfinite(ylim) | (ylim < 0.0) | (ylim > 100.0))
 
     def fit_ml_individual(self, x, y, model_weights):
         """
-            Do a ML fit for each model individually and then another ML fit for the combination of models.
+        Do a ML fit for each model individually and then another ML fit for the combination of models.
         """
         self.fit_models = []
         for model in self.ml_curve_models:
             if model.fit(x, y):
                 ylim = model.predict(self.xlim)
                 if not self.y_lim_sanity_check(ylim):
-                    print("ML fit of model %s is out of bound range [0.0, "
-                          "100.] at xlim." % (model.function.__name__))
+                    print(
+                        "ML fit of model %s is out of bound range [0.0, "
+                        "100.] at xlim." % (model.function.__name__)
+                    )
                     continue
                 params, sigma = model.split_theta_to_array(model.ml_params)
                 if not np.isfinite(self._ln_model_prior(model, np.array([params]))[0]):
-                    print("ML fit of model %s is not supported by prior." %
-                          model.function.__name__)
+                    print(
+                        "ML fit of model %s is not supported by prior."
+                        % model.function.__name__
+                    )
                     continue
                 self.fit_models.append(model)
 
@@ -140,10 +153,11 @@ class MCMCCurveModelCombination(object):
                 if self.normalized_weights_initialization == "constant":
                     # initialize with a constant value
                     # we will sample in this unnormalized space and then later normalize
-                    model_weights = [10. for model in self.fit_models]
+                    model_weights = [10.0 for model in self.fit_models]
                 else:  # self.normalized_weights_initialization == "normalized"
-                    model_weights = [1. / len(self.fit_models) for model in
-                                     self.fit_models]
+                    model_weights = [
+                        1.0 / len(self.fit_models) for model in self.fit_models
+                    ]
             else:
                 if self.initial_model_weight_ml_estimate:
                     model_weights = self.get_ml_model_weights(x, y)
@@ -156,8 +170,9 @@ class MCMCCurveModelCombination(object):
                     self.fit_models = non_zero_fit_models
                     model_weights = non_zero_weights
                 else:
-                    model_weights = [1. / len(self.fit_models) for model in
-                                     self.fit_models]
+                    model_weights = [
+                        1.0 / len(self.fit_models) for model in self.fit_models
+                    ]
 
         # build joint ml estimated parameter vector
         model_params = []
@@ -168,21 +183,22 @@ class MCMCCurveModelCombination(object):
             all_model_params.extend(params)
 
         y_predicted = self._predict_given_params(
-            x, [np.array([mp]) for mp in model_params],
-            np.array([model_weights]))
+            x, [np.array([mp]) for mp in model_params], np.array([model_weights])
+        )
         sigma = (y - y_predicted).std()
 
         self.ml_params = self._join_theta(all_model_params, sigma, model_weights)
         self.ndim = len(self.ml_params)
         if self.nwalkers < 2 * self.ndim:
             self.nwalkers = 2 * self.ndim
-            logging.warning("increasing number of walkers to 2*ndim=%d" % (
-                self.nwalkers))
+            logging.warning(
+                "increasing number of walkers to 2*ndim=%d" % (self.nwalkers)
+            )
         return True
 
     def get_ml_model_weights(self, x, y_target):
         """
-            Get the ML estimate of the model weights.
+        Get the ML estimate of the model weights.
         """
 
         """
@@ -215,8 +231,10 @@ class MCMCCurveModelCombination(object):
                 #    a[i, j] -= 0.1 #constraint the weights!
         a_rank = np.linalg.matrix_rank(a)
         if a_rank != num_models:
-            print("Rank %d not sufficcient for solving the linear system. %d "
-                  "needed at least." % (a_rank, num_models))
+            print(
+                "Rank %d not sufficcient for solving the linear system. %d "
+                "needed at least." % (a_rank, num_models)
+            )
         try:
             print(np.linalg.lstsq(a, b)[0])
             print(np.linalg.solve(a, b))
@@ -227,7 +245,7 @@ class MCMCCurveModelCombination(object):
             return weights
         # except LinAlgError as e:
         except:
-            return [1. / len(self.fit_models) for model in self.fit_models]
+            return [1.0 / len(self.fit_models) for model in self.fit_models]
 
     # priors
     def _ln_prior(self, theta):
@@ -235,7 +253,7 @@ class MCMCCurveModelCombination(object):
         if len(theta.shape) == 1:
             theta = theta.reshape((1, -1))
 
-        ln = np.array([0.] * len(theta))
+        ln = np.array([0.0] * len(theta))
         model_params, sigma, model_weights = self._split_theta(theta)
 
         # we expect all weights to be positive
@@ -262,8 +280,7 @@ class MCMCCurveModelCombination(object):
         #    np.array([params[j][i]
         #              for j in range(len(params))]).reshape((-1, 1))
         #    for i in range(len(params[0]))]
-        reshaped_params = [params[:, i].reshape((-1, 1))
-                           for i in range(len(params[0]))]
+        reshaped_params = [params[:, i].reshape((-1, 1)) for i in range(len(params[0]))]
 
         # prior_stats = []
         # prior_stats.append((0, np.mean(~np.isfinite(prior))))
@@ -330,15 +347,15 @@ class MCMCCurveModelCombination(object):
             raise NotImplementedError()
             weight = recency_weights(len(y))
             ln_likelihood = (
-                    weight * norm.logpdf(y - y_model, loc=0, scale=sigma)).sum()
+                weight * norm.logpdf(y - y_model, loc=0, scale=sigma)
+            ).sum()
         else:
             # ln_likelihood = [norm.logpdf(y - y_model_, loc=0, scale=sigma_).sum()
             #                 for y_model_, sigma_ in zip(y_model, sigma)]
             # ln_likelihood = np.array(ln_likelihood)
             loc = np.zeros((n_models, 1))
             sigma = sigma.reshape((-1, 1))
-            ln_likelihood2 = norm.logpdf(y - y_model, loc=loc,
-                                         scale=sigma).sum(axis=1)
+            ln_likelihood2 = norm.logpdf(y - y_model, loc=loc, scale=sigma).sum(axis=1)
             # print(ln_likelihood == ln_likelihood2)
             ln_likelihood = ln_likelihood2
 
@@ -347,7 +364,7 @@ class MCMCCurveModelCombination(object):
 
     def _ln_prob(self, theta, x, y):
         """
-            posterior probability
+        posterior probability
         """
         lp = self._ln_prior(theta)
         lp[~np.isfinite(lp)] = -np.inf
@@ -356,10 +373,10 @@ class MCMCCurveModelCombination(object):
 
     def _split_theta(self, theta):
         """
-            theta is structured as follows:
-            for each model i
-                for each model parameter j
-            theta = (theta_ij, sigma, w_i)
+        theta is structured as follows:
+        for each model i
+            for each model parameter j
+        theta = (theta_ij, sigma, w_i)
         """
         # TODO remove this check, theta should always be 2d!
         if len(theta.shape) == 1:
@@ -395,22 +412,23 @@ class MCMCCurveModelCombination(object):
 
         rstate0 = np.random.RandomState(1)
         assert self.ml_params is not None
-        pos = [self.ml_params + self.rand_init_ball * rstate0.randn(self.ndim)
-               for i in range(self.nwalkers)]
+        pos = [
+            self.ml_params + self.rand_init_ball * rstate0.randn(self.ndim)
+            for i in range(self.nwalkers)
+        ]
 
         if self.nthreads <= 1:
-            sampler = emcee.EnsembleSampler(self.nwalkers,
-                                            self.ndim,
-                                            self._ln_prob,
-                                            args=(x, y),
-                                            pool=PseudoPool())
+            sampler = emcee.EnsembleSampler(
+                self.nwalkers, self.ndim, self._ln_prob, args=(x, y), pool=PseudoPool()
+            )
         else:
             sampler = emcee.EnsembleSampler(
                 self.nwalkers,
                 self.ndim,
                 model_ln_prob,
                 args=(self, x, y),
-                threads=self.nthreads)
+                threads=self.nthreads,
+            )
         sampler.run_mcmc(pos, self.nsamples, rstate0=rstate0)
         self.mcmc_chain = sampler.chain
 
@@ -419,28 +437,28 @@ class MCMCCurveModelCombination(object):
 
     def normalize_chain_model_weights(self):
         """
-            In the chain we sample w_1,... w_i however we are interested in the model
-            probabilities p_1,... p_i
+        In the chain we sample w_1,... w_i however we are interested in the model
+        probabilities p_1,... p_i
         """
-        model_weights_chain = self.mcmc_chain[:, :, -len(self.fit_models):]
-        model_probabilities_chain = model_weights_chain / model_weights_chain.sum(
-            axis=2)[:, :, np.newaxis]
+        model_weights_chain = self.mcmc_chain[:, :, -len(self.fit_models) :]
+        model_probabilities_chain = (
+            model_weights_chain / model_weights_chain.sum(axis=2)[:, :, np.newaxis]
+        )
         # replace in chain
-        self.mcmc_chain[:, :,
-        -len(self.fit_models):] = model_probabilities_chain
+        self.mcmc_chain[:, :, -len(self.fit_models) :] = model_probabilities_chain
 
     def get_burned_in_samples(self):
-        samples = self.mcmc_chain[:, self.burn_in:, :].reshape((-1, self.ndim))
+        samples = self.mcmc_chain[:, self.burn_in :, :].reshape((-1, self.ndim))
         return samples
 
     def print_probs(self):
         burned_in_chain = self.get_burned_in_samples()
-        model_probabilities = burned_in_chain[:, -len(self.fit_models):]
+        model_probabilities = burned_in_chain[:, -len(self.fit_models) :]
         print(model_probabilities.mean(axis=0))
 
     def _predict_given_theta(self, x, theta):
         """
-            returns y_predicted, sigma
+        returns y_predicted, sigma
         """
         model_params, sigma, model_weights = self._split_theta(theta)
 
@@ -450,7 +468,7 @@ class MCMCCurveModelCombination(object):
 
     def _predict_given_params(self, x, model_params, model_weights):
         """
-            returns y_predicted
+        returns y_predicted
         """
 
         if self.normalize_weights:
@@ -469,12 +487,12 @@ class MCMCCurveModelCombination(object):
         #     y_predicted = functools.reduce(lambda a, b: a + b, y_model)
         #     vectorized_predictions.append(y_predicted)
 
-        len_x = len(x) if hasattr(x, '__len__') else 1
+        len_x = len(x) if hasattr(x, "__len__") else 1
         test_predictions = np.zeros((len(model_weights), len_x))
-        for model, model_w, params in zip(self.fit_models, model_ws.transpose(),
-                                          model_params):
-            params2 = [params[:, i].reshape((-1, 1))
-                       for i in range(params.shape[1])]
+        for model, model_w, params in zip(
+            self.fit_models, model_ws.transpose(), model_params
+        ):
+            params2 = [params[:, i].reshape((-1, 1)) for i in range(params.shape[1])]
             params = params2
             # params = [np.array([params[j][i] for j in range(len(params))]).reshape((-1, 1))
             #          for i in range(len(params[0]))]
@@ -493,14 +511,13 @@ class MCMCCurveModelCombination(object):
         predictions = []
         for theta in samples[::thin]:
             model_params, sigma, model_weights = self._split_theta(theta)
-            y_predicted = self._predict_given_params(x, model_params,
-                                                     model_weights)
+            y_predicted = self._predict_given_params(x, model_params, model_weights)
             predictions.append(y_predicted)
         return np.asarray(predictions)
 
     def prob_x_greater_than(self, x, y, theta):
         """
-            P(f(x) > y | Data, theta)
+        P(f(x) > y | Data, theta)
         """
         model_params, sigma, model_weights = self._split_theta(theta)
 
@@ -508,13 +525,13 @@ class MCMCCurveModelCombination(object):
 
         cdf = norm.cdf(y, loc=y_predicted, scale=sigma)
 
-        return 1. - cdf
+        return 1.0 - cdf
 
     def posterior_prob_x_greater_than(self, x, y, thin=1):
         """
-            P(f(x) > y | Data)
+        P(f(x) > y | Data)
 
-            Posterior probability that f(x) is greater than y.
+        Posterior probability that f(x) is greater than y.
         """
         assert isinstance(x, float) or isinstance(x, int)
         assert isinstance(y, float) or isinstance(y, int)

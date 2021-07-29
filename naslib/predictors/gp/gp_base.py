@@ -8,11 +8,15 @@ from naslib.predictors.predictor import Predictor
 
 
 class BaseGPModel(Predictor):
-
-    def __init__(self, encoding_type='adjacency_one_hot',
-                 ss_type='nasbench201', kernel_type=None,
-                 optimize_gp_hyper=False, num_steps=200, 
-                 zc=False):
+    def __init__(
+        self,
+        encoding_type="adjacency_one_hot",
+        ss_type="nasbench201",
+        kernel_type=None,
+        optimize_gp_hyper=False,
+        num_steps=200,
+        zc=False,
+    ):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
         self.ss_type = ss_type
@@ -25,8 +29,10 @@ class BaseGPModel(Predictor):
         if labels is None:
             return torch.tensor(encodings).double()
         else:
-            return (torch.tensor(encodings).double(),
-                    torch.tensor((labels-self.mean)/self.std).double())
+            return (
+                torch.tensor(encodings).double(),
+                torch.tensor((labels - self.mean) / self.std).double(),
+            )
 
     def get_model(self, train_data, **kwargs):
         return NotImplementedError
@@ -52,12 +58,16 @@ class BaseGPModel(Predictor):
         # normalize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
-
-        xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                  ss_type=self.ss_type) for arch in xtrain])
+        if self.encoding_type is not None:
+            xtrain = np.array(
+                [
+                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    for arch in xtrain
+                ]
+            )
         if self.zc:
             mean, std = -10000000.0, 150000000.0
-            xtrain = [[*x, (train_info[i]-mean)/std] for i, x in enumerate(xtrain)]
+            xtrain = [[*x, (train_info[i] - mean) / std] for i, x in enumerate(xtrain)]
         xtrain = np.array(xtrain)
         ytrain = np.array(ytrain)
 
@@ -67,28 +77,31 @@ class BaseGPModel(Predictor):
         # instantiate model and fit to the training data
         self.model = self.get_model(train_data, **kwargs)
         self.train(train_data, **kwargs)
-        print('Finished fitting GP')
+        print("Finished fitting GP")
 
         if self.optimize_gp_hyper:
             losses = self.optimize_GP_hyperparameters(self.model)
-            print('Finished tuning GP hyperparameters')
+            print("Finished tuning GP hyperparameters")
 
         # predict
         train_pred = np.squeeze(self.predict(train_data[0]))
-        train_error = np.mean(abs(train_pred-ytrain))
+        train_error = np.mean(abs(train_pred - ytrain))
 
         return train_error
 
     def query(self, xtest, info=None):
-        xtest = np.array([encode(arch, encoding_type=self.encoding_type,
-                                 ss_type=self.ss_type) for arch in xtest])
-        
+        if self.encoding_type is not None:
+            xtest = np.array(
+                [
+                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    for arch in xtest
+                ]
+            )
+
         if self.zc:
             mean, std = -10000000.0, 150000000.0
-            xtest = [[*x, (info[i]-mean)/std] for i, x in enumerate(xtest)]
+            xtest = [[*x, (info[i] - mean) / std] for i, x in enumerate(xtest)]
         xtest = np.array(xtest)
-        
+
         test_data = self.get_dataset(xtest)
         return np.squeeze(self.predict(test_data)) * self.std + self.mean
-
-

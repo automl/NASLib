@@ -1,13 +1,17 @@
 # Allow coverage to decrease by 0.05%.
 coverage:
+  range: 10..95
+  round: nearest
+  precision: 2
   status:
     project:
       default:
         threshold: 0.05%
 
 # Don't post a comment on pull requests.
-comment: off
+comment: false
 
 codecov:
   branch: Develop
   require_ci_to_pass: false
+

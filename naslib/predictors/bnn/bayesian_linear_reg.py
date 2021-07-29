@@ -7,14 +7,13 @@ from naslib.predictors.bnn.bnn_base import BNN
 
 
 class BayesianLinearRegression(BNN):
-
     def get_model(self, **kwargs):
         predictor = BLR(
             alpha=1.0,
             beta=100,
             basis_func=linear_basis_func,
             prior=None,
-            do_mcmc=False, # turn this off for better sample efficiency
+            do_mcmc=False,  # turn this off for better sample efficiency
             n_hypers=20,
             chain_length=100,
             burnin_steps=100,
@@ -23,4 +22,3 @@ class BayesianLinearRegression(BNN):
 
     def train_model(self, xtrain, ytrain):
         self.model.train(xtrain, ytrain, do_optimize=True)
-

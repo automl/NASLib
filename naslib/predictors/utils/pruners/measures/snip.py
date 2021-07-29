@@ -26,13 +26,22 @@ from ..p_utils import get_layer_metric_array
 
 
 def snip_forward_conv2d(self, x):
-        return F.conv2d(x, self.weight * self.weight_mask, self.bias,
-                        self.stride, self.padding, self.dilation, self.groups)
+    return F.conv2d(
+        x,
+        self.weight * self.weight_mask,
+        self.bias,
+        self.stride,
+        self.padding,
+        self.dilation,
+        self.groups,
+    )
+
 
 def snip_forward_linear(self, x):
-        return F.linear(x, self.weight * self.weight_mask, self.bias)
+    return F.linear(x, self.weight * self.weight_mask, self.bias)
 
-@measure('snip', bn=True, mode='param')
+
+@measure("snip", bn=True, mode="param")
 def compute_snip_per_weight(net, inputs, targets, mode, loss_fn, split_data=1):
     for layer in net.modules():
         if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear):
@@ -50,9 +59,9 @@ def compute_snip_per_weight(net, inputs, targets, mode, loss_fn, split_data=1):
     net.zero_grad()
     N = inputs.shape[0]
     for sp in range(split_data):
-        st=sp*N//split_data
-        en=(sp+1)*N//split_data
-    
+        st = sp * N // split_data
+        en = (sp + 1) * N // split_data
+
         outputs = net.forward(inputs[st:en])
         loss = loss_fn(outputs, targets[st:en])
         loss.backward()
@@ -63,7 +72,7 @@ def compute_snip_per_weight(net, inputs, targets, mode, loss_fn, split_data=1):
             return torch.abs(layer.weight_mask.grad)
         else:
             return torch.zeros_like(layer.weight)
-    
+
     grads_abs = get_layer_metric_array(net, snip, mode)
 
     return grads_abs

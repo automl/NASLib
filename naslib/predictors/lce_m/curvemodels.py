@@ -14,26 +14,24 @@ def recency_weights(num):
     if num == 1:
         return np.ones(1)
     else:
-        recency_weights = [10 ** (1. / num)] * num
+        recency_weights = [10 ** (1.0 / num)] * num
         recency_weights = recency_weights ** (np.arange(0, num))
         return recency_weights
 
 
 class CurveModel(object):
-    def __init__(self,
-                 function,
-                 function_der=None,
-                 min_vals={},
-                 max_vals={},
-                 default_vals={}):
+    def __init__(
+        self, function, function_der=None, min_vals={}, max_vals={}, default_vals={}
+    ):
         """
-            function: the function to be fit
-            function_der: derivative of that function
+        function: the function to be fit
+        function_der: derivative of that function
         """
         self.function = function
         if function_der != None:
             raise NotImplementedError(
-                "function derivate is not implemented yet...sorry!")
+                "function derivate is not implemented yet...sorry!"
+            )
         self.function_der = function_der
         assert isinstance(min_vals, dict)
         self.min_vals = min_vals.copy()
@@ -45,16 +43,19 @@ class CurveModel(object):
             if default_param_name == "sigma":
                 continue
             msg = "function %s doesn't take default param %s" % (
-                function.__name__, default_param_name)
+                function.__name__,
+                default_param_name,
+            )
             assert default_param_name in function_args, msg
-        self.function_params = [param for param in function_args if
-                                param != 'x']
+        self.function_params = [param for param in function_args if param != "x"]
         # set default values:
         self.default_vals = default_vals.copy()
         for param_name in self.function_params:
             if param_name not in default_vals:
-                logging.info("setting function parameter %s to default of 1.0 for "
-                      "function %s" % (param_name, self.function.__name__))
+                logging.info(
+                    "setting function parameter %s to default of 1.0 for "
+                    "function %s" % (param_name, self.function.__name__)
+                )
                 self.default_vals[param_name] = 1.0
         self.all_param_names = [param for param in self.function_params]
         self.all_param_names.append("sigma")
@@ -63,19 +64,20 @@ class CurveModel(object):
 
         # uniform noise prior over interval:
         if "sigma" not in self.min_vals:
-            self.min_vals["sigma"] = 0.
+            self.min_vals["sigma"] = 0.0
         if "sigma" not in self.max_vals:
             self.max_vals["sigma"] = 1.0
         if "sigma" not in self.default_vals:
             self.default_vals["sigma"] = 0.05
 
     def default_function_param_array(self):
-        return np.asarray([self.default_vals[param_name] for param_name in
-                           self.function_params])
+        return np.asarray(
+            [self.default_vals[param_name] for param_name in self.function_params]
+        )
 
     def are_params_in_bounds(self, theta):
         """
-            Are the parameters in their respective bounds?
+        Are the parameters in their respective bounds?
         """
         in_bounds = True
 
@@ -89,7 +91,7 @@ class CurveModel(object):
         return in_bounds
 
     def split_theta(self, theta):
-        """Split theta into the function parameters (dict) and sigma. """
+        """Split theta into the function parameters (dict) and sigma."""
         params = {}
         sigma = None
         for param_name, param_value in zip(self.all_param_names, theta):
@@ -100,7 +102,7 @@ class CurveModel(object):
         return params, sigma
 
     def split_theta_to_array(self, theta):
-        """Split theta into the function parameters (array) and sigma. """
+        """Split theta into the function parameters (array) and sigma."""
         params = theta[:-1]
         sigma = theta[-1]
         return params, sigma
@@ -113,7 +115,7 @@ class CurveModel(object):
 
     def predict_given_theta(self, x, theta):
         """
-            Make predictions given a single theta
+        Make predictions given a single theta
         """
         params, sigma = self.split_theta(theta)
         predictive_mu = self.function(x, **params)
@@ -121,8 +123,8 @@ class CurveModel(object):
 
     def likelihood(self, x, y):
         """
-            for each y_i in y:
-                p(y_i|x, model)
+        for each y_i in y:
+            p(y_i|x, model)
         """
         params, sigma = self.split_theta(self.ml_params)
         return norm.pdf(y - self.function(x, **params), loc=0, scale=sigma)
@@ -130,7 +132,7 @@ class CurveModel(object):
 
 class MLCurveModel(CurveModel):
     """
-        ML fit of a curve.
+    ML fit of a curve.
     """
 
     def __init__(self, recency_weighting=True, **kwargs):
@@ -142,7 +144,7 @@ class MLCurveModel(CurveModel):
 
     def fit(self, x, y, weights=None, start_from_default=True):
         """
-            weights: None or weight for each sample.
+        weights: None or weight for each sample.
         """
         return self.fit_ml(x, y, weights, start_from_default)
 
@@ -154,12 +156,12 @@ class MLCurveModel(CurveModel):
 
     def fit_ml(self, x, y, weights, start_from_default):
         """
-            non-linear least-squares fit of the data.
+        non-linear least-squares fit of the data.
 
-            First tries Levenberg-Marquardt and falls back
-            to BFGS in case that fails.
+        First tries Levenberg-Marquardt and falls back
+        to BFGS in case that fails.
 
-            Start from default values or from previous ml_params?
+        Start from default values or from previous ml_params?
         """
         successful = self.fit_leastsq(x, y, weights, start_from_default)
         if not successful:
@@ -170,23 +172,27 @@ class MLCurveModel(CurveModel):
 
     def ml_sigma(self, x, y, popt, weights):
         """
-            Given the ML parameters (popt) get the ML estimate of sigma.
+        Given the ML parameters (popt) get the ML estimate of sigma.
         """
         if weights is None:
             if self.recency_weighting:
-                variance = np.average((y - self.function(x, *popt)) ** 2,
-                                      weights=recency_weights(len(y)))
+                variance = np.average(
+                    (y - self.function(x, *popt)) ** 2, weights=recency_weights(len(y))
+                )
                 sigma = np.sqrt(variance)
             else:
                 sigma = (y - self.function(x, *popt)).std()
         else:
             if self.recency_weighting:
-                variance = np.average((y - self.function(x, *popt)) ** 2,
-                                      weights=recency_weights(len(y)) * weights)
+                variance = np.average(
+                    (y - self.function(x, *popt)) ** 2,
+                    weights=recency_weights(len(y)) * weights,
+                )
                 sigma = np.sqrt(variance)
             else:
-                variance = np.average((y - self.function(x, *popt)) ** 2,
-                                      weights=weights)
+                variance = np.average(
+                    (y - self.function(x, *popt)) ** 2, weights=weights
+                )
                 sigma = np.sqrt(variance)
         return sigma
 
@@ -195,28 +201,28 @@ class MLCurveModel(CurveModel):
             if weights is None:
                 if self.recency_weighting:
                     residuals = lambda p: np.sqrt(recency_weights(len(y))) * (
-                            self.function(x, *p) - y)
+                        self.function(x, *p) - y
+                    )
                 else:
                     residuals = lambda p: self.function(x, *p) - y
             else:
                 # the return value of this function will be squared, hence
                 # we need to take the sqrt of the weights here
                 if self.recency_weighting:
-                    residuals = lambda p: np.sqrt(
-                        recency_weights(len(y)) * weights) * (
-                                                  self.function(x, *p) - y)
+                    residuals = lambda p: np.sqrt(recency_weights(len(y)) * weights) * (
+                        self.function(x, *p) - y
+                    )
                 else:
-                    residuals = lambda p: np.sqrt(weights) * (
-                            self.function(x, *p) - y)
+                    residuals = lambda p: np.sqrt(weights) * (self.function(x, *p) - y)
 
             if start_from_default:
                 initial_params = self.default_function_param_array()
             else:
                 initial_params, _ = self.split_theta_to_array(self.ml_params)
 
-            popt, cov_popt, info, msg, status = leastsq(residuals,
-                                                        x0=initial_params,
-                                                        full_output=True)
+            popt, cov_popt, info, msg, status = leastsq(
+                residuals, x0=initial_params, full_output=True
+            )
             # Dfun=,
             # col_deriv=True)
 
@@ -234,13 +240,14 @@ class MLCurveModel(CurveModel):
                 sigma = self.ml_sigma(x, y, popt, weights)
                 self.ml_params = np.append(popt, [sigma])
 
-                logging.info(
-                    "leastsq successful for model %s" % self.function.__name__)
+                logging.info("leastsq successful for model %s" % self.function.__name__)
 
                 return True
             else:
-                logging.warn("leastsq NOT successful for model %s, msg: %s" % (
-                    self.function.__name__, msg))
+                logging.warn(
+                    "leastsq NOT successful for model %s, msg: %s"
+                    % (self.function.__name__, msg)
+                )
                 logging.warn("best parameters found: " + str(popt))
                 return False
         except Exception as e:
@@ -251,26 +258,32 @@ class MLCurveModel(CurveModel):
 
     def fit_bfgs(self, x, y, weights, start_from_default):
         try:
+
             def objective(params):
                 if weights is None:
                     if self.recency_weighting:
-                        return np.sum(recency_weights(len(y)) * (
-                                self.function(x, *params) - y) ** 2)
+                        return np.sum(
+                            recency_weights(len(y))
+                            * (self.function(x, *params) - y) ** 2
+                        )
                     else:
                         return np.sum((self.function(x, *params) - y) ** 2)
                 else:
                     if self.recency_weighting:
-                        return np.sum(weights * recency_weights(len(y)) * (
-                                self.function(x, *params) - y) ** 2)
-                    else:
                         return np.sum(
-                            weights * (self.function(x, *params) - y) ** 2)
+                            weights
+                            * recency_weights(len(y))
+                            * (self.function(x, *params) - y) ** 2
+                        )
+                    else:
+                        return np.sum(weights * (self.function(x, *params) - y) ** 2)
 
             bounds = []
             for param_name in self.function_params:
                 if param_name in self.min_vals and param_name in self.max_vals:
                     bounds.append(
-                        (self.min_vals[param_name], self.max_vals[param_name]))
+                        (self.min_vals[param_name], self.max_vals[param_name])
+                    )
                 elif param_name in self.min_vals:
                     bounds.append((self.min_vals[param_name], None))
                 elif param_name in self.max_vals:
@@ -283,14 +296,14 @@ class MLCurveModel(CurveModel):
             else:
                 initial_params, _ = self.split_theta_to_array(self.ml_params)
 
-            popt, fval, info = fmin_l_bfgs_b(objective,
-                                             x0=initial_params,
-                                             bounds=bounds,
-                                             approx_grad=True)
+            popt, fval, info = fmin_l_bfgs_b(
+                objective, x0=initial_params, bounds=bounds, approx_grad=True
+            )
             if info["warnflag"] != 0:
                 logging.warn(
-                    "BFGS not converged! (warnflag %d) for model %s" % (
-                        info["warnflag"], self.name))
+                    "BFGS not converged! (warnflag %d) for model %s"
+                    % (info["warnflag"], self.name)
+                )
                 logging.warn(info)
                 return False
 
@@ -298,7 +311,8 @@ class MLCurveModel(CurveModel):
                 return False
             if any(np.isnan(popt)):
                 logging.info(
-                    "bfgs NOT successful for model %s, parameter NaN" % self.name)
+                    "bfgs NOT successful for model %s, parameter NaN" % self.name
+                )
                 return False
             sigma = self.ml_sigma(x, y, popt, weights)
             self.ml_params = np.append(popt, [sigma])
@@ -309,8 +323,8 @@ class MLCurveModel(CurveModel):
 
     def aic(self, x, y):
         """
-            Akaike information criterion
-            http://en.wikipedia.org/wiki/Akaike_information_criterion
+        Akaike information criterion
+        http://en.wikipedia.org/wiki/Akaike_information_criterion
         """
         params, sigma = self.split_theta_to_array(self.ml_params)
         y_model = self.function(x, *params)

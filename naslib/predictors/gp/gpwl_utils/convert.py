@@ -9,14 +9,15 @@ import copy
 
 def convert_n101_arch_to_graph(arch, prune_arch=True):
     from naslib.predictors.utils.encodings_nb101 import OPS_INCLUSIVE
+
     arch = arch.get_spec()
-    matrix, ops = arch['matrix'], arch['ops']
+    matrix, ops = arch["matrix"], arch["ops"]
     if prune_arch:
         matrix, ops = prune(matrix, ops)
     ops = [OPS_INCLUSIVE.index(op) for op in ops]
     g_nx = nx.from_numpy_array(matrix, create_using=nx.DiGraph)
     for i, n in enumerate(ops):
-        g_nx.nodes[i]['op_name'] = n
+        g_nx.nodes[i]["op_name"] = n
     return g_nx
 
 
@@ -57,7 +58,8 @@ def prune(original_matrix, ops):
     # Any vertex that isn't connected to both input and output is extraneous to
     # the computation graph.
     extraneous = set(range(num_vertices)).difference(
-        visited_from_input.intersection(visited_from_output))
+        visited_from_input.intersection(visited_from_output)
+    )
 
     # If the non-extraneous graph is less than 2 vertices, the input is not
     # connected to the output and the spec is invalid.
@@ -78,36 +80,60 @@ def prune(original_matrix, ops):
 def convert_n201_arch_to_graph(arch_str):
     """Convert a nas-bench-201 string to a compatible networkx graph"""
     from naslib.search_spaces.nasbench201.conversions import convert_naslib_to_str
-    OPS = ['input', 'avg_pool_3x3', 'nor_conv_1x1', 'nor_conv_3x3', 'none', 'skip_connect', 'output']
+
+    OPS = [
+        "input",
+        "avg_pool_3x3",
+        "nor_conv_1x1",
+        "nor_conv_3x3",
+        "none",
+        "skip_connect",
+        "output",
+    ]
 
     # split the string into lists
     arch_str = convert_naslib_to_str(arch_str)
-    arch_str_list = arch_str.split('|')
+    arch_str_list = arch_str.split("|")
     ops = []
     for str_i in arch_str_list:
-        if '~' in str_i:
+        if "~" in str_i:
             ops.append(str_i[:-2])
 
     G = nx.DiGraph()
-    edge_list = [(0, 1), (0, 2), (0, 4), (1, 3), (1, 5), (2, 6), (3, 6), (4, 7), (5, 7), (6, 7)]
+    edge_list = [
+        (0, 1),
+        (0, 2),
+        (0, 4),
+        (1, 3),
+        (1, 5),
+        (2, 6),
+        (3, 6),
+        (4, 7),
+        (5, 7),
+        (6, 7),
+    ]
     G.add_edges_from(edge_list)
 
     # assign node attributes and collate the information for nodes to be removed
     # (i.e. nodes with 'skip_connect' or 'none' label)
-    node_labelling = ['input'] + ops + ['output']
+    node_labelling = ["input"] + ops + ["output"]
     nodes_to_remove_list = []
     remove_nodes_list = []
     edges_to_add_list = []
     for i, n in enumerate(node_labelling):
-        G.nodes[i]['op_name'] = n
-        if n == 'none' or n == 'skip_connect':
+        G.nodes[i]["op_name"] = n
+        if n == "none" or n == "skip_connect":
             input_nodes = [edge[0] for edge in G.in_edges(i)]
             output_nodes = [edge[1] for edge in G.out_edges(i)]
-            nodes_to_remove_info = {'id': i, 'input_nodes': input_nodes, 'output_nodes': output_nodes}
+            nodes_to_remove_info = {
+                "id": i,
+                "input_nodes": input_nodes,
+                "output_nodes": output_nodes,
+            }
             nodes_to_remove_list.append(nodes_to_remove_info)
             remove_nodes_list.append(i)
 
-            if n == 'skip_connect':
+            if n == "skip_connect":
                 for n_i in input_nodes:
                     edges_to_add = [(n_i, n_o) for n_o in output_nodes]
                     edges_to_add_list += edges_to_add
@@ -133,8 +159,14 @@ def convert_n201_arch_to_graph(arch_str):
     return G
 
 
-def convert_darts_arch_to_graph(genotype, return_reduction=True, ):
-    from naslib.search_spaces.darts.conversions import convert_naslib_to_genotype, Genotype
+def convert_darts_arch_to_graph(
+    genotype,
+    return_reduction=True,
+):
+    from naslib.search_spaces.darts.conversions import (
+        convert_naslib_to_genotype,
+        Genotype,
+    )
 
     genotype = convert_naslib_to_genotype(genotype)
 
@@ -143,13 +175,13 @@ def convert_darts_arch_to_graph(genotype, return_reduction=True, ):
         n_nodes = (len(cell) // 2) * 3 + 3
         G.add_nodes_from(range(n_nodes), op_name=None)
         n_ops = len(cell) // 2
-        G.nodes[0]['op_name'] = 'input1'
-        G.nodes[1]['op_name'] = 'input2'
-        G.nodes[n_nodes - 1]['op_name'] = 'output'
+        G.nodes[0]["op_name"] = "input1"
+        G.nodes[1]["op_name"] = "input2"
+        G.nodes[n_nodes - 1]["op_name"] = "output"
         for i in range(n_ops):
-            G.nodes[i * 3 + 2]['op_name'] = cell[i * 2][0]
-            G.nodes[i * 3 + 3]['op_name'] = cell[i * 2 + 1][0]
-            G.nodes[i * 3 + 4]['op_name'] = 'add'
+            G.nodes[i * 3 + 2]["op_name"] = cell[i * 2][0]
+            G.nodes[i * 3 + 3]["op_name"] = cell[i * 2 + 1][0]
+            G.nodes[i * 3 + 4]["op_name"] = "add"
             G.add_edge(i * 3 + 2, i * 3 + 4)
             G.add_edge(i * 3 + 3, i * 3 + 4)
 
@@ -177,13 +209,15 @@ def convert_darts_arch_to_graph(genotype, return_reduction=True, ):
                 G.nodes[j]
             except KeyError:
                 continue
-            if G.nodes[j]['op_name'] == 'skip_connect':
+            if G.nodes[j]["op_name"] == "skip_connect":
                 in_edges = list(G.in_edges(j))
-                out_edge = list(G.out_edges(j))[0][1]  # There should be only one out edge really...
+                out_edge = list(G.out_edges(j))[0][
+                    1
+                ]  # There should be only one out edge really...
                 for in_edge in in_edges:
                     G.add_edge(in_edge[0], out_edge)
                 G.remove_node(j)
-            elif G.nodes[j]['op_name'] == 'none':
+            elif G.nodes[j]["op_name"] == "none":
                 G.remove_node(j)
         for j in range(n_nodes):
             try:
@@ -191,15 +225,17 @@ def convert_darts_arch_to_graph(genotype, return_reduction=True, ):
             except KeyError:
                 continue
 
-            if G.nodes[j]['op_name'] not in ['input1', 'input2']:
+            if G.nodes[j]["op_name"] not in ["input1", "input2"]:
                 # excepting the input nodes, if the node has no incoming edge, remove it
                 if len(list(G.in_edges(j))) == 0:
                     G.remove_node(j)
-            elif G.nodes[j]['op_name'] != 'output':
+            elif G.nodes[j]["op_name"] != "output":
                 # excepting the output nodes, if the node has no outgoing edge, remove it
                 if len(list(G.out_edges(j))) == 0:
                     G.remove_node(j)
-            elif G.nodes[j]['op_name'] == 'add':  # If add has one incoming edge only, remove the node
+            elif (
+                G.nodes[j]["op_name"] == "add"
+            ):  # If add has one incoming edge only, remove the node
                 in_edges = list(G.in_edges(j))
                 out_edges = list(G.out_edges(j))
                 if len(in_edges) == 1 and len(out_edges) == 1:
@@ -215,7 +251,7 @@ def convert_darts_arch_to_graph(genotype, return_reduction=True, ):
         normal=genotype.normal,
         normal_concat=[2, 3, 4, 5],
         reduce=genotype.reduce,
-        reduce_concat=[2, 3, 4, 5]
+        reduce_concat=[2, 3, 4, 5],
     )
 
     G_normal = _cell2graph(genotype.normal, genotype.normal_concat)
