@@ -3,15 +3,10 @@ import numpy as np
 import torch
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.search_spaces import NasBench201SearchSpace
-from naslib.predictors import BayesianLinearRegression, BOHAMIANN, BonasPredictor, \
-    DNGOPredictor, EarlyStopping, Ensemble, GCNPredictor, GPPredictor, \
-    LCEPredictor, LCEMPredictor, LGBoost, MLPPredictor, NGBoost, OmniNGBPredictor, \
-    OmniSemiNASPredictor, RandomForestPredictor, SVR_Estimator, SemiNASPredictor, \
-    SoLosspredictor, SparseGPPredictor, VarSparseGPPredictor, XGBoost, ZeroCostV1, \
-    ZeroCostV2, GPWLPredictor
+from naslib.predictors import BayesianLinearRegression, BOHAMIANN, GPPredictor, RandomForestPredictor, LGBoost, \
+    XGBoost
 from naslib.utils import get_dataset_api, utils
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 x_data = np.load('assets/nb201_test_set_x.npy', allow_pickle=True)
 y_data = np.load('assets/nb201_test_set_y.npy', allow_pickle=True)
 info_data = np.load('assets/nb201_test_set_info.npy', allow_pickle=True)
@@ -42,19 +37,19 @@ class PredictorsTest(unittest.TestCase):
         self.assertEqual(self.config.seed, 1000)
         self.assertEqual(self.config.uniform_random, 1)
 
-    def test_MLPPredictor(self):
-        predictor = MLPPredictor(encoding_type=None)
+    def test_RFPredictor(self):
+        predictor = RandomForestPredictor(encoding_type=None)
         predictor_evaluator = PredictorEvaluator(predictor, config=self.config)
         predictor_evaluator.adapt_search_space(self.search_space, load_labeled=self.load_labeled,
                                                dataset_api=self.dataset_api)
         predictor_evaluator.single_evaluate(train_data=train_data, test_data=test_data,
                                             fidelity=self.config.fidelity_single)
 
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], -0.9999999999999, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 12.151526794433, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 14.164686342679, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.7905004356299, places=3)
-        self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], -1.0, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], 0.4666666666666, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 4.7984154693486, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 5.400776348052, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.7369233227443, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.5428571428571, places=3)
 
     def test_LGBPredictor(self):
         predictor = LGBoost(encoding_type=None)
@@ -94,6 +89,19 @@ class PredictorsTest(unittest.TestCase):
         self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 6.423134627655, places=3)
         self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.39805559977643, places=3)
         self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.6, places=3)
+
+    def test_XGBPredictor(self):
+        predictor = XGBoost(encoding_type=None)
+        predictor_evaluator = PredictorEvaluator(predictor, config=self.config)
+        predictor_evaluator.adapt_search_space(self.search_space, load_labeled=self.load_labeled,
+                                               dataset_api=self.dataset_api)
+        predictor_evaluator.single_evaluate(train_data=train_data, test_data=test_data,
+                                            fidelity=self.config.fidelity_single)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], 0.6, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 3.68074010213, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 4.7317729522208, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.6612804210411, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.7142857142857, places=3)
 
     def test_GPPredictor(self):
         predictor = GPPredictor(encoding_type=None)
