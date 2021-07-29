@@ -187,8 +187,6 @@ class DartsSearchSpace(Graph):
         )
 
         self._set_cell_ops(reduction_cell_indices)
-        from IPython import embed
-        embed()
 
     def _set_makrograph_ops(
         self,
