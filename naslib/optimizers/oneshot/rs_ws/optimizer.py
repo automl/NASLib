@@ -19,10 +19,10 @@ class RandomNASOptimizer(OneShotNASOptimizer):
         Function to add the architectural weights to the edges.
         """
         len_primitives = len(edge.data.op)
-        alpha = torch.nn.Parameter(torch.zeros(size=[len_primitives],
-                                               requires_grad=False))
-        edge.data.set('alpha', alpha, shared=True)
-
+        alpha = torch.nn.Parameter(
+            torch.zeros(size=[len_primitives], requires_grad=False)
+        )
+        edge.data.set("alpha", alpha, shared=True)
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
@@ -47,17 +47,13 @@ class RandomNASOptimizer(OneShotNASOptimizer):
 
         return logits_train, logits_val, train_loss, val_loss
 
-
     def sample_random_and_update_alphas(self):
         tmp_graph = self.search_space.clone()
         tmp_graph.sample_random_architecture()
 
-        if self.graph.get_type() == 'nasbench201':
+        if self.graph.get_type() == "nasbench201":
             sample = tmp_graph.get_op_indices()
-        elif self.graph.get_type() == 'darts':
+        elif self.graph.get_type() == "darts":
             sample = convert_compact_to_genotype(tmp_graph.get_compact())
 
         self.set_alphas_from_path(sample)
-
-
-

@@ -30,6 +30,7 @@ def measure(name, bn=True, copy_net=True, force_clean=True, **impl_args):
             if copy_net and force_clean:
                 import gc
                 import torch
+
                 del net
                 torch.cuda.empty_cache()
                 gc.collect()
@@ -37,10 +38,11 @@ def measure(name, bn=True, copy_net=True, force_clean=True, **impl_args):
 
         global _measure_impls
         if name in _measure_impls:
-            raise KeyError(f'Duplicated measure! {name}')
+            raise KeyError(f"Duplicated measure! {name}")
         available_measures.append(name)
         _measure_impls[name] = measure_impl
         return func
+
     return make_impl
 
 

@@ -1,6 +1,5 @@
-
 seed: 0
-optimizer: bp
+optimizer: re
 dataset: cifar10
 out_dir: run
 
@@ -9,16 +8,9 @@ search:
   epochs: 150
   fidelity: 200
 
-  # GDAS
-  tau_max: 10
-  tau_min: 0.1
-
   # RE
   sample_size: 10
   population_size: 30
-  
-  # LS
-  num_init: 10
   
   # BANANAS
   k: 10

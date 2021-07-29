@@ -8,7 +8,6 @@ class MetaOptimizer(object, metaclass=ABCMeta):
 
     using_step_function = True
 
-
     def step(self, data_train, data_val):
         """
         Run one optimizer step with the batch of training and test data.
@@ -26,7 +25,6 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         if self.using_step_function:
             raise NotImplementedError()
 
-
     def train_statistics(self):
         """
         If the step function is not used we need the statistics from
@@ -35,13 +33,11 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         if not self.using_step_function:
             raise NotImplementedError()
 
-
     def test_statistics(self):
         """
         Return anytime test statistics if provided by the optimizer
         """
         pass
-
 
     @abstractmethod
     def adapt_search_space(self, search_space, scope=None):
@@ -62,7 +58,6 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
-
     def new_epoch(self, epoch):
         """
         Function called at the beginning of each new search epoch. To be
@@ -73,7 +68,6 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         """
         pass
 
-
     def before_training(self):
         """
         Function called right before training starts. To be used as hook
@@ -81,14 +75,12 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         """
         pass
 
-
     def after_training(self):
         """
         Function called right after training finished. To be used as hook
         for the optimizer.
         """
         pass
-
 
     @abstractmethod
     def get_final_architecture(self):
@@ -99,7 +91,6 @@ class MetaOptimizer(object, metaclass=ABCMeta):
             Graph: The final architecture.
         """
         raise NotImplementedError()
-
 
     @abstractmethod
     def get_op_optimizer(self):
@@ -119,7 +110,6 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         This is only used for logging purposes.
         """
         return 0
-
 
     def get_checkpointables(self):
         """

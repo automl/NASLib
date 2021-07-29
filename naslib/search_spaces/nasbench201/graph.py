@@ -9,15 +9,18 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib, \
-convert_naslib_to_op_indices, convert_naslib_to_str
+from naslib.search_spaces.nasbench201.conversions import (
+    convert_op_indices_to_naslib,
+    convert_naslib_to_op_indices,
+    convert_naslib_to_str,
+)
 
 from naslib.utils.utils import get_project_root
 
 from .primitives import ResNetBasicblock
 
 
-OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1', 'AvgPool1x1']
+OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
 
 
 class NasBench201SearchSpace(Graph):
@@ -34,19 +37,18 @@ class NasBench201SearchSpace(Graph):
 
     QUERYABLE = True
 
-
     def __init__(self):
         super().__init__()
-        self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
+        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
         self.op_indices = None
 
         self.max_epoch = 199
-        self.space_name = 'nasbench201'
+        self.space_name = "nasbench201"
         #
         # Cell definition
         #
         cell = Graph()
-        cell.name = "cell"    # Use the same name for all cells with shared attributes
+        cell.name = "cell"  # Use the same name for all cells with shared attributes
 
         # Input node
         cell.add_node(1)
@@ -76,8 +78,8 @@ class NasBench201SearchSpace(Graph):
         # 19-20:             post-processing
 
         total_num_nodes = 20
-        self.add_nodes_from(range(1, total_num_nodes+1))
-        self.add_edges_from([(i, i+1) for i in range(1, total_num_nodes)])
+        self.add_nodes_from(range(1, total_num_nodes + 1))
+        self.add_edges_from([(i, i + 1) for i in range(1, total_num_nodes)])
 
         channels = [16, 32, 64]
 
@@ -86,38 +88,53 @@ class NasBench201SearchSpace(Graph):
         #
 
         # preprocessing
-        self.edges[1, 2].set('op', ops.Stem(channels[0]))
-        
+        self.edges[1, 2].set("op", ops.Stem(channels[0]))
+
         # stage 1
         for i in range(2, 7):
-            self.edges[i, i+1].set('op', cell.copy().set_scope('stage_1'))
-        
+            self.edges[i, i + 1].set("op", cell.copy().set_scope("stage_1"))
+
         # stage 2
-        self.edges[7, 8].set('op', ResNetBasicblock(C_in=channels[0], C_out=channels[1], stride=2))
+        self.edges[7, 8].set(
+            "op", ResNetBasicblock(C_in=channels[0], C_out=channels[1], stride=2)
+        )
         for i in range(8, 13):
-            self.edges[i, i+1].set('op', cell.copy().set_scope('stage_2'))
+            self.edges[i, i + 1].set("op", cell.copy().set_scope("stage_2"))
 
         # stage 3
-        self.edges[13, 14].set('op', ResNetBasicblock(C_in=channels[1], C_out=channels[2], stride=2))
+        self.edges[13, 14].set(
+            "op", ResNetBasicblock(C_in=channels[1], C_out=channels[2], stride=2)
+        )
         for i in range(14, 19):
-            self.edges[i, i+1].set('op', cell.copy().set_scope('stage_3'))
+            self.edges[i, i + 1].set("op", cell.copy().set_scope("stage_3"))
 
         # post-processing
-        self.edges[19, 20].set('op', ops.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(channels[-1], self.num_classes)
-        ))
-        
+        self.edges[19, 20].set(
+            "op",
+            ops.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(channels[-1], self.num_classes),
+            ),
+        )
+
         # set the ops at the cells (channel dependent)
         for c, scope in zip(channels, self.OPTIMIZER_SCOPE):
             self.update_edges(
                 update_func=lambda edge: _set_cell_ops(edge, C=c),
                 scope=scope,
-                private_edge_data=True
+                private_edge_data=True,
             )
-        
-    def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
+
+    def query(
+        self,
+        metric=None,
+        dataset=None,
+        path=None,
+        epoch=-1,
+        full_lc=False,
+        dataset_api=None,
+    ):
         """
         Query results from nasbench 201
         """
@@ -125,48 +142,52 @@ class NasBench201SearchSpace(Graph):
         if metric == Metric.ALL:
             raise NotImplementedError()
         if metric != Metric.RAW and metric != Metric.ALL:
-            assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
+            assert dataset in [
+                "cifar10",
+                "cifar100",
+                "ImageNet16-120",
+            ], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
-            raise NotImplementedError('Must pass in dataset_api to query nasbench201')
+            raise NotImplementedError("Must pass in dataset_api to query nasbench201")
 
         metric_to_nb201 = {
-            Metric.TRAIN_ACCURACY: 'train_acc1es',
-            Metric.VAL_ACCURACY: 'eval_acc1es',
-            Metric.TEST_ACCURACY: 'eval_acc1es',
-            Metric.TRAIN_LOSS: 'train_losses',
-            Metric.VAL_LOSS: 'eval_losses',
-            Metric.TEST_LOSS: 'eval_losses',
-            Metric.TRAIN_TIME: 'train_times',
-            Metric.VAL_TIME: 'eval_times',
-            Metric.TEST_TIME: 'eval_times',
-            Metric.FLOPS: 'flop',
-            Metric.LATENCY: 'latency',
-            Metric.PARAMETERS: 'params',
-            Metric.EPOCH: 'epochs'
+            Metric.TRAIN_ACCURACY: "train_acc1es",
+            Metric.VAL_ACCURACY: "eval_acc1es",
+            Metric.TEST_ACCURACY: "eval_acc1es",
+            Metric.TRAIN_LOSS: "train_losses",
+            Metric.VAL_LOSS: "eval_losses",
+            Metric.TEST_LOSS: "eval_losses",
+            Metric.TRAIN_TIME: "train_times",
+            Metric.VAL_TIME: "eval_times",
+            Metric.TEST_TIME: "eval_times",
+            Metric.FLOPS: "flop",
+            Metric.LATENCY: "latency",
+            Metric.PARAMETERS: "params",
+            Metric.EPOCH: "epochs",
         }
 
         arch_str = convert_naslib_to_str(self)
 
         if metric == Metric.RAW:
             # return all data
-            return dataset_api['nb201_data'][arch_str]
+            return dataset_api["nb201_data"][arch_str]
 
-        if dataset in ['cifar10', 'cifar10-valid']:
-            query_results = dataset_api['nb201_data'][arch_str]
+        if dataset in ["cifar10", "cifar10-valid"]:
+            query_results = dataset_api["nb201_data"][arch_str]
             # set correct cifar10 dataset
-            dataset = 'cifar10-valid'
-        elif dataset == 'cifar100':
-            query_results = dataset_api['nb201_data'][arch_str]
-        elif dataset == 'ImageNet16-120':
-            query_results = dataset_api['nb201_data'][arch_str]
+            dataset = "cifar10-valid"
+        elif dataset == "cifar100":
+            query_results = dataset_api["nb201_data"][arch_str]
+        elif dataset == "ImageNet16-120":
+            query_results = dataset_api["nb201_data"][arch_str]
         else:
-            raise NotImplementedError('Invalid dataset')
+            raise NotImplementedError("Invalid dataset")
 
         if metric == Metric.HP:
             # return hyperparameter info
-            return query_results[dataset]['cost_info']
+            return query_results[dataset]["cost_info"]
         elif metric == Metric.TRAIN_TIME:
-            return query_results[dataset]['cost_info']['train_time']
+            return query_results[dataset]["cost_info"]["train_time"]
 
         if full_lc and epoch == -1:
             return query_results[dataset][metric_to_nb201[metric]]
@@ -180,7 +201,7 @@ class NasBench201SearchSpace(Graph):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
-    
+
     def get_hash(self):
         return tuple(self.get_op_indices())
 
@@ -217,7 +238,7 @@ class NasBench201SearchSpace(Graph):
         nbrs = []
         for edge in range(len(self.op_indices)):
             available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
-            
+
             for op_index in available:
                 nbr_op_indices = self.op_indices.copy()
                 nbr_op_indices[edge] = op_index
@@ -226,21 +247,22 @@ class NasBench201SearchSpace(Graph):
                 nbr_model = torch.nn.Module()
                 nbr_model.arch = nbr
                 nbrs.append(nbr_model)
-        
+
         random.shuffle(nbrs)
         return nbrs
 
     def get_type(self):
-        return 'nasbench201'
-    
-def _set_cell_ops(edge, C):
-    edge.data.set('op', [
-        ops.Identity(),
-        ops.Zero(stride=1),
-        ops.ReLUConvBN(C, C, kernel_size=3),
-        ops.ReLUConvBN(C, C, kernel_size=1),
-        ops.AvgPool1x1(kernel_size=3, stride=1),
-    ])
-    
-    
+        return "nasbench201"
 
+
+def _set_cell_ops(edge, C):
+    edge.data.set(
+        "op",
+        [
+            ops.Identity(),
+            ops.Zero(stride=1),
+            ops.ReLUConvBN(C, C, kernel_size=3),
+            ops.ReLUConvBN(C, C, kernel_size=1),
+            ops.AvgPool1x1(kernel_size=3, stride=1),
+        ],
+    )

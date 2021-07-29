@@ -20,14 +20,14 @@ from . import measure
 from ..p_utils import get_layer_metric_array
 
 
-@measure('plain', bn=True, mode='param')
+@measure("plain", bn=True, mode="param")
 def compute_plain_per_weight(net, inputs, targets, mode, loss_fn, split_data=1):
 
     net.zero_grad()
     N = inputs.shape[0]
     for sp in range(split_data):
-        st=sp*N//split_data
-        en=(sp+1)*N//split_data
+        st = sp * N // split_data
+        en = (sp + 1) * N // split_data
 
         outputs = net.forward(inputs[st:en])
         loss = loss_fn(outputs, targets[st:en])

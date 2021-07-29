@@ -22,10 +22,10 @@ class OneShotNASOptimizer(DARTSOptimizer):
         """
         len_primitives = len(edge.data.op)
         with torch.no_grad():
-            alpha = torch.nn.Parameter(torch.ones(size=[len_primitives],
-                                                  requires_grad=False))
-        edge.data.set('alpha', alpha, shared=True)
-
+            alpha = torch.nn.Parameter(
+                torch.ones(size=[len_primitives], requires_grad=False)
+            )
+        edge.data.set("alpha", alpha, shared=True)
 
     @staticmethod
     def update_ops(edge):
@@ -34,17 +34,19 @@ class OneShotNASOptimizer(DARTSOptimizer):
         with the OneShotOp, which is just a summation of these ops.
         """
         primitives = edge.data.op
-        edge.data.set('op', OneShotOp(primitives))
+        edge.data.set("op", OneShotOp(primitives))
 
+    def __init__(
+        self,
+        config,
+        op_optimizer=torch.optim.SGD,
+        arch_optimizer=None,
+        loss_criteria=torch.nn.CrossEntropyLoss(),
+    ):
 
-    def __init__(self, config,
-            op_optimizer=torch.optim.SGD,
-            arch_optimizer=None,
-            loss_criteria=torch.nn.CrossEntropyLoss()):
-
-        super(OneShotNASOptimizer, self).__init__(config, op_optimizer, arch_optimizer,
-                                                  loss_criteria)
-
+        super(OneShotNASOptimizer, self).__init__(
+            config, op_optimizer, arch_optimizer, loss_criteria
+        )
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
@@ -65,25 +67,30 @@ class OneShotNASOptimizer(DARTSOptimizer):
 
         return logits_train, logits_val, train_loss, val_loss
 
-
     def set_alphas_from_path(self, arch_encoding):
         """
         arch_encoding: this can be either a Genotype object (when the darts
         space) or a list of 6 integers (when the nb201 space), aka op_indices
         """
 
-        if self.graph.get_type() == 'nasbench201':
-            assert type(arch_encoding) in [list, np.ndarray], "nasbench201 requires a list of ints of size 6 in order to query the one-shot model."
+        if self.graph.get_type() == "nasbench201":
+            assert type(arch_encoding) in [
+                list,
+                np.ndarray,
+            ], "nasbench201 requires a list of ints of size 6 in order to query the one-shot model."
 
             with torch.no_grad():
                 for i, op_index in enumerate(arch_encoding):
-                    _new_alpha = torch.nn.Parameter(torch.zeros(size=[5],
-                                                                requires_grad=False))
+                    _new_alpha = torch.nn.Parameter(
+                        torch.zeros(size=[5], requires_grad=False)
+                    )
                     _new_alpha[op_index] = 1
                     self.architectural_weights[i].copy_(_new_alpha)
 
-        elif self.graph.get_type() == 'darts':
-            assert type(arch_encoding) is Genotype, "darts requires a Genotype object in order to query the one-shot model."
+        elif self.graph.get_type() == "darts":
+            assert (
+                type(arch_encoding) is Genotype
+            ), "darts requires a Genotype object in order to query the one-shot model."
 
             def update_alphas(cell_type, alphas):
                 n_inputs = 2
@@ -91,8 +98,8 @@ class OneShotNASOptimizer(DARTSOptimizer):
                 end_idx = 2
 
                 for i, (op, input_node) in enumerate(cell_type):
-                    if i%2 == 0:
-                        alphas_subset = alphas[start_idx: end_idx]
+                    if i % 2 == 0:
+                        alphas_subset = alphas[start_idx:end_idx]
                         n_inputs += 1
                         start_idx = end_idx
                         end_idx += n_inputs
@@ -100,24 +107,35 @@ class OneShotNASOptimizer(DARTSOptimizer):
                     alphas_subset[input_node][ops.index(op)] = 1
 
             # darts = [id, zero, maxpool, avg, sep3, sep5, dil3, dil5]
-            ops = ['skip_connect', 'zero', 'max_pool_3x3', 'avg_pool_3x3',
-                   'sep_conv_3x3', 'sep_conv_5x5', 'dil_conv_3x3',
-                   'dil_conv_5x5']
+            ops = [
+                "skip_connect",
+                "zero",
+                "max_pool_3x3",
+                "avg_pool_3x3",
+                "sep_conv_3x3",
+                "sep_conv_5x5",
+                "dil_conv_3x3",
+                "dil_conv_5x5",
+            ]
 
             # set all alphas to 0 firstly
             with torch.no_grad():
                 for alpha in self.architectural_weights:
-                    alpha.copy_(torch.nn.Parameter(torch.zeros(size=[len(ops)],
-                                                                         requires_grad=False)))
+                    alpha.copy_(
+                        torch.nn.Parameter(
+                            torch.zeros(size=[len(ops)], requires_grad=False)
+                        )
+                    )
 
-                update_alphas(arch_encoding.normal,
-                              self.graph.get_all_edge_data('alpha')[:14])
-                update_alphas(arch_encoding.reduce,
-                              self.graph.get_all_edge_data('alpha')[14:])
-
+                update_alphas(
+                    arch_encoding.normal, self.graph.get_all_edge_data("alpha")[:14]
+                )
+                update_alphas(
+                    arch_encoding.reduce, self.graph.get_all_edge_data("alpha")[14:]
+                )
 
     def get_final_architecture(self):
-        #TODO
+        # TODO
         # for using the one-shot model as performance predictor it is not
         # necessary
         return NotImplementedError
@@ -127,6 +145,7 @@ class OneShotOp(AbstractPrimitive):
     """
     One-Shot representation of the discrete search space.
     """
+
     def __init__(self, primitives):
         super().__init__(locals())
         self.primitives = primitives

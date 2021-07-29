@@ -28,21 +28,23 @@ class DrNASGrowOptimizer(DARTSOptimizer):
         Function to add the architectural weights to the edges.
         """
         len_primitives = len(edge.data.op)
-        alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
-        edge.data.set('alpha', alpha, shared=True)
+        alpha = torch.nn.Parameter(
+            1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
+        )
+        edge.data.set("alpha", alpha, shared=True)
 
     @staticmethod
     def sample_alphas(edge):
-        #? check if we need to unsqueeze here? -- torch.unsqueeze(edge.data.alpha, dim=0)
+        # ? check if we need to unsqueeze here? -- torch.unsqueeze(edge.data.alpha, dim=0)
         beta = F.elu(edge.data.alpha) + 1
         weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
-        edge.data.set('sampled_arch_weight', weights, shared = True)
+        edge.data.set("sampled_arch_weight", weights, shared=True)
 
     @staticmethod
     def remove_sampled_alphas(edge):
-      if (edge.data.has('sampled_arch_weight')):
-        edge.data.remove('sampled_arch_weight')
-    
+        if edge.data.has("sampled_arch_weight"):
+            edge.data.remove("sampled_arch_weight")
+
     @staticmethod
     def update_ops(edge):
         """
@@ -50,29 +52,30 @@ class DrNASGrowOptimizer(DARTSOptimizer):
         with the DrNAS specific DrNASMixedOp.
         """
         primitives = edge.data.op
-        edge.data.set('op', DrNASMixedOp(primitives))
+        edge.data.set("op", DrNASMixedOp(primitives))
 
-
-    def __init__(self, config,
-            op_optimizer=torch.optim.SGD, 
-            arch_optimizer=torch.optim.Adam, 
-            loss_criteria=torch.nn.CrossEntropyLoss()
-        ):
+    def __init__(
+        self,
+        config,
+        op_optimizer=torch.optim.SGD,
+        arch_optimizer=torch.optim.Adam,
+        loss_criteria=torch.nn.CrossEntropyLoss(),
+    ):
         """
         Initialize a new instance.
 
         Args:
-            
+
         """
         super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
-        self.reg_type = 'kl'
+        self.reg_type = "kl"
         self.reg_scale = 1e-3
         # self.reg_scale = config.reg_scale
         self.epochs = config.search.epochs
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def new_epoch(self, epoch):
-      super().new_epoch(epoch)
-
+        super().new_epoch(epoch)
 
     def adapt_search_space(self, search_space, scope=None):
         # We are going to modify the search space
@@ -85,19 +88,15 @@ class DrNASGrowOptimizer(DARTSOptimizer):
 
         # 1. add alphas
         graph.update_edges(
-            self.__class__.add_alphas,
-            scope=scope,
-            private_edge_data=False
+            self.__class__.add_alphas, scope=scope, private_edge_data=False
         )
 
         # 2. replace primitives with mixed_op
         graph.update_edges(
-            self.__class__.update_ops, 
-            scope=scope,
-            private_edge_data=True
+            self.__class__.update_ops, scope=scope, private_edge_data=True
         )
 
-        for alpha in graph.get_all_edge_data('alpha'):
+        for alpha in graph.get_all_edge_data("alpha"):
             self.architectural_weights.append(alpha)
 
         graph.parse()
@@ -109,22 +108,26 @@ class DrNASGrowOptimizer(DARTSOptimizer):
                 self.architectural_weights.parameters(),
                 lr=self.config.search.arch_learning_rate,
                 betas=(0.5, 0.999),
-                weight_decay=self.config.search.arch_weight_decay
+                weight_decay=self.config.search.arch_weight_decay,
             )
 
         self.op_optimizer = self.op_optimizer(
             graph.parameters(),
             lr=self.config.search.learning_rate,
             momentum=self.config.search.momentum,
-            weight_decay=self.config.search.weight_decay
+            weight_decay=self.config.search.weight_decay,
         )
 
         graph.train()
-        
+
         self.graph = graph
         self.scope = scope
-    
-        self.anchor = Dirichlet(torch.ones_like(torch.nn.utils.parameters_to_vector(self.architectural_weights)).to(torch.device("cuda:0" if torch.cuda.is_available() else "cpu")))
+
+        self.anchor = Dirichlet(
+            torch.ones_like(
+                torch.nn.utils.parameters_to_vector(self.architectural_weights)
+            ).to(self.device)
+        )
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
@@ -134,30 +137,32 @@ class DrNASGrowOptimizer(DARTSOptimizer):
         self.graph.update_edges(
             update_func=lambda edge: self.sample_alphas(edge),
             scope=self.scope,
-            private_edge_data=False
+            private_edge_data=False,
         )
-        
+
         # Update architecture weights
         self.arch_optimizer.zero_grad()
         logits_val = self.graph(input_val)
         val_loss = self.loss(logits_val, target_val)
 
-        if self.reg_type == 'kl':
+        if self.reg_type == "kl":
             val_loss += self._get_kl_reg()
-        
+
         val_loss.backward()
-            
+
         if self.grad_clip:
-            torch.nn.utils.clip_grad_norm_(self.architectural_weights.parameters(), self.grad_clip)
+            torch.nn.utils.clip_grad_norm_(
+                self.architectural_weights.parameters(), self.grad_clip
+            )
         self.arch_optimizer.step()
 
         # has to be done again, cause val_loss.backward() frees the gradient from sampled alphas
-        # TODO: this is not how it is intended because the samples are now different. Another 
+        # TODO: this is not how it is intended because the samples are now different. Another
         # option would be to set val_loss.backward(retain_graph=True) but that requires more memory.
         self.graph.update_edges(
             update_func=lambda edge: self.sample_alphas(edge),
             scope=self.scope,
-            private_edge_data=False
+            private_edge_data=False,
         )
 
         # Update op weights
@@ -173,37 +178,43 @@ class DrNASGrowOptimizer(DARTSOptimizer):
         self.graph.update_edges(
             update_func=self.remove_sampled_alphas,
             scope=self.scope,
-            private_edge_data=False
+            private_edge_data=False,
         )
-        
+
         return logits_train, logits_val, train_loss, val_loss
 
     def _get_kl_reg(self):
-        cons = (F.elu(torch.nn.utils.parameters_to_vector(self.architectural_weights)) + 1)
+        cons = (
+            F.elu(torch.nn.utils.parameters_to_vector(self.architectural_weights)) + 1
+        )
         q = Dirichlet(cons)
         p = self.anchor
         kl_reg = self.reg_scale * torch.sum(kl_divergence(q, p))
         return kl_reg
 
     def get_final_architecture(self):
-        logger.info("Arch weights before discretization: {}".format([a for a in self.architectural_weights]))
+        logger.info(
+            "Arch weights before discretization: {}".format(
+                [a for a in self.architectural_weights]
+            )
+        )
         graph = self.graph.clone().unparse()
         graph.prepare_discretization()
 
         def discretize_ops(edge):
-            if edge.data.has('alpha'):
+            if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
-                edge.data.set('op', primitives[np.argmax(alphas)])
+                edge.data.set("op", primitives[np.argmax(alphas)])
 
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
         graph.parse()
-        graph = graph.cuda() if torch.cuda.is_available() else graph.cpu()
+        graph = graph.to(self.device)
         return graph
 
-class DrNASMixedOp(AbstractPrimitive):
 
+class DrNASMixedOp(AbstractPrimitive):
     def __init__(self, primitives, min_cuda_memory=False):
         """
         Initialize the mixed ops
@@ -216,14 +227,16 @@ class DrNASMixedOp(AbstractPrimitive):
         for i, primitive in enumerate(primitives):
             self.add_module("primitive-{}".format(i), primitive)
 
-
     def forward(self, x, edge_data):
         """
         applies the previously sampled weights from the dirichlet distribution
         before forwarding `x` through the graph as in DARTS
         """
-        weigsum = sum(w * op(x, None) for w, op in zip(edge_data.sampled_arch_weight, self.primitives))
+        weigsum = sum(
+            w * op(x, None)
+            for w, op in zip(edge_data.sampled_arch_weight, self.primitives)
+        )
         return weigsum
-    
+
     def get_embedded_ops(self):
         return self.primitives

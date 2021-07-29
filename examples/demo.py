@@ -2,13 +2,21 @@ import logging
 import sys
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, DrNASGrowOptimizer, RandomSearch, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor
+from naslib.optimizers import (
+    DARTSOptimizer,
+    GDASOptimizer,
+    DrNASOptimizer,
+    RandomSearch,
+    RegularizedEvolution,
+    LocalSearch,
+    Bananas,
+    BasePredictor,
+)
 
 from naslib.search_spaces import (
-    DartsSearchSpace, 
-    SimpleCellSearchSpace, 
-    NasBench201SearchSpace, 
+    DartsSearchSpace,
+    SimpleCellSearchSpace,
+    NasBench201SearchSpace,
     HierarchicalSearchSpace,
 )
 
@@ -21,20 +29,19 @@ config = utils.get_config_from_args()
 utils.set_seed(config.seed)
 
 logger = setup_logger(config.save + "/log.log")
-#logger.setLevel(logging.INFO)   # default DEBUG is very verbose
+# logger.setLevel(logging.INFO)   # default DEBUG is very verbose
 
 utils.log_args(config)
 
 supported_optimizers = {
-    'darts': DARTSOptimizer(config),
-    'gdas': GDASOptimizer(config),
-    'drnas': DrNASOptimizer(config),
-    'drnas-grow': DrNASGrowOptimizer(config),
-    'rs': RandomSearch(config),
-    're': RegularizedEvolution(config),
-    'ls': LocalSearch(config),
-    'bananas': Bananas(config),
-    'bp': BasePredictor(config)
+    "darts": DARTSOptimizer(config),
+    "gdas": GDASOptimizer(config),
+    "drnas": DrNASOptimizer(config),
+    "rs": RandomSearch(config),
+    "re": RegularizedEvolution(config),
+    "ls": LocalSearch(config),
+    "bananas": Bananas(config),
+    "bp": BasePredictor(config),
 }
 
 # Changing the search space is one line of code
@@ -46,7 +53,7 @@ search_space = SimpleCellSearchSpace()
 
 # Changing the optimizer is one line of code
 # optimizer = supported_optimizers[config.optimizer]
-optimizer = supported_optimizers['drnas-grow']
+optimizer = supported_optimizers["drnas"]
 optimizer.adapt_search_space(search_space)
 
 # Start the search and evaluation
