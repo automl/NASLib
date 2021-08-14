@@ -74,7 +74,7 @@ def default_argument_parser():
     parser.add_argument(
         "--eval-only", action="store_true", help="perform evaluation only"
     )
-    parser.add_argument("--seed", default=0, help="random seed")
+    parser.add_argument("--seed", default=0, type=int, help="random seed")
     parser.add_argument(
         "--resume", action="store_true", help="Resume from last checkpoint"
     )
