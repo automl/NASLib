@@ -4,7 +4,7 @@ import torch
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.search_spaces import NasBench201SearchSpace
 from naslib.predictors import BayesianLinearRegression, BOHAMIANN, GPPredictor, RandomForestPredictor, LGBoost, \
-    XGBoost
+    XGBoost, NGBoost
 from naslib.utils import get_dataset_api, utils
 
 x_data = np.load('assets/nb201_test_set_x.npy', allow_pickle=True)
@@ -103,6 +103,19 @@ class PredictorsTest(unittest.TestCase):
         self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.6612804210411, places=3)
         self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.7142857142857, places=3)
 
+    def test_NGBPredictor(self):
+        predictor = NGBoost(encoding_type=None)
+        predictor_evaluator = PredictorEvaluator(predictor, config=self.config)
+        predictor_evaluator.adapt_search_space(self.search_space, load_labeled=self.load_labeled,
+                                               dataset_api=self.dataset_api)
+        predictor_evaluator.single_evaluate(train_data=train_data, test_data=test_data,
+                                            fidelity=self.config.fidelity_single)  
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['kendalltau'], 0.2, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['mae'], 5.72692900534, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['rmse'], 6.7191690329, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['pearson'], 0.333039889, places=3)
+        self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.37142857142, places=3)
+        
     def test_GPPredictor(self):
         predictor = GPPredictor(encoding_type=None)
         predictor_evaluator = PredictorEvaluator(predictor, config=self.config)
