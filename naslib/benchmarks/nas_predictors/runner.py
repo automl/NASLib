@@ -11,6 +11,7 @@ from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
     DartsSearchSpace,
+    NasBenchNLPSearchSpace,
 )
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.utils.utils import get_project_root
@@ -34,6 +35,7 @@ supported_search_spaces = {
     "nasbench101": NasBench101SearchSpace(),
     "nasbench201": NasBench201SearchSpace(),
     "darts": DartsSearchSpace(),
+    "nlp": NasBenchNLPSearchSpace(),
 }
 
 
