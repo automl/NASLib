@@ -31,7 +31,7 @@ Download nasbench101, nasbench201 (all three datasets), and nasbench301 training
 
 # Usage
 
-There are to types of experiments: stand-alone predictor experiments, and predictor-based NAS experiments. Thanks to the NAS-Bench datasets, almost all of our experiments can be run on CPUs (indeed, we used CPUs for nearly all of our experiments). The two weight-sharing predictors (OneShot and RS-WS) were the only predictors where we used GPUs, since they require retraining NAS-Bench models from scratch.
+There are two types of experiments: stand-alone predictor experiments, and predictor-based NAS experiments. Thanks to the NAS-Bench datasets, almost all of our experiments can be run on CPUs (indeed, we used CPUs for nearly all of our experiments). The two weight-sharing predictors (OneShot and RS-WS) were the only predictors where we used GPUs, since they require retraining NAS-Bench models from scratch.
 
 ## Stand-alone predictor experiments
 To run a single test on a predictor, modify the settings in `naslib/benchmarks/predictors/predictor_config.yaml` as you desire (e.g., change the search space, predictor, train_size (initialization time), and fidelity (query time). Then run
