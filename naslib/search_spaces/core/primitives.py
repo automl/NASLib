@@ -55,7 +55,7 @@ class Identity(AbstractPrimitive):
     def __init__(self, **kwargs):
         super().__init__(locals())
 
-    def forward(self, x, edge_data):
+    def forward(self, x, edge_data=None):
         return x
 
     def get_embedded_ops(self):
@@ -76,7 +76,7 @@ class Zero(AbstractPrimitive):
         super().__init__(locals())
         self.stride = stride
 
-    def forward(self, x, edge_data):
+    def forward(self, x, edge_data=None):
         if self.stride == 1:
             return x.mul(0.0)
         else:
@@ -246,12 +246,16 @@ class Sequential(AbstractPrimitive):
 
 
 class MaxPool(AbstractPrimitive):
-    def __init__(self, C_in, kernel_size, stride, **kwargs):
+    def __init__(self, C_in, kernel_size, stride, use_bn=True, **kwargs):
         super().__init__(locals())
-        self.maxpool = nn.Sequential(
-            nn.MaxPool2d(kernel_size, stride=stride, padding=1),
-            nn.BatchNorm2d(C_in, affine=False),
-        )
+
+        if use_bn:
+            self.maxpool = nn.Sequential(
+                nn.MaxPool2d(kernel_size, stride=stride, padding=1),
+                nn.BatchNorm2d(C_in, affine=False),
+            )
+        else:
+            self.maxpool = nn.MaxPool2d(kernel_size, stride=stride, padding=1)
 
     def forward(self, x, edge_data):
         x = self.maxpool(x)
@@ -342,6 +346,9 @@ class AvgPool1x1(AbstractPrimitive):
 
 
 class ReLUConvBN(AbstractPrimitive):
+    """
+    Implementation of ReLU activation, followed by 2d convolution and then 2d batch normalization.
+    """
     def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
@@ -350,6 +357,63 @@ class ReLUConvBN(AbstractPrimitive):
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=pad, bias=False),
             nn.BatchNorm2d(C_out, affine=affine),
+        )
+
+    def forward(self, x, edge_data=None):
+        return self.op(x)
+
+    def get_embedded_ops(self):
+        return None
+
+    @property
+    def get_op_name(self):
+        op_name = super().get_op_name
+        op_name += "{}x{}".format(self.kernel_size, self.kernel_size)
+        return op_name
+
+class ConvBnReLU(AbstractPrimitive):
+    """
+    Implementation of 2d convolution, followed by 2d batch normalization and ReLU activation.
+    """
+    def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True, **kwargs):
+        super().__init__(locals())
+        self.kernel_size = kernel_size
+        pad = 0 if stride == 1 and kernel_size == 1 else 1
+        self.op = nn.Sequential(
+            nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=pad, bias=False),
+            nn.BatchNorm2d(C_out, affine=affine),
+            nn.ReLU(inplace=False),
+        )
+
+    def forward(self, x, edge_data=None):
+        return self.op(x)
+
+    def get_embedded_ops(self):
+        return None
+
+    @property
+    def get_op_name(self):
+        op_name = super().get_op_name
+        op_name += "{}x{}".format(self.kernel_size, self.kernel_size)
+        return op_name
+
+
+class InputProjection(AbstractPrimitive):
+    """
+    Implementation of a 1x1 projection, followed by an abstract primitive model.
+    """
+    def __init__(self, C_in: int, C_out: int, primitive: AbstractPrimitive):
+        """
+        Args:
+            C_in        : Number of input channels
+            C_out       : Number of output channels
+            primitive   : Module of AbstractPrimitive type to which the projected input will be fed
+        """
+        super().__init__(locals())
+        self.module = primitive
+        self.op = nn.Sequential(
+            ConvBnReLU(C_in, C_out, 1), # 1x1 projection
+            primitive,                  # Main operation
         )
 
     def forward(self, x, edge_data):
@@ -361,7 +425,7 @@ class ReLUConvBN(AbstractPrimitive):
     @property
     def get_op_name(self):
         op_name = super().get_op_name
-        op_name += "{}x{}".format(self.kernel_size, self.kernel_size)
+        op_name += f"{self.module.get_op_name()}"
         return op_name
 
 

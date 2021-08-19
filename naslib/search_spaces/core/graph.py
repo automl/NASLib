@@ -400,6 +400,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                                 edge_data.op, node_idx, neigbor_idx
                             )
                         )
+                        print(f"Forward through {self.name}-{self._id}: edge {node_idx}-{neigbor_idx}")
                         edge_output = edge_data.op.forward(x, edge_data=edge_data)
                     else:
                         raise ValueError(

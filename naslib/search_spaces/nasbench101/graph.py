@@ -16,6 +16,7 @@ from naslib.search_spaces.nasbench101.conversions import (
     convert_spec_to_tuple,
 )
 
+from typing import Any, List, Tuple, Union, Dict
 from naslib.utils.utils import get_project_root
 
 from .primitives import ReLUConvBN
@@ -38,7 +39,7 @@ class NasBench101SearchSpace(Graph):
     """
 
     OPTIMIZER_SCOPE = [
-        "node",
+        "node_pair",
         "cell",
     ]
 
@@ -50,58 +51,131 @@ class NasBench101SearchSpace(Graph):
 
         # creating a dummy graph!
         channels = [128, 256, 512]
-        #
-        # Cell definition
-        #
-        node_pair = Graph()
-        node_pair.name = (
-            "node_pair"  # Use the same name for all cells with shared attributes
-        )
-        node_pair.set_scope("node")
 
-        # need to add subgraphs on the nodes, each subgraph has option for 3 ops
-        # Input node
-        node_pair.add_node(1)
-        node_pair.add_node(2)
-        node_pair.add_edges_from([(1, 2)])
+        # Create the cell graph
+        # All the cells in the macro graph should be copies of this cell (cell.copy())
+        # https://networkx.org/documentation/stable/reference/classes/generated/networkx.Graph.copy.html
+        cell = self._create_cell_graph()
+
+        stack = self._create_stack(in_channels=128, out_channels=128, cell=cell)
+        self.name = "makrograph"
+
+        self.add_nodes_from([1, 2])
+        self.add_edge(1, 2)
+        self.edges[1, 2].set("op", stack)
+
+    def _create_macro_graph(self, n_layers=3):
+        pass
+
+
+    def _create_stack(self, in_channels: int, out_channels: int, cell: Graph):
+        cells = [
+            self._create_cell(cell.copy(), in_channels, out_channels),
+            self._create_cell(cell.copy(), out_channels, out_channels),
+            self._create_cell(cell.copy(), out_channels, out_channels),
+        ]
+
+        stack = Graph()
+        stack.name = "stack"
+
+        stack.add_nodes_from(range(1, 5))
+        edges = [(1, 2), (2, 3), (3, 4)] # Edges in topological order
+        stack.add_edges_from(edges)
+
+        for edge, cell in zip(edges, cells):
+            stack.edges[edge].set("op", cell)
+
+            # Set inputs for the subgraph. This cannot be done sooner because cell.copy() doesn't copy the
+            # attributes of the NASLib Graph object (like Graph.input_node_idxs, which is set using Graph.set_input())
+            for i in range(3, 13, 2): # TODO: Correct?
+                cell.nodes[i]['subgraph'].set_input([i-1])
+
+        return stack
+
+    def _create_node_pair_graph(self, parent_node):
+        # TODO: Update this comment
+        # node_pair will be a graph with two nodes, so that the edge between those two nodes
+        # can hold the MixedOp. This makes it possible to represent graphs where nodes hold operations
+        # while still using edges to hold them.
+        node_pair = Graph()
+        node_pair.name = "node_pair" + str(parent_node)
+        node_pair.set_scope("node_pair")
+
+        node_pair.add_nodes_from([1, 2])
+        node_pair.add_edge(1, 2)
+
+        return node_pair
+
+    def _create_cell_graph(self):
+        """
+        Creates the graph of the cell with all the nodes and edges.
+        Does not assign the operations on the edges or nodes.
+        """
 
         cell = Graph()
         cell.name = "cell"
 
-        node_pair.update_edges(
-            update_func=lambda edge: _set_node_ops(edge, C=channels[0]),
-            private_edge_data=True,
-        )
+        cell.add_node(1)  # Input node
 
-        cell.add_node(1)  # input node
-        cell.add_node(2, subgraph=node_pair.set_input([1]))
-        cell.add_node(3, subgraph=node_pair.copy())
-        cell.add_node(4, subgraph=node_pair.copy())
-        cell.add_node(5, subgraph=node_pair.copy())
-        cell.add_node(6, subgraph=node_pair.copy())
-        cell.add_node(7)  # output
+        for i in range(2, 12, 2):
+            cell.add_node(i, comb_op=truncate_add) # Node for summation
+            cell.add_node(i+1, subgraph=self._create_node_pair_graph(i+1)) # Node with node_pair as subgraph
+
+        cell.add_node(12, comb_op=channel_concat)
+        cell.add_node(13) # Output node
         cell.set_scope("cell", recursively=False)
 
-        # Edges
+        # Add edges
         cell.add_edges_densly()
 
+        # Remove unnecessary edges
+        cell.remove_edge(1, 12)
+
+        edges = list(cell.edges())
+        for u, v in edges: #TODO Rewrite the if-else properly
+            if u == 1 and v == 13:
+                continue
+            elif (u%2 == 0 and v != u+1): # Remove edges from summation nodes to nodes other than its immediate neighbour
+                cell.remove_edge(u, v)
+            elif v%2 == 1 and v != u+1: # Remove edges to nodes with node_pair subgraph which are not from its summation node
+                cell.remove_edge(u, v)
+
+        return cell
+
+
+    def _create_cell(self, cell: Graph, in_channels: int, out_channels: Union[int, None]=None,) -> Graph:
+        """
+        Creates a single cell used in the NASBench101 search space.
+
+        Args:
+            in_channels     : Number of input channels to the cell
+            out_channels    : Number of output channels of the cell
+
+        Returns:
+            NASBench101 Cell
+        """
+        if out_channels == None:
+            out_channels = 2*in_channels
+
+        dense_graph_matrix = np.triu(np.ones((7, 7)), 1) # Matrix representing densely connected cell space
+        node_channels = compute_vertex_channels(in_channels, out_channels, dense_graph_matrix)
+
+        # Update the node-pair graph inside each node so that their edges have the operations
+        # (conv3x3, conv1x1, maxpool3x3) with the correct number of channels
+        cell.update_nodes(
+            update_func=lambda node, in_edges, out_edges: _set_cell_node_pair_ops(node, node_channels),
+            scope="cell" #TODO Single instance = False?
+        )
+
+        # The edges of the cell have Zero or Identity as the operations
         cell.update_edges(
-            update_func=lambda edge: _set_cell_ops(edge, C=channels[0]),
+            update_func=lambda edge: _set_cell_edge_ops(edge, node_channels=node_channels),
             scope="cell",
             private_edge_data=True,
         )
-        #
-        # dummy Makrograph definition for RE for benchmark queries
-        #
 
-        self.name = "makrograph"
+        return cell
 
-        total_num_nodes = 3
-        self.add_nodes_from(range(1, total_num_nodes + 1))
-        self.add_edges_from([(i, i + 1) for i in range(1, total_num_nodes)])
-
-        self.edges[1, 2].set("op", ops.Stem(channels[0]))
-        self.edges[2, 3].set("op", cell.copy().set_scope("cell"))
 
     def query(
         self,
@@ -277,24 +351,59 @@ class NasBench101SearchSpace(Graph):
         return "nasbench101"
 
 
-def _set_node_ops(current_edge_data, C):
-    ops = [
-        ReLUConvBN(C, C, kernel_size=1),
-        # ops.Zero(stride=1),    #! recheck about the hardcoded second operation
-        ReLUConvBN(C, C, kernel_size=3),
-        MaxPool1x1(kernel_size=3, stride=1),
-    ]
-    current_edge_data["op"] = ops
-
-
-def _set_cell_ops(edge, C):
+def _set_node_pair_edge_op(edge, C):
     edge.data.set(
         "op",
         [
-            ops.Identity(),
-            ops.Zero(stride=1),
-        ],
+            ops.ConvBnReLU(C, C, kernel_size=3),
+            ops.ConvBnReLU(C, C, kernel_size=1),
+            ops.MaxPool(C, kernel_size=3, stride=1, use_bn=False),
+        ]
     )
+
+
+def _set_cell_node_pair_ops(node, node_channels):
+    node_idx, node_data = node
+    # Get the node-pair graph saved in this node, and updates its (only) edge
+    # with the operations (conv3x3, conv1x1, maxpool3x3)
+
+    if "subgraph" in node_data:
+        channels = node_channels[(node_idx - 1)//2]
+        node_pair = node_data["subgraph"]
+        node_pair.update_edges(
+            update_func=lambda edge: _set_node_pair_edge_op(edge, C=channels),
+            scope="node_pair",
+            private_edge_data=True
+        )
+
+
+def _set_cell_edge_ops(edge, node_channels: List[int]):
+    if edge.head == 1:      # if this is an edge from the input node, then we have to apply a 1x1 projection
+        C_in = node_channels[0]             # Number of input channels to cell
+        C_out = node_channels[edge.tail//2]  # Number of channels expected by each node in the cell
+
+        edge.data.set(
+            "op",
+            [
+                ops.InputProjection(C_in, C_out, ops.Identity()),
+                ops.InputProjection(C_in, C_out, ops.Zero(stride=1)),
+            ],
+        )
+    elif edge.head%2==1:
+        edge.data.set(
+            "op",
+            [
+                ops.Identity(),
+                ops.Zero(stride=1),
+            ],
+        )
+    else:
+        edge.data.set(
+            "op",
+            [
+                ops.Identity(),
+            ],
+        )
 
 
 def get_utilized(matrix):
@@ -342,3 +451,78 @@ def is_valid_vertex(matrix, vertex):
 def is_valid_edge(matrix, edge):
     edges, nodes = get_utilized(matrix)
     return edge in edges
+
+def compute_vertex_channels(input_channels, output_channels, matrix):
+  """
+  Taken from https://github.com/google-research/nasbench
+
+  Computes the number of channels at every vertex.
+
+  Given the input channels and output channels, this calculates the number of
+  channels at each interior vertex. Interior vertices have the same number of
+  channels as the max of the channels of the vertices it feeds into. The output
+  channels are divided amongst the vertices that are directly connected to it.
+  When the division is not even, some vertices may receive an extra channel to
+  compensate.
+
+  Args:
+    input_channels: input channel count.
+    output_channels: output channel count.
+    matrix: adjacency matrix for the module (pruned by model_spec).
+
+  Returns:
+    list of channel counts, in order of the vertices.
+  """
+  num_vertices = np.shape(matrix)[0]
+
+  vertex_channels = [0] * num_vertices
+  vertex_channels[0] = input_channels
+  vertex_channels[num_vertices - 1] = output_channels
+
+  if num_vertices == 2:
+    # Edge case where module only has input and output vertices
+    return vertex_channels
+
+  # Compute the in-degree ignoring input, axis 0 is the src vertex and axis 1 is
+  # the dst vertex. Summing over 0 gives the in-degree count of each vertex.
+  in_degree = np.sum(matrix[1:], axis=0, dtype=int)
+  interior_channels = output_channels // in_degree[num_vertices - 1]
+  correction = output_channels % in_degree[num_vertices - 1]  # Remainder to add
+
+  # Set channels of vertices that flow directly to output
+  for v in range(1, num_vertices - 1):
+    if matrix[v, num_vertices - 1]:
+      vertex_channels[v] = interior_channels
+      if correction:
+        vertex_channels[v] += 1
+        correction -= 1
+
+  # Set channels for all other vertices to the max of the out edges, going
+  # backwards. (num_vertices - 2) index skipped because it only connects to
+  # output.
+  for v in range(num_vertices - 3, 0, -1):
+    if not matrix[v, num_vertices - 1]:
+      for dst in range(v + 1, num_vertices - 1):
+        if matrix[v, dst]:
+          vertex_channels[v] = max(vertex_channels[v], vertex_channels[dst])
+    assert vertex_channels[v] > 0
+
+  # Sanity check, verify that channels never increase and final channels add up.
+  final_fan_in = 0
+  for v in range(1, num_vertices - 1):
+    if matrix[v, num_vertices - 1]:
+      final_fan_in += vertex_channels[v]
+    for dst in range(v + 1, num_vertices - 1):
+      if matrix[v, dst]:
+        assert vertex_channels[v] >= vertex_channels[dst]
+  assert final_fan_in == output_channels or num_vertices == 2
+  # num_vertices == 2 means only input/output nodes, so 0 fan-in
+
+  return vertex_channels
+
+def channel_concat(tensors):
+    return torch.cat(tensors, dim=1)
+
+def truncate_add(tensors):
+    min_channels = min([t.shape[1] for t in tensors])
+    return sum([t[:,:min_channels,:,:] for t in tensors])
