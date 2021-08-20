@@ -220,6 +220,16 @@ def encode_201(arch, encoding_type="adjacency_one_hot"):
             "{} is not yet supported as a predictor encoding".format(encoding_type)
         )
         raise NotImplementedError()
+        
+
+def encode_tb101(arch, encoding_type='adjacency_one_hot'):
+        
+    if encoding_type == 'adjacency_one_hot':
+        return encode_adjacency_one_hot(arch)
+
+    else:
+        logger.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
+        raise NotImplementedError()
 
 
 def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
@@ -236,6 +246,9 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
                           encoding_type='adjacency_mix', 
                           max_nodes=12, 
                           accs=None)
+    elif ss_type == 'transbench101':
+        return encode_tb101(arch, encoding_type=encoding_type)
+    
     else:
         raise NotImplementedError(
             "{} is not yet supported for encodings".format(ss_type)
