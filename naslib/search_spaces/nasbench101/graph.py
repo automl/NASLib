@@ -55,42 +55,109 @@ class NasBench101SearchSpace(Graph):
         # Create the cell graph
         # All the cells in the macro graph should be copies of this cell (cell.copy())
         # https://networkx.org/documentation/stable/reference/classes/generated/networkx.Graph.copy.html
-        cell = self._create_cell_graph()
 
-        stack = self._create_stack(in_channels=128, out_channels=128, cell=cell)
+        # cell = self._create_cell_graph()
+
+        # stack = self._create_stack(in_channels=128, out_channels=128, cell=cell)
         self.name = "makrograph"
+        self.set_scope("macro")
+
+        macro = self._create_macro()
 
         self.add_nodes_from([1, 2])
         self.add_edge(1, 2)
-        self.edges[1, 2].set("op", stack)
-
-    def _create_macro_graph(self, n_layers=3):
-        pass
+        self.edges[1, 2].set("op", macro)
 
 
-    def _create_stack(self, in_channels: int, out_channels: int, cell: Graph):
+    def _create_macro(self, n_stacks=3, in_channels_stack=128):
+
+        macrograph = Graph()
+        macrograph.name = 'macro'       # TODO: Change to "makro" to keep it consistent with other spaces?
+        macrograph.set_scope('macro')   # TODO: same as above
+
+        # Graph structure
+        # 1-2               : stem
+        # 2-3, 3-4, 4-5     : stacks (when n_stacks=3)
+        # 5-6               : avgpool + dense
+
+        # Create nodes
+        n_nodes = 3 + n_stacks
+        macrograph.add_nodes_from(range(1, n_nodes+1))
+
+        # Add edges
+        for i in range(1, n_nodes):
+            macrograph.add_edge(i, i+1)
+
+        # Add edge operations
+        macrograph.edges[1, 2].set("op", ops.Stem(C_out=in_channels_stack))
+
+        # Create the cell graph, the copy of which shall be used in all the stacks
+        cell = self._create_cell_graph()
+
+        # Add the stacks as edge operations
+        stacks_output_node = 2+n_stacks
+        in_channels, out_channels = in_channels_stack, in_channels_stack
+
+        for i in range(2, stacks_output_node):
+            stack = self._create_stack(in_channels, out_channels, cell)
+            in_channels, out_channels = out_channels, out_channels*2
+            macrograph.edges[i, i+1].set("op", stack)
+
+        # Add global pooling and dense layer in the final edge
+        pool_and_linear = ops.Sequential(
+            ops.GlobalAveragePooling(),
+            nn.Linear(in_channels, 10) #TODO: Make output classes flexible
+        )
+
+        macrograph.edges[stacks_output_node, stacks_output_node+1].set("op", pool_and_linear)
+
+        return macrograph
+
+
+    def _create_macro_architecture(self, n_stacks=3, in_channels_stack=128):
+        stem = ops.Stem(C_out=in_channels_stack)
+        all_ops = [stem]
+
+        in_channels, out_channels = in_channels_stack, in_channels_stack
+
+        # Create the cell graph, the copy of which shall be used in all the stacks
+        cell = self._create_cell_graph()
+
+        for i in range(n_stacks):
+            stack = self._create_stack(in_channels, out_channels, cell)
+            in_channels, out_channels = out_channels, out_channels*2
+
+            all_ops.append(stack)
+
+            downsample = False if i == n_stacks-1 else False # Don't downsample if it's the last stack
+            if downsample:
+                all_ops.append(nn.MaxPool2d(kernel_size=3))
+
+        avg_pool = nn.AdaptiveAvgPool2d(in_channels)
+        linear_layer = nn.Linear(in_channels, 10) #TODO: Make output classes flexible
+        all_ops.extend([avg_pool, linear_layer])
+
+        return ops.Sequential(*all_ops)
+
+
+    def _create_stack(self, in_channels: int, out_channels: int, cell: Graph, downsample=True):
         cells = [
             self._create_cell(cell.copy(), in_channels, out_channels),
             self._create_cell(cell.copy(), out_channels, out_channels),
             self._create_cell(cell.copy(), out_channels, out_channels),
         ]
 
-        stack = Graph()
-        stack.name = "stack"
-
-        stack.add_nodes_from(range(1, 5))
-        edges = [(1, 2), (2, 3), (3, 4)] # Edges in topological order
-        stack.add_edges_from(edges)
-
-        for edge, cell in zip(edges, cells):
-            stack.edges[edge].set("op", cell)
-
+        for cell in cells:
             # Set inputs for the subgraph. This cannot be done sooner because cell.copy() doesn't copy the
             # attributes of the NASLib Graph object (like Graph.input_node_idxs, which is set using Graph.set_input())
             for i in range(3, 13, 2): # TODO: Correct?
                 cell.nodes[i]['subgraph'].set_input([i-1])
 
-        return stack
+        if downsample:
+            cells.append(nn.MaxPool2d(kernel_size=3))
+
+        return ops.Sequential(*cells)
+
 
     def _create_node_pair_graph(self, parent_node):
         # TODO: Update this comment

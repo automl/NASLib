@@ -220,7 +220,7 @@ class Stem(AbstractPrimitive):
             nn.Conv2d(3, C_out, 3, padding=1, bias=False), nn.BatchNorm2d(C_out)
         )
 
-    def forward(self, x, edge_data):
+    def forward(self, x, edge_data=None):
         return self.seq(x)
 
     def get_embedded_ops(self):
@@ -340,6 +340,20 @@ class AvgPool1x1(AbstractPrimitive):
             x = self.conv(x)
             x = self.bn(x)
         return x
+
+    def get_embedded_ops(self):
+        return None
+
+class GlobalAveragePooling(AbstractPrimitive):
+    """
+    Just a wrapper class for averaging the input across the height and width dimensions
+    """
+
+    def __init__(self):
+        super().__init__(locals())
+
+    def forward(self, x, edge_data=None):
+        return torch.mean(x, (2, 3))
 
     def get_embedded_ops(self):
         return None
