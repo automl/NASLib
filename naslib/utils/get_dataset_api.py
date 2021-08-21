@@ -54,22 +54,32 @@ def get_nasbench201_api(dataset=None):
     return {"nb201_data": data}
 
 
-def get_darts_api(dataset=None):
-    """
-    Load the nb301 training data (which contains full learning curves) and the nb301 models
-    """
-    import nasbench301
-
-    data_folder = os.path.join(get_project_root(), "data/")
-    with open(os.path.join(data_folder, "nb301_full_training.pickle"), "rb") as f:
+def get_darts_api(dataset=None, 
+                  nb301_model_path='~/nb_models/xgb_v1.0', 
+                  nb301_runtime_path='~/nb_models/lgb_runtime_v1.0'):
+    # Load the nb301 training data (which contains full learning curves)
+    
+    data_path = os.path.join(get_project_root(), "data/nb301_full_training.pickle")
+    assert os.path.isfile(data_path), "Download nb301_full_training.pickle from\
+    https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa?usp=sharing"
+    with open(data_path, "rb") as f:
         nb301_data = pickle.load(f)
         nb301_arches = list(nb301_data.keys())
 
+    # Load the nb301 performance and runtime models
+    nb301_model_path = os.path.expanduser(nb301_model_path)
+    nb301_runtime_path = os.path.expanduser(nb301_runtime_path)
+    assert os.path.exists(nb301_model_path), "Download v1.0 models from\
+    https://github.com/automl/nasbench301"
+    assert os.path.exists(nb301_runtime_path), "Download v1.0 models from\
+    https://github.com/automl/nasbench301"
+
+    import nasbench301
     performance_model = nasbench301.load_ensemble(
-        os.path.join(data_folder + "nb301_models/xgb_v1.0")
+        nb301_model_path
     )
     runtime_model = nasbench301.load_ensemble(
-        os.path.join(data_folder + "nb301_models/lgb_runtime_v1.0")
+        nb301_runtime_path
     )
     nb301_model = [performance_model, runtime_model]
     return {
@@ -79,14 +89,23 @@ def get_darts_api(dataset=None):
     }
 
 
-def get_nlp_api(dataset=None):
-    """
-    Load the NAS-Bench-NLP data
-    """
+def get_nlp_api(dataset=None, 
+                nlp_model_path='~/nbnlp_v01'):
+    # Load the NAS-Bench-NLP data
     with open(os.path.join(get_project_root(), "data", "nb_nlp.pickle"), "rb") as f:
         nlp_data = pickle.load(f)
     nlp_arches = list(nlp_data.keys())
-    return {"nlp_data": nlp_data, "nlp_arches": nlp_arches}
+    
+    # Load the NAS-Bench-NLP11 performance model
+    import nasbench301
+    performance_model = nasbench301.load_ensemble(
+        os.path.expanduser(nlp_model_path)
+    )
+
+    return {
+        "nlp_data": nlp_data, 
+        "nlp_arches": nlp_arches, 
+        "nlp_model":performance_model}
 
 
 def get_dataset_api(search_space=None, dataset=None):

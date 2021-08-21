@@ -24,4 +24,5 @@ jobs:
 
     - name: Run tests
       run: |
-        python -m pytest --forked --durations=20 --timeout=600 --timeout-method=signal -v test
+        cd tests/
+        python -m unittest discover -v

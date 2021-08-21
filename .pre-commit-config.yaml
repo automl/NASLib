@@ -1,23 +1,34 @@
 repos:
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v0.761
-  #   hooks:
-  #     - id: mypy
-  #       args: [--show-error-codes,
-  #              --warn-redundant-casts,
-  #              --warn-return-any,
-  #              --warn-unreachable,
-  #       ]
-  #       files: naslib/.*
-  #       exclude: naslib/data/
-
-  - repo: https://github.com/psf/black
-    rev: stable # Replace by any tag/version: https://github.com/psf/black/tags
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v0.761
     hooks:
-      - id: black
-        language_version: python3.8 # Should be a command that runs python3.6+
+      - id: mypy
+        args: [--show-error-codes,
+               --warn-redundant-casts,
+               --warn-return-any,
+               --warn-unreachable,
+        ]
+        files: naslib/.*
+        exclude: 
+          - naslib/examples/.*
+          - naslib/docs/.*
+          
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.7.9
+    rev: 3.8.3
     hooks:
       - id: flake8
-
+        additional_dependencies:
+          - flake8-print==3.1.4
+          - flake8-import-order
+        name: flake8 naslib
+        files: naslib/.*
+        exclude: 
+          - naslib/examples/.*
+          - naslib/docs/.*
+          - naslib/predictors/.*
+      - id: flake8
+        additional_dependencies:
+          - flake8-print==3.1.4
+          - flake8-import-order
+        name: flake8 test
+        files: tests/.*

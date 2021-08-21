@@ -95,7 +95,7 @@ If you use this code in your own work, please use the following bibtex entries:
   <img src="images/predictors.png" alt="predictors" width="75%">
 </p>
 
-NASLib has been used to run an extensive comparison of 31 performance predictors (figure above). See the separate readme: <a href="docs/predictors.md">predictors.md</a>
+NASLib has been used to run an extensive comparison of 31 performance predictors (figure above). See the separate readme: <a href="examples/predictors.md">predictors.md</a>
 and our paper: <a href="https://arxiv.org/abs/2104.01177">How Powerful are Performance Predictors in Neural Architecture Search?</a>
 
 ```bibtex
