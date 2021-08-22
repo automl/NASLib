@@ -45,35 +45,31 @@ class NasBench101SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self):
+    def __init__(self, stacks:int=3, channels:int=128):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
 
-        # creating a dummy graph!
-        channels = [128, 256, 512]
+        # Settings for NASBench101 as described in the paper
+        self.stacks = stacks
+        self.channels = channels
+        self.space_name = "nasbench101"
 
-        # Create the cell graph
-        # All the cells in the macro graph should be copies of this cell (cell.copy())
-        # https://networkx.org/documentation/stable/reference/classes/generated/networkx.Graph.copy.html
+        self._create_macro_graph(self.stacks, self.channels, self.num_classes)
 
-        # cell = self._create_cell_graph()
+    def _create_macro_graph(self, n_stacks:int, in_channels_stack:int, num_classes:int) -> None:
+        """
+        Creates the macro graph.
 
-        # stack = self._create_stack(in_channels=128, out_channels=128, cell=cell)
+        Args:
+            n_stacks            : Number of stacks in the macro graph
+            in_channels_stack   : Number of input channels to the very first stack (after stem)
+            num_classes         : Number of classes of linear output layer
+
+        Returns:
+            None. Sets self to the given macro graph.
+        """
         self.name = "makrograph"
         self.set_scope("macro")
-
-        macro = self._create_macro()
-
-        self.add_nodes_from([1, 2])
-        self.add_edge(1, 2)
-        self.edges[1, 2].set("op", macro)
-
-
-    def _create_macro(self, n_stacks=3, in_channels_stack=128):
-
-        macrograph = Graph()
-        macrograph.name = 'macro'       # TODO: Change to "makro" to keep it consistent with other spaces?
-        macrograph.set_scope('macro')   # TODO: same as above
 
         # Graph structure
         # 1-2               : stem
@@ -82,16 +78,18 @@ class NasBench101SearchSpace(Graph):
 
         # Create nodes
         n_nodes = 3 + n_stacks
-        macrograph.add_nodes_from(range(1, n_nodes+1))
+        self.add_nodes_from(range(1, n_nodes+1))
 
         # Add edges
         for i in range(1, n_nodes):
-            macrograph.add_edge(i, i+1)
+            self.add_edge(i, i+1)
 
         # Add edge operations
-        macrograph.edges[1, 2].set("op", ops.Stem(C_out=in_channels_stack))
+        self.edges[1, 2].set("op", ops.Stem(C_out=in_channels_stack))
 
-        # Create the cell graph, the copy of which shall be used in all the stacks
+        # Create the cell graph
+        # All the cells in the macro graph should be copies of this cell (cell.copy())
+        # https://networkx.org/documentation/stable/reference/classes/generated/networkx.Graph.copy.html
         cell = self._create_cell_graph()
 
         # Add the stacks as edge operations
@@ -101,46 +99,30 @@ class NasBench101SearchSpace(Graph):
         for i in range(2, stacks_output_node):
             stack = self._create_stack(in_channels, out_channels, cell)
             in_channels, out_channels = out_channels, out_channels*2
-            macrograph.edges[i, i+1].set("op", stack)
+            self.edges[i, i+1].set("op", stack)
 
         # Add global pooling and dense layer in the final edge
         pool_and_linear = ops.Sequential(
             ops.GlobalAveragePooling(),
-            nn.Linear(in_channels, 10) #TODO: Make output classes flexible
+            nn.Linear(in_channels, num_classes)
         )
 
-        macrograph.edges[stacks_output_node, stacks_output_node+1].set("op", pool_and_linear)
-
-        return macrograph
+        self.edges[stacks_output_node, stacks_output_node+1].set("op", pool_and_linear)
 
 
-    def _create_macro_architecture(self, n_stacks=3, in_channels_stack=128):
-        stem = ops.Stem(C_out=in_channels_stack)
-        all_ops = [stem]
+    def _create_stack(self, in_channels: int, out_channels: int, cell: Graph, downsample=True) -> ops.Sequential:
+        """
+        Creates a stack with three cells and an optional downsampling operation.
 
-        in_channels, out_channels = in_channels_stack, in_channels_stack
+        Args:
+            in_channels     : Number of input channels to the cell
+            out_channels    : Number of output channels of the cell
+            cell            : Graph representation of the cell, copies of which will be used in the stack
+            downsample      : Whether or not to use downsampling operation at the end of the stack
 
-        # Create the cell graph, the copy of which shall be used in all the stacks
-        cell = self._create_cell_graph()
-
-        for i in range(n_stacks):
-            stack = self._create_stack(in_channels, out_channels, cell)
-            in_channels, out_channels = out_channels, out_channels*2
-
-            all_ops.append(stack)
-
-            downsample = False if i == n_stacks-1 else False # Don't downsample if it's the last stack
-            if downsample:
-                all_ops.append(nn.MaxPool2d(kernel_size=3))
-
-        avg_pool = nn.AdaptiveAvgPool2d(in_channels)
-        linear_layer = nn.Linear(in_channels, 10) #TODO: Make output classes flexible
-        all_ops.extend([avg_pool, linear_layer])
-
-        return ops.Sequential(*all_ops)
-
-
-    def _create_stack(self, in_channels: int, out_channels: int, cell: Graph, downsample=True):
+        Returns:
+            A stack with three cells and, optionally, downsampling operation (maxpool3x3).
+        """
         cells = [
             self._create_cell(cell.copy(), in_channels, out_channels),
             self._create_cell(cell.copy(), out_channels, out_channels),
@@ -150,7 +132,7 @@ class NasBench101SearchSpace(Graph):
         for cell in cells:
             # Set inputs for the subgraph. This cannot be done sooner because cell.copy() doesn't copy the
             # attributes of the NASLib Graph object (like Graph.input_node_idxs, which is set using Graph.set_input())
-            for i in range(3, 13, 2): # TODO: Correct?
+            for i in range(3, 13, 2):
                 cell.nodes[i]['subgraph'].set_input([i-1])
 
         if downsample:
@@ -159,11 +141,19 @@ class NasBench101SearchSpace(Graph):
         return ops.Sequential(*cells)
 
 
-    def _create_node_pair_graph(self, parent_node):
-        # TODO: Update this comment
-        # node_pair will be a graph with two nodes, so that the edge between those two nodes
-        # can hold the MixedOp. This makes it possible to represent graphs where nodes hold operations
-        # while still using edges to hold them.
+    def _create_node_pair_graph(self, parent_node:int) -> Graph:
+        """
+        Creates a node_pair graph, with two nodes and a single edge between them. This edge is used to hold the
+        mixed operations as specified in NASBench101 search space (conv3x3, conv1x1, maxpool3x3). This makes it
+        possible to represent graphs where nodes hold operations while still using edges to hold them (the
+        node_pair graph will simply be a subgraph of the node which represents the operation)
+
+        Args:
+            parent_node : Id of parent node
+
+        Returns:
+            Node_pair graph.
+        """
         node_pair = Graph()
         node_pair.name = "node_pair" + str(parent_node)
         node_pair.set_scope("node_pair")
@@ -173,10 +163,13 @@ class NasBench101SearchSpace(Graph):
 
         return node_pair
 
-    def _create_cell_graph(self):
+    def _create_cell_graph(self) -> Graph:
         """
         Creates the graph of the cell with all the nodes and edges.
         Does not assign the operations on the edges or nodes.
+
+        Returns:
+            Graph representing the Cell.
         """
 
         cell = Graph()
@@ -199,12 +192,13 @@ class NasBench101SearchSpace(Graph):
         cell.remove_edge(1, 12)
 
         edges = list(cell.edges())
-        for u, v in edges: #TODO Rewrite the if-else properly
+        for u, v in edges:
+            # We want to retain the edge from input to output, always
             if u == 1 and v == 13:
                 continue
-            elif (u%2 == 0 and v != u+1): # Remove edges from summation nodes to nodes other than its immediate neighbour
-                cell.remove_edge(u, v)
-            elif v%2 == 1 and v != u+1: # Remove edges to nodes with node_pair subgraph which are not from its summation node
+            # Remove edges from summation nodes (even nodes) to nodes other than its immediate neighbour
+            # Remove edges to nodes with node_pair subgraph (odd nodes) which are not from their summation nodes
+            elif (u%2 == 0 and v != u+1) or (v%2 == 1 and v != u+1):
                 cell.remove_edge(u, v)
 
         return cell
@@ -219,7 +213,7 @@ class NasBench101SearchSpace(Graph):
             out_channels    : Number of output channels of the cell
 
         Returns:
-            NASBench101 Cell
+            Graph representation of NASBench101 Cell.
         """
         if out_channels == None:
             out_channels = 2*in_channels
@@ -231,7 +225,7 @@ class NasBench101SearchSpace(Graph):
         # (conv3x3, conv1x1, maxpool3x3) with the correct number of channels
         cell.update_nodes(
             update_func=lambda node, in_edges, out_edges: _set_cell_node_pair_ops(node, node_channels),
-            scope="cell" #TODO Single instance = False?
+            scope="cell"
         )
 
         # The edges of the cell have Zero or Identity as the operations
