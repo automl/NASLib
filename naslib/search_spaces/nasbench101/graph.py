@@ -440,7 +440,7 @@ def _set_cell_node_pair_ops(node, node_channels):
 
 def _set_cell_edge_ops(edge, node_channels: List[int]):
     if edge.head == 1:      # if this is an edge from the input node, then we have to apply a 1x1 projection
-        C_in = node_channels[0]             # Number of input channels to cell
+        C_in = node_channels[0]              # Number of input channels to cell
         C_out = node_channels[edge.tail//2]  # Number of channels expected by each node in the cell
 
         edge.data.set(
@@ -459,12 +459,9 @@ def _set_cell_edge_ops(edge, node_channels: List[int]):
             ],
         )
     else:
-        edge.data.set(
-            "op",
-            [
-                ops.Identity(),
-            ],
-        )
+        # Edges from even nodes are edges from summation nodes
+        # They should always be Identity. No optimization of alpha required.
+        edge.data.finalize()
 
 
 def get_utilized(matrix):
