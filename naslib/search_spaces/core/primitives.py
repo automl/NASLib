@@ -248,6 +248,7 @@ class Sequential(AbstractPrimitive):
 class MaxPool(AbstractPrimitive):
     def __init__(self, C_in, kernel_size, stride, use_bn=True, **kwargs):
         super().__init__(locals())
+        self.kernel_size = kernel_size
 
         if use_bn:
             self.maxpool = nn.Sequential(
