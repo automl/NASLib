@@ -14,6 +14,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
 
+from typing import Callable
 from .additional_primitives import DropPathWrapper
 
 logger = logging.getLogger(__name__)
@@ -71,7 +72,7 @@ class Trainer(object):
             }
         )
 
-    def search(self, resume_from=""):
+    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None):
         """
         Start the architecture search.
 
@@ -191,9 +192,16 @@ class Trainer(object):
 
             self._log_to_json()
 
-            self._log_and_reset_accuracies(e)
+            self._log_and_reset_accuracies(e, summary_writer)
+
+            if after_epoch is not None:
+                after_epoch(e)
 
         self.optimizer.after_training()
+
+        if summary_writer is not None:
+            summary_writer.close()
+
         logger.info("Training finished")
 
     def evaluate_oneshot(self, resume_from="", dataloader=None):
@@ -476,7 +484,7 @@ class Trainer(object):
             eta_min=config.evaluation.learning_rate_min,
         )
 
-    def _log_and_reset_accuracies(self, epoch):
+    def _log_and_reset_accuracies(self, epoch, writer=None):
         logger.info(
             "Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
                 epoch,
@@ -486,6 +494,13 @@ class Trainer(object):
                 self.val_top5.avg,
             )
         )
+
+        if writer is not None:
+            writer.add_scalar('Train accuracy (top 1)', self.train_top1.avg, epoch)
+            writer.add_scalar('Train accuracy (top 5)', self.train_top5.avg, epoch)
+            writer.add_scalar('Validation accuracy (top 1)', self.val_top1.avg, epoch)
+            writer.add_scalar('Validation accuracy (top 5)', self.val_top5.avg, epoch)
+
         self.train_top1.reset()
         self.train_top5.reset()
         self.train_loss.reset()

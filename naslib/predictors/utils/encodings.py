@@ -232,7 +232,10 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
     elif ss_type == "darts":
         return encode_darts(arch, encoding_type=encoding_type)
     elif ss_type == "nlp":
-        return encode_nlp(arch, encoding_type=encoding_type)
+        return encode_nlp(arch, 
+                          encoding_type='adjacency_mix', 
+                          max_nodes=12, 
+                          accs=None)
     else:
         raise NotImplementedError(
             "{} is not yet supported for encodings".format(ss_type)
