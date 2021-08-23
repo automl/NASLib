@@ -25,6 +25,7 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         pip install -e .[test]
         pip install coverage
+        cd tests/
         coverage run -m unittest
 
     - name: Upload coverage to Codecov
