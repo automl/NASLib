@@ -45,7 +45,7 @@ class NasBench101SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self, stacks:int=3, channels:int=128):
+    def __init__(self, stacks:int=3, channels:int=64):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
 
