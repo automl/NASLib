@@ -498,8 +498,10 @@ class Trainer(object):
         if writer is not None:
             writer.add_scalar('Train accuracy (top 1)', self.train_top1.avg, epoch)
             writer.add_scalar('Train accuracy (top 5)', self.train_top5.avg, epoch)
+            writer.add_scalar('Train loss', self.train_loss.avg, epoch)
             writer.add_scalar('Validation accuracy (top 1)', self.val_top1.avg, epoch)
             writer.add_scalar('Validation accuracy (top 5)', self.val_top5.avg, epoch)
+            writer.add_scalar('Validation loss', self.val_loss.avg, epoch)
 
         self.train_top1.reset()
         self.train_top5.reset()
