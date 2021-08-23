@@ -53,6 +53,7 @@ class NasBench101SearchSpace(Graph):
         self.stacks = stacks
         self.channels = channels
         self.space_name = "nasbench101"
+        self.spec = None
 
         self._create_macro_graph(self.stacks, self.channels, self.num_classes)
 
@@ -273,11 +274,11 @@ class NasBench101SearchSpace(Graph):
             Metric.PARAMETERS: "trainable_parameters",
         }
 
-        if self.spec is None:
+        if self.get_spec() is None:
             raise NotImplementedError(
                 "Cannot yet query directly from the naslib object"
             )
-        api_spec = dataset_api["api"].ModelSpec(**self.spec)
+        api_spec = dataset_api["api"].ModelSpec(*self.spec)
 
         if not dataset_api["nb101_data"].is_valid(api_spec):
             return -1

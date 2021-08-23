@@ -68,7 +68,7 @@ def _convert_final_cell_to_spec(naslib_cell: Graph) -> Tuple[np.ndarray, List[st
         naslib_cell : NASLib Graph object representing the cell in the search space
     """
     # Create a zero matrix
-    matrix = np.zeros((7, 7))
+    matrix = np.zeros((7, 7), dtype=int)
 
     for u, v in naslib_cell.edges():
         if v % 2 != 0: # We're only interested in edges going to summation nodes (only they have multiple incoming edges)
