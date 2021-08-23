@@ -57,6 +57,12 @@ def _discretize_ops(edge: AttrDict) -> None:
     """
     if edge.data.has("alpha"):
         primitives = edge.data.op.get_embedded_ops()
+
+        # If the MixedOp has already been replaced with the primitive, then
+        # there's nothing for us to do here.
+        if primitives == None:
+            return
+
         alphas = edge.data.alpha.detach().cpu()
         edge.data.set("op", primitives[np.argmax(alphas)])
 
