@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import copy
 import numpy as np
-
+import torch.nn.functional as F
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph
 
@@ -35,14 +35,22 @@ def _truncate_input_edges(node: Tuple[int, object], in_edges: List[object], out_
     """
     node_idx, _ = node
 
-    if node_idx %2 != 0: # We're only interested in connections to even (summation nodes) nodes
+    if node_idx %2 != 0: # We're only interested in connections to even (summation) nodes
         return
+
+    def _largest_post_softmax_weight(edge):
+        _, edge_data = edge
+        alpha_softmax = F.softmax(edge_data.alpha.detach())
+
+        # Return the softmax activation for identity operation only (the first alpha)
+        return alpha_softmax[0]
+
 
     in_degree_for_node = NODES_IN_DEGREE[node_idx//2 - 1]
 
     if len(in_edges) > in_degree_for_node:
         if any(e.has("alpha") or (e.has("final") and e.final) for _, e in in_edges):
-            sorted_edge_ids = sorted( in_edges, key=lambda x: x[1].alpha[0], reverse=True)
+            sorted_edge_ids = sorted(in_edges, key=_largest_post_softmax_weight, reverse=True)
             keep_edges, _ = zip(*sorted_edge_ids[:in_degree_for_node])
             for edge_id, edge_data in in_edges:
                 if edge_id not in keep_edges:
