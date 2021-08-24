@@ -10,6 +10,11 @@ They must be loaded outside of the search space object, because search spaces ar
 throughout the discrete NAS algos, which would lead to memory errors.
 """
 
+def get_transbench101_api(dataset=None):
+    from naslib.search_spaces import TransNASBenchAPI
+    api = TransNASBenchAPI("../../data/transnas-bench_v10141024.pth")
+    return {'api': api, 'task': dataset}
+
 
 def get_nasbench101_api(dataset=None):
     # load nasbench101
@@ -133,6 +138,9 @@ def get_dataset_api(search_space=None, dataset=None):
 
     elif search_space == "nlp":
         return get_nlp_api(dataset=dataset)
+    
+    elif search_space == 'transbench101':
+        return get_transbench101_api(dataset=dataset)
 
     elif search_space == "asr":
         return get_asr_api(dataset=dataset)
