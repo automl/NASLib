@@ -48,7 +48,7 @@ class DartsDartsIntegrationTest(unittest.TestCase):
         final_arch = self.optimizer.get_final_architecture()
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
-        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.5091561, places=3)
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.610268, places=3)
 
 
 class DartsGdasIntegrationTest(unittest.TestCase):
@@ -73,7 +73,7 @@ class DartsGdasIntegrationTest(unittest.TestCase):
         final_arch = self.optimizer.get_final_architecture()
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
-        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.5091561, places=3)
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.61026883, places=3)
 
 
 class DartsDrNasIntegrationTest(unittest.TestCase):
@@ -98,7 +98,7 @@ class DartsDrNasIntegrationTest(unittest.TestCase):
         final_arch = self.optimizer.get_final_architecture()
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
-        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.5091561, places=3)
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.610268, places=3)
 
 
 class DartsRSWSIntegrationTest(unittest.TestCase):
