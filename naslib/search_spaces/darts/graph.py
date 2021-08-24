@@ -612,8 +612,11 @@ def _truncate_input_edges(node, in_edges, out_edges):
         _, edge_data = edge
 
         alpha = edge_data.alpha.detach()
+        # The zero operation has its value set to -inf to ensure it never gets selected
+        # This hack just ensures that it is the weakest softmax activation, since softmax can't
+        # take inf as input
+        alpha[1] = torch.min(alpha) - 0.001
         alpha_softmax = F.softmax(alpha)
-        alpha_softmax[1] = -1 # We want to ignore the Zero operation
 
         return torch.max(alpha_softmax)
 
@@ -624,6 +627,7 @@ def _truncate_input_edges(node, in_edges, out_edges):
             for _, data in in_edges:
                 if data.has("final") and data.final:
                     return  # We are looking at an out node
+                data.alpha.data[1] = -float("Inf")
             sorted_edge_ids = sorted(in_edges, key=_largest_post_softmax_weight, reverse=True)
             keep_edges, _ = zip(*sorted_edge_ids[:k])
             for edge_id, edge_data in in_edges:
