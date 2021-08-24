@@ -11,6 +11,8 @@
 
 # slurm scripts
 slurm_scripts/*
+run/
+vscode_remote_debugging/
 
 src/*
 
