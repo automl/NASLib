@@ -4,6 +4,7 @@ import logging
 from naslib.predictors.utils.encodings_nb101 import encode_101
 from naslib.predictors.utils.encodings_darts import encode_darts
 from naslib.predictors.utils.encodings_nlp import encode_nlp
+from naslib.predictors.utils.encodings_asr import encode_asr
 
 """
 Currently we need search space specific methods.
@@ -235,6 +236,11 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
         return encode_nlp(arch, 
                           encoding_type='adjacency_mix', 
                           max_nodes=12, 
+                          accs=None)
+    elif ss_type == "asr":
+        return encode_asr(arch,
+                          encoding_type='compact',
+                          max_nodes=3,
                           accs=None)
     else:
         raise NotImplementedError(

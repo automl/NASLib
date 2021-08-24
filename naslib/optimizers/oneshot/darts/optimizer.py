@@ -91,7 +91,7 @@ class DARTSOptimizer(MetaOptimizer):
             self.architectural_weights.append(alpha)
 
         graph.parse()
-        logger.info("Parsed graph:\n" + graph.modules_str())
+        #logger.info("Parsed graph:\n" + graph.modules_str())
 
         # Init optimizers
         if self.arch_optimizer is not None:
