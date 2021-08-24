@@ -11,7 +11,7 @@ throughout the discrete NAS algos, which would lead to memory errors.
 
 def get_transbench101_api(dataset=None):
     from naslib.search_spaces import TransNASBenchAPI
-    api = TransNASBenchAPI("../naslib/data/transnas-bench_v10141024.pth")
+    api = TransNASBenchAPI("../../data/transnas-bench_v10141024.pth")
     return {'api': api, 'task': dataset}
 
 
