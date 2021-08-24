@@ -74,7 +74,7 @@ def default_argument_parser():
     parser.add_argument(
         "--eval-only", action="store_true", help="perform evaluation only"
     )
-    parser.add_argument("--seed", default=0, type=int, help="random seed")
+    parser.add_argument("--seed", default=0, help="random seed")
     parser.add_argument(
         "--resume", action="store_true", help="Resume from last checkpoint"
     )
@@ -114,13 +114,6 @@ def default_argument_parser():
         default=None,
         nargs=argparse.REMAINDER,
     )
-    parser.add_argument(
-        "--search_space", default="darts", type=str, help="Search space to explore"
-    )
-    parser.add_argument(
-        "--optimizer", default="darts", type=str, help="Optimizer to use"
-    )
-
     return parser
 
 
@@ -221,10 +214,9 @@ def get_config_from_args(args=None, config_type="nas"):
 
     # prepare the output directories
     if config_type == "nas":
-        config.seed = args.seed
+        # config.seed = args.seed
         config.search.seed = config.seed
-        config.optimizer = args.optimizer
-        config.search_space = args.search_space
+        # config.optimizer = args.optimizer
         config.evaluation.world_size = args.world_size
         config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
         config.evaluation.rank = args.rank
