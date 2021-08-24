@@ -9,8 +9,8 @@ then
 fi
 
 # folders:
-base_file=NASLib/naslib
-s3_folder=bo301
+base_file=naslib
+s3_folder=bo301_feb9_0
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
@@ -34,19 +34,19 @@ do
 done
 
 # run experiments
-for t in $(seq $start_seed $end_seed)
-do
-    for predictor in ${predictors[@]}
-    do
-        config_file=$out_dir/$dataset/configs/nas_predictors/config\_$optimizer\_$predictor\_$t.yaml
-        echo ================running $predictor trial: $t =====================
-        python $base_file/benchmarks/nas_predictors/runner.py --config-file $config_file
-    done
-    if [ "save_to_s3" ]
-    then
-        # zip and save to s3
-        echo zipping and saving to s3
-        zip -r $out_dir.zip $out_dir
-        python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
-    fi
-done
+#for t in $(seq $start_seed $end_seed)
+#do
+    #for predictor in ${predictors[@]}
+    #do
+        #config_file=$out_dir/$dataset/configs/nas_predictors/config\_$optimizer\_$predictor\_$t.yaml
+        #echo ================running $predictor trial: $t =====================
+        #python $base_file/benchmarks/nas_predictors/runner.py --config-file $config_file
+    #done
+    #if [ "save_to_s3" ]
+    #then
+        ## zip and save to s3
+        #echo zipping and saving to s3
+        #zip -r $out_dir.zip $out_dir
+        #python $base_file/benchmarks/upload_to_s3.py --out_dir $out_dir --s3_folder $s3_folder
+    #fi
+#done

@@ -2,6 +2,7 @@ import os
 import pickle
 
 from naslib.utils.utils import get_project_root
+from naslib.utils.utils_asr import from_folder
 
 """
 This file loads any dataset files or api's needed by the Trainer or PredictorEvaluator object.
@@ -102,15 +103,26 @@ def get_nlp_api(dataset=None,
     nlp_arches = list(nlp_data.keys())
     
     # Load the NAS-Bench-NLP11 performance model
-    import nasbench301
-    performance_model = nasbench301.load_ensemble(
-        os.path.expanduser(nlp_model_path)
-    )
+    #import nasbench301
+    #performance_model = nasbench301.load_ensemble(
+        #os.path.expanduser(nlp_model_path)
+    #)
 
     return {
-        "nlp_data": nlp_data, 
-        "nlp_arches": nlp_arches, 
-        "nlp_model":performance_model}
+        "nlp_data": nlp_data,
+        "nlp_arches": nlp_arches,
+        #"nlp_model":performance_model,
+    }
+
+
+def get_asr_api(dataset=None):
+    # Load the NAS-Bench-ASR data
+    d = from_folder(os.path.join(get_project_root(), 'data'),
+                    include_static_info=True)
+
+    return {
+        'asr_data': d,
+    }
 
 
 def get_dataset_api(search_space=None, dataset=None):
@@ -129,6 +141,9 @@ def get_dataset_api(search_space=None, dataset=None):
     
     elif search_space == 'transbench101':
         return get_transbench101_api(dataset=dataset)
+
+    elif search_space == "asr":
+        return get_asr_api(dataset=dataset)
 
     elif search_space == "test":
         return None
