@@ -23,6 +23,8 @@ from naslib.search_spaces.darts.conversions import (
 from naslib.search_spaces.core.query_metrics import Metric
 from .primitives import FactorizedReduce
 
+import torch.nn.functional as F
+
 logger = logging.getLogger(__name__)
 
 NUM_VERTICES = 4
@@ -605,6 +607,16 @@ def _truncate_input_edges(node, in_edges, out_edges):
     """
     Removes input edges if there are more than k.
     """
+
+    def _largest_post_softmax_weight(edge) -> int:
+        _, edge_data = edge
+
+        alpha = edge_data.alpha.detach()
+        alpha_softmax = F.softmax(alpha)
+        alpha_softmax[1] = -1 # We want to ignore the Zero operation
+
+        return torch.max(alpha_softmax)
+
     k = 2
     if len(in_edges) >= k:
         if any(e.has("alpha") or (e.has("final") and e.final) for _, e in in_edges):
@@ -612,10 +624,7 @@ def _truncate_input_edges(node, in_edges, out_edges):
             for _, data in in_edges:
                 if data.has("final") and data.final:
                     return  # We are looking at an out node
-                data.alpha.data[1] = -float("Inf")  # Zero op should never be max alpha
-            sorted_edge_ids = sorted(
-                in_edges, key=lambda x: max(x[1].alpha), reverse=True
-            )
+            sorted_edge_ids = sorted(in_edges, key=_largest_post_softmax_weight, reverse=True)
             keep_edges, _ = zip(*sorted_edge_ids[:k])
             for edge_id, edge_data in in_edges:
                 if edge_id not in keep_edges:
