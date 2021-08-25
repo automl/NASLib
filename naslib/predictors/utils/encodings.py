@@ -24,6 +24,13 @@ one_hot_nasbench201 = [
     [0, 0, 0, 0, 1],
 ]
 
+one_hot_transbench101 = [
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1],
+]
+
 OPS = ["avg_pool_3x3", "nor_conv_1x1", "nor_conv_3x3", "none", "skip_connect"]
 NUM_OPS = len(OPS)
 
@@ -34,6 +41,15 @@ def encode_adjacency_one_hot(arch):
     one_hot = []
     for e in encoding:
         one_hot = [*one_hot, *one_hot_nasbench201[e]]
+    return one_hot
+
+
+def encode_adjacency_one_hot_tb101(arch):
+
+    encoding = arch.get_op_indices()
+    one_hot = []
+    for e in encoding:
+        one_hot = [*one_hot, *one_hot_transbench101[e]]
     return one_hot
 
 
@@ -89,6 +105,42 @@ def encode_gcn_nasbench201(arch):
     # offset ops list by one, add input and output to ops list
     ops = [op + 1 for op in ops]
     ops = [0, *ops, 6]
+    # print(ops)
+    ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
+    matrix = np.array(
+        [
+            [0, 1, 1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        dtype=np.float32,
+    )
+    # matrix = np.transpose(matrix)
+    dic = {
+        "num_vertices": 8,
+        "adjacency": matrix,
+        "operations": ops_onehot,
+        "mask": np.array([i < 8 for i in range(8)], dtype=np.float32),
+        "val_acc": 0.0,
+    }
+
+    return dic
+
+
+def encode_gcn_transbench101(arch):
+    """
+    Input:
+    a list of categorical ops starting from 0
+    """
+    ops = arch.get_op_indices()
+    # offset ops list by one, add input and output to ops list
+    ops = [op + 1 for op in ops]
+    ops = [0, *ops, 5]
     # print(ops)
     ops_onehot = np.array([[i == op for i in range(7)] for op in ops], dtype=np.float32)
     matrix = np.array(
@@ -199,6 +251,40 @@ def encode_seminas_nasbench201(arch):
     return dic
 
 
+def encode_seminas_transbench101(arch):
+    """
+    Input:
+    a list of categorical ops starting from 0
+    """
+    ops = arch.get_op_indices()
+    # offset ops list by one, add input and output to ops list
+    ops = [op + 1 for op in ops]
+    ops = [0, *ops, 5]
+    matrix = np.array(
+        [
+            [0, 1, 1, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ],
+        dtype=np.float32,
+    )
+    # matrix = np.transpose(matrix)
+    dic = {
+        "num_vertices": 8,
+        "adjacency": matrix,
+        "operations": ops,
+        "mask": np.array([i < 8 for i in range(8)], dtype=np.float32),
+        "val_acc": 0.0,
+    }
+
+    return dic
+
+
 def encode_201(arch, encoding_type="adjacency_one_hot"):
 
     if encoding_type == "adjacency_one_hot":
@@ -225,13 +311,27 @@ def encode_201(arch, encoding_type="adjacency_one_hot"):
 
 def encode_tb101(arch, encoding_type='adjacency_one_hot'):
         
-    if encoding_type == 'adjacency_one_hot':
-        return encode_adjacency_one_hot(arch)
+    if encoding_type == "adjacency_one_hot":
+        return encode_adjacency_one_hot_tb101(arch)
+
+#     elif encoding_type == "path":
+#         return encode_paths(arch)
+
+    elif encoding_type == "gcn":
+        return encode_gcn_transbench101(arch)
+
+#     elif encoding_type == "bonas":
+#         return encode_bonas_nasbench201(arch)
+
+    elif encoding_type == "seminas":
+        return encode_seminas_transbench101(arch)
 
     else:
-        logger.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
+        logger.info(
+            "{} is not yet supported as a predictor encoding".format(encoding_type)
+        )
         raise NotImplementedError()
-
+        
 
 def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
     # this method calls either encode_201 or encode_darts based on the search space
