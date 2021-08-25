@@ -114,7 +114,7 @@ def _convert_final_cell_to_spec(naslib_cell: Graph) -> Tuple[np.ndarray, List[st
 
     operations.append(OUTPUT)
 
-    return matrix, operations
+    return {'matrix': matrix, 'ops': operations}
 
 def convert_naslib_to_spec(naslib_object) -> Tuple[np.ndarray, List[str]]:
     """
