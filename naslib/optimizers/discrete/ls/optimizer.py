@@ -111,8 +111,11 @@ class LocalSearch(MetaOptimizer):
                     self.history[i] = child
                     break
 
-    def train_statistics(self):
-        best_arch = self.get_final_architecture()
+    def train_statistics(self, report_incumbent=True):
+        if report_incumbent:
+            best_arch = self.get_final_architecture()
+        else:
+            best_arch = self.history[-1].arch #TODO: Fix. Will break for after 100 epochs
         return (
             best_arch.query(
                 Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
