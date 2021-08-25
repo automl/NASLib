@@ -278,7 +278,7 @@ class NasBench101SearchSpace(Graph):
             raise NotImplementedError(
                 "Cannot yet query directly from the naslib object"
             )
-        api_spec = dataset_api["api"].ModelSpec(*self.spec)
+        api_spec = dataset_api["api"].ModelSpec(**self.spec)
 
         if not dataset_api["nb101_data"].is_valid(api_spec):
             return -1
