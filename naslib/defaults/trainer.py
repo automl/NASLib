@@ -72,7 +72,7 @@ class Trainer(object):
             }
         )
 
-    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None):
+    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None, report_incumbent=True):
         """
         Start the architecture search.
 
@@ -164,7 +164,7 @@ class Trainer(object):
                     valid_acc,
                     test_acc,
                     train_time,
-                ) = self.optimizer.train_statistics()
+                ) = self.optimizer.train_statistics(report_incumbent)
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
                 self.errors_dict.train_acc.append(train_acc)
