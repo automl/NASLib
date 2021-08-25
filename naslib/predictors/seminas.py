@@ -605,7 +605,14 @@ class SemiNASPredictor(Predictor):
             encoder_length = 324
             decoder_length = 324
             vocab_size = 12
-
+            
+        elif self.ss_type == "transbench101":
+            self.max_n = 8
+            encoder_length = 35
+            decoder_length = 35
+            vocab_size = 9
+            
+            
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
