@@ -8,7 +8,45 @@ import numpy as np
 
 def main(args):
 
-    if args.config_type == "nas":
+    if args.config_type == 'bbo':
+        folder = f"naslib/benchmarks/bbo/configs_{args.search_space}/{args.dataset}"
+        os.makedirs(folder, exist_ok=True)
+        args.start_seed = int(args.start_seed)
+        args.trials = int(args.trials)
+
+        for i in range(args.start_seed, args.start_seed + args.trials):
+            config = {
+                "seed": i,
+                "search_space": args.search_space,
+                "dataset": args.dataset,
+                "optimizer": args.optimizer,
+                "out_dir": args.out_dir,
+                "search": {
+                    "checkpoint_freq": args.checkpoint_freq,
+                    "epochs": args.epochs,
+                    "fidelity": args.fidelity,
+                    "sample_size": 10,
+                    "population_size": 30,
+                    "num_init": 10,
+                    "k": 25,
+                    "num_ensemble": 3,
+                    "acq_fn_type": "its",
+                    "acq_fn_optimization": args.acq_fn_optimization,
+                    "encoding_type": "path",
+                    "num_arches_to_mutate": 2,
+                    "max_mutations": 1,
+                    "num_candidates": 100,
+                    "predictor_type": args.predictor_type,
+                    "debug_predictor": False,
+                },
+            }
+
+            path = folder + f"/config_{args.optimizer}_{i}.yaml"
+
+            with open(path, "w") as fh:
+                yaml.dump(config, fh)
+    
+    elif args.config_type == "nas":
         folder = f"{args.out_dir}/{args.dataset}/configs/nas"
         os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)
@@ -185,7 +223,7 @@ if __name__ == "__main__":
     parser.add_argument("--start_seed", type=int, default=0, help="starting seed")
     parser.add_argument("--trials", type=int, default=100, help="Number of trials")
     parser.add_argument("--optimizer", type=str, default="rs", help="which optimizer")
-    parser.add_argument("--predictor", type=str, default="full", help="which predictor")
+    parser.add_argument("--predictor_type", type=str, default="full", help="which predictor")
     parser.add_argument(
         "--test_size", type=int, default=30, help="Test set size for predictor"
     )
@@ -203,6 +241,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--fidelity_single", type=int, default=5, help="Fidelity if exp type is single"
+    )
+    parser.add_argument(
+        "--fidelity", type=int, default=200, help="Fidelity"
+    )
+    parser.add_argument(
+        "--acq_fn_optimization", type=str, default="mutation", help="acq_fn"
     )
     parser.add_argument("--dataset", type=str, default="cifar10", help="Which dataset")
     parser.add_argument("--out_dir", type=str, default="run", help="Output directory")
