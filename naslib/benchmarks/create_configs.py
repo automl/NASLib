@@ -8,8 +8,8 @@ import numpy as np
 
 def main(args):
 
-    if args.config_type == 'bbo':
-        folder = f"naslib/benchmarks/bbo/configs_{args.search_space}/{args.dataset}"
+    if args.config_type == 'bbo-bs':
+        folder = f"naslib/benchmarks/bbo/configs/{args.search_space}/{args.dataset}"
         os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
@@ -36,7 +36,7 @@ def main(args):
                     "num_arches_to_mutate": 2,
                     "max_mutations": 1,
                     "num_candidates": 100,
-                    "predictor_type": args.predictor_type,
+                    "predictor": args.predictor,
                     "debug_predictor": False,
                 },
             }
@@ -46,6 +46,76 @@ def main(args):
             with open(path, "w") as fh:
                 yaml.dump(config, fh)
     
+    elif args.config_type == "predictor-bs":
+        folder = f"naslib/benchmarks/predictors-bs/configs_{args.search_space}/{args.dataset}"
+        os.makedirs(folder, exist_ok=True)
+        args.start_seed = int(args.start_seed)
+        args.trials = int(args.trials)
+
+        if args.search_space == "nasbench101":
+            total_epochs = 108 - 1
+            max_train_size = 1000
+        elif args.search_space == "nasbench201":
+            total_epochs = 200 - 1
+            max_train_size = 1000
+        elif args.search_space == "darts":
+            total_epochs = 96 - 1
+            max_train_size = 500
+        elif args.search_space == "nlp":
+            total_epochs = 50 - 1
+            max_train_size = 1000
+
+        train_size_list = [
+            int(j)
+            for j in np.logspace(
+                start=np.log(5.1) / np.log(2),
+                stop=np.log(max_train_size) / np.log(2),
+                num=11,
+                endpoint=True,
+                base=2.0,
+            )
+        ]
+        # train_size_list = [i for i in train_size_list if i < 230]
+        fidelity_list = [
+            int(j)
+            for j in np.logspace(
+                start=0.9,
+                stop=np.log(total_epochs) / np.log(2),
+                num=15,
+                endpoint=True,
+                base=2.0,
+            )
+        ]
+
+        if args.search_space == "nlp":
+            fidelity_list.pop(2)
+            fidelity_list.insert(5, 6)
+
+        if "svr" in args.predictor:
+            train_size_list.pop(0)
+            fidelity_list.pop(0)
+            fidelity_list.pop(0)
+
+        for i in range(args.start_seed, args.start_seed + args.trials):
+            config = {
+                "seed": i,
+                "search_space": args.search_space,
+                "dataset": args.dataset,
+                "out_dir": args.out_dir,
+                "predictor": args.predictor,
+                "test_size": args.test_size,
+                "uniform_random": args.uniform_random,
+                "experiment_type": args.experiment_type,
+                "train_size_list": train_size_list,
+                "train_size_single": args.train_size_single,
+                "fidelity_single": args.fidelity_single,
+                "fidelity_list": fidelity_list,
+                "max_hpo_time": 900,
+            }
+
+            with open(folder + f"/config_{args.predictor}_{i}.yaml", "w") as fh:
+                yaml.dump(config, fh)
+
     elif args.config_type == "nas":
         folder = f"{args.out_dir}/{args.dataset}/configs/nas"
         os.makedirs(folder, exist_ok=True)
@@ -224,6 +294,7 @@ if __name__ == "__main__":
     parser.add_argument("--trials", type=int, default=100, help="Number of trials")
     parser.add_argument("--optimizer", type=str, default="rs", help="which optimizer")
     parser.add_argument("--predictor_type", type=str, default="full", help="which predictor")
+    parser.add_argument("--predictor", type=str, default="xgb", help="which predictor")
     parser.add_argument(
         "--test_size", type=int, default=30, help="Test set size for predictor"
     )
