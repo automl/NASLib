@@ -50,5 +50,5 @@ optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
-trainer.search(resume_from="", summary_writer=writer)
+trainer.search(resume_from="", summary_writer=writer, report_incumbent=False)
 trainer.evaluate(resume_from="", dataset_api=dataset_api, metric=metric)
