@@ -35,6 +35,7 @@ class LocalSearch(MetaOptimizer):
         self.best_arch = None
 
         self.history = torch.nn.ModuleList()
+        self.newest_child_idx = -1
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -105,17 +106,19 @@ class LocalSearch(MetaOptimizer):
     def _update_history(self, child):
         if len(self.history) < 100:
             self.history.append(child)
+            self.newest_child_idx = len(self.history) - 1
         else:
             for i, p in enumerate(self.history):
                 if child.accuracy > p.accuracy:
                     self.history[i] = child
+                    self.newest_child_idx = i
                     break
 
     def train_statistics(self, report_incumbent=True):
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:
-            best_arch = self.history[-1].arch #TODO: Fix. Will break for after 100 epochs
+            best_arch = self.history[self.newest_child_idx].arch
         return (
             best_arch.query(
                 Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
