@@ -23,9 +23,9 @@ out_dir=run
 config_type=bbo-bs
 
 # search space / data:
-search_space=darts
+search_space=transbench101
 
-dataset=(cifar10)
+dataset=(class_scene class_object jigsaw room_layout segmentsemantic normal autoencoder)
 
 # epoch number to get the values 
 fidelity=-1

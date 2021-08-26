@@ -36,7 +36,7 @@ supported_search_spaces = {
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101': TransBench101SearchSpace(),
-    'nasbenchasr': NasBenchASRSearchSpace()
+    'asr': NasBenchASRSearchSpace()
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)

@@ -23,9 +23,9 @@ out_dir=run
 config_type=bbo-bs
 
 # search space / data:
-search_space=darts
+search_space=nlp
 
-dataset=(cifar10)
+dataset=(LM-task)
 
 # epoch number to get the values 
 fidelity=-1
