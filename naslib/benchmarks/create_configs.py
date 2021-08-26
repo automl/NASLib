@@ -9,6 +9,7 @@ import numpy as np
 def main(args):
 
     if args.config_type == 'bbo-bs':
+        # this is hardcoded for now -- needs to be changed later!!!
         folder = f"naslib/benchmarks/bbo/configs/{args.search_space}/{args.dataset}"
         os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)

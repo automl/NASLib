@@ -1,6 +1,6 @@
 export OMP_NUM_THREADS=2
-optimizers=(rs)
-# optimizers=(rs re ls npenas bananas)
+# optimizers=(rs)
+optimizers=(rs re ls npenas bananas)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -33,7 +33,7 @@ epochs=200
 predictor=var_sparse_gp
 
 # trials / seeds:
-trials=30
+trials=5
 end_seed=$(($start_seed + $trials - 1))
 
 # create config files
