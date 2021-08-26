@@ -26,10 +26,11 @@ out_dir=run
 config_type=bbo-bs
 
 # search space / data:
-search_space=nasbench201
+search_space=darts
 
-dataset=(cifar10 cifar100 ImageNet16-120)
+dataset=(cifar10)
 
+# epoch number to get the values 
 fidelity=-1
 epochs=200
 predictor=var_sparse_gp

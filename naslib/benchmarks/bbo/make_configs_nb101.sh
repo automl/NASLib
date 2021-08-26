@@ -3,7 +3,7 @@ optimizers=(rs)
 # optimizers=(re)
 # optimizers=(ls)
 # optimizers=(npenas)
-#optimizers=(bananas)
+# optimizers=(bananas)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -29,12 +29,12 @@ config_type=bbo-bs
 search_space=nasbench101
 dataset=cifar10
 
-fidelity=108
-epochs=15
-predictor=bananas
+fidelity=-1
+epochs=200
+predictor=var_sparse_gp
 
 # trials / seeds:
-trials=5
+trials=30
 end_seed=$(($start_seed + $trials - 1))
 
 # create config files
