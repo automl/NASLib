@@ -22,16 +22,19 @@ fi
 base_file=naslib
 out_dir=run
 
+# bbo-bs or predictor-bs
+config_type=bbo-bs
+
 # search space / data:
 search_space=nasbench101
 dataset=cifar10
 
 fidelity=108
 epochs=15
-predictor_type=bananas
+predictor=bananas
 
 # trials / seeds:
-trials=10
+trials=5
 end_seed=$(($start_seed + $trials - 1))
 
 # create config files
@@ -40,8 +43,10 @@ do
   optimizer=${optimizers[$i]}
   python $base_file/benchmarks/create_configs.py \
  --start_seed $start_seed --trials $trials \
-  --out_dir $out_dir --dataset=$dataset --config_type bbo \
+  --out_dir $out_dir --dataset=$dataset --config_type $config_type \
   --search_space $search_space --optimizer $optimizer \
-  --acq_fn_optimization $acq_fn_optimization --predictor_type $predictor_type \
+  --acq_fn_optimization $acq_fn_optimization --predictor $predictor \
   --fidelity $fidelity --epochs $epochs
 done
+
+echo 'YEAH! SCIENCE BITCH. config files are ready!!'
