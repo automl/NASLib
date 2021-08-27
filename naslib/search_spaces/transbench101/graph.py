@@ -35,14 +35,14 @@ class TransBench101SearchSpace(Graph):
     QUERYABLE = True
 
 
-    def __init__(self):
+    def __init__(self, space='micro'):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         self.op_indices = None
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
-        self.space = 'micro'
+        self.space = space
         #
         # Cell definition
         #

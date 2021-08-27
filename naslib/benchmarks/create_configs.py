@@ -65,6 +65,12 @@ def main(args):
         elif args.search_space == "nlp":
             total_epochs = 50 - 1
             max_train_size = 1000
+        elif args.search_space == "asr":
+            total_epochs = 41 - 1
+            max_train_size = 1000
+        elif args.search_space == "transbench101_micro" or args.search_space == "transbench101_macro":
+            total_epochs = 200 - 1
+            max_train_size = 1000
 
         train_size_list = [
             int(j)
