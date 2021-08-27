@@ -144,6 +144,8 @@ supported_search_spaces = {
     "nasbench201": NasBench201SearchSpace(),
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
+    'transbench101_micro': TransBench101SearchSpace('micro'),
+    'transbench101_macro': TransBench101SearchSpace('micro')}
     'transbench101': TransBench101SearchSpace()
 }
 
