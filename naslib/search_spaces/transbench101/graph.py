@@ -386,9 +386,9 @@ class TransBench101SearchSpace(Graph):
     
     def get_nbhd(self, dataset_api=None):
         if self.space=='micro':
-            self.get_nbhd_micro(dataset_api)
+            return self.get_nbhd_micro(dataset_api)
         elif self.space=='macro':
-            self.get_nbhd_macro(dataset_api)
+            return self.get_nbhd_macro(dataset_api)
         
         
 
