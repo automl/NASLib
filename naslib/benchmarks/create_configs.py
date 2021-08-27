@@ -8,7 +8,116 @@ import numpy as np
 
 def main(args):
 
-    if args.config_type == "nas":
+    if args.config_type == 'bbo-bs':
+        # this is hardcoded for now -- needs to be changed later!!!
+        folder = f"naslib/benchmarks/bbo/configs/{args.search_space}/{args.dataset}"
+        os.makedirs(folder, exist_ok=True)
+        args.start_seed = int(args.start_seed)
+        args.trials = int(args.trials)
+
+        for i in range(args.start_seed, args.start_seed + args.trials):
+            config = {
+                "seed": i,
+                "search_space": args.search_space,
+                "dataset": args.dataset,
+                "optimizer": args.optimizer,
+                "out_dir": args.out_dir,
+                "search": {
+                    "checkpoint_freq": args.checkpoint_freq,
+                    "epochs": args.epochs,
+                    "fidelity": args.fidelity,
+                    "sample_size": 10,
+                    "population_size": 30,
+                    "num_init": 10,
+                    "k": 20,
+                    "num_ensemble": 3,
+                    "acq_fn_type": "its",
+                    "acq_fn_optimization": args.acq_fn_optimization,
+                    "encoding_type": "path",
+                    "num_arches_to_mutate": 2,
+                    "max_mutations": 1,
+                    "num_candidates": 30,
+                    "predictor": args.predictor,
+                    "debug_predictor": False,
+                },
+            }
+
+            path = folder + f"/config_{args.optimizer}_{i}.yaml"
+
+            with open(path, "w") as fh:
+                yaml.dump(config, fh)
+    
+    elif args.config_type == "predictor-bs":
+        folder = f"naslib/benchmarks/predictors-bs/configs_{args.search_space}/{args.dataset}"
+        os.makedirs(folder, exist_ok=True)
+        args.start_seed = int(args.start_seed)
+        args.trials = int(args.trials)
+
+        if args.search_space == "nasbench101":
+            total_epochs = 108 - 1
+            max_train_size = 1000
+        elif args.search_space == "nasbench201":
+            total_epochs = 200 - 1
+            max_train_size = 1000
+        elif args.search_space == "darts":
+            total_epochs = 96 - 1
+            max_train_size = 500
+        elif args.search_space == "nlp":
+            total_epochs = 50 - 1
+            max_train_size = 1000
+
+        train_size_list = [
+            int(j)
+            for j in np.logspace(
+                start=np.log(5.1) / np.log(2),
+                stop=np.log(max_train_size) / np.log(2),
+                num=11,
+                endpoint=True,
+                base=2.0,
+            )
+        ]
+        # train_size_list = [i for i in train_size_list if i < 230]
+        fidelity_list = [
+            int(j)
+            for j in np.logspace(
+                start=0.9,
+                stop=np.log(total_epochs) / np.log(2),
+                num=15,
+                endpoint=True,
+                base=2.0,
+            )
+        ]
+
+        if args.search_space == "nlp":
+            fidelity_list.pop(2)
+            fidelity_list.insert(5, 6)
+
+        if "svr" in args.predictor:
+            train_size_list.pop(0)
+            fidelity_list.pop(0)
+            fidelity_list.pop(0)
+
+        for i in range(args.start_seed, args.start_seed + args.trials):
+            config = {
+                "seed": i,
+                "search_space": args.search_space,
+                "dataset": args.dataset,
+                "out_dir": args.out_dir,
+                "predictor": args.predictor,
+                "test_size": args.test_size,
+                "uniform_random": args.uniform_random,
+                "experiment_type": args.experiment_type,
+                "train_size_list": train_size_list,
+                "train_size_single": args.train_size_single,
+                "fidelity_single": args.fidelity_single,
+                "fidelity_list": fidelity_list,
+                "max_hpo_time": 900,
+            }
+
+            with open(folder + f"/config_{args.predictor}_{i}.yaml", "w") as fh:
+                yaml.dump(config, fh)
+
+    elif args.config_type == "nas":
         folder = f"{args.out_dir}/{args.dataset}/configs/nas"
         os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)
@@ -185,7 +294,8 @@ if __name__ == "__main__":
     parser.add_argument("--start_seed", type=int, default=0, help="starting seed")
     parser.add_argument("--trials", type=int, default=100, help="Number of trials")
     parser.add_argument("--optimizer", type=str, default="rs", help="which optimizer")
-    parser.add_argument("--predictor", type=str, default="full", help="which predictor")
+    parser.add_argument("--predictor_type", type=str, default="full", help="which predictor")
+    parser.add_argument("--predictor", type=str, default="xgb", help="which predictor")
     parser.add_argument(
         "--test_size", type=int, default=30, help="Test set size for predictor"
     )
@@ -203,6 +313,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--fidelity_single", type=int, default=5, help="Fidelity if exp type is single"
+    )
+    parser.add_argument(
+        "--fidelity", type=int, default=200, help="Fidelity"
+    )
+    parser.add_argument(
+        "--acq_fn_optimization", type=str, default="mutation", help="acq_fn"
     )
     parser.add_argument("--dataset", type=str, default="cifar10", help="Which dataset")
     parser.add_argument("--out_dir", type=str, default="run", help="Output directory")

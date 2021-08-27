@@ -105,15 +105,15 @@ def get_nlp_api(dataset=None,
     nlp_arches = list(nlp_data.keys())
     
     # Load the NAS-Bench-NLP11 performance model
-    #import nasbench301
-    #performance_model = nasbench301.load_ensemble(
-        #os.path.expanduser(nlp_model_path)
-    #)
+    import nasbench301
+    performance_model = nasbench301.load_ensemble(
+        os.path.expanduser(nlp_model_path)
+    )
 
     return {
         "nlp_data": nlp_data,
         "nlp_arches": nlp_arches,
-        #"nlp_model":performance_model,
+        "nlp_model":performance_model,
     }
 
 
