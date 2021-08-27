@@ -35,7 +35,8 @@ supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
-    'transbench101': TransBench101SearchSpace(),
+    'transbench101_micro': TransBench101SearchSpace(),
+    'transbench101_macro': TransBench101SearchSpace(),
     'asr': NasBenchASRSearchSpace()
 }
 
@@ -43,6 +44,8 @@ dataset_api = get_dataset_api(config.search_space, config.dataset)
 utils.set_seed(config.seed)
 
 search_space = supported_search_spaces[config.search_space]
+if config.search_space == 'transbench101_macro':
+    search_space.space = 'macro'
 
 metric = Metric.VAL_ACCURACY if config.search_space == 'darts' else None
 

@@ -23,7 +23,7 @@ out_dir=run
 config_type=bbo-bs
 
 # search space / data:
-search_space=transbench101
+search_space=transbench101_micro
 
 dataset=(class_scene class_object jigsaw room_layout segmentsemantic normal autoencoder)
 
