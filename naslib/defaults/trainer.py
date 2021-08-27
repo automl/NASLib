@@ -1,4 +1,5 @@
 import codecs
+from naslib.search_spaces.core.graph import Graph
 import time
 import json
 import logging
@@ -72,7 +73,7 @@ class Trainer(object):
             }
         )
 
-    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None):
+    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None, report_incumbent=True):
         """
         Start the architecture search.
 
@@ -164,7 +165,7 @@ class Trainer(object):
                     valid_acc,
                     test_acc,
                     train_time,
-                ) = self.optimizer.train_statistics()
+                ) = self.optimizer.train_statistics(report_incumbent)
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
                 self.errors_dict.train_acc.append(train_acc)
@@ -250,11 +251,12 @@ class Trainer(object):
 
     def evaluate(
         self,
-        retrain=True,
-        search_model="",
-        resume_from="",
-        best_arch=None,
-        dataset_api=None,
+        retrain:bool=True,
+        search_model:str="",
+        resume_from:str="",
+        best_arch:Graph=None,
+        dataset_api:object=None,
+        metric:Metric=None,
     ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -263,12 +265,14 @@ class Trainer(object):
         Otherwise train as defined in the config.
 
         Args:
-            retrain (bool): Reset the weights from the architecure search
-            search_model (str): Path to checkpoint file that was created during
-                search. If not provided, then try to load 'model_final.pth' from search
-            resume_from (str): Resume retraining from the given checkpoint file.
-            best_arch: Parsed model you want to directly evaluate and ignore the final model
-                from the optimizer.
+            retrain (bool)      : Reset the weights from the architecure search
+            search_model (str)  : Path to checkpoint file that was created during search. If not provided,
+                                  then try to load 'model_final.pth' from search
+            resume_from (str)   : Resume retraining from the given checkpoint file.
+            best_arch           : Parsed model you want to directly evaluate and ignore the final model
+                                  from the optimizer.
+            dataset_api         : Dataset API to use for querying model performance.
+            metric              : Metric to query the benchmark for.
         """
         logger.info("Start evaluation")
         if not best_arch:
@@ -283,7 +287,8 @@ class Trainer(object):
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if best_arch.QUERYABLE:
-            metric = Metric.TEST_ACCURACY
+            if metric is None:
+                metric = Metric.TEST_ACCURACY
             result = best_arch.query(
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )

@@ -93,8 +93,13 @@ class RandomSearch(MetaOptimizer):
         """
         return max(self.sampled_archs, key=lambda x: x.accuracy).arch
 
-    def train_statistics(self):
-        best_arch = self.get_final_architecture()
+    def train_statistics(self, report_incumbent=True):
+
+        if report_incumbent:
+            best_arch = self.get_final_architecture()
+        else:
+            best_arch = self.sampled_archs[-1].arch
+
         return (
             best_arch.query(
                 Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
