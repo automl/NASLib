@@ -52,7 +52,7 @@ search:
   num_candidates: 100
   
   # BasePredictor
-  predictor_type: feedforward
+  predictor_type: var_sparse_gp
   debug_predictor: False
 
 evaluation:
