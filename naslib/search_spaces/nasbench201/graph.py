@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 import random
+import itertools
 import torch
 import torch.nn as nn
 
@@ -204,11 +205,19 @@ class NasBench201SearchSpace(Graph):
 
     def get_hash(self):
         return tuple(self.get_op_indices())
+    
+    def get_arch_iterator(self, dataset_api=None):
+        return itertools.product(range(5), repeat=6)
 
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
         convert_op_indices_to_naslib(op_indices, self)
+
+    def set_spec(self, op_indices):
+        # this is just to unify the setters across search spaces
+        # TODO: change it to set_spec on all search spaces
+        self.set_op_indices(op_indices)
 
     def sample_random_architecture(self, dataset_api=None):
         """

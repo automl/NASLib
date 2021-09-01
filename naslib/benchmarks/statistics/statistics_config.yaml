@@ -1,0 +1,23 @@
+
+# nasbench101, nasbench201, darts, nlp, etc
+search_space: darts
+
+# only important for nasbench201, transnasbench, etc
+dataset: cifar10
+
+# random seed (only important for autocorrelation)
+seed: 1000
+
+# What is the max number of architectures to query
+# in the case that the search space is very large
+max_set_size: 10
+
+# stats that can be computed by iterating through
+# all architectures in the search space
+run_acc_stats: True
+
+# autocorrelation not yet implemented
+run_autocorrelation: False
+
+# Return a histogram for which bucket sizes
+bucket_sizes: [25, 30, 40, 50, 75, 100]

@@ -454,10 +454,21 @@ class DartsSearchSpace(Graph):
     def get_hash(self):
         return self.get_compact()
 
+    def get_arch_iterator(self, dataset_api=None):
+        # currently set up for nasbench301 data, not surrogate
+        arch_list = np.array(dataset_api["nb301_arches"])
+        random.shuffle(arch_list)
+        return arch_list
+
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact
         self.compact = compact
         convert_compact_to_naslib(compact, self)
+
+    def set_spec(self, compact):
+        # this is just to unify the setters across search spaces
+        # TODO: change it to set_spec on all search spaces
+        self.set_compact(compact)
 
     def sample_random_architecture(self, dataset_api=None):
         """
