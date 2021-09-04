@@ -19,6 +19,7 @@ from naslib.search_spaces.darts.conversions import (
     convert_naslib_to_compact,
     convert_naslib_to_genotype,
     make_compact_mutable,
+    make_compact_immutable,
 )
 from naslib.search_spaces.core.query_metrics import Metric
 from .primitives import FactorizedReduce
@@ -394,6 +395,7 @@ class DartsSearchSpace(Graph):
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: "train_losses",
             Metric.VAL_ACCURACY: "val_accuracies",
+            Metric.TEST_ACCURACY: "val_accuracies",
             Metric.TRAIN_TIME: "runtime",
         }
 
@@ -406,6 +408,7 @@ class DartsSearchSpace(Graph):
             """
             assert metric in [
                 Metric.VAL_ACCURACY,
+                Metric.TEST_ACCURACY,
                 Metric.TRAIN_LOSS,
                 Metric.TRAIN_TIME,
                 Metric.HP,
@@ -468,7 +471,7 @@ class DartsSearchSpace(Graph):
     def set_spec(self, compact):
         # this is just to unify the setters across search spaces
         # TODO: change it to set_spec on all search spaces
-        self.set_compact(compact)
+        self.set_compact(make_compact_immutable(compact))
 
     def sample_random_architecture(self, dataset_api=None):
         """

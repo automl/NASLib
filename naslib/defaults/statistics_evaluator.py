@@ -61,10 +61,11 @@ class StatisticsEvaluator(object):
         for arch_spec in self.search_space.get_arch_iterator(dataset_api=self.dataset_api):
             arch = self.search_space.clone()
             arch.set_spec(arch_spec)
+            arch.set_load_labeled()
             info_dict = self.get_full_arch_info(arch)
             info_dicts.append(info_dict)
             i += 1
-            if i % 1000 == 0:
+            if i % 100 == 0:
                 logger.info('at {}'.format(i))
             if i >= self.max_set_size:
                 break

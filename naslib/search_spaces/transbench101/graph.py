@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 import random
+import itertools
 import torch
 import torch.nn as nn
 
@@ -130,7 +131,6 @@ class TransBench101SearchSpace(Graph):
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
             
-            
         if self.space=='micro':
             arch_str = convert_naslib_to_transbench101_micro(self.op_indices) 
         elif self.space=='macro':
@@ -225,6 +225,13 @@ class TransBench101SearchSpace(Graph):
         self.op_indices = op_indices
 #         convert_op_indices_to_naslib(op_indices, self)
 
+    def get_arch_iterator(self, dataset_api=None):
+        return itertools.product(range(4), repeat=6)
+
+    def set_spec(self, op_indices):
+        # this is just to unify the setters across search spaces
+        # TODO: change it to set_spec on all search spaces
+        self.set_op_indices(op_indices)
 
     def sample_random_architecture_micro(self, dataset_api=None):
         """

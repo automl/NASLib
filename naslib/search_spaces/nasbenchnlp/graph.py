@@ -153,7 +153,18 @@ class NasBenchNLPSearchSpace(Graph):
         return self.get_compact()
 
     def set_compact(self, compact):
-        self.compact = compact
+        self.compact = tuple(compact)
+
+    def get_arch_iterator(self, dataset_api=None):
+        # currently set up for nasbenchnlp data, not surrogate
+        arch_list = np.array(dataset_api["nlp_arches"])
+        random.shuffle(arch_list)
+        return arch_list
+
+    def set_spec(self, compact):
+        # this is just to unify the setters across search spaces
+        # TODO: change it to set_spec on all search spaces
+        self.set_compact(compact)
 
     def _generate_redundant_graph(self, recipe, base_nodes):
         """
