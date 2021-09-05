@@ -331,7 +331,6 @@ class NasBenchNLPSearchSpace(Graph):
         nbhd = []
 
         def add_to_nbhd(new_compact, nbhd):
-            print(new_compact)
             nbr = NasBenchNLPSearchSpace()
             nbr.set_compact(new_compact)
             nbr_model = torch.nn.Module()

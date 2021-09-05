@@ -233,7 +233,7 @@ class NasBench201SearchSpace(Graph):
         update the naslib object and op_indices
         """
         parent_op_indices = parent.get_op_indices()
-        op_indices = parent_op_indices
+        op_indices = list(parent_op_indices)
 
         edge = np.random.choice(len(parent_op_indices))
         available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
@@ -249,7 +249,7 @@ class NasBench201SearchSpace(Graph):
             available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
 
             for op_index in available:
-                nbr_op_indices = self.op_indices.copy()
+                nbr_op_indices = list(self.op_indices).copy()
                 nbr_op_indices[edge] = op_index
                 nbr = NasBench201SearchSpace()
                 nbr.set_op_indices(nbr_op_indices)
