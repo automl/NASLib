@@ -214,7 +214,7 @@ class NasBench201SearchSpace(Graph):
         self.op_indices = op_indices
         convert_op_indices_to_naslib(op_indices, self)
 
-    def set_spec(self, op_indices):
+    def set_spec(self, op_indices, dataset_api=None):
         # this is just to unify the setters across search spaces
         # TODO: change it to set_spec on all search spaces
         self.set_op_indices(op_indices)

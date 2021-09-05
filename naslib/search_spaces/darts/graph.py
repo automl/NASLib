@@ -468,7 +468,7 @@ class DartsSearchSpace(Graph):
         self.compact = compact
         convert_compact_to_naslib(compact, self)
 
-    def set_spec(self, compact):
+    def set_spec(self, compact, dataset_api=None):
         # this is just to unify the setters across search spaces
         # TODO: change it to set_spec on all search spaces
         self.set_compact(make_compact_immutable(compact))

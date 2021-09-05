@@ -312,12 +312,6 @@ class NasBench101SearchSpace(Graph):
             raise NotImplementedError(
                 "Cannot yet query directly from the naslib object"
             )
-        spec = self.get_spec()
-        # TODO: this is not the best solution. Update get_arch_iterator so that we don't need this:
-        if isinstance(spec, str):
-            fix, comp = dataset_api["nb101_data"].get_metrics_from_hash(spec)
-            spec = self.convert_to_cell(fix['module_adjacency'], fix['module_operations'])
-            self.set_spec(spec)
         api_spec = dataset_api["api"].ModelSpec(**self.spec)
 
         if not dataset_api["nb101_data"].is_valid(api_spec):
@@ -354,9 +348,22 @@ class NasBench101SearchSpace(Graph):
     def get_hash(self):
         return convert_spec_to_tuple(self.get_spec())
 
-    def set_spec(self, spec):
+    def set_spec(self, spec, dataset_api=None):
         # TODO: convert the naslib object to this spec
         # convert_spec_to_naslib(spec, self)
+
+        if isinstance(spec, str):
+            """
+            TODO: I couldn't find a better solution here.
+            We need the arch iterator to return strings because the matrix/ops
+            representation is too large for 400k elements. But having the `spec' be 
+            strings would require passing in dataset_api for all of this search 
+            space's methods. So the solution is to optionally pass in the dataset 
+            api in set_spec and check whether `spec' is a string or a dict.
+            """
+            fix, comp = dataset_api["nb101_data"].get_metrics_from_hash(spec)
+            spec = self.convert_to_cell(fix['module_adjacency'], fix['module_operations'])
+            self.set_spec(spec)        
         self.spec = spec
 
     def get_arch_iterator(self, dataset_api=None):        

@@ -161,7 +161,7 @@ class NasBenchNLPSearchSpace(Graph):
         random.shuffle(arch_list)
         return arch_list
 
-    def set_spec(self, compact):
+    def set_spec(self, compact, dataset_api=None):
         # this is just to unify the setters across search spaces
         # TODO: change it to set_spec on all search spaces
         self.set_compact(compact)
