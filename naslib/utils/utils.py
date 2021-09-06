@@ -177,17 +177,18 @@ def get_config_from_args(args=None, config_type="nas"):
             )
         ) as f:
             config = CfgNode.load_cfg(f)
+    elif config_type == "statistics":
+        # load the default base
+        with open(
+            os.path.join(
+                get_project_root(), "benchmarks/statistics", "statistics_config.yaml"
+            )
+        ) as f:
+            config = CfgNode.load_cfg(f)
 
     if args is None:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
-
-    # load config file
-    # with open(args.config_file, 'r') as f:
-    #     config = AttrDict(yaml.safe_load(f))
-    # for k, v in config.items():
-    #     if isinstance(v, dict):
-    #         config[k] = AttrDict(v)
 
     # Override file args with ones from command line
     try:
@@ -268,6 +269,14 @@ def get_config_from_args(args=None, config_type="nas"):
             "nas_predictors",
             config.search_space,
             config.search.predictor_type,
+            config.seed,
+        )
+    elif config_type == "statistics":
+        config.save = "{}/{}/{}/{}/{}".format(
+            config.out_dir,
+            config.search_space,
+            config.dataset,
+            "statistics",
             config.seed,
         )
     else:

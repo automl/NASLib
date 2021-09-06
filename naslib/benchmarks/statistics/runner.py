@@ -15,7 +15,7 @@ from naslib.search_spaces import (
 from naslib.utils import utils, setup_logger, get_dataset_api
 
 
-config = utils.get_config_from_args(config_type="predictor")
+config = utils.get_config_from_args(config_type="statistics")
 utils.set_seed(config.seed)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)

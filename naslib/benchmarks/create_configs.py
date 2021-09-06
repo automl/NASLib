@@ -283,6 +283,31 @@ def main(args):
             with open(path, "w") as fh:
                 yaml.dump(config, fh)
 
+    elif args.config_type == "statistics":
+        folder = f"{args.out_dir}/{args.search_space}/{args.dataset}/configs/statistics"
+        os.makedirs(folder, exist_ok=True)
+        args.start_seed = int(args.start_seed)
+        args.trials = int(args.trials)
+
+        for i in range(args.start_seed, args.start_seed + args.trials):
+            config = {
+                "seed": i,
+                "search_space": args.search_space,
+                "dataset": args.dataset,
+                "out_dir": args.out_dir,
+                "run_acc_stats": args.run_acc_stats,
+                "max_set_size": args.max_set_size,
+                "run_nbhd_size": args.run_nbhd_size,
+                "max_nbhd_trials": args.max_nbhd_trials,
+                "run_autocorr": args.run_autocorr,
+                "max_autocorr_trials": args.max_autocorr_trials,
+                "autocorr_size": args.autocorr_size,
+                "walks": args.walks,
+            }
+
+            with open(folder + f"/config_{i}.yaml", "w") as fh:
+                yaml.dump(config, fh)
+
     else:
         print("invalid config type in create_configs.py")
 
@@ -337,7 +362,31 @@ if __name__ == "__main__":
     parser.add_argument(
         "--experiment_type", type=str, default="single", help="type of experiment"
     )
-
+    parser.add_argument(
+        "--run_acc_stats", type=int, default=1, help="run accuracy statistics"
+    )
+    parser.add_argument(
+        "--max_set_size", type=int, default=10000, help="size of val_acc stat computation"
+    )    
+    parser.add_argument(
+        "--run_nbhd_size", type=int, default=1, help="run experiment to compute nbhd size"
+    )    
+    parser.add_argument(
+        "--max_nbhd_trials", type=int, default=1000, help="size of nbhd size computation"
+    )
+    parser.add_argument(
+        "--run_autocorr", type=int, default=1, help="run experiment to compute autocorrelation"
+    )
+    parser.add_argument(
+        "--max_autocorr_trials", type=int, default=10, help="number of autocorrelation trials"
+    )
+    parser.add_argument(
+        "--autocorr_size", type=int, default=36, help="size of autocorrelation to test"
+    )
+    parser.add_argument(
+        "--walks", type=int, default=1000, help="number of random walks"
+    )
+    
     args = parser.parse_args()
 
     main(args)
