@@ -30,9 +30,11 @@ supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
-    'transbench101_micro': TransBench101SearchSpace('micro'),
-    'transbench101_macro': TransBench101SearchSpace('macro')
+    'transbench101': TransBench101SearchSpace()
 }
+#    'transbench101_micro': TransBench101SearchSpace('micro'),
+#    'transbench101_macro': TransBench101SearchSpace('macro')
+#}
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 utils.set_seed(config.seed)

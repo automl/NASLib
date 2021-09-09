@@ -238,6 +238,40 @@ class NasBench101SearchSpace(Graph):
 
         return cell
 
+    def convert_to_cell(self, matrix, ops):
+
+        if len(matrix) < 7:
+            # the nasbench spec can have an adjacency matrix of n x n for n<7, 
+            # but in the nasbench api, it is always 7x7 (possibly containing blank rows)
+            # so this method will add a blank row/column
+
+            new_matrix = np.zeros((7, 7), dtype='int8')
+            new_ops = []
+            n = matrix.shape[0]
+            for i in range(7):
+                for j in range(7):
+                    if j < n - 1 and i < n:
+                        new_matrix[i][j] = matrix[i][j]
+                    elif j == n - 1 and i < n:
+                        new_matrix[i][-1] = matrix[i][j]
+
+            for i in range(7):
+                if i < n - 1:
+                    new_ops.append(ops[i])
+                elif i < 6:
+                    new_ops.append('conv3x3-bn-relu')
+                else:
+                    new_ops.append('output')
+            return {
+                'matrix': new_matrix,
+                'ops': new_ops
+            }
+
+        else:
+            return {
+                'matrix': matrix,
+                'ops': ops
+            }
 
     def query(
         self,
@@ -314,10 +348,26 @@ class NasBench101SearchSpace(Graph):
     def get_hash(self):
         return convert_spec_to_tuple(self.get_spec())
 
-    def set_spec(self, spec):
+    def set_spec(self, spec, dataset_api=None):
         # TODO: convert the naslib object to this spec
         # convert_spec_to_naslib(spec, self)
+
+        if isinstance(spec, str):
+            """
+            TODO: I couldn't find a better solution here.
+            We need the arch iterator to return strings because the matrix/ops
+            representation is too large for 400k elements. But having the `spec' be 
+            strings would require passing in dataset_api for all of this search 
+            space's methods. So the solution is to optionally pass in the dataset 
+            api in set_spec and check whether `spec' is a string or a dict.
+            """
+            fix, comp = dataset_api["nb101_data"].get_metrics_from_hash(spec)
+            spec = self.convert_to_cell(fix['module_adjacency'], fix['module_operations'])
+            self.set_spec(spec)        
         self.spec = spec
+
+    def get_arch_iterator(self, dataset_api=None):        
+        return dataset_api["nb101_data"].hash_iterator()
 
     def sample_random_architecture(self, dataset_api):
         """
