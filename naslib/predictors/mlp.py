@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -68,6 +70,7 @@ class MLPPredictor(Predictor):
         encoding_type="adjacency_one_hot",
         ss_type="nasbench201",
         hpo_wrapper=False,
+        hparams_from_file=False
     ):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
@@ -80,6 +83,7 @@ class MLPPredictor(Predictor):
             "regularization": 0.2,
         }
         self.hyperparams = None
+        self.hparams_from_file = hparams_from_file
 
     def get_model(self, **kwargs):
         predictor = FeedforwardNet(**kwargs)
@@ -87,7 +91,10 @@ class MLPPredictor(Predictor):
 
     def fit(self, xtrain, ytrain, train_info=None, epochs=500, loss="mae", verbose=0):
 
-        if self.hyperparams is None:
+        if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
+        and os.path.exists(self.hparams_from_file):
+            self.hyperparams = json.load(open(self.hparams_from_file, 'rb'))['mlp']
+        elif self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
 
         num_layers = self.hyperparams["num_layers"]

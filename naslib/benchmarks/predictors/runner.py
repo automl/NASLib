@@ -78,7 +78,8 @@ supported_predictors = {
         metric=Metric.VAL_ACCURACY, all_curve=False, require_hyper=False
     ),
     "lgb": LGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
-    "mlp": MLPPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=True),
+    "mlp": MLPPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
+                        hparams_from_file=config.hparams_from_file),
     "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False),
     "ngb": NGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
     "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False),

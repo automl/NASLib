@@ -38,6 +38,10 @@ out_dir: run
 # maximum number of seconds to run cross-validation (for model-based predictors)
 max_hpo_time: 0
 
+# load the hyperparams from the specified file.
+# otherwise, set to None or False
+hparams_from_file: predictor_hpo_configs/hpo_config_1.json
+
 # random seed
 seed: 1000
 
