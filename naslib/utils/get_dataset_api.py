@@ -141,9 +141,6 @@ def get_dataset_api(search_space=None, dataset=None):
     elif search_space == "nlp":
         return get_nlp_api(dataset=dataset)
 
-    elif search_space == 'transbench101':
-        return get_transbench101_api(dataset=dataset)
-
     elif search_space == 'transbench101_micro':
         return get_transbench101_api(dataset=dataset)
     

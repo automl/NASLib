@@ -1,3 +1,4 @@
+from nasbench import api
 import logging
 import sys
 import os
@@ -39,7 +40,8 @@ from naslib.search_spaces import (
     NasBench201SearchSpace,
     DartsSearchSpace,
     NasBenchNLPSearchSpace,
-    TransBench101SearchSpace
+    TransBench101SearchSpace,
+    NasBenchASRSearchSpace,
 )
 
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -144,12 +146,10 @@ supported_search_spaces = {
     "nasbench201": NasBench201SearchSpace(),
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
-    'transbench101': TransBench101SearchSpace()
+    'transbench101_micro': TransBench101SearchSpace('micro'),
+    'transbench101_macro': TransBench101SearchSpace('macro'),
+    "asr": NasBenchASRSearchSpace(),
 }
-#    'transbench101_micro': TransBench101SearchSpace('micro'),
-#    'transbench101_macro': TransBench101SearchSpace('micro')}
-
-#}
 
 """
 If the API did not evaluate *all* architectures in the search space, 
