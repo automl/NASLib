@@ -57,7 +57,8 @@ utils.log_args(config)
 supported_predictors = {
     "bananas": Ensemble(predictor_type="bananas", num_ensemble=3, hpo_wrapper=True),
     "bayes_lin_reg": BayesianLinearRegression(encoding_type="adjacency_one_hot"),
-    "bohamiann": BOHAMIANN(encoding_type="adjacency_one_hot"),
+    "bohamiann": BOHAMIANN(encoding_type="adjacency_one_hot", 
+                           hparams_from_file=config.hparams_from_file),
     "bonas": BonasPredictor(encoding_type="bonas", hpo_wrapper=True),
     "dngo": DNGOPredictor(encoding_type="adjacency_one_hot"),
     "fisher": ZeroCostV2(config, batch_size=64, method_type="fisher"),
