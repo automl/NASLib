@@ -50,8 +50,9 @@ do
             for seed in $(seq $start_seed $end_seed)
             do
                 # create experiment configs
-                save_folder=$out_dir/hpo\_$hposeed/$search_space/$dataset
-                config_file=$save_folder/configs/$predictor\_$seed.yaml
+                base_folder=$out_dir/hpo\_$hposeed/$search_space/$dataset
+                save_folder=$base_folder/$predictor/$seed
+                config_file=$base_folder/configs/$predictor\_$seed.yaml
                 python $base_file/benchmarks/generate_predictor_hpo_configs.py --search_space \
                 $search_space --dataset $dataset --predictor $predictor --hposeed $hposeed \
                 --seed $seed --train_size_single $train_size --test_size $test_size --out_dir $out_dir \
