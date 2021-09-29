@@ -41,14 +41,14 @@ class DartsDartsIntegrationTest(unittest.TestCase):
     def test_update(self):
         stats = self.optimizer.step(data_train, data_val)
         self.assertTrue(len(stats) == 4)
-        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529074, places=3)
-        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529074, places=3) #TODO: Improve this test
+        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.1473837, places=3)
+        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.164431, places=3) #TODO: Improve this test
 
     def test_feed_forward(self):
         final_arch = self.optimizer.get_final_architecture()
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
-        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.610268, places=3)
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 1.1968973, places=3)
 
 
 class DartsGdasIntegrationTest(unittest.TestCase):
@@ -66,14 +66,14 @@ class DartsGdasIntegrationTest(unittest.TestCase):
             self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529, places=3)
             self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529, places=3)
         else:
-            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529074, places=3)
-            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529074, places=3)
+            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.6301684, places=3)
+            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.0314808, places=3)
 
     def test_feed_forward(self):
         final_arch = self.optimizer.get_final_architecture()
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
-        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.61026883, places=3)
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 1.196897383, places=3)
 
 
 class DartsDrNasIntegrationTest(unittest.TestCase):
@@ -91,14 +91,14 @@ class DartsDrNasIntegrationTest(unittest.TestCase):
             self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529, places=3)
             self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529, places=3)
         else:
-            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529074, places=3)
-            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529074, places=3)
+            self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.1568642, places=3)
+            self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.1584952, places=3)
 
     def test_feed_forward(self):
         final_arch = self.optimizer.get_final_architecture()
         logits = final_arch(data_train[0])
         self.assertTrue(logits.shape == (2, 10))
-        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 0.610268, places=3)
+        self.assertAlmostEqual(logits[0, 0].detach().cpu().numpy(), 1.1968973, places=3)
 
 
 class DartsRSWSIntegrationTest(unittest.TestCase):
@@ -112,8 +112,8 @@ class DartsRSWSIntegrationTest(unittest.TestCase):
     def test_update(self):
         stats = self.optimizer.step(data_train, data_val)
         self.assertTrue(len(stats) == 4)
-        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.3529074, places=3)
-        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529074, places=3)
+        self.assertAlmostEqual(stats[2].detach().cpu().numpy(), 2.515087, places=3)
+        self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.515087, places=3)
 
 
 class DartsSearchSpaceTest(unittest.TestCase):

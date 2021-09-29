@@ -309,7 +309,7 @@ class AvgPool(AbstractPrimitive):
                 nn.BatchNorm2d(C_in, affine=False),
             )
         else:
-            self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
+            self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
 
     def forward(self, x, edge_data):
         x = self.avgpool(x)
