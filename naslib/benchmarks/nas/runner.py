@@ -7,7 +7,7 @@ from naslib.optimizers import RandomSearch, Npenas, \
 RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
-DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpace
+DartsSearchSpace, NasBenchNLPSearchSpace, NasBenchMRSearchSpace, TransBench101SearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
 
 config = utils.get_config_from_args(config_type='nas')
@@ -30,6 +30,7 @@ supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
+    'mr': NasBenchMRSearchSpace(),
     'transbench101': TransBench101SearchSpace()
 }
 #    'transbench101_micro': TransBench101SearchSpace('micro'),

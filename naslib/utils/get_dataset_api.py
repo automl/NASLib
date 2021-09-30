@@ -117,6 +117,14 @@ def get_nlp_api(dataset=None,
     }
 
 
+def get_mr_api(dataset=None):
+    """
+    Load the NAS-Bench-MR
+    """
+    from ncp.tools import api
+    return {'api': api}
+
+
 def get_asr_api(dataset=None):
     # Load the NAS-Bench-ASR data
     d = from_folder(os.path.join(get_project_root(), 'data'),
@@ -141,12 +149,15 @@ def get_dataset_api(search_space=None, dataset=None):
     elif search_space == "nlp":
         return get_nlp_api(dataset=dataset)
 
+    elif search_space == 'mr':
+        return get_mr_api(dataset=dataset)
+
     elif search_space == 'transbench101':
         return get_transbench101_api(dataset=dataset)
 
     elif search_space == 'transbench101_micro':
         return get_transbench101_api(dataset=dataset)
-    
+
     elif search_space == 'transbench101_macro':
         return get_transbench101_api(dataset=dataset)
 

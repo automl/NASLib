@@ -8,7 +8,7 @@ RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
-DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpace, NasBenchASRSearchSpace
+DartsSearchSpace, NasBenchNLPSearchSpace, NasBenchMRSearchSpace, TransBench101SearchSpace, NasBenchASRSearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
 
 #from torch.utils.tensorboard import SummaryWriter
@@ -35,6 +35,7 @@ supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
+    'mr': NasBenchMRSearchSpace(),
     'transbench101_micro': TransBench101SearchSpace(),
     'transbench101_macro': TransBench101SearchSpace(),
     'asr': NasBenchASRSearchSpace()

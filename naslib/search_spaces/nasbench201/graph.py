@@ -225,6 +225,7 @@ class NasBench201SearchSpace(Graph):
         naslib object accordingly.
         """
         op_indices = np.random.randint(5, size=(6))
+        print(op_indices)
         self.set_op_indices(op_indices)
 
     def mutate(self, parent, dataset_api=None):
