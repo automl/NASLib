@@ -2,16 +2,19 @@
 seed: 0
 
 # re, bananas, npenas, ls, rs
-optimizer: ls
+optimizer: re
 
 # nasbench101, nasbench201, darts, nlp, transbench101, asr
-search_space: mr
+search_space: nasbench201
 
 # cifar10, cifar100, or ImageNet16-120 (only important for nasbench201)
-dataset: seg
+dataset: cifar10
 
 # output results to this directory
 out_dir: run
+
+# config id for the experiment
+config_id: 0
 
 # parameters for the optimizers
 search:
@@ -19,17 +22,17 @@ search:
   budgets: 50000000
   seed: 0
   checkpoint_freq: 1000
-  fidelity: 108 
-  
+  fidelity: 108
+
   # for all optimizers
   epochs: 10
 
-  # for bananas and npenas, choose one predictor 
+  # for bananas and npenas, choose one predictor
   # out of the 16 model-based predictors
   predictor_type: var_sparse_gp
-  
+
   # number of initial architectures
-  num_init: 3
+  num_init: 10
 
   # BANANAS
   k: 10
@@ -40,7 +43,7 @@ search:
   num_arches_to_mutate: 5
   max_mutations: 1
   num_candidates: 200
-  
+
   # jacov data loader
   batch_size: 256
   data_size: 25000
@@ -48,8 +51,28 @@ search:
   cutout_length: 16
   cutout_prob: 1.0
   train_portion: 0.7
-  
+
   # other params
   debug_predictor: False
   sample_size: 10
-  population_size: 1
+  population_size: 30
+
+# copied directly from darts_defaults
+evaluation:
+  checkpoint_freq: 30
+  batch_size: 96
+  learning_rate: 0.025
+  learning_rate_min: 0.00
+  momentum: 0.9
+  weight_decay: 0.0003
+  epochs: 600
+  warm_start_epochs: 0
+  grad_clip: 5
+  train_portion: 1.
+  data_size: 50000
+
+  cutout: True
+  cutout_length: 16
+  cutout_prob: 1.0
+  drop_path_prob: 0.2
+  auxiliary_weight: 0.4
