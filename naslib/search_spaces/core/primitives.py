@@ -3,6 +3,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 from abc import ABCMeta, abstractmethod
+import torchvision.models as models
+import math
 
 
 class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
@@ -219,7 +221,6 @@ class Stem(AbstractPrimitive):
         self.seq = nn.Sequential(
             nn.Conv2d(3, C_out, 3, padding=1, bias=False), nn.BatchNorm2d(C_out)
         )
-
     def forward(self, x, edge_data=None):
         return self.seq(x)
 
@@ -375,6 +376,7 @@ class ReLUConvBN(AbstractPrimitive):
         )
 
     def forward(self, x, edge_data=None):
+#         print('xxx --------->', x.size())
         return self.op(x)
 
     def get_embedded_ops(self):
@@ -466,3 +468,168 @@ class Concat1x1(nn.Module):
         x = self.conv(x)
         x = self.bn(x)
         return x
+
+    
+class StemJigsaw(AbstractPrimitive):
+    """
+    This is used as an initial layer directly after the
+    image input.
+    """
+
+    def __init__(self, C_out, **kwargs):
+        super().__init__(locals())
+        self.seq = nn.Sequential(
+            nn.Conv2d(3, C_out, 3, padding=1, bias=False), nn.BatchNorm2d(C_out)
+        )
+#         self.seq = nn.Sequential(*list(models.resnet50().children())[:-2])
+
+    def forward(self, x, edge_data=None):
+        _, _, s3, s4, s5 = x.size()
+        x  = x.reshape(-1, s3, s4, s5)
+        return self.seq(x)
+
+    def get_embedded_ops(self):
+        return None
+    
+
+class SequentialJigsaw(AbstractPrimitive):
+    """
+    Implementation of `torch.nn.Sequential` to be used
+    as op on edges.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(locals())
+        self.primitives = args
+        self.op = nn.Sequential(*args)
+
+    def forward(self, x, edge_data):
+        _, s2, s3, s4 = x.size()
+        x = x.reshape(4, 9, s2, s3, s4)
+        enc_out = []
+        for i in range(9):
+            enc_out.append(x[:, i, :, : , :])
+        x = torch.cat(enc_out, dim=1)
+        return self.op(x)
+
+    def get_embedded_ops(self):
+        return list(self.primitives)
+    
+    
+class GenerativeDecoder(AbstractPrimitive):
+    def __init__(self, in_dim, target_dim, target_num_channel=3, norm=nn.BatchNorm2d):
+        super(GenerativeDecoder, self).__init__(locals())
+        
+        in_channel, in_width = in_dim[0], in_dim[1]
+        out_width = target_dim[0]
+        num_upsample = int(math.log2(out_width / in_width))
+        assert num_upsample in [2, 3, 4, 5, 6], f'invalid num_upsample: {num_upsample}'
+        
+        self.conv1 = ConvLayer(in_channel, 1024, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+        self.conv2 = ConvLayer(1024, 1024, 3, 2, 1, nn.LeakyReLU(0.2), norm)
+        
+        if num_upsample == 6:
+            self.conv3 = DeconvLayer(1024, 512, 3, 2, 1, nn.LeakyReLU(0.2), norm)
+        else:
+            self.conv3 = ConvLayer(1024, 512, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+            
+        self.conv4 = ConvLayer(512, 512, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+        
+        if num_upsample >= 5:
+            self.conv5 = DeconvLayer(512, 256, 3, 2, 1, nn.LeakyReLU(0.2), norm)
+        else:
+            self.conv5 = ConvLayer(512, 256, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+            
+        self.conv6 = ConvLayer(256, 128, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+        
+        if num_upsample >= 4:
+            self.conv7 = DeconvLayer(128, 64, 3, 2, 1, nn.LeakyReLU(0.2), norm)
+        else:
+            self.conv7 = ConvLayer(128, 64, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+            
+        self.conv8 = ConvLayer(64, 64, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+        
+        if num_upsample >= 3:
+            self.conv9 = DeconvLayer(64, 32, 3, 2, 1, nn.LeakyReLU(0.2), norm)
+        else:
+            self.conv9 = ConvLayer(64, 32, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+            
+        self.conv10 = ConvLayer(32, 32, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+        self.conv11 = DeconvLayer(32, 16, 3, 2, 1, nn.LeakyReLU(0.2), norm)
+        
+        self.conv12 = ConvLayer(16, 32, 3, 1, 1, nn.LeakyReLU(0.2), norm)
+        self.conv13 = DeconvLayer(32, 16, 3, 2, 1, nn.LeakyReLU(0.2), norm)
+        
+        self.conv14 = ConvLayer(16, target_num_channel, 3, 1, 1, nn.Tanh(), norm)
+        
+    def forward(self, x, edge_data):
+        print('x ---->', x.size())
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+        x = self.conv6(x)
+        x = self.conv7(x)
+        x = self.conv8(x)
+        x = self.conv9(x)
+        x = self.conv10(x)
+        x = self.conv11(x)
+        x = self.conv12(x)
+        x = self.conv13(x)
+        x = self.conv14(x)
+
+        return x
+    
+    def get_embedded_ops(self):
+        return None
+          
+
+class ConvLayer(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel, stride, padding, activation, norm):
+        super(ConvLayer, self).__init__()
+        
+        self.conv = nn.Conv2d(in_channel, out_channel, kernel, stride=stride, padding=padding)
+        self.activation = activation
+        if norm:
+            if norm == nn.BatchNorm2d:
+                self.norm = norm(out_channel)
+            else:
+                self.norm = norm
+                self.conv = norm(self.conv)
+        else:
+            self.norm = None
+        
+    def forward(self, x):
+        x = self.conv(x)
+        if self.norm and isinstance(self.norm, nn.BatchNorm2d):
+            x = self.norm(x)
+        if self.activation is not None:
+            x = self.activation(x)
+        return x
+
+
+class DeconvLayer(nn.Module):
+    def __init__(self, in_channel, out_channel, kernel, stride, padding, activation, norm):
+        super(DeconvLayer, self).__init__()
+        
+        self.conv = nn.ConvTranspose2d(in_channel, out_channel, kernel, stride=stride, padding=padding, output_padding=1)
+        self.activation = activation
+        if norm == nn.BatchNorm2d:
+                self.norm = norm(out_channel)
+        else:
+            self.norm = norm
+        
+    def forward(self, x):
+        x = self.conv(x)
+        if self.norm and isinstance(self.norm, nn.BatchNorm2d):
+            x = self.norm(x)
+        if self.activation is not None:
+            x = self.activation(x)
+        return x
+
+
+           
+
+
+           
