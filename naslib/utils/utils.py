@@ -26,6 +26,11 @@ import yaml
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
 
+from ..data.tb101_data.taskonomy_dataset import TaskonomyDataset, get_datasets
+from ..data.tb101_data import load_ops
+
+from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
+
 cat_channels = partial(torch.cat, dim=1)
 
 logger = logging.getLogger(__name__)
@@ -331,6 +336,21 @@ def get_train_val_loaders(config, mode):
             transform=valid_transform,
             use_num_of_class_only=120,
         )
+    elif dataset == 'jigsaw':
+        cfg = get_jigsaw_configs()
+    
+        train_data, val_data, test_data = get_datasets(cfg)
+               
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+        
+    elif dataset == 'autoencoder':
+        cfg = get_autoencoder_configs()
+    
+        train_data, val_data, test_data = get_datasets(cfg)
+        
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
@@ -344,7 +364,7 @@ def get_train_val_loaders(config, mode):
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
         pin_memory=True,
         num_workers=0,
-        worker_init_fn=np.random.seed(seed),
+        worker_init_fn=np.random.seed(seed+1),
     )
 
     valid_queue = torch.utils.data.DataLoader(
@@ -464,6 +484,101 @@ def _data_transforms_ImageNet_16_120(args):
     return train_transform, valid_transform
 
 
+def get_jigsaw_configs():
+    
+    cfg = {}
+    cfg['input_dim'] = (255, 255)
+    cfg['target_num_channels'] = 9
+    cfg['task_name'] = 'jigsaw'
+    cfg['dataset_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/taskonomydata_mini'
+    cfg['data_split_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/final5K_splits'
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    cfg['target_dim'] = 1000
+    cfg['target_load_fn'] = load_ops.random_jigsaw_permutation
+    cfg['target_load_kwargs'] = {'classes': cfg['target_dim']}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    return cfg
+
+
+
+def get_autoencoder_configs():
+    
+    cfg = {}
+    
+    cfg['task_name'] = 'autoencoder'
+    
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3
+    
+    cfg['target_dim'] = (256, 256)
+    cfg['target_channel'] = 3
+
+    cfg['dataset_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/taskonomydata_mini'
+    cfg['data_split_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/final5K_splits'
+    
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_load_fn'] = load_ops.load_raw_img_label
+    cfg['target_load_kwargs'] = {}
+    
+    cfg['normal_params'] = {'mean': [0.5, 0.5, 0.5], 'std': [0.5, 0.5, 0.5]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+
+
 class TensorDatasetWithTrans(Dataset):
     """
     TensorDataset with support of transforms.
@@ -527,20 +642,22 @@ def get_last_checkpoint(config, search=True):
 
 
 def accuracy(output, target, topk=(1,)):
+    accssim = SSIM(data_range=1, size_average=True, channel=3)
+    res = accssim(output, target)
     """
     Calculate the accuracy given the softmax output and the target.
     """
-    maxk = max(topk)
-    batch_size = target.size(0)
+#     maxk = max(topk)
+#     batch_size = target.size(0)
 
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
+#     _, pred = output.topk(maxk, 1, True, True)
+#     pred = pred.t()
+#     correct = pred.eq(target.view(1, -1).expand_as(pred))
 
-    res = []
-    for k in topk:
-        correct_k = correct[:k].reshape(-1).float().sum(0)
-        res.append(correct_k.mul_(100.0 / batch_size))
+#     res = []
+#     for k in topk:
+#         correct_k = correct[:k].reshape(-1).float().sum(0)
+#         res.append(correct_k.mul_(100.0 / batch_size))
     return res
 
 
