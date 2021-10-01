@@ -145,7 +145,13 @@ supported_search_spaces = {
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpace('micro'),
+<<<<<<< HEAD
     'transbench101_macro': TransBench101SearchSpace('macro')}
+=======
+    'transbench101_macro': TransBench101SearchSpace('micro')}
+    'transbench101': TransBench101SearchSpace()
+}
+>>>>>>> 5294df2a638d64b09b9aa4d1ef3fdefad74de4c9
 
 """
 If the API did not evaluate *all* architectures in the search space, 
