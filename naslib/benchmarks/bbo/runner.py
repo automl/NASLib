@@ -11,16 +11,16 @@ from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace,
 DartsSearchSpace, NasBenchNLPSearchSpace, NasBenchMRSearchSpace, TransBench101SearchSpace, NasBenchASRSearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
 
-#from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
-config = utils.get_config_from_args(config_type='nas')
+config = utils.get_config_from_args(config_type='bbo-bs')
 
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 
 utils.log_args(config)
 
-writer = None # SummaryWriter(config.save)
+writer = SummaryWriter(config.save)
 
 supported_optimizers = {
     'rs': RandomSearch(config),
