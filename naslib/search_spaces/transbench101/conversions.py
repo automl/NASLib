@@ -102,39 +102,39 @@ def convert_naslib_to_str(naslib_object):
     return '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
 
 
-# def convert_naslib_to_tb101(naslib_object):
-#     """
-#     Converts naslib object to string representation.
-#     To be used later used later with one-shot optimizers 
-#     """
-    
-#     ops_to_tb101 = {
-#         'ReLUConvBN1x1': '2',
-#         'ReLUConvBN3x3': '3',
-#         'Identity': '1',
-#         'Zero': '0',
-#     }
-
-#     cell = naslib_object.edges[2, 3].op
-    
-#     edge_op_dict = {
-#         (i, j): ops_to_tb101[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
-#     }
-# #     op_edge_list = [
-# #         '{}~{}'.format(edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-# #     ]
-#     op_edge_list = [
-#         '{}'.format(edge_op_dict[(i, j)]) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-#     ]
-
-#     return '64-41414-{}_{}{}_{}{}{}'.format(*op_edge_list)
-
-
-def convert_naslib_to_transbench101_micro(op_indices):
+def convert_naslib_to_transbench101_micro(naslib_object):
     """
     Converts naslib object to string representation.
+    To be used later used later with one-shot optimizers 
     """
-    return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
+    
+    ops_to_tb101 = {
+        'ReLUConvBN1x1': '2',
+        'ReLUConvBN3x3': '3',
+        'Identity': '1',
+        'Zero': '0',
+    }
+
+    cell = naslib_object.edges[2, 3].op
+    
+    edge_op_dict = {
+        (i, j): ops_to_tb101[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+    }
+
+    op_edge_list = [
+        '{}'.format(edge_op_dict[(i, j)]) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
+    ]
+    print('op_edge_list =', op_edge_list)
+    print('ij =', [(i, j) for i, j in cell.edges])
+
+    return '64-41414-{}_{}{}_{}{}{}'.format(*op_edge_list)
+
+
+# def convert_naslib_to_transbench101_micro(op_indices):
+#     """
+#     Converts naslib object to string representation.
+#     """
+#     return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
 
 
 

@@ -4,10 +4,10 @@ import sys
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import RandomSearch, Npenas, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor, DARTSOptimizer, DrNASOptimizer, GDASOptimizer, EPNASOptimizer
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
-DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpace
+DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpaceMicro, TransBench101SearchSpaceMacro
 from naslib.utils import utils, setup_logger, get_dataset_api
 
 config = utils.get_config_from_args(config_type='nas')
@@ -23,6 +23,10 @@ supported_optimizers = {
     'bananas': Bananas(config),
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
+    'darts': DARTSOptimizer(config),
+    'drnas': DrNASOptimizer(config),
+    'gdas': GDASOptimizer(config),
+    'epnas': EPNASOptimizer(config)
 }
 
 supported_search_spaces = {
@@ -30,8 +34,8 @@ supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
-    'transbench101_micro': TransBench101SearchSpace('micro'),
-    'transbench101_macro': TransBench101SearchSpace('macro')
+    'transbench101_micro': TransBench101SearchSpaceMicro(),
+    'transbench101_macro': TransBench101SearchSpaceMacro()
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
@@ -41,8 +45,11 @@ search_space = supported_search_spaces[config.search_space]
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
+# optimizer.adapt_search_space(search_space)
+
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
 trainer.search(resume_from="")
 trainer.evaluate(resume_from="", dataset_api=dataset_api)
+# trainer.evaluate(resume_from="")
