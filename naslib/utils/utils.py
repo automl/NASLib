@@ -245,8 +245,8 @@ def get_config_from_args(args=None, config_type="nas"):
         config.evaluation.dist_url = args.dist_url
         config.evaluation.dist_backend = args.dist_backend
         config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
-        config.save = "{}/{}/{}/{}/{}/config_{}".format(
-            config.out_dir, config.search_space, config.dataset, config.optimizer, config.seed, config.config_id
+        config.save = "{}/{}/{}/{}/config_{}/{}".format(
+            config.out_dir, config.search_space, config.dataset, config.optimizer, config.config_id, config.seed
         )
     
     
