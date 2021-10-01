@@ -4,6 +4,7 @@ import torch
 import copy
 import random
 import numpy as np
+import time
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 
@@ -46,7 +47,7 @@ class LocalSearch(MetaOptimizer):
         self.dataset_api = dataset_api
 
     def new_epoch(self, epoch):
-
+        start = time.time()
         if epoch < self.num_init:
             # randomly sample initial architectures
             model = (
@@ -102,7 +103,9 @@ class LocalSearch(MetaOptimizer):
                     self.best_arch = model
                     logger.info("Found new best architecture.")
                 self._update_history(model)
-
+        print('~~epoch~~')
+        print(time.time() - start)
+        print('~~~~~~')
     def _update_history(self, child):
         if len(self.history) < 100:
             self.history.append(child)

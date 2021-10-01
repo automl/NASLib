@@ -2,13 +2,14 @@
 seed: 0
 
 # re, bananas, npenas, ls, rs
-optimizer: re
+optimizer: ls
 
 # nasbench101, nasbench201, darts, nlp, transbench101, asr
-search_space: nasbench201
+search_space: mr
 
 # cifar10, cifar100, or ImageNet16-120 (only important for nasbench201)
-dataset: cifar10
+# for nasbench mr tasks = ['seg', 'video', 'cls', '3ddet']
+dataset: seg
 
 # output results to this directory
 out_dir: run
@@ -32,7 +33,7 @@ search:
   predictor_type: var_sparse_gp
 
   # number of initial architectures
-  num_init: 10
+  num_init: 3
 
   # BANANAS
   k: 10
