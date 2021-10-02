@@ -587,22 +587,7 @@ class TransBench101SearchSpaceMacro(Graph):
                     nbrs.append(nbr_model)
 
         random.shuffle(nbrs)
-<<<<<<< HEAD
-<<<<<<< HEAD
-        return nbrs    
-=======
-        return nbrs
-    
-    
-    def get_nbhd(self, dataset_api=None):
-        if self.space=='micro':
-            return self.get_nbhd_micro(dataset_api)
-        elif self.space=='macro':
-            return self.get_nbhd_macro(dataset_api)
->>>>>>> 5294df2a638d64b09b9aa4d1ef3fdefad74de4c9
-=======
-        return nbrs    
->>>>>>> 63169759f1e39e00f5083ff71d93455eb983a8da
+        return nbrs  
         
 
     def get_type(self):
