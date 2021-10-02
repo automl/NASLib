@@ -1,6 +1,6 @@
-dataset: cifar10
+dataset: autoencoder
 seed: 99
-search_space: darts
+search_space: transbench101_micro
 out_dir: run
 optimizer: darts
 
@@ -12,7 +12,7 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 50
+  epochs: 1 # 50
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -52,7 +52,10 @@ search:
   num_candidates: 100
   
   # BasePredictor
-  predictor_type: feedforward
+#   predictor_type: gcn 
+  predictor_type: seminas 
+#   predictor_type: bohamiann 
+#   predictor_type: xgb
   debug_predictor: False
 
 evaluation:
