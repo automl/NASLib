@@ -13,6 +13,50 @@ def main(args):
         args.trials = int(args.trials)
         num_config = 100 
         
+        # first generate the default config at config 0
+        config_id = 0
+        folder = f"naslib/benchmarks/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
+        os.makedirs(folder, exist_ok=True)       
+            
+        for seed in range(args.start_seed, args.start_seed + args.trials):
+            np.random.seed(seed)
+            random.seed(seed)
+
+            config = {
+                "seed": seed,
+                "search_space": args.search_space,
+                "dataset": args.dataset,
+                "optimizer": args.optimizer,
+                "out_dir": args.out_dir,
+                "config_id": config_id,
+                "search": {
+                    "sample_size": 10,
+                    "population_size": 50,
+                    "num_init": 10,
+                    "k":10,
+                    "num_ensemble": 3,
+                    "acq_fn_type": "its",
+                    "num_arches_to_mutate": 1,
+                    "max_mutations": 1,
+                    "num_candidates": 50,
+                    "checkpoint_freq": args.checkpoint_freq,
+                    "epochs": args.epochs,
+                    "fidelity": args.fidelity,
+                    "num_ensemble": 3,
+                    "acq_fn_type": "its",
+                    "acq_fn_optimization": args.acq_fn_optimization,
+                    "encoding_type": "path",
+                    "predictor": args.predictor,
+                    "debug_predictor": False,
+                },
+            }
+
+
+            path = folder + f"/seed_{seed}.yaml"
+
+            with open(path, "w") as fh:
+                yaml.dump(config, fh)
+
         for config_id in range(1, num_config):
             folder = f"naslib/benchmarks/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
             os.makedirs(folder, exist_ok=True)

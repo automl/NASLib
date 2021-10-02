@@ -17,7 +17,7 @@ fi
 
 # folders:
 base_file=naslib
-out_dir=run
+out_dir=run_cpu
 
 # bbo-bs or predictor-bs
 config_type=bbo-bs
@@ -32,7 +32,7 @@ epochs=200
 predictor=var_sparse_gp
 
 # trials / seeds:
-trials=5
+trials=10
 end_seed=$(($start_seed + $trials - 1))
 
 # create config files
