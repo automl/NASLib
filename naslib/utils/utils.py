@@ -377,6 +377,14 @@ def get_train_val_loaders(config, mode):
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
         
+    elif dataset == 'class_object':
+        cfg = get_class_object_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+        
     elif dataset == 'autoencoder':
         cfg = get_autoencoder_configs()
     
@@ -568,10 +576,10 @@ def get_jigsaw_configs():
 def get_class_object_configs():
     cfg = {}
     
-    cfg['task_name'] = 'jigsaw'
+    cfg['task_name'] = 'class_object'
 
-    cfg['input_dim'] = (255, 255)
-    cfg['target_num_channels'] = 9
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3
     
     cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
     cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
@@ -580,35 +588,37 @@ def get_class_object_configs():
     cfg['val_filenames'] = 'val_filenames_final5k.json'
     cfg['test_filenames'] = 'test_filenames_final5k.json'
     
-    cfg['target_dim'] = 1000
-    cfg['target_load_fn'] = load_ops.random_jigsaw_permutation
-    cfg['target_load_kwargs'] = {'classes': cfg['target_dim']}
+    cfg['target_dim'] = 75
+    
+    cfg['target_load_fn'] = load_ops.load_class_object_logits
+    
+    cfg['target_load_kwargs'] = {'selected': True if cfg['target_dim'] < 1000 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['demo_kwargs'] = {'selected': True if cfg['target_dim'] < 1000 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['normal_params'] = {'mean': [0.5224, 0.5222, 0.5221], 'std': [0.2234, 0.2235, 0.2236]}
     
     cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
         load_ops.ToPILImage(),
         load_ops.Resize(list(cfg['input_dim'])),
         load_ops.RandomHorizontalFlip(0.5),
         load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        load_ops.RandomGrayscale(0.3),
-        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
     ])
     
     cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
         load_ops.ToPILImage(),
         load_ops.Resize(list(cfg['input_dim'])),
-        load_ops.RandomHorizontalFlip(0.5),
-        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        load_ops.RandomGrayscale(0.3),
-        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
     ])
     
     cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
-        load_ops.ToPILImage(),
+       load_ops.ToPILImage(),
         load_ops.Resize(list(cfg['input_dim'])),
-        load_ops.RandomHorizontalFlip(0.5),
-        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-        load_ops.RandomGrayscale(0.3),
-        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
     ])
     return cfg
 

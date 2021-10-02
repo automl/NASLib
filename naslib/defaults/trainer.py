@@ -114,7 +114,7 @@ class Trainer(object):
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
                     
-                    if self.config.dataset in ['jigsaw', 'autoencoder']:
+                    if self.config.dataset in ['jigsaw', 'autoencoder', 'class_object']:
                         data_train = [data_train['image'], data_train['label']]
                                 
                     data_train = (
@@ -123,7 +123,7 @@ class Trainer(object):
                     )
                     data_val = next(iter(self.valid_queue))
                     
-                    if self.config.dataset in ['jigsaw', 'autoencoder']:
+                    if self.config.dataset in ['jigsaw', 'autoencoder', 'class_object']:
                         data_val = [data_val['image'], data_val['label']]
                         
                     data_val = (

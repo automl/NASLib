@@ -268,10 +268,8 @@ class ColorJitter(T.ColorJitter):
 #         t = ColorJitter(self.brightness, self.contrast, self.saturation, self.hue)
 #         print('type t =', t)
         def forward(self, img):
-#             print('get params ==', self.get_params(self.brightness, self.contrast, self.saturation, self.hue))
             fn_idx, brightness_factor, contrast_factor, saturation_factor, hue_factor = self.get_params(self.brightness, self.contrast, self.saturation, self.hue)
             
-#             print('fn_idx ==', fn_idx)
 
             for fn_id in fn_idx:
                 if fn_id == 0 and brightness_factor is not None:
@@ -286,7 +284,6 @@ class ColorJitter(T.ColorJitter):
             return img
 
         image, label = sample['image'], sample['label'] 
-#         print('type image =', type(image))
         if task_name in ['autoencoder']:
             return {'image': self.forward(image), 'label': self.forward(label)}
         elif task_name in ['segmentsemantic']:
@@ -295,6 +292,29 @@ class ColorJitter(T.ColorJitter):
             return {'image': self.forward(image), 'label': label}
         else:
             raise ValueError(f'task name {task_name} not available!')
+
+
+def load_class_object_logits(label_path, selected=False, normalize=True, final5k=False):
+    try:
+        logits = np.load(label_path)
+    except:
+        print(f'corrupted: {label_path}')
+        raise
+    lib_data_dir = os.path.abspath(os.path.dirname(__file__))
+    if selected:
+        selection_file = os.path.join(lib_data_dir, 'class_object_final5k.npy') if final5k else os.path.join(lib_data_dir, 'class_object_selected.npy')
+        selection = np.load(selection_file)
+        logits = logits[selection.astype(bool)]
+        if normalize:
+            logits = logits / logits.sum()
+    target = np.asarray(logits)
+    return target
+
+def load_class_object_label(label_path, selected=False, final5k=False):
+    logits = load_class_object_logits(label_path, selected=selected, normalize=True, final5k=final5k)
+    target = np.asarray(logits.argmax())
+    return target
+
 
 
 def image2tiles(img, permutation, new_dims):
