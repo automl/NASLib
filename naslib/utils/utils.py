@@ -26,10 +26,11 @@ import yaml
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
 
-from ..data.tb101_data.taskonomy_dataset import TaskonomyDataset, get_datasets
-from ..data.tb101_data import load_ops
+from .taskonomy_dataset import TaskonomyDataset, get_datasets
+from . import load_ops
 
 from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
+
 
 cat_channels = partial(torch.cat, dim=1)
 
@@ -517,16 +518,20 @@ def _data_transforms_ImageNet_16_120(args):
 
 
 def get_jigsaw_configs():
-    
     cfg = {}
+    
+    cfg['task_name'] = 'jigsaw'
+
     cfg['input_dim'] = (255, 255)
     cfg['target_num_channels'] = 9
-    cfg['task_name'] = 'jigsaw'
-    cfg['dataset_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/taskonomydata_mini'
-    cfg['data_split_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/final5K_splits'
+    
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "tb101_data/taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+    
     cfg['train_filenames'] = 'train_filenames_final5k.json'
     cfg['val_filenames'] = 'val_filenames_final5k.json'
     cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
     cfg['target_dim'] = 1000
     cfg['target_load_fn'] = load_ops.random_jigsaw_permutation
     cfg['target_load_kwargs'] = {'classes': cfg['target_dim']}
@@ -573,9 +578,9 @@ def get_autoencoder_configs():
     cfg['target_dim'] = (256, 256)
     cfg['target_channel'] = 3
 
-    cfg['dataset_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/taskonomydata_mini'
-    cfg['data_split_dir'] = '/home/safarim/coding/NASLib_develop/NASLib/naslib/data/tb101_data/final5K_splits'
-    
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "tb101_data/taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+   
     cfg['train_filenames'] = 'train_filenames_final5k.json'
     cfg['val_filenames'] = 'val_filenames_final5k.json'
     cfg['test_filenames'] = 'test_filenames_final5k.json'
