@@ -21,7 +21,7 @@ class NasBenchMRSearchSpace(Graph):
     def __init__(self):
         super().__init__()
         self.op_indices = [] # not sure about this line
-        self.load_labeled = True
+        self.load_labeled = None
         self.index = None
         self.space_name = "nasbench_MR"
 
