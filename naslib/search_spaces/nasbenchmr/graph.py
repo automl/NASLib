@@ -21,8 +21,23 @@ class NasBenchMRSearchSpace(Graph):
     def __init__(self):
         super().__init__()
         self.op_indices = [] # not sure about this line
-
+        self.load_labeled = True
+        self.index = None
         self.space_name = "nasbench_MR"
+
+    def load_labeled_architecture(self, dataset_api=None, dataset='3ddet'):
+        """
+        This is meant to be called by a new DartsSearchSpace() object
+        (one that has not already been discretized).
+        It samples a random architecture from the nasbench301 training data,
+        and updates the graph object to match the architecture.
+        """
+        index = np.random.choice(len(dataset_api[dataset]))
+        embedding = dataset_api[dataset][index]["embedding"]
+        op_indices = convert_params_to_op_indices(embedding=embedding)
+        self.set_op_indices(op_indices)
+        self.load_labeled = True
+        self.set_index(index)
 
     def query(
         self, metric=None,
@@ -43,11 +58,25 @@ class NasBenchMRSearchSpace(Graph):
             return -1
 
         embedding = convert_op_idices_to_params(self.op_indices)
-
-        query_result = dataset_api["api"].query(task=dataset, data_embedding=embedding)
-        print('!!!!!!')
-        print(time.time()-start)
-        return query_result.get('main_metric')
+        if self.load_labeled:
+            """
+            If we loaded the architecture from the nasbenchmr training data (using
+            load_labeled_architecture()), then self.compact will contain the architecture spec,
+            and we can query the final train loss from the training data used to train the surrogates 
+            """
+            embedding_idx = self.get_index()
+            query_result = dataset_api[dataset][embedding_idx]
+            if dataset == '3ddet':
+                result = query_result['moderate']
+            elif 'cls' in dataset or 'video' in dataset:
+                result = query_result['top1']
+            elif 'seg' in dataset:
+                result = query_result['mAcc']
+        else:
+            query_result = dataset_api["api"].query(task=dataset, data_embedding=embedding)
+            print(time.time()-start)
+            result = query_result.get('main_metric')
+        return result
 
     def get_op_indices(self):
         if self.op_indices is None:
@@ -59,8 +88,14 @@ class NasBenchMRSearchSpace(Graph):
         self.op_indices = op_indices
         # convert_op_indices_to_naslib(self)
 
+    def set_index(self, index):
+        self.index = index
+
+    def get_index(self):
+        return self.index
+
     def get_hash(self):
-        print(self.get_op_indices())
+        # print(self.get_op_indices())
         return tuple(self.get_op_indices())
 
     def sample_random_architecture(self, dataset_api=None):

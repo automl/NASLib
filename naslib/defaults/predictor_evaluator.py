@@ -146,7 +146,10 @@ class PredictorEvaluator(object):
                 arch.sample_random_architecture(dataset_api=self.dataset_api)
             else:
                 arch = self.search_space.clone()
-                arch.load_labeled_architecture(dataset_api=self.dataset_api)
+                if self.config.search_space == 'mr':
+                    arch.load_labeled_architecture(dataset_api=self.dataset_api, dataset=self.dataset)
+                else:
+                    arch.load_labeled_architecture(dataset_api=self.dataset_api)
 
             arch_hash = arch.get_hash()
             if False: # removing this for consistency, for now
@@ -316,7 +319,7 @@ class PredictorEvaluator(object):
         results_dict = self.compare(ytest, test_pred)
         results_dict["train_size"] = train_size
         results_dict["fidelity"] = fidelity
-        results_dict["train_time"] = np.sum(train_times)
+        results_dict["train_time"] = int(np.sum(train_times))
         results_dict["fit_time"] = fit_time_end - fit_time_start
         results_dict["query_time"] = (query_time_end - fit_time_end) / len(xtest)
         if hyperparams:
