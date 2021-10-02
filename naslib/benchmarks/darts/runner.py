@@ -1,6 +1,7 @@
 import logging
 import sys
 import naslib as nl
+import torch
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import (
@@ -15,7 +16,7 @@ from naslib.optimizers import (
     BasePredictor,
 )
 
-from naslib.search_spaces import DartsSearchSpace
+from naslib.search_spaces import DartsSearchSpace, TransBench101SearchSpace
 from naslib.utils import utils, setup_logger
 
 config = utils.get_config_from_args()
@@ -40,11 +41,14 @@ supported_optimizers = {
 
 if config.dataset == "cifar100":
     DartsSearchSpace.NUM_CLASSES = 100
-search_space = DartsSearchSpace()
+#search_space = DartsSearchSpace()
+search_space = TransBench101SearchSpace()
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
+results = optimizer.graph(torch.rand(1, 64, 64, 64))
+print(results.shape)
 trainer = Trainer(optimizer, config)
 # trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
 

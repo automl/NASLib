@@ -5,17 +5,17 @@ import random
 import itertools
 import torch
 import torch.nn as nn
+from torch.nn.modules.conv import Conv2d
 
 from naslib.search_spaces.core import primitives as ops
+from naslib.search_spaces.darts.primitives import FactorizedReduce
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.primitives import AbstractPrimitive, Sequential
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.transbench101.conversions import convert_op_indices_to_naslib, \
 convert_naslib_to_op_indices, convert_naslib_to_str, convert_naslib_to_transbench101_micro, convert_naslib_to_transbench101_macro #, convert_naslib_to_tb101
 
 from naslib.utils.utils import get_project_root
-
-from .primitives import ResNetBasicblock
 
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
@@ -28,9 +28,11 @@ class TransBench101SearchSpaceMicro(Graph):
     """
 
     OPTIMIZER_SCOPE = [
-        "stage_1",
-        "stage_2",
-        "stage_3",
+        "r_stage_1",
+        "n_stage_1",
+        "r_stage_2",
+        "n_stage_2",
+        "r_stage_3"
     ]
 
     QUERYABLE = True
@@ -67,71 +69,86 @@ class TransBench101SearchSpaceMicro(Graph):
         #
         self.name = "makrograph"
 
-        # Cell is on the edges
-        # 1-2:               Preprocessing
-        # 2-3, ..., 6-7:     cells stage 1
-        # 7-8:               residual block stride 2
-        # 8-9, ..., 12-13:   cells stage 2
-        # 13-14:             residual block stride 2
-        # 14-15, ..., 18-19: cells stage 3
-        # 19-20:             post-processing
+        self.n_modules = 5
+        self.blocks_per_module = [2] * self.n_modules # Change to customize number of blocks per module
+        self.module_stages = ["r_stage_1", "n_stage_1", "r_stage_2", "n_stage_2", "r_stage_3"]
+        self.base_channels = 64
 
-        total_num_nodes = 20
-        self.add_nodes_from(range(1, total_num_nodes+1))
-        self.add_edges_from([(i, i+1) for i in range(1, total_num_nodes)])
+        n_nodes = 1 + self.n_modules + 1 # Stem, modules, decoder
 
-        channels = [16, 32, 64]
+        # Add nodes and edges
+        self.add_nodes_from(range(1, n_nodes+1))
+        for node in range(1, n_nodes):
+            self.add_edge(node, node+1)
 
-        #
-        # operations at the edges
-        #
+        # Add modules
+        for idx, node in enumerate(range(2, 2+self.n_modules)):
+            # Create module
+            module = self._create_module(self.blocks_per_module[idx], self.module_stages[idx], cell)
+            module.set_scope(f"module_{idx+1}", recursively=False)
 
-        # preprocessing
-#         self.edges[1, 2].set('op', ops.Stem(channels[0]))
-        
-        # preprocessing for jigsaw
-        self.edges[1, 2].set('op', ops.StemJigsaw(channels[0]))
-        
-        # stage 1
-        for i in range(2, 7):
-            self.edges[i, i+1].set('op', cell.copy().set_scope('stage_1'))
-        
-        # stage 2
-        self.edges[7, 8].set('op', ResNetBasicblock(C_in=channels[0], C_out=channels[1], stride=2))
-        for i in range(8, 13):
-            self.edges[i, i+1].set('op', cell.copy().set_scope('stage_2'))
+            # Add module as subgraph
+            self.nodes[node]["subgraph"] = module
+            module.set_input([node-1])
 
-        # stage 3
-        self.edges[13, 14].set('op', ResNetBasicblock(C_in=channels[1], C_out=channels[2], stride=2))
-        for i in range(14, 19):
-            self.edges[i, i+1].set('op', cell.copy().set_scope('stage_3'))
+        # TODO: Add decoder
 
-#         # post-processing
-#         self.edges[19, 20].set('op', ops.Sequential(
-#             nn.AdaptiveAvgPool2d(1),
-#             nn.Flatten(),
-#             nn.Linear(channels[-1], self.num_classes)
-#         ))
+        # Assign operations to cell edges
+        C_in = self.base_channels
+        for module_node, stage in zip(range(2, 2 + self.n_modules), self.module_stages):
+            module = self.nodes[module_node]["subgraph"]
+            self._set_cell_ops_for_module(module, C_in, stage)
+            C_in = self._get_module_n_output_channels(module)
 
-#         # post-processing for autoencoder
-#         self.edges[19, 20].set('op', ops.GenerativeDecoder((64, 16, 16), (128, 128))) ### change this according to config
-        
-        # post-processing for jigsaw
-        self.edges[19, 20].set('op', ops.SequentialJigsaw(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(channels[-1] * 9, self.num_classes)
-        ))
-        
-        # set the ops at the cells (channel dependent)
-        for c, scope in zip(channels, self.OPTIMIZER_SCOPE):
-            self.update_edges(
-                update_func=lambda edge: _set_cell_ops(edge, C=c),
-                scope=scope,
+    def _get_module_n_output_channels(self, module):
+        last_cell_in_module = module.edges[1, 2]['op'].op[-1]
+        edge_to_last_node = last_cell_in_module.edges[3, 4]
+        relu_conv_bn = [op for op in edge_to_last_node['op'] if isinstance(op, ops.ReLUConvBN)][0]
+        conv = [m for m in relu_conv_bn.op if isinstance(m, nn.Conv2d)][0]
+
+        return conv.out_channels
+
+
+
+    def _is_reduction_stage(self, stage):
+        return "r_stage" in stage
+
+    def _set_cell_ops_for_module(self, module, C_in, stage):
+        assert isinstance(module, Graph)
+        assert module.name == 'module'
+
+        cells = module.edges[1, 2]['op'].op
+
+        for idx, cell in enumerate(cells):
+            downsample = self._is_reduction_stage(stage) and idx == 0
+            cell.update_edges(
+                update_func=lambda edge: _set_op(edge, C_in, downsample),
                 private_edge_data=True
             )
-    
-        
+
+            if downsample:
+                C_in *= 2
+            
+            print(cell.name, cell.scope)
+            #for e in cell.edges(data=True):
+            #    print(e)
+
+
+    def _create_module(self, n_blocks, scope, cell):
+        blocks = []
+        for _ in range(n_blocks):
+            blocks.append(cell.copy().set_scope(scope))
+
+        return self._wrap_with_graph(Sequential(*blocks))
+
+    def _wrap_with_graph(self, module):
+        container = Graph()
+        container.name = 'module'
+        container.add_nodes_from([1, 2])
+        container.add_edge(1, 2)
+        container.edges[1, 2].set('op', module)
+        return container
+
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
         Query results from transbench 101
@@ -602,14 +619,27 @@ class TransBench101SearchSpaceMacro(Graph):
 #         return 'transbench101'
         return 'transbench101'
 
-    
-def _set_cell_ops(edge, C):
-    edge.data.set('op', [
-        ops.Identity(),
-        ops.Zero(stride=1),
-        ops.ReLUConvBN(C, C, kernel_size=3),
-        ops.ReLUConvBN(C, C, kernel_size=1),
+
+def _set_op(edge, C_in, downsample):
+
+    C_out = C_in
+    stride = 1
+
+    if downsample:
+        if edge.head == 1:
+            C_out = C_in * 2
+            stride = 2
+        else:
+            C_in *= 2
+            C_out = C_in
+            stride = 1
+
+    edge.data.set("op", [
+        ops.Identity() if stride == 1 else FactorizedReduce(C_in, C_out, stride, affine=False),
+        ops.Zero(stride=stride, C_in=C_in, C_out=C_out),
+        ops.ReLUConvBN(C_in, C_out, kernel_size=3, stride=stride),
+        ops.ReLUConvBN(C_in, C_out, kernel_size=1, stride=stride),
     ])
-    
+
     
 

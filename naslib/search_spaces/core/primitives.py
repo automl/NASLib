@@ -70,19 +70,27 @@ class Zero(AbstractPrimitive):
     the connection by multiplying its input with zero.
     """
 
-    def __init__(self, stride, **kwargs):
+    def __init__(self, stride, C_in=None, C_out=None, **kwargs):
         """
         When setting stride > 1 then it is assumed that the
         channels must be doubled.
         """
         super().__init__(locals())
         self.stride = stride
+        self.C_in = C_in
+        self.C_out = C_out
 
     def forward(self, x, edge_data=None):
-        if self.stride == 1:
-            return x.mul(0.0)
+        if self.C_in == self.C_out:
+            if self.stride == 1:
+                return x.mul(0.0)
+            else:
+                return x[:, :, :: self.stride, :: self.stride].mul(0.0)
         else:
-            return x[:, :, :: self.stride, :: self.stride].mul(0.0)
+            shape = list(x.shape)
+            shape[1], shape[2], shape[3] = self.C_out, (shape[2] + 1) // self.stride, (shape[3] + 1) // self.stride
+            zeros = x.new_zeros(shape, dtype=x.dtype, device=x.device)
+            return zeros
 
     def get_embedded_ops(self):
         return None
@@ -372,7 +380,7 @@ class ReLUConvBN(AbstractPrimitive):
     def __init__(self, C_in, C_out, kernel_size, stride=1, affine=True, **kwargs):
         super().__init__(locals())
         self.kernel_size = kernel_size
-        pad = 0 if stride == 1 and kernel_size == 1 else 1
+        pad = 0 if kernel_size == 1 else 1
         self.op = nn.Sequential(
             nn.ReLU(inplace=False),
             nn.Conv2d(C_in, C_out, kernel_size, stride=stride, padding=pad, bias=False),
