@@ -38,13 +38,17 @@ class TransBench101SearchSpaceMicro(Graph):
     QUERYABLE = True
 
 
-    def __init__(self):
+    def __init__(self, dataset='jigsaw'):
         super().__init__()
-        self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 1000
+        if dataset == "jigsaw":
+            self.num_classes = 1000
+        elif dataset == "class_object":
+            self.num_classes = 100
         self.op_indices = None
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
+        self.dataset=dataset
         #
         # Cell definition
         #
@@ -82,8 +86,7 @@ class TransBench101SearchSpaceMicro(Graph):
             self.add_edge(node, node+1)
 
         # Preprocessing for jigsaw
-        # TODO: Make conditional on dataset
-        self.edges[1, 2].set('op', ops.StemJigsaw(self.base_channels))
+        self.edges[1, 2].set('op', self._get_stem_for_task(self.dataset))
 
         # Add modules
         for idx, node in enumerate(range(2, 2+self.n_modules)):
@@ -95,11 +98,6 @@ class TransBench101SearchSpaceMicro(Graph):
             self.nodes[node]["subgraph"] = module
             module.set_input([node-1])
 
-        self.edges[node, node+1].set('op', ops.SequentialJigsaw(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Flatten(),
-            nn.Linear(512 * 9, self.num_classes) # TODO: Remove hardcoding
-        ))
 
         # Assign operations to cell edges
         C_in = self.base_channels
@@ -107,6 +105,37 @@ class TransBench101SearchSpaceMicro(Graph):
             module = self.nodes[module_node]["subgraph"]
             self._set_cell_ops_for_module(module, C_in, stage)
             C_in = self._get_module_n_output_channels(module)
+
+        # Add decoder depending on the task
+        self.edges[node, node+1].set('op',
+            self._get_decoder_for_task(self.dataset, n_channels=self._get_module_n_output_channels(module))
+        )
+
+
+    def _get_stem_for_task(self, task):
+        if task == "jigsaw":
+            return ops.StemJigsaw(self.base_channels)
+        elif task == "class_object":
+            return ops.Stem(self.base_channels)
+        else:
+            return None # TODO: handle other tasks
+
+
+    def _get_decoder_for_task(self, task, n_channels): #TODO: Remove harcoding
+        if task == "jigsaw":
+            return  ops.SequentialJigsaw(
+                        nn.AdaptiveAvgPool2d(1),
+                        nn.Flatten(),
+                        nn.Linear(n_channels * 9, self.num_classes)
+                    )
+        elif task == "class_object":
+            return ops.Sequential(
+                        nn.AdaptiveAvgPool2d(1),
+                        nn.Flatten(),
+                        nn.Linear(n_channels, self.num_classes)
+                    )
+        else:
+            return None # TODO: handle other tasks
 
     def _get_module_n_output_channels(self, module):
         last_cell_in_module = module.edges[1, 2]['op'].op[-1]
