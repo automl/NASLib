@@ -12,7 +12,7 @@ search_space: mr
 dataset: seg
 
 # output results to this directory
-out_dir: run
+out_dir: run_boschcpu
 
 # config id for the experiment
 config_id: 0
@@ -41,10 +41,10 @@ search:
   acq_fn_type: its
   acq_fn_optimization: mutation
   encoding_type: adjacency_one_hot
-  num_arches_to_mutate: 5
+  num_arches_to_mutate: 1 
   max_mutations: 1
-  num_candidates: 200
-
+  num_candidates: 50
+  
   # jacov data loader
   batch_size: 256
   data_size: 25000

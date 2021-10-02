@@ -11,13 +11,16 @@ def main(args):
     if args.config_type == 'bbo-bs':
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
-        num_config = 20
-        for seed in range(args.start_seed, args.start_seed + args.trials):
-            np.random.seed(seed)
-            random.seed(seed)
-            folder = f"naslib/benchmarks/bbo/configs/{args.search_space}/{args.dataset}/{args.optimizer}/{seed}"
+        num_config = 100 
+        
+        for config_id in range(1, num_config):
+            folder = f"naslib/benchmarks/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
             os.makedirs(folder, exist_ok=True)
-            for config_id in range(num_config):
+            
+            
+            for seed in range(args.start_seed, args.start_seed + args.trials):
+                np.random.seed(seed)
+                random.seed(seed)
 
                 config = {
                     "seed": seed,
@@ -46,7 +49,8 @@ def main(args):
                     },
                 }
 
-                path = folder + f"/config_{config_id}.yaml"
+
+                path = folder + f"/seed_{seed}.yaml"
 
                 with open(path, "w") as fh:
                     yaml.dump(config, fh)

@@ -396,24 +396,26 @@ class NasBench101SearchSpace(Graph):
         """
         parent_spec = parent.get_spec()
         spec = copy.deepcopy(parent_spec)
-        matrix, ops = spec["matrix"], spec["ops"]
-
+        matrix, ops = spec['matrix'], spec['ops']
         for _ in range(edits):
             while True:
-                if np.random.random() < 0.5:
-                    for src in range(0, NUM_VERTICES - 1):
-                        for dst in range(src + 1, NUM_VERTICES):
-                            matrix[src][dst] = 1 - matrix[src][dst]
-                else:
-                    for ind in range(1, NUM_VERTICES - 1):
-                        available = [op for op in OPS if op != ops[ind]]
-                        ops[ind] = np.random.choice(available)
-
-                new_spec = dataset_api["api"].ModelSpec(matrix, ops)
-                if dataset_api["nb101_data"].is_valid(new_spec):
+                new_matrix = copy.deepcopy(matrix)
+                new_ops = copy.deepcopy(ops)
+                for src in range(0, NUM_VERTICES - 1):
+                    for dst in range(src+1, NUM_VERTICES):
+                        if np.random.random() < 1 / NUM_VERTICES:
+                            new_matrix[src][dst] = 1 - new_matrix[src][dst]
+                for ind in range(1, NUM_VERTICES - 1):
+                    if np.random.random() < 1 / len(OPS):
+                        available = [op for op in OPS if op != new_ops[ind]]
+                        new_ops[ind] = np.random.choice(available)
+                new_spec = dataset_api['api'].ModelSpec(new_matrix, new_ops)
+                if dataset_api['nb101_data'].is_valid(new_spec):
                     break
+        
+        self.set_spec({'matrix':new_matrix, 'ops':new_ops})
 
-        self.set_spec({"matrix": matrix, "ops": ops})
+
 
     def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
