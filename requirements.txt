@@ -31,4 +31,4 @@ tabulate==0.8.9
 tqdm==4.61.1
 yacs==0.1.8
 scikit-learn==0.24.2
-thop
+thop==0.0.31-2005241907
