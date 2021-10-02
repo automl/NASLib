@@ -9,43 +9,47 @@ import numpy as np
 def main(args):
 
     if args.config_type == 'bbo-bs':
-        # this is hardcoded for now -- needs to be changed later!!!
-        folder = f"naslib/benchmarks/bbo/configs/{args.search_space}/{args.dataset}"
-        os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
+        num_config = 20
+        for seed in range(args.start_seed, args.start_seed + args.trials):
+            np.random.seed(seed)
+            random.seed(seed)
+            folder = f"naslib/benchmarks/bbo/configs/{args.search_space}/{args.dataset}/{args.optimizer}/{seed}"
+            os.makedirs(folder, exist_ok=True)
+            for config_id in range(num_config):
 
-        for i in range(args.start_seed, args.start_seed + args.trials):
-            config = {
-                "seed": i,
-                "search_space": args.search_space,
-                "dataset": args.dataset,
-                "optimizer": args.optimizer,
-                "out_dir": args.out_dir,
-                "search": {
-                    "checkpoint_freq": args.checkpoint_freq,
-                    "epochs": args.epochs,
-                    "fidelity": args.fidelity,
-                    "sample_size": 10,
-                    "population_size": 30,
-                    "num_init": 10,
-                    "k": 20,
-                    "num_ensemble": 3,
-                    "acq_fn_type": "its",
-                    "acq_fn_optimization": args.acq_fn_optimization,
-                    "encoding_type": "path",
-                    "num_arches_to_mutate": 2,
-                    "max_mutations": 1,
-                    "num_candidates": 30,
-                    "predictor": args.predictor,
-                    "debug_predictor": False,
-                },
-            }
+                config = {
+                    "seed": seed,
+                    "search_space": args.search_space,
+                    "dataset": args.dataset,
+                    "optimizer": args.optimizer,
+                    "out_dir": args.out_dir,
+                    "config_id": config_id,
+                    "search": {
+                        "checkpoint_freq": args.checkpoint_freq,
+                        "epochs": args.epochs,
+                        "fidelity": args.fidelity,
+                        "sample_size": int(np.random.choice(range(5, 100))),
+                        "population_size": int(np.random.choice(range(5, 100))),
+                        "num_init": int(np.random.choice(range(5, 100))),
+                        "k":int(np.random.choice(range(10, 50))),
+                        "num_ensemble": 3,
+                        "acq_fn_type": "its",
+                        "acq_fn_optimization": args.acq_fn_optimization,
+                        "encoding_type": "path",
+                        "num_arches_to_mutate": int(np.random.choice(range(1, 20))),
+                        "max_mutations": int(np.random.choice(range(1, 20))),
+                        "num_candidates": int(np.random.choice(range(5, 50))),
+                        "predictor": args.predictor,
+                        "debug_predictor": False,
+                    },
+                }
 
-            path = folder + f"/config_{args.optimizer}_{i}.yaml"
+                path = folder + f"/config_{config_id}.yaml"
 
-            with open(path, "w") as fh:
-                yaml.dump(config, fh)
+                with open(path, "w") as fh:
+                    yaml.dump(config, fh)
     
     elif args.config_type == "predictor-bs":
         folder = f"naslib/benchmarks/predictors-bs/configs_{args.search_space}/{args.dataset}"
@@ -283,6 +287,31 @@ def main(args):
             with open(path, "w") as fh:
                 yaml.dump(config, fh)
 
+    elif args.config_type == "statistics":
+        folder = f"{args.out_dir}/{args.search_space}/{args.dataset}/configs/statistics"
+        os.makedirs(folder, exist_ok=True)
+        args.start_seed = int(args.start_seed)
+        args.trials = int(args.trials)
+
+        for i in range(args.start_seed, args.start_seed + args.trials):
+            config = {
+                "seed": i,
+                "search_space": args.search_space,
+                "dataset": args.dataset,
+                "out_dir": args.out_dir,
+                "run_acc_stats": args.run_acc_stats,
+                "max_set_size": args.max_set_size,
+                "run_nbhd_size": args.run_nbhd_size,
+                "max_nbhd_trials": args.max_nbhd_trials,
+                "run_autocorr": args.run_autocorr,
+                "max_autocorr_trials": args.max_autocorr_trials,
+                "autocorr_size": args.autocorr_size,
+                "walks": args.walks,
+            }
+
+            with open(folder + f"/config_{i}.yaml", "w") as fh:
+                yaml.dump(config, fh)
+
     else:
         print("invalid config type in create_configs.py")
 
@@ -337,7 +366,31 @@ if __name__ == "__main__":
     parser.add_argument(
         "--experiment_type", type=str, default="single", help="type of experiment"
     )
-
+    parser.add_argument(
+        "--run_acc_stats", type=int, default=1, help="run accuracy statistics"
+    )
+    parser.add_argument(
+        "--max_set_size", type=int, default=10000, help="size of val_acc stat computation"
+    )    
+    parser.add_argument(
+        "--run_nbhd_size", type=int, default=1, help="run experiment to compute nbhd size"
+    )    
+    parser.add_argument(
+        "--max_nbhd_trials", type=int, default=1000, help="size of nbhd size computation"
+    )
+    parser.add_argument(
+        "--run_autocorr", type=int, default=1, help="run experiment to compute autocorrelation"
+    )
+    parser.add_argument(
+        "--max_autocorr_trials", type=int, default=10, help="number of autocorrelation trials"
+    )
+    parser.add_argument(
+        "--autocorr_size", type=int, default=36, help="size of autocorrelation to test"
+    )
+    parser.add_argument(
+        "--walks", type=int, default=1000, help="number of random walks"
+    )
+    
     args = parser.parse_args()
 
     main(args)

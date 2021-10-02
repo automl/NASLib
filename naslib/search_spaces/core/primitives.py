@@ -301,12 +301,16 @@ class AvgPool(AbstractPrimitive):
     Implementation of Avergae Pooling.
     """
 
-    def __init__(self, C_in, kernel_size, stride, **kwargs):
+    def __init__(self, C_in, kernel_size, stride, use_bn=True, **kwargs):
         super().__init__(locals())
-        self.avgpool = nn.Sequential(
-            nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
-            nn.BatchNorm2d(C_in, affine=False),
-        )
+
+        if use_bn:
+            self.avgpool = nn.Sequential(
+                nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False),
+                nn.BatchNorm2d(C_in, affine=False),
+            )
+        else:
+            self.avgpool = nn.AvgPool2d(3, stride=stride, padding=1, count_include_pad=False)
 
     def forward(self, x, edge_data):
         x = self.avgpool(x)

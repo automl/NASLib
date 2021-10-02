@@ -46,4 +46,4 @@ do
   --fidelity $fidelity --epochs $epochs
 done
 
-echo 'YEAH! SCIENCE BITCH. config files are ready!!'
+echo 'configs are ready! I think ... go check'

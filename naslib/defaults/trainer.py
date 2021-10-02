@@ -328,7 +328,6 @@ class Trainer(object):
                 grad_clip = self.config.evaluation.grad_clip
                 loss = torch.nn.CrossEntropyLoss()
 
-                best_arch.train()
                 self.train_top1.reset()
                 self.train_top5.reset()
                 self.val_top1.reset()
@@ -346,6 +345,8 @@ class Trainer(object):
                 # train from scratch
                 epochs = self.config.evaluation.epochs
                 for e in range(start_epoch, epochs):
+                    best_arch.train()
+
                     if torch.cuda.is_available():
                         log_first_n(
                             logging.INFO,
@@ -399,6 +400,7 @@ class Trainer(object):
 
                     # Validation queue
                     if self.valid_queue:
+                        best_arch.eval()
                         for i, (input_valid, target_valid) in enumerate(
                             self.valid_queue
                         ):

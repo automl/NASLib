@@ -164,6 +164,14 @@ def get_config_from_args(args=None, config_type="nas"):
             )
         ) as f:
             config = CfgNode.load_cfg(f)
+    elif config_type == "bbo-bs":
+        # load the default base
+        with open(
+            os.path.join(
+                get_project_root(), "benchmarks/bbo", "discrete_config.yaml"
+            )
+        ) as f:
+            config = CfgNode.load_cfg(f)
     elif config_type == "nas_predictor":
         # load the default base
         # with open(os.path.join(get_project_root(), 'benchmarks/nas_predictors', 'nas_predictor_config.yaml')) as f:
@@ -182,17 +190,18 @@ def get_config_from_args(args=None, config_type="nas"):
             )
         ) as f:
             config = CfgNode.load_cfg(f)
+    elif config_type == "statistics":
+        # load the default base
+        with open(
+            os.path.join(
+                get_project_root(), "benchmarks/statistics", "statistics_config.yaml"
+            )
+        ) as f:
+            config = CfgNode.load_cfg(f)
 
     if args is None:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
-
-    # load config file
-    # with open(args.config_file, 'r') as f:
-    #     config = AttrDict(yaml.safe_load(f))
-    # for k, v in config.items():
-    #     if isinstance(v, dict):
-    #         config[k] = AttrDict(v)
 
     # Override file args with ones from command line
     try:
@@ -231,6 +240,21 @@ def get_config_from_args(args=None, config_type="nas"):
         config.save = "{}/{}/{}/{}/{}".format(
             config.out_dir, config.search_space, config.dataset, config.optimizer, config.seed
         )
+    elif config_type == "bbo-bs":
+        # config.seed = args.seed
+        config.search.seed = config.seed
+        # config.optimizer = args.optimizer
+        config.evaluation.world_size = args.world_size
+        config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
+        config.evaluation.rank = args.rank
+        config.evaluation.dist_url = args.dist_url
+        config.evaluation.dist_backend = args.dist_backend
+        config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
+        config.save = "{}/{}/{}/{}/{}/config_{}".format(
+            config.out_dir, config.search_space, config.dataset, config.optimizer, config.seed, config.config_id
+        )
+    
+    
     elif config_type == "predictor":
         if config.predictor == "lcsvr" and config.experiment_type == "vary_train_size":
             config.save = "{}/{}/{}/{}_train/{}".format(
@@ -273,6 +297,14 @@ def get_config_from_args(args=None, config_type="nas"):
             "nas_predictors",
             config.search_space,
             config.search.predictor_type,
+            config.seed,
+        )
+    elif config_type == "statistics":
+        config.save = "{}/{}/{}/{}/{}".format(
+            config.out_dir,
+            config.search_space,
+            config.dataset,
+            "statistics",
             config.seed,
         )
     else:

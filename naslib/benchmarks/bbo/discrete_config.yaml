@@ -13,6 +13,9 @@ dataset: cifar10
 # output results to this directory
 out_dir: run
 
+# config id for the experiment
+config_id: 0
+
 # parameters for the optimizers
 search:
   # for bohb
@@ -53,3 +56,23 @@ search:
   debug_predictor: False
   sample_size: 10
   population_size: 30
+
+# copied directly from darts_defaults
+evaluation:
+  checkpoint_freq: 30
+  batch_size: 96
+  learning_rate: 0.025
+  learning_rate_min: 0.00
+  momentum: 0.9
+  weight_decay: 0.0003
+  epochs: 600
+  warm_start_epochs: 0
+  grad_clip: 5
+  train_portion: 1.
+  data_size: 50000
+
+  cutout: True
+  cutout_length: 16
+  cutout_prob: 1.0
+  drop_path_prob: 0.2
+  auxiliary_weight: 0.4

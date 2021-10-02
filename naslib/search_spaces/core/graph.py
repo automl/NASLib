@@ -841,6 +841,9 @@ class Graph(torch.nn.Module, nx.DiGraph):
     def mutate(self):
         raise NotImplementedError()
 
+    def set_load_labeled(self):
+        self.load_labeled = True
+
     def query(self, metric: Metric, dataset: str, path: str) -> float:
         """
         Can be used to query the performance of the architecture using
