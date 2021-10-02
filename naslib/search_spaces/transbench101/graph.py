@@ -81,6 +81,10 @@ class TransBench101SearchSpaceMicro(Graph):
         for node in range(1, n_nodes):
             self.add_edge(node, node+1)
 
+        # Preprocessing for jigsaw
+        # TODO: Make conditional on dataset
+        self.edges[1, 2].set('op', ops.StemJigsaw(self.base_channels))
+
         # Add modules
         for idx, node in enumerate(range(2, 2+self.n_modules)):
             # Create module
@@ -91,7 +95,11 @@ class TransBench101SearchSpaceMicro(Graph):
             self.nodes[node]["subgraph"] = module
             module.set_input([node-1])
 
-        # TODO: Add decoder
+        self.edges[node, node+1].set('op', ops.SequentialJigsaw(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(512 * 9, self.num_classes) # TODO: Remove hardcoding
+        ))
 
         # Assign operations to cell edges
         C_in = self.base_channels
@@ -109,9 +117,9 @@ class TransBench101SearchSpaceMicro(Graph):
         return conv.out_channels
 
 
-
     def _is_reduction_stage(self, stage):
         return "r_stage" in stage
+
 
     def _set_cell_ops_for_module(self, module, C_in, stage):
         assert isinstance(module, Graph)

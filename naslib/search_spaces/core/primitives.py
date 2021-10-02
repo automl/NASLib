@@ -517,7 +517,7 @@ class SequentialJigsaw(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         _, s2, s3, s4 = x.size()
-        x = x.reshape(4, 9, s2, s3, s4)
+        x = x.reshape(-1, 9, s2, s3, s4)
         enc_out = []
         for i in range(9):
             enc_out.append(x[:, i, :, : , :])
