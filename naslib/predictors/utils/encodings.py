@@ -5,6 +5,7 @@ from naslib.predictors.utils.encodings_nb101 import encode_101
 from naslib.predictors.utils.encodings_darts import encode_darts
 from naslib.predictors.utils.encodings_nlp import encode_nlp
 from naslib.predictors.utils.encodings_asr import encode_asr
+from naslib.predictors.utils.encodings_mr import encode_mr
 
 """
 Currently we need search space specific methods.
@@ -397,6 +398,9 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
                           encoding_type='compact',
                           max_nodes=3,
                           accs=None)
+    elif ss_type == "nasbench_MR":
+        return encode_mr(arch,
+                         encoding_type='compact')
     else:
         raise NotImplementedError(
             "{} is not yet supported for encodings".format(ss_type)

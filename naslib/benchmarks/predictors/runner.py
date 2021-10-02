@@ -39,7 +39,8 @@ from naslib.search_spaces import (
     NasBench201SearchSpace,
     DartsSearchSpace,
     NasBenchNLPSearchSpace,
-    TransBench101SearchSpace
+    TransBench101SearchSpace,
+    NasBenchMRSearchSpace
 )
 
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -144,7 +145,8 @@ supported_search_spaces = {
     "nasbench201": NasBench201SearchSpace(),
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
-    'transbench101': TransBench101SearchSpace()
+    'transbench101': TransBench101SearchSpace(),
+    'mr': NasBenchMRSearchSpace(),
 }
 #    'transbench101_micro': TransBench101SearchSpace('micro'),
 #    'transbench101_macro': TransBench101SearchSpace('micro')}

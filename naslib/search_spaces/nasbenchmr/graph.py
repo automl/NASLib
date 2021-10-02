@@ -59,6 +59,10 @@ class NasBenchMRSearchSpace(Graph):
         self.op_indices = op_indices
         # convert_op_indices_to_naslib(self)
 
+    def get_hash(self):
+        print(self.get_op_indices())
+        return tuple(self.get_op_indices())
+
     def sample_random_architecture(self, dataset_api=None):
         """
         This will sample a random architecture and update the edges in the
