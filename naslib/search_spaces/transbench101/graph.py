@@ -87,10 +87,10 @@ class TransBench101SearchSpaceMicro(Graph):
         #
 
         # preprocessing
-        self.edges[1, 2].set('op', ops.Stem(channels[0]))
+#         self.edges[1, 2].set('op', ops.Stem(channels[0]))
         
-#         # preprocessing for jigsaw
-#         self.edges[1, 2].set('op', ops.StemJigsaw(channels[0]))
+        # preprocessing for jigsaw
+        self.edges[1, 2].set('op', ops.StemJigsaw(channels[0]))
         
         # stage 1
         for i in range(2, 7):
