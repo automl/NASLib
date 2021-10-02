@@ -26,7 +26,6 @@ supported_optimizers = {
     'darts': DARTSOptimizer(config),
     'drnas': DrNASOptimizer(config),
     'gdas': GDASOptimizer(config),
-    'epnas': EPNASOptimizer(config)
 }
 
 supported_search_spaces = {

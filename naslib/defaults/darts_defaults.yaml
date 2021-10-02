@@ -51,12 +51,12 @@ search:
   max_mutations: 1
   num_candidates: 100
   
-#   BasePredictor
+#   # BasePredictor
 #   predictor_type: gcn 
 #   predictor_type: seminas 
 #   predictor_type: bohamiann 
 #   predictor_type: xgb
-#   predictor_type: var_sparse_gp
+  predictor_type: var_sparse_gp
 
   debug_predictor: False
 
