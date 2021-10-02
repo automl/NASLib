@@ -1,4 +1,3 @@
-
 # The experiment type can be single, vary_train_size, vary_fidelity, or vary_both
 # single will use train_size_single and fidleity_single 
 # vary_train_size will use train_size_list and fidelity_single
@@ -6,20 +5,14 @@
 # vary_both will use train_size_list and fidelity_list
 experiment_type: single
 
-# nasbench101, nasbench201, transbench101_micro, transbench101_macro, darts, or nlp
-search_space: transbench101_micro
+# nasbench101, nasbench201, darts, or nlp
+search_space: nasbench201
 
 # cifar10, cifar100, or ImageNet16-120 (only important for nasbench201)
-# class_scene, class_object, jigsaw, room_layout, segmentsemantic, normal, autoencoder (only for transbench101)
-dataset: jigsaw
+dataset: cifar10
 
 # one of the 31 predictors in benchmarks/predictors/runner.py
-# predictor: xgb
-# predictor: bohamiann
-# predictor: seminas
-# predictor: gcn
-
-
+predictor: xgb
 
 # 0: mutation-based, or 1: uniformly random, train/test sets
 uniform_random: 1
@@ -47,7 +40,7 @@ seed: 1000
 # these are used by the zero-cost methods
 search:
   seed: 1000
-  batch_size: 4 # 256
+  batch_size: 256
   data_size: 25000
   cutout: False
   cutout_length: 16
