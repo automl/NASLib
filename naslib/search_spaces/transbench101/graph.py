@@ -43,10 +43,6 @@ class TransBench101SearchSpaceMicro(Graph):
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
-<<<<<<< HEAD
-=======
-        self.space = 'micro'
->>>>>>> Develop
         #
         # Cell definition
         #
@@ -148,16 +144,9 @@ class TransBench101SearchSpaceMicro(Graph):
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
             
-<<<<<<< HEAD
             
         arch_str = convert_naslib_to_transbench101_micro(self) 
         print('arch_str =', arch_str)
-=======
-        if self.space=='micro':
-            arch_str = convert_naslib_to_transbench101_micro(self.op_indices) 
-        elif self.space=='macro':
-            arch_str = convert_naslib_to_transbench101_macro(self.op_indices) 
->>>>>>> Develop
           
         query_results = dataset_api['api']
         task = dataset_api['task']
@@ -526,36 +515,9 @@ class TransBench101SearchSpaceMacro(Graph):
         while len(op_indices)<6:
             op_indices = np.append(op_indices, 0)
         self.set_op_indices(op_indices)
-<<<<<<< HEAD
 
 
     def mutate(self, parent, dataset_api=None):
-=======
-    
-    
-    def sample_random_architecture(self, dataset_api=None):
-        if self.space=='micro':
-            self.sample_random_architecture_micro(dataset_api)
-        elif self.space=='macro':
-            self.sample_random_architecture_macro(dataset_api)        
-        
-
-    def mutate_micro(self, parent, dataset_api=None):
-        """
-        This will mutate one op from the parent op indices, and then
-        update the naslib object and op_indices
-        """
-        parent_op_indices = parent.get_op_indices()
-        op_indices = list(parent_op_indices)
-
-        edge = np.random.choice(len(parent_op_indices))
-        available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
-        op_index = np.random.choice(available)
-        op_indices[edge] = op_index
-        self.set_op_indices(op_indices)
-
-    def mutate_macro(self, parent, dataset_api=None):
->>>>>>> Develop
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -593,39 +555,7 @@ class TransBench101SearchSpaceMacro(Graph):
         while len(op_indices)<6:
             op_indices = np.append(op_indices, 0)
                                 
-<<<<<<< HEAD
         self.set_op_indices(op_indices)    
-=======
-        self.set_op_indices(op_indices)
-    
-    
-    def mutate(self, parent, dataset_api=None):
-        if self.space=='micro':
-            self.mutate_micro(parent, dataset_api)
-        elif self.space=='macro':
-            self.mutate_macro(parent, dataset_api)
-        
-
-
-    def get_nbhd_micro(self, dataset_api=None):
-        # return all neighbors of the architecture
-        self.get_op_indices()
-        nbrs = []
-        for edge in range(len(self.op_indices)):
-            available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
-            
-            for op_index in available:
-                nbr_op_indices = list(self.op_indices).copy()
-                nbr_op_indices[edge] = op_index
-                nbr = TransBench101SearchSpace()
-                nbr.set_op_indices(nbr_op_indices)
-                nbr_model = torch.nn.Module()
-                nbr_model.arch = nbr
-                nbrs.append(nbr_model)
-        
-        random.shuffle(nbrs)
-        return nbrs
->>>>>>> Develop
 
 
     def get_nbhd(self, dataset_api=None):
