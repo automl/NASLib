@@ -51,25 +51,15 @@ class TaskonomyDataset(Dataset):
         try:
             if torch.is_tensor(idx):
                 idx = idx.tolist()
-#             print('self.dataset_dir =', self.dataset_dir)
-#             print('self.all_templates[idx] =', self.all_templates[idx])
             template = osp.join(self.dataset_dir, self.all_templates[idx])
-#             print('template1 ===', template)
-#             print('template2 ===', '.'.join([template.format(domain='rgb'), 'png']))
-#             print('image >>>>', io.imread('.'.join([template.format(domain='rgb'), 'png'])))
             image = io.imread('.'.join([template.format(domain='rgb'), 'png']))
-#             print('image >>>>', image)
             label = self.get_label(template)
             sample = {'image': image, 'label': label}
-#             print('sample1 ===', sample['image'].shape)
-#             print('label ---->', sample['label'])
             if self.transform:
                 sample = self.transform(sample)
         except:
             template = osp.join(self.dataset_dir, self.all_templates[idx])
             raise Exception('Error loading image: {}'.format('.'.join([template.format(domain='rgb'), 'png'])))
-#         print('sample ===', sample.keys())
-#         print('sample2 ===', sample['image'].size())
         return sample
 
     def get_label(self, template):
@@ -90,13 +80,11 @@ def get_all_templates(dataset_dir, filenames_path):
     building_lists = load_ops.read_json(filenames_path)['filename_list']
     all_template_paths = []
     for building in building_lists:
-#         print('building =', building)
         all_template_paths += load_ops.read_json(osp.join(dataset_dir, building))
     for i, path in enumerate(all_template_paths):
         f_split = path.split('.')
         if f_split[-1] in ['npy', 'png']:
             all_template_paths[i] = '.'.join(f_split[:-1])
-#     print('all_template_paths =', all_template_paths)
     return all_template_paths
 
 

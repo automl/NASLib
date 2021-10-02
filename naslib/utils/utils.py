@@ -371,9 +371,9 @@ def get_train_val_loaders(config, mode):
         )
     elif dataset == 'jigsaw':
         cfg = get_jigsaw_configs()
-    
+
         train_data, val_data, test_data = get_datasets(cfg)
-               
+
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
         
@@ -525,7 +525,7 @@ def get_jigsaw_configs():
     cfg['input_dim'] = (255, 255)
     cfg['target_num_channels'] = 9
     
-    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "tb101_data/taskonomydata_mini")
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
     cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
     
     cfg['train_filenames'] = 'train_filenames_final5k.json'
@@ -565,6 +565,53 @@ def get_jigsaw_configs():
     return cfg
 
 
+def get_class_object_configs():
+    cfg = {}
+    
+    cfg['task_name'] = 'jigsaw'
+
+    cfg['input_dim'] = (255, 255)
+    cfg['target_num_channels'] = 9
+    
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+    
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_dim'] = 1000
+    cfg['target_load_fn'] = load_ops.random_jigsaw_permutation
+    cfg['target_load_kwargs'] = {'classes': cfg['target_dim']}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    return cfg
+
 
 def get_autoencoder_configs():
     
@@ -578,7 +625,7 @@ def get_autoencoder_configs():
     cfg['target_dim'] = (256, 256)
     cfg['target_channel'] = 3
 
-    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "tb101_data/taskonomydata_mini")
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
     cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
    
     cfg['train_filenames'] = 'train_filenames_final5k.json'
