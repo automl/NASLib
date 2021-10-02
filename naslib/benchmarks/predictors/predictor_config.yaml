@@ -11,7 +11,7 @@ search_space: transbench101_micro
 
 # cifar10, cifar100, or ImageNet16-120 (only important for nasbench201)
 # class_scene, class_object, jigsaw, room_layout, segmentsemantic, normal, autoencoder (only for transbench101)
-dataset: autoencoder
+dataset: jigsaw
 
 # one of the 31 predictors in benchmarks/predictors/runner.py
 # predictor: xgb

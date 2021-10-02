@@ -4,7 +4,7 @@ import sys
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import RandomSearch, Npenas, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor, DARTSOptimizer, DrNASOptimizer, GDASOptimizer, EPNASOptimizer
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor, DARTSOptimizer, DrNASOptimizer, GDASOptimizer
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
 DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpaceMicro, TransBench101SearchSpaceMacro
