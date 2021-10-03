@@ -38,9 +38,10 @@ class NasBench201SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self):
+    def __init__(self, dataset="cifar10"):
         super().__init__()
-        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
+        self.dataset = dataset
+        self._set_n_classes(self.dataset)
         self.op_indices = None
 
         self.max_epoch = 199
@@ -126,6 +127,16 @@ class NasBench201SearchSpace(Graph):
                 scope=scope,
                 private_edge_data=True,
             )
+
+    def _set_n_classes(self, dataset):
+        if dataset == "cifar10":
+            self.num_classes = 10
+        elif dataset == "cifar100":
+            self.num_classes = 100
+        elif dataset == "ImageNet16-120":
+            self.num_classes = 120
+        else:
+            raise NotImplementedError(f"Unknown Dataset {dataset}")
 
     def query(
         self,

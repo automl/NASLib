@@ -37,7 +37,7 @@ supported_optimizers = {
 
 supported_search_spaces = {
     "nasbench101": NasBench101SearchSpace(),
-    "nasbench201": NasBench201SearchSpace(),
+    "nasbench201": NasBench201SearchSpace(config.dataset),
     "darts": DartsSearchSpace(),
     #"transbench101_micro": TransBench101SearchSpaceMicro(config.dataset)
 }
@@ -73,8 +73,8 @@ def log_discrete_arch(epoch):
 trainer = Trainer(optimizer, config)
 trainer.search(
     resume_from=utils.get_last_checkpoint(config) if config.resume else "",
-    summary_writer=writer
-    #after_epoch=log_discrete_arch
+    summary_writer=writer,
+    after_epoch=log_discrete_arch
 )
 
 # Log the final architecture and test accuracy
