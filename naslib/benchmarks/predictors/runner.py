@@ -1,4 +1,3 @@
-from nasbench import api
 import logging
 import sys
 import os
@@ -42,6 +41,7 @@ from naslib.search_spaces import (
     NasBenchNLPSearchSpace,
     TransBench101SearchSpace,
     NasBenchASRSearchSpace,
+    NasBenchMRSearchSpace,
 )
 
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -156,13 +156,14 @@ supported_search_spaces = {
     'transbench101_micro': TransBench101SearchSpace('micro'),
     'transbench101_macro': TransBench101SearchSpace('macro'),
     "asr": NasBenchASRSearchSpace(),
+    "mr": NasBenchMRSearchSpace(),
 }
 
 """
 If the API did not evaluate *all* architectures in the search space, 
 set load_labeled=True
 """
-load_labeled = True if config.search_space in ["darts", "nlp"] else False
+load_labeled = True if config.search_space in ["darts", "nlp", "mr"] else False
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 # initialize the search space and predictor

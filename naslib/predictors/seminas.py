@@ -68,6 +68,7 @@ def convert_arch_to_seq(matrix, ops, max_n=8):
     seq = []
     n = len(matrix)
     max_n = max_n
+
     assert n == len(ops)
     for col in range(1, max_n):
         if col >= n:
@@ -627,6 +628,11 @@ class SemiNASPredictor(Predictor):
             encoder_length = 44
             decoder_length = 44
             vocab_size = 9
+        elif self.ss_type == 'nasbench_MR':
+            self.max_n = 27
+            encoder_length = 378
+            decoder_length = 378
+            vocab_size = 10 # due to operations in convert_seq_to_arch(L80)
             
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)

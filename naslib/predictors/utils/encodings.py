@@ -16,7 +16,6 @@ TODO: clean up this file.
 
 logger = logging.getLogger(__name__)
 
-
 one_hot_nasbench201 = [
     [1, 0, 0, 0, 0],
     [0, 1, 0, 0, 0],
@@ -38,7 +37,6 @@ NUM_OPS = len(OPS)
 
 
 def encode_adjacency_one_hot(arch):
-
     encoding = arch.get_op_indices()
     one_hot = []
     for e in encoding:
@@ -47,7 +45,6 @@ def encode_adjacency_one_hot(arch):
 
 
 def encode_adjacency_one_hot_tb101(arch):
-
     encoding = arch.get_op_indices()
     one_hot = []
     for e in encoding:
@@ -286,7 +283,6 @@ def encode_seminas_transbench101(arch):
 
 
 def encode_201(arch, encoding_type="adjacency_one_hot"):
-
     if encoding_type == "adjacency_one_hot":
         return encode_adjacency_one_hot(arch)
 
@@ -307,10 +303,9 @@ def encode_201(arch, encoding_type="adjacency_one_hot"):
             "{} is not yet supported as a predictor encoding".format(encoding_type)
         )
         raise NotImplementedError()
-        
+
 
 def encode_tb101(arch, encoding_type='adjacency_one_hot'):
-        
     if encoding_type == "adjacency_one_hot":
         return encode_adjacency_one_hot_tb101(arch)
 
@@ -325,7 +320,7 @@ def encode_tb101(arch, encoding_type='adjacency_one_hot'):
             "{} is not yet supported as a predictor encoding".format(encoding_type)
         )
         raise NotImplementedError()
-        
+
 
 def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
     # this method calls either encode_201 or encode_darts based on the search space
@@ -337,9 +332,9 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
     elif ss_type == "darts":
         return encode_darts(arch, encoding_type=encoding_type)
     elif ss_type == "nlp":
-        return encode_nlp(arch, 
-                          encoding_type=encoding_type, 
-                          max_nodes=12, 
+        return encode_nlp(arch,
+                          encoding_type=encoding_type,
+                          max_nodes=12,
                           accs=None)
     elif ss_type == 'transbench101':
         return encode_tb101(arch, encoding_type=encoding_type)
@@ -349,8 +344,12 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
                           max_nodes=3,
                           accs=None)
     elif ss_type == "nasbench_MR":
-        return encode_mr(arch,
-                         encoding_type='compact')
+        if encoding_type == 'seminas':
+            return encode_mr(arch,
+                             encoding_type=encoding_type)
+        else:
+            return encode_mr(arch,
+                             encoding_type='compact')
     else:
         raise NotImplementedError(
             "{} is not yet supported for encodings".format(ss_type)
