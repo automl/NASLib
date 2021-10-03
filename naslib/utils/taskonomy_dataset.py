@@ -60,6 +60,7 @@ class TaskonomyDataset(Dataset):
         except:
             template = osp.join(self.dataset_dir, self.all_templates[idx])
             raise Exception('Error loading image: {}'.format('.'.join([template.format(domain='rgb'), 'png'])))
+        sample = [sample['image'], sample['label']]
         return sample
 
     def get_label(self, template):
