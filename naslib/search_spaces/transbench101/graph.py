@@ -117,6 +117,8 @@ class TransBench101SearchSpaceMicro(Graph):
             return ops.StemJigsaw(self.base_channels)
         elif task == "class_object":
             return ops.Stem(self.base_channels)
+        elif task == "autoencoder":
+            return ops.Stem(self.base_channels)
         else:
             return None # TODO: handle other tasks
 
@@ -134,6 +136,8 @@ class TransBench101SearchSpaceMicro(Graph):
                         nn.Flatten(),
                         nn.Linear(n_channels, self.num_classes)
                     )
+        elif task == "autoencoder":
+            return ops.GenerativeDecoder((512, 32), (512, 2048)) 
         else:
             return None # TODO: handle other tasks
 

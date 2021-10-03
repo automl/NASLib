@@ -523,7 +523,14 @@ class Trainer(object):
         """Update the accuracy counters"""
         logits = logits.clone().detach().cpu()
         target = target.clone().detach().cpu()
-        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
+        
+        if self.config.dataset == 'class_object':
+            prec1, prec5 = utils.accuracy_class_object(logits, target, topk=(1, 5))
+        elif self.config.dataset == 'autoencoder':
+            prec1, prec5 = utils.accuracy_autoencoder(logits, target, topk=(1, 5))
+        else:
+            prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
+    
         n = logits.size(0)
 
         if split == "train":

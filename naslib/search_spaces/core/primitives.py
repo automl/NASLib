@@ -575,7 +575,6 @@ class GenerativeDecoder(AbstractPrimitive):
         self.conv14 = ConvLayer(16, target_num_channel, 3, 1, 1, nn.Tanh(), norm)
         
     def forward(self, x, edge_data):
-        print('x ---->', x.size())
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -590,7 +589,6 @@ class GenerativeDecoder(AbstractPrimitive):
         x = self.conv12(x)
         x = self.conv13(x)
         x = self.conv14(x)
-
         return x
     
     def get_embedded_ops(self):

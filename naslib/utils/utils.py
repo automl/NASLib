@@ -733,11 +733,9 @@ def get_last_checkpoint(config, search=True):
         )
     except:
         return ""
-
+    
 
 def accuracy(output, target, topk=(1,)):
-#     loss_ssim = SSIM(data_range=1, size_average=True, channel=3)
-#     res = accssim(output, target)
     """
     Calculate the accuracy given the softmax output and the target.
     """
@@ -753,6 +751,34 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].reshape(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+
+def accuracy_class_object(output, target, topk=(1,)):
+    """
+    Calculate the accuracy given the softmax output and the target.
+    """
+    target = target.argmax(dim=1)
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].reshape(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
+def accuracy_autoencoder(output, target, topk=(1,)):
+    ssim_loss= SSIM(data_range=1, size_average=True, channel=3)
+    res = ssim_loss(output, target)
+    """
+    Calculate the accuracy given the softmax output and the target.
+    """
+    return res, res
 
 
 def count_parameters_in_MB(model):

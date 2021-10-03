@@ -265,8 +265,7 @@ class ColorJitter(T.ColorJitter):
     def __call__(self, sample, task_name):
         
         t = self.get_params(self.brightness, self.contrast, self.saturation, self.hue)
-#         t = ColorJitter(self.brightness, self.contrast, self.saturation, self.hue)
-#         print('type t =', t)
+
         def forward(self, img):
             fn_idx, brightness_factor, contrast_factor, saturation_factor, hue_factor = self.get_params(self.brightness, self.contrast, self.saturation, self.hue)
             
