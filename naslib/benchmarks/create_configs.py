@@ -72,8 +72,10 @@ def main(args):
             total_epochs = 50 - 1
         elif args.search_space in ["transbench101_micro", "transnasbench101_macro"]:
             total_epochs = 10
-        elif args.search_spaze == "asr":
+        elif args.search_space == "asr":
             total_epochs = 40
+        elif args.search_space == "mr":
+            total_epochs = 100
 
         train_size_list = [
             int(j)
