@@ -58,6 +58,7 @@ class NasBenchMRSearchSpace(Graph):
             return -1
 
         embedding = convert_op_idices_to_params(self.op_indices)
+        params = convert_op_idices_to_params(self.op_indices)
         if self.load_labeled:
             """
             If we loaded the architecture from the nasbenchmr training data (using

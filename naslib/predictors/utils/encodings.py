@@ -350,7 +350,7 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
                           accs=None)
     elif ss_type == "nasbench_MR":
         return encode_mr(arch,
-                         encoding_type='compact')
+                         encoding_type=encoding_type)
     else:
         raise NotImplementedError(
             "{} is not yet supported for encodings".format(ss_type)
