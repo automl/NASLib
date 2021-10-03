@@ -23,8 +23,6 @@ def encode_compact_mr(op_indices):
                 value = 0
                 for j, num in enumerate(chunk):
                     value += num * (2**j)
-                if value > 8:
-                    print("Bug is here")
                 encoding.append(value)
                 chunk = []
         chunk.append(digit)
