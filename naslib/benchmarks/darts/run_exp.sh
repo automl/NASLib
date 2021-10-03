@@ -17,7 +17,7 @@ start=`date +%s`
 # source /home/krishnan/miniconda3/bin/activate
 # conda activate naslib
 
-python runner_all.py --config-file /home/krishnan/naslib/NASLib/naslib/defaults/darts_defaults.yaml opt -f seed $SLURM_ARRAY_TASK_ID optimizer $1 search-space $2 dataset $3
+python runner_all.py --config-file /home/krishnan/naslib/NASLib/naslib/defaults/darts_defaults.yaml opt -f seed $SLURM_ARRAY_TASK_ID optimizer $1 search_space $2 dataset $3
 
 end=`date +%s`
 runtime=$((end-start))
