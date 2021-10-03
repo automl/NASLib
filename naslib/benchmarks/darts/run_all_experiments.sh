@@ -1,11 +1,11 @@
 #!/bin/bash
 
 optimizers=(darts gdas drnas)
-#search_spaces=(nasbench101 darts)
-search_spaces=(nasbench201)
+search_spaces=(nasbench101 darts)
+#search_spaces=(nasbench201)
 
-#datasets=(cifar10)
-datasets=(cifar10 cifar100 ImageNet16-120)
+datasets=(cifar10)
+#datasets=(cifar10 cifar100 ImageNet16-120)
 
 for opt in "${optimizers[@]}"
 do

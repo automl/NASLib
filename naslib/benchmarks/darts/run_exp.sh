@@ -5,7 +5,7 @@
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -a 0-4                        # array size
-#SBATCH -J NB201
+#SBATCH -J NB2301
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
