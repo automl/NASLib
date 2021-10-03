@@ -32,6 +32,7 @@ class NasBenchMRSearchSpace(Graph):
         full_lc=False,
         dataset_api=None,
     ):
+
         """
         Query results from ncp
         """
@@ -44,9 +45,9 @@ class NasBenchMRSearchSpace(Graph):
 
         embedding = convert_op_idices_to_params(self.op_indices)
 
+        naslib_state = np.random.get_state()
         query_result = dataset_api["api"].query(task=dataset, data_embedding=embedding)
-        print('!!!!!!')
-        print(time.time()-start)
+        np.random.set_state(naslib_state)
         return query_result.get('main_metric')
 
     def get_op_indices(self):
@@ -60,7 +61,6 @@ class NasBenchMRSearchSpace(Graph):
         # convert_op_indices_to_naslib(self)
 
     def get_hash(self):
-        print(self.get_op_indices())
         return tuple(self.get_op_indices())
 
     def sample_random_architecture(self, dataset_api=None):
@@ -68,11 +68,8 @@ class NasBenchMRSearchSpace(Graph):
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
-        st0 = np.random.get_state()
-        np.random.seed(int(time.time()))
         op_indices = np.random.randint(2, size=80)
         self.set_op_indices(op_indices)
-        np.random.set_state(st0)
 
     def mutate(self, parent, dataset_api=None):
         """
@@ -83,13 +80,10 @@ class NasBenchMRSearchSpace(Graph):
         parent_op_indices = parent.get_op_indices()
         op_indices = parent_op_indices
 
-        st0 = np.random.get_state()
-        np.random.seed(int(time.time()))
         edge = np.random.choice(len(parent_op_indices))
         # flips the current op on the edge
         op_indices[edge] = 1-op_indices[edge]
         self.set_op_indices(op_indices)
-        np.random.set_state(st0)
 
     def find_nbr_params(self, param):
         if param <= 4:
@@ -112,8 +106,6 @@ class NasBenchMRSearchSpace(Graph):
     def get_nbhd(self, dataset_api=None):
         # returns all neighbors of the architecture
         # arch_embedding = convert_naslib_graph_to_params(self)
-        st0 = np.random.get_state()
-        np.random.seed(int(time.time()))
         nbr_embeddings = []
         arch_embedding = convert_op_idices_to_params(self.op_indices)
         for param_idx in range(len(arch_embedding)):
@@ -130,7 +122,6 @@ class NasBenchMRSearchSpace(Graph):
 
 
         random.shuffle(nbr_embeddings)
-        np.random.set_state(st0)
         return nbr_embeddings
 
     def get_type(self):

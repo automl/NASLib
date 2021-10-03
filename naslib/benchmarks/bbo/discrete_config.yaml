@@ -2,7 +2,7 @@
 seed: 0
 
 # re, bananas, npenas, ls, rs
-optimizer: ls
+optimizer: rs
 
 # nasbench101, nasbench201, darts, nlp, transbench101, asr
 search_space: mr
