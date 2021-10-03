@@ -71,7 +71,7 @@ class NasBenchMRSearchSpace(Graph):
             elif 'cls' in dataset or 'video' in dataset:
                 result = query_result['top1']
             elif 'seg' in dataset:
-                result = query_result['mAcc']
+                result = query_result['mIoU']
         else:
             query_result = dataset_api["api"].query(task=dataset, data_embedding=embedding)
             print(time.time()-start)

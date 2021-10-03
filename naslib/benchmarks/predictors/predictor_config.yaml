@@ -10,7 +10,7 @@ experiment_type: single
 search_space: mr
 
 # cifar10, cifar100, or ImageNet16-120 (only important for nasbench201)
-dataset: video-p
+dataset: 3ddet
 
 # one of the 31 predictors in benchmarks/predictors/runner.py
 predictor: xgb
