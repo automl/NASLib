@@ -415,8 +415,6 @@ class NasBench101SearchSpace(Graph):
         
         self.set_spec({'matrix':new_matrix, 'ops':new_ops})
 
-
-
     def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
         spec = self.get_spec()

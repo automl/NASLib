@@ -60,16 +60,9 @@ class PredictorEvaluator(object):
         if self.search_space.get_type() == "nasbench101":
             self.full_lc = False
             self.hyperparameters = False
-        elif self.search_space.get_type() == "nasbench201":
-            self.full_lc = True
-            self.hyperparameters = True
-        elif self.search_space.get_type() == "darts":
-            self.full_lc = True
-            self.hyperparameters = True
-        elif self.search_space.get_type() == "nlp":
-            self.full_lc = True
-            self.hyperparameters = True
-        elif self.search_space.get_type() == "transbench101":
+        elif self.search_space.get_type() in ["nasbench201", "darts", 
+                                              "nlp", "transbench101", 
+                                              "asr"]:
             self.full_lc = True
             self.hyperparameters = True
         elif self.search_space.get_type() == "nasbench_MR":
@@ -530,4 +523,11 @@ class PredictorEvaluator(object):
         with codecs.open(
             os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
         ) as file:
+            for res in self.results:
+                for key, value in res.items():
+                    if type(value) == np.int32 or type(value) == np.int64:
+                        res[key] = int(value)
+                    if type(value) == np.float32 or type(value) == np.float64:
+                        res[key] = float(value)
+
             json.dump(self.results, file, separators=(",", ":"))
