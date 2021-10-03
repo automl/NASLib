@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1                  # reserves one GPU
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -a 0                          # array size
+#SBATCH -a 0-7                        # array size
 #SBATCH -J OneShot
 
 echo "Workingdir: $PWD";
