@@ -50,7 +50,7 @@ optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
  
 import torch
 
-if config.dataset == 'class_object':
+if config.dataset in ['class_object', 'class_scene']:
     optimizer.loss = SoftmaxCrossEntropyWithLogits()
 elif config.dataset == 'autoencoder':
     optimizer.loss = torch.nn.L1Loss()

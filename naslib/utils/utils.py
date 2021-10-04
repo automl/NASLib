@@ -385,6 +385,14 @@ def get_train_val_loaders(config, mode):
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
         
+    elif dataset == 'class_scene':
+        cfg = get_class_scene_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+        
     elif dataset == 'autoencoder':
         cfg = get_autoencoder_configs()
     
@@ -623,6 +631,56 @@ def get_class_object_configs():
     return cfg
 
 
+def get_class_scene_configs():
+    cfg = {}
+    
+    cfg['task_name'] = 'class_scene'
+
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3
+    
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+    
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_dim'] = 47
+    
+    cfg['target_load_fn'] = load_ops.load_class_scene_logits
+    
+    cfg['target_load_kwargs'] = {'selected': True if cfg['target_dim'] < 365 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['demo_kwargs'] = {'selected': True if cfg['target_dim'] < 365 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['normal_params'] = {'mean': [0.5224, 0.5222, 0.5221], 'std': [0.2234, 0.2235, 0.2236]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+       load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+
 def get_autoencoder_configs():
     
     cfg = {}
@@ -754,6 +812,24 @@ def accuracy(output, target, topk=(1,)):
 
 
 def accuracy_class_object(output, target, topk=(1,)):
+    """
+    Calculate the accuracy given the softmax output and the target.
+    """
+    target = target.argmax(dim=1)
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].reshape(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+def accuracy_class_scene(output, target, topk=(1,)):
     """
     Calculate the accuracy given the softmax output and the target.
     """

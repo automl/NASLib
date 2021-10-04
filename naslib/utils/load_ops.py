@@ -315,6 +315,21 @@ def load_class_object_label(label_path, selected=False, final5k=False):
     return target
 
 
+def load_class_scene_logits(label_path, selected=False, normalize=True, final5k=False):
+    try:
+        logits = np.load(label_path)
+    except:
+        raise FileNotFoundError(f'corrupted: {label_path}')
+    lib_data_dir = os.path.abspath(os.path.dirname(__file__))
+    if selected:
+        selection_file = os.path.join(lib_data_dir, 'class_scene_final5k.npy') if final5k else os.path.join(lib_data_dir, 'class_scene_selected.npy')
+        selection = np.load(selection_file)
+        logits = logits[selection.astype(bool)]
+        if normalize:
+            logits = logits / logits.sum()
+    target = np.asarray(logits)
+    return target
+
 
 def image2tiles(img, permutation, new_dims):
     

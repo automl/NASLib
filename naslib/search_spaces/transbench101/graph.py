@@ -44,6 +44,8 @@ class TransBench101SearchSpaceMicro(Graph):
             self.num_classes = 1000
         elif dataset == "class_object":
             self.num_classes = 100
+        elif dataset == "class_scene":
+            self.num_classes = 63
         self.op_indices = None
 
         self.max_epoch = 199
@@ -115,7 +117,7 @@ class TransBench101SearchSpaceMicro(Graph):
     def _get_stem_for_task(self, task):
         if task == "jigsaw":
             return ops.StemJigsaw(self.base_channels)
-        elif task == "class_object":
+        elif task in ["class_object", "class_scene"]:
             return ops.Stem(self.base_channels)
         elif task == "autoencoder":
             return ops.Stem(self.base_channels)
@@ -130,7 +132,7 @@ class TransBench101SearchSpaceMicro(Graph):
                         nn.Flatten(),
                         nn.Linear(n_channels * 9, self.num_classes)
                     )
-        elif task == "class_object":
+        elif task in ["class_object", "class_scene"]:
             return ops.Sequential(
                         nn.AdaptiveAvgPool2d(1),
                         nn.Flatten(),

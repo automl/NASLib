@@ -526,6 +526,8 @@ class Trainer(object):
         
         if self.config.dataset == 'class_object':
             prec1, prec5 = utils.accuracy_class_object(logits, target, topk=(1, 5))
+        elif self.config.dataset == 'class_scene':
+            prec1, prec5 = utils.accuracy_class_scene(logits, target, topk=(1, 5))
         elif self.config.dataset == 'autoencoder':
             prec1, prec5 = utils.accuracy_autoencoder(logits, target, topk=(1, 5))
         else:
