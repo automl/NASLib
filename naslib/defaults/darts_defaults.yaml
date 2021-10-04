@@ -7,7 +7,7 @@ optimizer: darts
 search:
   seed: 0 
   checkpoint_freq: 5
-  batch_size: 64
+  batch_size: 16
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
