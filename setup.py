@@ -46,7 +46,7 @@ requires = [
     "cython",
     "hyperopt==0.1.2",
     "pyyaml",
-    "numpy==1.17.0",
+    "numpy==1.17.5",
     "scikit-learn==0.23.0",
     "fvcore",
     "matplotlib",
@@ -62,7 +62,8 @@ requires = [
     "emcee==2.2.1",
     "pybnn",
     "pyro-ppl==1.4.0",
-    "tensorflow==1.15.4"
+    "tensorflow==1.15.4",
+    "networkx"
 ]
 
 import subprocess
