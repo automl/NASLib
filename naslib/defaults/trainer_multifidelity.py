@@ -107,7 +107,7 @@ class Trainer(object):
             )
         e = start_epoch
         # TODO: good name for "epochs"
-        while e < after_epoch:
+        while e < self.epochs:
 
             start_time = time.time()
             #return function_eqalisation difference time to run or number of elovations 
@@ -199,10 +199,11 @@ class Trainer(object):
 
             if after_epoch is not None:
                 after_epoch(e)
+            e += used_budget
 
         self.optimizer.after_training()
 
-        e += used_budget
+        
 
         if summary_writer is not None:
             summary_writer.close()

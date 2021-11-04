@@ -3,6 +3,8 @@ import numpy as np
 import numpy as np
 import torch
 
+import math
+
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -72,11 +74,11 @@ class SuccessiveHalving(MetaOptimizer):
 # 		    return(ranks < self.num_configs[self.stage])
 
 
-        # TODO: define fidelity in multi-fidelity setting
+        # DONE: define fidelity in multi-fidelity setting
         model.accuracy = model.arch.query(
             self.performance_metric,
             self.dataset,
-            epoch=self.fidelity, # TODO: adapt this
+            epoch=self.fidelity, # DONE: adapt this
             dataset_api=self.dataset_api,
         )
 
@@ -88,19 +90,26 @@ class SuccessiveHalving(MetaOptimizer):
             model.time = model.arch.query(
                 Metric.TRAIN_TIME,
                 self.dataset,
-                epoch=self.fidelity, # TODO: adapt this
+                epoch=self.fidelity, # DONE: adapt this
                 dataset_api=self.dataset_api,
             )
             budget = model.time
         
-        self.sampled_archs.append(model)
+        # TODO: make this more beautiful/more efficient
+        # TODO: we may need to track of all ever sampled archs
+        if len(self.sampled_archs) < self.number_archs:
+            self.sampled_archs.append(model)
+        else:
+            self.sampled_archs[self.fidelity_counter] = model
+        
         self.fidelity_counter += 1
         self._update_history(model)
         if self.fidelity_counter == self.number_archs:
-            self.fidelity = self.eta*self.fidelity #TODO round 
+            self.fidelity = math.floor(self.eta/self.fidelity) #DONE round 
             self.sampled_archs.sort(key = lambda model: model.accuracy)
-            self.sampled_archs = self.sampled_archs[0:self.number_archs/self.eta] #TODO round 
+            self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)] #DONE round 
             self.number_archs = len(self.sampled_archs)
+            self.fidelity_counter = 0
         return budget
         # required if we want to train the models and not only query.
         # architecture_i.parse()

@@ -10,6 +10,12 @@ search:
   epochs: 100
   fidelity: -1
 
+  min_fidelity: 1
+  number_archs: 10
+  eta: 2
+  budget_type: time
+
+
   predictor_type: var_sparse_gp
   num_init: 10  
   k: 10
@@ -35,3 +41,6 @@ search:
   debug_predictor: False
   sample_size: 10
   population_size: 30
+
+  # TODO: write config file for successive halving
+

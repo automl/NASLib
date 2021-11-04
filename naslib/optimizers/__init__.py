@@ -4,6 +4,7 @@ from .oneshot.rs_ws.optimizer import RandomNASOptimizer
 from .oneshot.gdas.optimizer import GDASOptimizer
 from .oneshot.drnas.optimizer import DrNASOptimizer
 from .discrete.rs.optimizer import RandomSearch
+from .discrete.sh.optimizer import SuccessiveHalving
 from .discrete.re.optimizer import RegularizedEvolution
 from .discrete.ls.optimizer import LocalSearch
 from .discrete.bananas.optimizer import Bananas
