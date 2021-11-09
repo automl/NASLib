@@ -3,6 +3,7 @@ import numpy as np
 
 from naslib.predictors.trees.ngb import loguniform
 from naslib.predictors.trees import BaseTree
+from naslib.predictors.utils.encodings import encode
 
 
 class XGBoost(BaseTree):
