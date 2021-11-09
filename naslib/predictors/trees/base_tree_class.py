@@ -1,4 +1,5 @@
 import numpy as np
+import xgboost as xgb
 
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
