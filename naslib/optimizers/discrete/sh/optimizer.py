@@ -82,7 +82,6 @@ class SuccessiveHalving(MetaOptimizer):
             dataset_api=self.dataset_api,
         )
 
-        # TODO: evaluate if we can write every shit 💩 in model variable attributes
         budget = 1
         # TODO: make query type secure
         if self.budget_type == 'time':

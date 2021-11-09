@@ -12,6 +12,7 @@ from naslib.optimizers import RegularizedEvolution as RE
 from naslib.optimizers import SuccessiveHalving as SH
 
 from naslib.defaults.trainer_multifidelity import Trainer
+#from naslib.defaults.trainer import Trainer
 
 # init search space
 search_space = NB201()
@@ -26,6 +27,7 @@ logger.setLevel(logging.INFO)
 
 # define optimizer 
 optimizer = SH(config)
+#optimizer = RS(config)
 
 # load nasbench data, there data seems to be generalised
 dataset_api = get_dataset_api(config.search_space, config.dataset)

@@ -181,7 +181,7 @@ class Trainer(object):
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
-            self.periodic_checkpointer.step(e)
+            self.periodic_checkpointer.step(int(e)) # Hacky way
 
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
@@ -589,7 +589,8 @@ class Trainer(object):
 
         if resume_from:
             logger.info("loading model from file {}".format(resume_from))
-            checkpoint = checkpointer.resume_or_load(resume_from, resume=True)
+            # TODO: maybe there is an implementation error, because the variable resume_from will not be used if resume equals to True
+            checkpoint = checkpointer.resume_or_load("resume_from", resume=True)
             if checkpointer.has_checkpoint():
                 return checkpoint.get("iteration", -1) + 1
         return 0

@@ -6,7 +6,7 @@ out_dir: run
 
 search:
   seed: 0
-  checkpoint_freq: 1000
+  checkpoint_freq: 1 # 1000
   epochs: 100
   fidelity: -1
 
