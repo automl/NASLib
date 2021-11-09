@@ -309,6 +309,7 @@ def main(args):
                 "search": {
                     "predictor_type": args.predictor,
                     "epochs": args.epochs,
+                    "seed": i,
                     "checkpoint_freq": args.checkpoint_freq,
                     "fidelity": 200,
                     "sample_size": 10,

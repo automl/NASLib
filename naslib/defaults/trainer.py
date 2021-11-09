@@ -185,11 +185,11 @@ class Trainer(object):
             if anytime_results:
                 # record anytime performance
                 self.errors_dict.arch_eval.append(anytime_results)
-                log_every_n_seconds(
-                    logging.INFO,
-                    "Epoch {}, Anytime results: {}".format(e, anytime_results),
-                    n=5,
-                )
+                #log_every_n_seconds(
+                    #logging.INFO,
+                    #"Epoch {}, Anytime results: {}".format(e, anytime_results),
+                    #n=5,
+                #)
 
             self._log_to_json()
 

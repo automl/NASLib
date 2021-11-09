@@ -218,20 +218,18 @@ def get_config_from_args(args=None, config_type="nas"):
         config.merge_from_file(args.config_file)
         config.merge_from_list(args.opts)
     except AttributeError:
-        for arg, value in pairwise(args):
-            config[arg] = value
+        if '--config-file' in args:
+            with open(args[1]) as f:
+                config = CfgNode.load_cfg(f)
+        else:
+            for arg, value in pairwise(args):
+                config[arg] = value
 
     # prepare the output directories
     if config_type == "nas":
         # config.seed = args.seed
         config.search.seed = config.seed
         # config.optimizer = args.optimizer
-        config.evaluation.world_size = args.world_size
-        config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
-        config.evaluation.rank = args.rank
-        config.evaluation.dist_url = args.dist_url
-        config.evaluation.dist_backend = args.dist_backend
-        config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
         config.save = "{}/{}/{}/{}/{}".format(
             config.out_dir, config.search_space, config.dataset, config.optimizer, config.seed
         )
@@ -248,8 +246,6 @@ def get_config_from_args(args=None, config_type="nas"):
         config.save = "{}/{}/{}/{}/config_{}/{}".format(
             config.out_dir, config.search_space, config.dataset, config.optimizer, config.config_id, config.seed
         )
-    
-    
     elif config_type == "predictor":
         if config.predictor == "lcsvr" and config.experiment_type == "vary_train_size":
             config.save = "{}/{}/{}/{}_train/{}".format(

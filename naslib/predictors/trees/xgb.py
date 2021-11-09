@@ -45,10 +45,11 @@ class XGBoost(BaseTree):
         if labels is None:
             return xgb.DMatrix(encodings)
         else:
-            return xgb.DMatrix(encodings, label=((labels - self.mean) / self.std))
+            return xgb.DMatrix(encodings, label=labels)
 
-    def train(self, train_data):
-        return xgb.train(self.hyperparams, train_data, num_boost_round=500)
+    def train(self, train_data, num_boost_round=500):
+        return xgb.train(self.hyperparams, train_data,
+                         num_boost_round=num_boost_round)
 
     def predict(self, data):
         return self.model.predict(self.get_dataset(data))
@@ -56,4 +57,15 @@ class XGBoost(BaseTree):
     def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
-        return super(XGBoost, self).fit(xtrain, ytrain, train_info, params, **kwargs)
+
+        # convert to the right representation
+        train_data = self.get_dataset(xtrain, ytrain)
+
+        # fit to the training data
+        self.model = self.train(train_data, **kwargs)
+
+        # predict
+        train_pred = np.squeeze(self.predict(xtrain))
+        train_error = np.mean(abs(train_pred - ytrain))
+
+        return train_error
