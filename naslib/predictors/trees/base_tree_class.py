@@ -1,10 +1,8 @@
 import numpy as np
-import xgboost as xgb
 
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
-import xgboost as xgb
 class BaseTree(Predictor):
     def __init__(
         self,
@@ -19,7 +17,6 @@ class BaseTree(Predictor):
         self.zc = zc
         self.hyperparams = None
         self.hpo_wrapper = hpo_wrapper
-        self.model = xgb.Booster()
 
     @property
     def default_hyperparams(self):

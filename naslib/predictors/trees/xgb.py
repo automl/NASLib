@@ -58,32 +58,4 @@ class XGBoost(BaseTree):
     def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
-
-        if type(xtrain) is list:
-            # when used in itself, we use
-            if type(xtrain[0]) == int:
-                xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                          ss_type=self.ss_type) for arch in xtrain])
-
-                if self.zc:
-                    mean, std = -10000000.0, 150000000.0
-                    xtrain = [[*x, (train_info[i]-mean)/std] for i, x in enumerate(xtrain)]
-            xtrain = np.array(xtrain)
-            ytrain = np.array(ytrain)
-
-        else:
-            # when used in aug_lcsvr we feed in ndarray directly
-            xtrain = xtrain
-            ytrain = ytrain
-
-        # convert to the right representation
-        train_data = self.get_dataset(xtrain, ytrain)
-
-        # fit to the training data
-        self.model = self.train(train_data, **kwargs)
-
-        # predict
-        train_pred = np.squeeze(self.predict(xtrain))
-        train_error = np.mean(abs(train_pred - ytrain))
-
-        return train_error
+        return super(XGBoost, self).fit(xtrain, ytrain, train_info, params, **kwargs)
