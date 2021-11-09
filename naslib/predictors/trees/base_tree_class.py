@@ -18,7 +18,7 @@ class BaseTree(Predictor):
         self.zc = zc
         self.hyperparams = None
         self.hpo_wrapper = hpo_wrapper
-        self.model = None
+        self.model = xgb.Booster()
 
     @property
     def default_hyperparams(self):
