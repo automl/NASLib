@@ -58,6 +58,9 @@ class XGBoost(BaseTree):
         if self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
 
+        xtrain = np.array(xtrain)
+        ytrain = np.array(ytrain)
+
         # convert to the right representation
         train_data = self.get_dataset(xtrain, ytrain)
 
