@@ -3,7 +3,7 @@ import numpy as np
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
-
+import xgboost as xgb
 class BaseTree(Predictor):
     def __init__(
         self,
