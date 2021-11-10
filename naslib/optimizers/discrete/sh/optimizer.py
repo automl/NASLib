@@ -93,7 +93,8 @@ class SuccessiveHalving(MetaOptimizer):
                 dataset_api=self.dataset_api,
             )
             budget = model.time
-        
+        elif not(self.budget_type == "epoch"):
+            raise NameError("budget time should be time or epoch")
         # TODO: make this more beautiful/more efficient
         # TODO: we may need to track of all ever sampled archs
         if len(self.sampled_archs) < self.number_archs:
@@ -104,9 +105,13 @@ class SuccessiveHalving(MetaOptimizer):
         self.fidelity_counter += 1
         self._update_history(model)
         if self.fidelity_counter == self.number_archs:
-            self.fidelity = math.floor(self.eta/self.fidelity) #DONE round 
+            self.fidelity = math.floor(self.eta*self.fidelity) #DONE round 
             self.sampled_archs.sort(key = lambda model: model.accuracy)
-            self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)] #DONE round 
+            if(math.floor(self.number_archs/self.eta)) != 0:
+                self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)] #DONE round
+                
+            else:
+                self.sampled_archs = [self.sampled_archs[0]]  #but maybe there maybe a different way
             self.number_archs = len(self.sampled_archs)
             self.fidelity_counter = 0
         return budget
@@ -152,6 +157,28 @@ class SuccessiveHalving(MetaOptimizer):
             best_arch.query(
                 Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
             ),
+
+        )
+    def train_model_statistics(self, report_incumbent=True):
+
+        
+        best_arch = self.sampled_archs[self.fidelity_counter -1].arch
+        best_arch_str = self.sampled_archs[self.fidelity_counter -1].arch.modules_str()
+        return (
+            best_arch.query(
+                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+            ),
+            self.fidelity,
+            hash(best_arch) * 5 + 7,
         )
 
     def test_statistics(self):

@@ -63,6 +63,8 @@ class Trainer(object):
                 "train_acc": [],
                 "train_loss": [],
                 "valid_acc": [],
+                "fidelity": [],
+                "arch": [],
                 "valid_loss": [],
                 "test_acc": [],
                 "test_loss": [],
@@ -167,13 +169,17 @@ class Trainer(object):
                     valid_acc,
                     test_acc,
                     train_time,
-                ) = self.optimizer.train_statistics(report_incumbent)
+                    fidelity,
+                    arch,
+                ) = self.optimizer.train_model_statistics()
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
                 self.errors_dict.train_acc.append(train_acc)
                 self.errors_dict.train_loss.append(train_loss)
                 self.errors_dict.valid_acc.append(valid_acc)
                 self.errors_dict.valid_loss.append(valid_loss)
+                self.errors_dict.fidelity.append(fidelity)
+                self.errors_dict.arch.append(arch)
                 self.errors_dict.test_acc.append(test_acc)
                 self.errors_dict.test_loss.append(test_loss)
                 self.errors_dict.runtime.append(end_time - start_time)

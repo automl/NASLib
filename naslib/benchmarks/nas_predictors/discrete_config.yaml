@@ -6,14 +6,14 @@ out_dir: run
 
 search:
   seed: 0
-  checkpoint_freq: 1 # 1000
+  checkpoint_freq: 10 # 1000
   epochs: 100
   fidelity: -1
 
-  min_fidelity: 1
-  number_archs: 10
+  min_fidelity: 5
+  number_archs: 80
   eta: 2
-  budget_type: time
+  budget_type:  epoch
 
 
   predictor_type: var_sparse_gp
