@@ -163,7 +163,7 @@ class SuccessiveHalving(MetaOptimizer):
 
         
         best_arch = self.sampled_archs[self.fidelity_counter -1].arch
-        best_arch_str = self.sampled_archs[self.fidelity_counter -1].arch.modules_str()
+        best_arch_hash = hash(self.sampled_archs[self.fidelity_counter -1])
         return (
             best_arch.query(
                 Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
@@ -178,7 +178,7 @@ class SuccessiveHalving(MetaOptimizer):
                 Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
             ),
             self.fidelity,
-            hash(best_arch) * 5 + 7,
+            best_arch_hash,
         )
 
     def test_statistics(self):

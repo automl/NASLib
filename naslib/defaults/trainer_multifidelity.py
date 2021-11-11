@@ -8,7 +8,8 @@ import copy
 import torch
 import numpy as np
 
-from fvcore.common.checkpoint import PeriodicCheckpointer
+#from fvcore.common.checkpoint import PeriodicCheckpointer
+from fvcore.common.checkpoint import Checkpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -187,7 +188,7 @@ class Trainer(object):
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
-            self.periodic_checkpointer.step(int(e)) # Hacky way
+            self.periodic_checkpointer.save(e) # define the name in accurate , also 
 
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
@@ -576,8 +577,8 @@ class Trainer(object):
         """
         checkpointables = self.optimizer.get_checkpointables()
         checkpointables.update(add_checkpointables)
-
-        checkpointer = utils.Checkpointer(
+        #name make no sense
+        self.periodic_checkpointer = utils.Checkpointer(
             model=checkpointables.pop("model"),
             save_dir=self.config.save + "/search"
             if search
@@ -585,19 +586,19 @@ class Trainer(object):
             # **checkpointables #NOTE: this is throwing an Error
         )
 
-        self.periodic_checkpointer = PeriodicCheckpointer(
-            checkpointer,
-            period=period,
-            max_iter=self.config.search.epochs
-            if search
-            else self.config.evaluation.epochs,
-        )
+        #self.periodic_checkpointer = PeriodicCheckpointer(
+        #   checkpointer,
+        #    period=period,
+        #    max_iter=self.config.search.epochs
+        #    if search
+        #    else self.config.evaluation.epochs,
+        #)
 
         if resume_from:
             logger.info("loading model from file {}".format(resume_from))
             # TODO: maybe there is an implementation error, because the variable resume_from will not be used if resume equals to True
-            checkpoint = checkpointer.resume_or_load("resume_from", resume=True)
-            if checkpointer.has_checkpoint():
+            checkpoint = self.periodic_checkpointer.resume_or_load("resume_from", resume=True)
+            if self.periodic_checkpointer.has_checkpoint():
                 return checkpoint.get("iteration", -1) + 1
         return 0
 
