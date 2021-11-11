@@ -122,7 +122,16 @@ def get_mr_api(dataset=None):
     Load the NAS-Bench-MR
     """
     from ncp.tools import api
-    return {'api': api}
+    with open(
+            os.path.join(
+                "/home/ubuntu/NCP/ncp/data/", dataset, "trainval.pkl"
+            ),
+            "rb",
+    ) as f:
+        data = pickle.load(f)
+
+    return {'api': api,
+            dataset: data}
 
 
 def get_asr_api(dataset=None):
