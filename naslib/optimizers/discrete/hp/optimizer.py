@@ -4,13 +4,14 @@ import numpy as np
 import torch
 
 import math
-
+from naslib.optimizers.discrete.sh import SuccessiveHalving
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
 
 
-class SuccessiveHalving(MetaOptimizer):
+class HyperBand(MetaOptimizer):
     """
+    This is right now only a little bit more as pseudocode, so it not runnable what is currently working on
     # TODO: Write fancy comment 🌈
     """
 
@@ -34,7 +35,7 @@ class SuccessiveHalving(MetaOptimizer):
             loss_criteria (TODO): The loss
             grad_clip (float): Where to clip the gradients (default None).
         """
-        super(SuccessiveHalving, self).__init__()
+        super(HyperBand, self).__init__()
         self.weight_optimizer = weight_optimizer
         self.loss = loss_criteria
         self.grad_clip = grad_clip
@@ -42,15 +43,17 @@ class SuccessiveHalving(MetaOptimizer):
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
 
-        self.fidelity = config.search.min_fidelity
+        #self.fidelit_min = config.search.min_fidelity
+        self.budget_max = config.search.budget_max
+        self.budget_min =  config.search.budget_min
         self.number_archs = config.search.number_archs
         self.eta = config.search.eta
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.budget_type = config.search.budget_type #is not for one query is overall
-        self.fidelity_counter = 0
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
-        #self.end = False
+        self.s_max = math.floor(math.log(self.eta)*self.budget_max/self.budget_min)
+        self.s =  self.s_max
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -64,67 +67,17 @@ class SuccessiveHalving(MetaOptimizer):
         """
         Sample a new architecture to train.
         """
-
-        model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
-        model.arch = self.search_space.clone()
-        if len(self.sampled_archs) < self.number_archs:
-            model.arch.sample_random_architecture(dataset_api=self.dataset_api)
-        else:
-            model = self.sampled_archs[self.fidelity_counter]
-       
-# 		    return(ranks < self.num_configs[self.stage])
-
-
-        # DONE: define fidelity in multi-fidelity setting
-        model.accuracy = model.arch.query(
-            self.performance_metric,
-            self.dataset,
-            epoch=self.fidelity, # DONE: adapt this
-            dataset_api=self.dataset_api,
-        )
-
-        budget = 1
-        # TODO: make query type secure
-        if self.budget_type == 'time':
-            # TODO: make dependent on performance_metric
-            model.time = model.arch.query(
-                Metric.TRAIN_TIME,
-                self.dataset,
-                epoch=self.fidelity, # DONE: adapt this
-                dataset_api=self.dataset_api,
-            )
-            budget = model.time
-        elif not(self.budget_type == "epoch"):
-            raise NameError("budget time should be time or epoch")
-        # TODO: make this more beautiful/more efficient
-        # TODO: we may need to track of all ever sampled archs
-        if len(self.sampled_archs) < self.number_archs:
-            self.sampled_archs.append(model)
-        else:
-            self.sampled_archs[self.fidelity_counter] = model
-        
-        self.fidelity_counter += 1
-        self._update_history(model)
-        if self.fidelity_counter == self.number_archs:
-            self.fidelity = math.floor(self.eta*self.fidelity) #DONE round 
-            self.sampled_archs.sort(key = lambda model: model.accuracy)
-            if(math.floor(self.number_archs/self.eta)) != 0:
-                self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)] #DONE round
-                
-            else:
-                #TODO: here maybe something back for hyperand 
-                #self.end = True
-                self.sampled_archs = [self.sampled_archs[0]]  #but maybe there maybe a different way
-            self.number_archs = len(self.sampled_archs)
-            self.fidelity_counter = 0
+        if self.s > 0:
+            if sh.end == True:   #if sh is finish go to something diffrent as initial budget 
+                n = math.ceil((self.s_max +1 )/ (self.s +1 )* self.eta**self.s)
+                sh = SuccessiveHalving(min_fidelity, from_hb) #should be in config 
+                self.s -= 1
+            budget = sh.new_epoch()
         return budget
-        # required if we want to train the models and not only query.
-        # architecture_i.parse()
-        # architecture_i.train()
-        # architecture_i = architecture_i.to(self.device)
-        # self.sampled_archs.append(architecture_i)
-        # self.weight_optimizers.append(self.weight_optimizer(architecture_i.parameters(), 0.01))
 
+
+        
+        
     def _update_history(self, child):
         if len(self.history) < 100:
             self.history.append(child)
@@ -190,9 +143,6 @@ class SuccessiveHalving(MetaOptimizer):
 
     def get_op_optimizer(self):
         return self.weight_optimizer
-    #TODO discuss about this 
-    #def get_end(self):
-    #    return self.end
 
     def get_checkpointables(self):
         return {"model": self.history}
