@@ -1,93 +1,159 @@
-import os
-import time
-import math
-import pdb
-import copy
-import logging
-
+#from hpbandster.core.base_iteration import BaseIteration
 import numpy as np
+import numpy as np
+import torch
+
+import math
+from naslib.optimizers.discrete.sh import SuccessiveHalving
+from naslib.optimizers.core.metaclasses import MetaOptimizer
+from naslib.search_spaces.core.query_metrics import Metric
 
 
-import ConfigSpace as CS
+class HyperBand(MetaOptimizer):
+    """
+    This is right now only a little bit more as pseudocode, so it not runnable what is currently working on
+    # TODO: Write fancy comment 🌈
+    """
 
-from hpbandster.core.master import Master
-from hpbandster.optimizers.iterations import SuccessiveHalving
-from hpbandster.optimizers.config_generators import RandomSampling
+    # training the models is not implemented
+    using_step_function = False
 
-class HyperBand(Master):
-	def __init__(self, configspace = None,
-					eta=3, min_budget=0.01, max_budget=1,
-					**kwargs ):
-		"""
-                Hyperband implements hyperparameter optimization by sampling
-                candidates at random and "trying" them first, running them for
-                a specific budget. The approach is iterative, promising
-                candidates are run for a longer time, increasing the fidelity
-                for their performance. While this is a very efficient racing
-                approach, random sampling makes no use of the knowledge gained
-                about the candidates during optimization.
-		Parameters
-		----------
-		configspace: ConfigSpace object
-			valid representation of the search space
-		eta : float
-			In each iteration, a complete run of sequential halving is executed. In it,
-			after evaluating each configuration on the same subset size, only a fraction of
-			1/eta of them 'advances' to the next round.
-			Must be greater or equal to 2.
-		min_budget : float
-			The smallest budget to consider. Needs to be positive!
-		max_budget : float
-			the largest budget to consider. Needs to be larger than min_budget!
-			The budgets will be geometrically distributed $\sim \eta^k$ for
-			$k\in [0, 1, ... , num_subsets - 1]$.
-		"""
+    def __init__(
+        self,
+        config,
+        weight_optimizer=torch.optim.SGD,
+        loss_criteria=torch.nn.CrossEntropyLoss(),
+        grad_clip=None,
+    ):
+        """
+        Initialize a Successive Halving  optimizer.
+
+        Args:
+            config
+            weight_optimizer (torch.optim.Optimizer): The optimizer to
+                train the (convolutional) weights.
+            loss_criteria (TODO): The loss
+            grad_clip (float): Where to clip the gradients (default None).
+        """
+        super(HyperBand, self).__init__()
+        self.weight_optimizer = weight_optimizer
+        self.loss = loss_criteria
+        self.grad_clip = grad_clip
+
+        self.performance_metric = Metric.VAL_ACCURACY
+        self.dataset = config.dataset
+
+        #self.fidelit_min = config.search.min_fidelity
+        self.budget_max = config.search.budget_max
+        self.budget_min =  config.search.budget_min
+        self.number_archs = config.search.number_archs
+        self.eta = config.search.eta
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.budget_type = config.search.budget_type #is not for one query is overall
+        self.sampled_archs = []
+        self.history = torch.nn.ModuleList()
+        self.s_max = math.floor(math.log(self.eta)*self.budget_max/self.budget_min)
+        self.s =  self.s_max
+
+    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
+        assert (
+            search_space.QUERYABLE
+        ), "Successsive Halving is currently only implemented for benchmarks."
+        self.search_space = search_space.clone()
+        self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
+        self.dataset_api = dataset_api
+
+    def new_epoch(self, e):
+        """
+        Sample a new architecture to train.
+        """
+        if self.s > 0:
+            if sh.end == True:   #if sh is finish go to something diffrent as initial budget 
+                n = math.ceil((self.s_max +1 )/ (self.s +1 )* self.eta**self.s)
+                sh = SuccessiveHalving(min_fidelity, from_hb) #should be in config 
+                self.s -= 1
+            budget = sh.new_epoch()
+        return budget
 
 
-		# TODO: Propper check for ConfigSpace object!
-		if configspace is None:
-			raise ValueError("You have to provide a valid CofigSpace object")
+        
+        
+    def _update_history(self, child):
+        if len(self.history) < 100:
+            self.history.append(child)
+        else:
+            for i, p in enumerate(self.history):
+                if child.accuracy > p.accuracy:
+                    self.history[i] = child
+                    break
 
-		super().__init__(config_generator=RandomSampling(configspace), **kwargs)
+    def get_final_architecture(self):
+        """
+        Returns the sampled architecture with the lowest validation error.
+        """
+        return max(self.sampled_archs, key=lambda x: x.accuracy).arch
 
-		# Hyperband related stuff
-		self.eta = eta
-		self.min_budget = min_budget
-		self.max_budget = max_budget
+    def train_statistics(self, report_incumbent=True):
 
-		# precompute some HB stuff
-		self.max_SH_iter = -int(np.log(min_budget/max_budget)/np.log(eta)) + 1
-		self.budgets = max_budget * np.power(eta, -np.linspace(self.max_SH_iter-1, 0, self.max_SH_iter))
+        if report_incumbent:
+            best_arch = self.get_final_architecture()
+        else:
+            best_arch = self.sampled_archs[-1].arch
 
-		self.config.update({
-						'eta'        : eta,
-						'min_budget' : min_budget,
-						'max_budget' : max_budget,
-						'budgets'    : self.budgets,
-						'max_SH_iter': self.max_SH_iter,
-					})
+        return (
+            best_arch.query(
+                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+            ),
 
+        )
+    def train_model_statistics(self, report_incumbent=True):
 
+        
+        best_arch = self.sampled_archs[self.fidelity_counter -1].arch
+        best_arch_hash = hash(self.sampled_archs[self.fidelity_counter -1])
+        return (
+            best_arch.query(
+                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+            ),
+            best_arch.query(
+                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+            ),
+            self.fidelity,
+            best_arch_hash,
+        )
 
-	def get_next_iteration(self, iteration, iteration_kwargs={}):
-		"""
-		Hyperband uses SuccessiveHalving for each iteration.
-		See Li et al. (2016) for reference.
-		
-		Parameters
-		----------
-			iteration: int
-				the index of the iteration to be instantiated
-		Returns
-		-------
-			SuccessiveHalving: the SuccessiveHalving iteration with the
-				corresponding number of configurations
-		"""
-		
-		# number of 'SH rungs'
-		s = self.max_SH_iter - 1 - (iteration%self.max_SH_iter)
-		# number of configurations in that bracket
-		n0 = int(np.floor((self.max_SH_iter)/(s+1)) * self.eta**s)
-		ns = [max(int(n0*(self.eta**(-i))), 1) for i in range(s+1)]
+    def test_statistics(self):
+        best_arch = self.get_final_architecture()
+        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
-		return(SuccessiveHalving(HPB_iter=iteration, num_configs=ns, budgets=self.budgets[(-s-1):], config_sampler=self.config_generator.get_config, **iteration_kwargs))
+    def get_op_optimizer(self):
+        return self.weight_optimizer
+
+    def get_checkpointables(self):
+        return {"model": self.history}
+
+# #from naslib.optimizers.core.metaclasses import MetaOptimizer
+# class SuccessiveHalving(MetaOptimizer):
+#     #also import or simular in NASLib?
+
+# 	def _advance_to_next_stage(self, config_ids, losses):
+# 		"""
+# 			#SuccessiveHalving simply continues the best based on the current loss.
+# 		"""
+# 		ranks = np.argsort(np.argsort(losses))
+# 		return(ranks < self.num_configs[self.stage])

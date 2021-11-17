@@ -7,11 +7,11 @@ out_dir: run
 search:
   seed: 0
   checkpoint_freq: 10 # 1000
-  epochs: 5000
+  epochs: 500
   fidelity: -1
 
-  min_fidelity: 5
-  number_archs: 80
+  min_fidelity: 1
+  number_archs: 40
   eta: 2
   budget_type:  time
 

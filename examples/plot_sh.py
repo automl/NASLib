@@ -146,7 +146,7 @@ def plot_sh(new_results :dict):
     """
     for arch, results in new_results.items():
         x = results['fidelity']
-        values = results['train_acc']
+        values = results['valid_acc']
         plt.plot(x, values, linestyle='-', marker='o', label=arch)
     plt.show()
 

@@ -87,7 +87,7 @@ class SuccessiveHalving(MetaOptimizer):
         # TODO: make query type secure
         if self.budget_type == 'time':
             # TODO: make dependent on performance_metric
-            model.time = model.arch.query(
+            model.time = model.arch.query( # TODO: this is the time for training from screatch.
                 Metric.TRAIN_TIME,
                 self.dataset,
                 epoch=self.fidelity, # DONE: adapt this
@@ -104,13 +104,13 @@ class SuccessiveHalving(MetaOptimizer):
             self.sampled_archs[self.fidelity_counter] = model
         
         self.fidelity_counter += 1
+        # TODO: fidelity is changed for new epoch, what make the wrong values in the dictonary
         self._update_history(model)
         if self.fidelity_counter == self.number_archs:
-            self.fidelity = math.floor(self.eta*self.fidelity) #DONE round 
-            self.sampled_archs.sort(key = lambda model: model.accuracy)
+            self.fidelity = math.floor(self.eta*self.fidelity) #
+            self.sampled_archs.sort(key = lambda model: model.accuracy, reverse= True)
             if(math.floor(self.number_archs/self.eta)) != 0:
                 self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)] #DONE round
-                
             else:
                 #TODO: here maybe something back for hyperand 
                 #self.end = True
@@ -169,16 +169,16 @@ class SuccessiveHalving(MetaOptimizer):
         best_arch_hash = hash(self.sampled_archs[self.fidelity_counter -1])
         return (
             best_arch.query(
-                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
             ),
             best_arch.query(
-                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
             ),
             best_arch.query(
-                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
             ),
             best_arch.query(
-                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
             ),
             self.fidelity,
             best_arch_hash,

@@ -189,7 +189,7 @@ class Trainer(object):
                 self.val_top1.avg = valid_acc
 
             self.periodic_checkpointer.save(e) # define the name in accurate , also 
-
+            # TODO: change step into save for checkpointer
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
                 # record anytime performance
@@ -578,7 +578,7 @@ class Trainer(object):
         checkpointables = self.optimizer.get_checkpointables()
         checkpointables.update(add_checkpointables)
         #name make no sense
-        self.periodic_checkpointer = utils.Checkpointer(
+        self.periodic_checkpointer = utils.Checkpointer( #TODO rename periodic_checkpointer 
             model=checkpointables.pop("model"),
             save_dir=self.config.save + "/search"
             if search
