@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 import math
-from naslib.optimizers.discrete.sh import SuccessiveHalving
+from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -70,7 +70,7 @@ class HyperBand(MetaOptimizer):
         if self.s > 0:
             if sh.end == True:   #if sh is finish go to something diffrent as initial budget 
                 n = math.ceil((self.s_max +1 )/ (self.s +1 )* self.eta**self.s)
-                sh = SuccessiveHalving(min_fidelity, from_hb) #should be in config 
+                sh = SH(config) #should be in config 
                 self.s -= 1
             budget = sh.new_epoch()
         return budget
