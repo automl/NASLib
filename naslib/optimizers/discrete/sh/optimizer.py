@@ -41,7 +41,7 @@ class SuccessiveHalving(MetaOptimizer):
 
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
-
+        self.end = False
         self.fidelity = config.search.min_fidelity
         self.number_archs = config.search.number_archs
         self.eta = config.search.eta
@@ -50,7 +50,7 @@ class SuccessiveHalving(MetaOptimizer):
         self.fidelity_counter = 0
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
-        #self.end = False
+        self.end = False
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -60,7 +60,7 @@ class SuccessiveHalving(MetaOptimizer):
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
 
-    def new_epoch(self, e):
+    def new_epoch(self):
         """
         Sample a new architecture to train.
         """
@@ -113,7 +113,7 @@ class SuccessiveHalving(MetaOptimizer):
                 self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)] #DONE round
             else:
                 #TODO: here maybe something back for hyperand 
-                #self.end = True
+                self.end = True
                 self.sampled_archs = [self.sampled_archs[0]]  #but maybe there maybe a different way
             self.number_archs = len(self.sampled_archs)
             self.fidelity_counter = 0
@@ -190,9 +190,9 @@ class SuccessiveHalving(MetaOptimizer):
 
     def get_op_optimizer(self):
         return self.weight_optimizer
-    #TODO discuss about this 
-    #def get_end(self):
-    #    return self.end
+    
+    def get_end(self):
+        return self.end
 
     def get_checkpointables(self):
         return {"model": self.history}

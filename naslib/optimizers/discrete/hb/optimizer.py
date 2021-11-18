@@ -2,7 +2,7 @@
 import numpy as np
 import numpy as np
 import torch
-
+import copy
 import math
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers.core.metaclasses import MetaOptimizer
@@ -39,22 +39,22 @@ class HyperBand(MetaOptimizer):
         self.weight_optimizer = weight_optimizer
         self.loss = loss_criteria
         self.grad_clip = grad_clip
-
+        self.sh_config = copy.deepcopy(config)
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
 
         #self.fidelit_min = config.search.min_fidelity
-        self.budget_max = config.search.budget_max
-        self.budget_min =  config.search.budget_min
-        self.number_archs = config.search.number_archs
+        self.budget_max = config.search.number_archs
         self.eta = config.search.eta
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.budget_type = config.search.budget_type #is not for one query is overall
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
-        self.s_max = math.floor(math.log(self.eta)*self.budget_max/self.budget_min)
+        self.s_max = math.floor(math.log(self.budget_max, self.eta))
         self.s =  self.s_max
-
+        self.sh = None
+        self.first = True # TODO: think about a more ellegant solution 
+        self.b = (self.s_max +1 )* self.budget_max
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
             search_space.QUERYABLE
@@ -63,18 +63,41 @@ class HyperBand(MetaOptimizer):
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
 
-    def new_epoch(self, e):
+    def new_epoch(self):
         """
         Sample a new architecture to train.
+        after https://arxiv.org/pdf/1603.06560.pdf
         """
-        if self.s > 0:
-            if sh.end == True:   #if sh is finish go to something diffrent as initial budget 
-                n = math.ceil((self.s_max +1 )/ (self.s +1 )* self.eta**self.s)
-                sh = SH(config) #should be in config 
-                self.s -= 1
-            budget = sh.new_epoch()
+        if self.s >= 0:
+            if  self.sh == None or self.sh.get_end():
+            #if sh is finish go to something diffrent as initial budget
+                    #n = ((self.b ) / (self.budget_max))* ((self.eta**self.s)/(self.s + 1))
+                    n = math.ceil(self.b/self.budget_max/(self.s+1)* self.eta ** self.s)
+                    r = self.budget_max*self.eta**(-self.s)
+                    print("{},{}".format(n,r))
+                    self.sh_config.number_archs = n
+                    self.sh_config.min_fidelity  = r 
+                    self.sh = SH(self.sh_config) #should be in config 
+                    self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
+                    self.s -= 1
+            budget = self.sh.new_epoch()
+        else:
+            print("HB is finish, allready not defined what to do") # TODO define what to do 
+            return math.inf #end the thing 
         return budget
+#n:81,r:1.0
+#n:34,r:3.0
+#n:15,r:9.0
+#n:8,r:27.0
+#n:5,r:81
+#what should be rigth after the formular 
 
+# but in the paiper is 
+# 81,1
+# 27, 3
+# 9 , 9
+# 6 , 27
+# 5 , 81 
 
         
         

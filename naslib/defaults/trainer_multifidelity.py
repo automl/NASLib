@@ -17,7 +17,7 @@ from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
 
 from typing import Callable
-from .additional_primitives import DropPathWrapper
+#from .additional_primitives import DropPathWrapper #Can be causes issues
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ class Trainer(object):
 
             start_time = time.time()
             #return function_eqalisation difference time to run or number of elovations 
-            used_budget = self.optimizer.new_epoch(e)
+            used_budget = self.optimizer.new_epoch()
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
@@ -165,7 +165,9 @@ class Trainer(object):
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
                 # train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
+                """ #only for debugging is it but out
                 (
+
                     train_acc,
                     valid_acc,
                     test_acc,
@@ -206,6 +208,7 @@ class Trainer(object):
 
             if after_epoch is not None:
                 after_epoch(e)
+            """
             e += used_budget
 
         self.optimizer.after_training()
