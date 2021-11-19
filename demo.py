@@ -28,9 +28,9 @@ logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 
 # define optimizer 
-#optimizer = SH(config)
-#optimizer = RS(config)
-optimizer = HB(config)
+optimizer = SH(config)
+# optimizer = RS(config)
+# ptimizer = HB(config)
 # load nasbench data, there data seems to be generalised
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
