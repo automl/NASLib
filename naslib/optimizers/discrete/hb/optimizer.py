@@ -74,9 +74,8 @@ class HyperBand(MetaOptimizer):
                     #n = ((self.b ) / (self.budget_max))* ((self.eta**self.s)/(self.s + 1))
                     n = math.ceil(int(self.b / self.budget_max / (self.s + 1)) * self.eta ** self.s)
                     r = self.budget_max * self.eta ** (-self.s)
-                    print("{},{}".format(n,r))
-                    self.sh_config.number_archs = n
-                    self.sh_config.min_fidelity  = r 
+                    self.sh_config.search.number_archs = n
+                    self.sh_config.search.min_fidelity  = r 
                     self.sh = SH(self.sh_config) #should be in config 
                     self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
                     self.s -= 1
@@ -85,22 +84,7 @@ class HyperBand(MetaOptimizer):
             print("HB is finish, allready not defined what to do") # TODO define what to do 
             return math.inf #end the thing 
         return budget
-#n:81,r:1.0
-#n:34,r:3.0
-#n:15,r:9.0
-#n:8,r:27.0
-#n:5,r:81
-#what should be rigth after the formular 
-
-# but in the paiper is 
-# 81,1
-# 27, 3
-# 9 , 9
-# 6 , 27
-# 5 , 81 
-
-        
-        
+                
     def _update_history(self, child):
         if len(self.history) < 100:
             self.history.append(child)

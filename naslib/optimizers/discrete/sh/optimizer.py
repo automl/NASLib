@@ -79,7 +79,7 @@ class SuccessiveHalving(MetaOptimizer):
         model.accuracy = model.arch.query(
             self.performance_metric,
             self.dataset,
-            epoch=self.fidelity, # DONE: adapt this
+            epoch=int(self.fidelity), # DONE: adapt this
             dataset_api=self.dataset_api,
         )
 
@@ -90,7 +90,7 @@ class SuccessiveHalving(MetaOptimizer):
             model.time = model.arch.query( # TODO: this is the time for training from screatch.
                 Metric.TRAIN_TIME,
                 self.dataset,
-                epoch=self.fidelity, # DONE: adapt this
+                epoch=int(self.fidelity), # DONE: adapt this
                 dataset_api=self.dataset_api,
             )
             budget = model.time
