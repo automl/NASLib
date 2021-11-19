@@ -51,10 +51,10 @@ class HyperBand(MetaOptimizer):
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
         self.s_max = math.floor(math.log(self.budget_max, self.eta))
-        self.s =  self.s_max
+        self.s = self.s_max
         self.sh = None
         self.first = True # TODO: think about a more ellegant solution 
-        self.b = (self.s_max +1 )* self.budget_max
+        self.b = (self.s_max + 1)* self.budget_max
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
             search_space.QUERYABLE
@@ -72,8 +72,8 @@ class HyperBand(MetaOptimizer):
             if  self.sh == None or self.sh.get_end():
             #if sh is finish go to something diffrent as initial budget
                     #n = ((self.b ) / (self.budget_max))* ((self.eta**self.s)/(self.s + 1))
-                    n = math.ceil(self.b/self.budget_max/(self.s+1)* self.eta ** self.s)
-                    r = self.budget_max*self.eta**(-self.s)
+                    n = math.ceil(int(self.b / self.budget_max / (self.s + 1)) * self.eta ** self.s)
+                    r = self.budget_max * self.eta ** (-self.s)
                     print("{},{}".format(n,r))
                     self.sh_config.number_archs = n
                     self.sh_config.min_fidelity  = r 
