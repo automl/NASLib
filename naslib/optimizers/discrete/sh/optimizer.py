@@ -1,9 +1,10 @@
 #from hpbandster.core.base_iteration import BaseIteration
 import numpy as np
-import numpy as np
 import torch
 
 import math
+
+from collections import defaultdict
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
@@ -51,6 +52,8 @@ class SuccessiveHalving(MetaOptimizer):
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
         self.end = False
+
+        self.optimizer_stats = defaultdict(lambda: defaultdict(list))
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -102,7 +105,7 @@ class SuccessiveHalving(MetaOptimizer):
             self.sampled_archs.append(model)
         else:
             self.sampled_archs[self.fidelity_counter] = model
-        
+        self.update_optimizer_stats()
         self.fidelity_counter += 1
         # TODO: fidelity is changed for new epoch, what make the wrong values in the dictonary
         self._update_history(model)
@@ -117,6 +120,7 @@ class SuccessiveHalving(MetaOptimizer):
                 self.sampled_archs = [self.sampled_archs[0]]  #but maybe there maybe a different way
             self.number_archs = len(self.sampled_archs)
             self.fidelity_counter = 0
+        # TODO: budget equals 
         return budget
         # required if we want to train the models and not only query.
         # architecture_i.parse()
@@ -162,9 +166,32 @@ class SuccessiveHalving(MetaOptimizer):
             ),
 
         )
-    def train_model_statistics(self, report_incumbent=True):
 
+    def update_optimizer_stats(self):
+        """
+        Updates statistics of optimizer to be able to create useful plots
+        """
+        arch = self.sampled_archs[self.fidelity_counter].arch
+        arch_hash = hash(self.sampled_archs[self.fidelity_counter])
+        # this dict contains metrics to save
+        metrics = {
+            "train_acc": Metric.TRAIN_ACCURACY,
+            "val_acc": Metric.VAL_ACCURACY,
+            "test_acc": Metric.TEST_ACCURACY,
+            "train_time": Metric.TRAIN_TIME
+        }
+        for metric_name, metric in metrics.items():
+            metric_value = arch.query(
+                metric, 
+                self.dataset, 
+                dataset_api=self.dataset_api, 
+                epoch=self.fidelity
+            )
+            self.optimizer_stats[arch_hash][metric_name].append(metric_value)
+        self.optimizer_stats[arch_hash]['fidelity'].append(self.fidelity) 
         
+
+    def train_model_statistics(self, report_incumbent=True):
         best_arch = self.sampled_archs[self.fidelity_counter -1].arch
         best_arch_hash = hash(self.sampled_archs[self.fidelity_counter -1])
         return (

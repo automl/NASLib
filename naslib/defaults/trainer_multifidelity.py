@@ -212,7 +212,7 @@ class Trainer(object):
             e += used_budget
 
         self.optimizer.after_training()
-
+        self._log_optimizer_stats()
         
 
         if summary_writer is not None:
@@ -604,6 +604,15 @@ class Trainer(object):
             if self.periodic_checkpointer.has_checkpoint():
                 return checkpoint.get("iteration", -1) + 1
         return 0
+
+    def _log_optimizer_stats(self, filename="sh_stats.json"):
+        """Log extended statistics to json file"""
+        if not os.path.exists(self.config.save):
+            os.makedirs(self.config.save)
+        with codecs.open(
+            os.path.join(self.config.save, filename), "w", encoding="utf-8"
+        ) as file:
+            json.dump(self.optimizer.optimizer_stats, file, separators=(",", ":"))
 
     def _log_to_json(self):
         """log training statistics to json file"""
