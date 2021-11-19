@@ -51,7 +51,7 @@ class HyperBand(MetaOptimizer):
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
         self.s_max = math.floor(math.log(self.budget_max, self.eta))
-        self.s = self.s_max
+        self.s = self.s_max + 1
         self.sh = None
         self.first = True # TODO: think about a more ellegant solution 
         self.b = (self.s_max + 1)* self.budget_max
@@ -68,17 +68,18 @@ class HyperBand(MetaOptimizer):
         Sample a new architecture to train.
         after https://arxiv.org/pdf/1603.06560.pdf
         """
-        if self.s >= 0:
-            if  self.sh == None or self.sh.get_end():
+        # TODO: rethink because of s
+        if  self.sh == None or self.sh.get_end():
             #if sh is finish go to something diffrent as initial budget
                     #n = ((self.b ) / (self.budget_max))* ((self.eta**self.s)/(self.s + 1))
-                    n = math.ceil(int(self.b / self.budget_max / (self.s + 1)) * self.eta ** self.s)
-                    r = self.budget_max * self.eta ** (-self.s)
-                    self.sh_config.search.number_archs = n
-                    self.sh_config.search.min_fidelity  = r 
-                    self.sh = SH(self.sh_config) #should be in config 
-                    self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
-                    self.s -= 1
+                self.s -= 1
+                n = math.ceil(int(self.b / self.budget_max / (self.s + 1)) * self.eta ** self.s)
+                r = self.budget_max * self.eta ** (-self.s)
+                self.sh_config.search.number_archs = n
+                self.sh_config.search.min_fidelity  = r 
+                self.sh = SH(self.sh_config) #should be in config 
+                self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
+        if self.s >= 0:
             budget = self.sh.new_epoch()
         else:
             print("HB is finish, allready not defined what to do") # TODO define what to do 

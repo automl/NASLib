@@ -38,7 +38,7 @@ class SuccessiveHalving(MetaOptimizer):
         self.weight_optimizer = weight_optimizer
         self.loss = loss_criteria
         self.grad_clip = grad_clip
-
+        self.budget_max = config.search.number_archs
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
         self.end = False
@@ -109,7 +109,7 @@ class SuccessiveHalving(MetaOptimizer):
         if self.fidelity_counter == self.number_archs:
             self.fidelity = math.floor(self.eta*self.fidelity) #
             self.sampled_archs.sort(key = lambda model: model.accuracy, reverse= True)
-            if(math.floor(self.number_archs/self.eta)) != 0:
+            if(math.floor(self.number_archs/self.eta)) != 0 or self.fidelity > self.budget_max:
                 self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)] #DONE round
             else:
                 #TODO: here maybe something back for hyperand 
