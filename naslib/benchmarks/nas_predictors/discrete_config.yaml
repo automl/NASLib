@@ -13,6 +13,7 @@ search:
   number_archs: 80
   eta: 2
   budget_type: epoch 
+  budget_max: 1000
 
 
   predictor_type: var_sparse_gp

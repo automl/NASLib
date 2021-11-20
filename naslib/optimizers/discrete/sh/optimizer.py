@@ -12,7 +12,9 @@ from naslib.search_spaces.core.query_metrics import Metric
 
 class SuccessiveHalving(MetaOptimizer):
     """
-    # TODO: Write fancy comment 🌈
+    Optimizer is randomly sampling architectures and queries/trains on the corresponding fidelities.
+    After that, models will be discarded according to eta.
+    TODO: Implement training
     """
 
     # training the models is not implemented
@@ -26,7 +28,7 @@ class SuccessiveHalving(MetaOptimizer):
         grad_clip=None,
     ):
         """
-        Initialize a Successive Halving  optimizer.
+        Initialize a Successive Halving optimizer.
 
         Args:
             config
@@ -78,7 +80,6 @@ class SuccessiveHalving(MetaOptimizer):
        
 # 		    return(ranks < self.num_configs[self.stage])
 
-
         # DONE: define fidelity in multi-fidelity setting
         model.accuracy = model.arch.query(
             self.performance_metric,
@@ -88,11 +89,11 @@ class SuccessiveHalving(MetaOptimizer):
         )
 
         budget = 1
-        # TODO: make query type secure
+        # DONE: make query type secure
         if self.budget_type == 'time':
-            # TODO: make dependent on performance_metric
+            # DONE: make dependent on performance_metric
             model.time = model.arch.query( # TODO: this is the time for training from screatch.
-                Metric.TRAIN_TIME,
+                self.performance_metric,
                 self.dataset,
                 epoch=int(self.fidelity), # DONE: adapt this
                 dataset_api=self.dataset_api,
@@ -101,14 +102,14 @@ class SuccessiveHalving(MetaOptimizer):
         elif not(self.budget_type == "epoch"):
             raise NameError("budget time should be time or epoch")
         # TODO: make this more beautiful/more efficient
-        # TODO: we may need to track of all ever sampled archs
+        # DONE: we may need to track of all ever sampled archs
         if len(self.sampled_archs) < self.number_archs:
             self.sampled_archs.append(model)
         else:
             self.sampled_archs[self.fidelity_counter] = model
         self.update_optimizer_stats()
         self.fidelity_counter += 1
-        # TODO: fidelity is changed for new epoch, what make the wrong values in the dictonary
+        # DONE: fidelity is changed for new epoch, what make the wrong values in the dictonary
         self._update_history(model)
         if self.fidelity_counter == self.number_archs:
             self.fidelity = math.floor(self.eta*self.fidelity) #
@@ -192,27 +193,6 @@ class SuccessiveHalving(MetaOptimizer):
             )
             self.optimizer_stats[arch_hash][metric_name].append(metric_value)
         self.optimizer_stats[arch_hash]['fidelity'].append(self.fidelity) 
-        
-
-    def train_model_statistics(self, report_incumbent=True):
-        best_arch = self.sampled_archs[self.fidelity_counter -1].arch
-        best_arch_hash = hash(self.sampled_archs[self.fidelity_counter -1])
-        return (
-            best_arch.query(
-                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
-            ),
-            best_arch.query(
-                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
-            ),
-            best_arch.query(
-                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
-            ),
-            best_arch.query(
-                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
-            ),
-            self.fidelity,
-            best_arch_hash,
-        )
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()

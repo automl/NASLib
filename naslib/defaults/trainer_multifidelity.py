@@ -166,25 +166,18 @@ class Trainer(object):
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
                 # train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
                 #only for debugging is it but out
-                """
                 (
-
-
                     train_acc,
                     valid_acc,
                     test_acc,
                     train_time,
-                    fidelity,
-                    arch,
-                ) = self.optimizer.train_model_statistics()
+                ) = self.optimizer.train_statistics()
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
                 self.errors_dict.train_acc.append(train_acc)
                 self.errors_dict.train_loss.append(train_loss)
                 self.errors_dict.valid_acc.append(valid_acc)
                 self.errors_dict.valid_loss.append(valid_loss)
-                self.errors_dict.fidelity.append(fidelity)
-                self.errors_dict.arch.append(arch)
                 self.errors_dict.test_acc.append(test_acc)
                 self.errors_dict.test_loss.append(test_loss)
                 self.errors_dict.runtime.append(end_time - start_time)
@@ -207,7 +200,6 @@ class Trainer(object):
             self._log_to_json()
 
             self._log_and_reset_accuracies(e, summary_writer)
-            """
             if after_epoch is not None:
                 after_epoch(e)
     
