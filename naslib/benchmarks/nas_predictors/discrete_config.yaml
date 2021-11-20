@@ -7,12 +7,12 @@ out_dir: run
 search:
   seed: 0
   checkpoint_freq: 10 # 1000
-  epochs: 3000
+  epochs: 158
   fidelity: -1
   min_fidelity: 1
-  budget_max: 81
-  eta: 3
-  budget_type:  epoch 
+  number_archs: 80
+  eta: 2
+  budget_type: epoch 
 
 
   predictor_type: var_sparse_gp

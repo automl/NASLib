@@ -131,10 +131,10 @@ def get_results_2(predictor, path, epochs, metric='valid_acc', dataset='cifar10'
     
     algo_path = os.path.join(path, predictor)
     for seed_dir in os.listdir(algo_path):
-        result_file = os.path.join(algo_path, seed_dir, 'errors.json')
+        result_file = os.path.join(algo_path, seed_dir, 'sh_stats.json')
         result = json.load(open(result_file))
-        new_result = restructure_results(result)
-        return new_result
+        # new_result = restructure_results(result)
+        return result
 
 def plot_sh(new_results :dict):
     """Plots successive halving learning curves
@@ -146,8 +146,8 @@ def plot_sh(new_results :dict):
     """
     for arch, results in new_results.items():
         x = results['fidelity']
-        values = results['valid_acc']
-        plt.plot(x, values, linestyle='-', marker='o', label=arch)
+        values = results['val_acc']
+        plt.plot(x, values, linestyle='-', label=arch)
     plt.show()
 
 def main():
