@@ -40,28 +40,9 @@ def get_results(predictor, path, epochs, metric='valid_acc', dataset='cifar10', 
         result = json.load(open(result_file))
         return result
 
-def plot_sh(new_results :dict):
+def plot_sh():
     """Plots successive halving learning curves
-    for key, data_list in data_dict.items():
-        dates_str, values = zip(*data_list)  # Unpack
-        dates = convert_str_to_dates(dates_str)  # Not handled in example
-        plt.plot(dates, values, label=key)
-    plt.legend()
     """
-    for arch, results in new_results.items():
-        x = results['fidelity']
-        values = results['val_acc']
-        plt.plot(x, values, linestyle='-', label=arch)
-    plt.rcParams['grid.linestyle'] = 'dotted'
-    plt.show()
-    plt.savefig('plot_nb201.pdf', bbox_inches = 'tight', pad_inches = 0.1)
-
-
-def main():
-    """
-    Just plots the successive halving
-    """
-
     # set up parameters for the experiments
     epochs = 300
 
@@ -69,8 +50,13 @@ def main():
     predictor = 'var_sparse_gp'
     results = get_results(predictor, folder, epochs=epochs, metric='test_acc', ug=True)
 
-
-    plot_sh(results)
+    for arch, results in results.items():
+        x = results['fidelity']
+        values = results['val_acc']
+        plt.plot(x, values, linestyle='-', label=arch)
+    plt.rcParams['grid.linestyle'] = 'dotted'
+    plt.show()
+    plt.savefig('plot_nb201.pdf', bbox_inches = 'tight', pad_inches = 0.1)
 
 if __name__ == '__main__':
-    main()
+    plot_sh()

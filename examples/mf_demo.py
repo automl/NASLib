@@ -20,6 +20,8 @@ import yaml
 from pathlib import Path
 import os
 
+import mf_plot
+
 demo_config = None
 with open(os.path.join(str(Path(__file__).parent), 'mf_demo.yaml'), "r") as stream:
     try:
@@ -57,12 +59,16 @@ dataset_api = get_dataset_api(config.search_space, config.dataset)
 # adapt search space
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
-
 ## Running search with Trainer
-
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
 # run search for number of iterations specified
 trainer.search()
 
 trainer.evaluate(dataset_api=dataset_api)
+
+if config.plot == False:
+    exit()
+
+# TODO: Make this dependent on optimizer type, currently statistics are just for SH available
+mf_plot.plot_sh()
