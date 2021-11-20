@@ -44,7 +44,7 @@ class HyperBand(MetaOptimizer):
         self.dataset = config.dataset
 
         #self.fidelit_min = config.search.min_fidelity
-        self.budget_max = config.search.number_archs
+        self.budget_max = config.search.budget_max
         self.eta = config.search.eta
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.budget_type = config.search.budget_type #is not for one query is overall
@@ -72,18 +72,21 @@ class HyperBand(MetaOptimizer):
         if  self.sh == None or self.sh.get_end():
             #if sh is finish go to something diffrent as initial budget
                     #n = ((self.b ) / (self.budget_max))* ((self.eta**self.s)/(self.s + 1))
-                self.s -= 1
-                n = math.ceil(int(self.b / self.budget_max / (self.s + 1)) * self.eta ** self.s)
-                r = self.budget_max * self.eta ** (-self.s)
-                self.sh_config.search.number_archs = n
-                self.sh_config.search.min_fidelity  = r 
-                self.sh = SH(self.sh_config) #should be in config 
-                self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
-        if self.s >= 0:
-            budget = self.sh.new_epoch()
-        else:
-            print("HB is finish, allready not defined what to do") # TODO define what to do 
-            return math.inf #end the thing 
+            self.s -= 1
+            if self.sh != None:
+                self.sampled_archs.extend(self.sh.sampled_archs)
+            if self.s < 0:
+                print("HB is finish, allready not defined what to do") # TODO define what to do 
+                return math.inf #end the thing
+            n = math.ceil(int(self.b / self.budget_max / (self.s + 1)) * self.eta ** self.s)
+            r = self.budget_max * self.eta ** (-self.s)
+            self.sh_config.search.number_archs = n
+            self.sh_config.search.min_fidelity  = r 
+           
+            self.sh = SH(self.sh_config) #should be in config 
+            self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
+        
+        budget = self.sh.new_epoch() 
         return budget
                 
     def _update_history(self, child):

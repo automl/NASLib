@@ -165,8 +165,10 @@ class Trainer(object):
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
                 # train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
-                """ #only for debugging is it but out
+                #only for debugging is it but out
+                """
                 (
+
 
                     train_acc,
                     valid_acc,
@@ -205,10 +207,10 @@ class Trainer(object):
             self._log_to_json()
 
             self._log_and_reset_accuracies(e, summary_writer)
-
+            """
             if after_epoch is not None:
                 after_epoch(e)
-            """
+    
             e += used_budget
 
         self.optimizer.after_training()
