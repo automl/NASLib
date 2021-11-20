@@ -1,18 +1,8 @@
-#%%
-import sys
 import os
-import numpy as np
 import json
 import matplotlib.pyplot as plt
-import pickle
-import pandas as pd
 
 from collections import defaultdict
-
-# needed for plotting
-from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
-from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-from matplotlib.ticker import FormatStrFormatter
 
 def restructure_results(errors :dict):
     """This super fancy function restructures the results in order plot successive halving correctly
@@ -84,4 +74,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-# %%

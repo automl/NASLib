@@ -16,6 +16,17 @@ from naslib.optimizers import HyperBand as HB
 from naslib.defaults.trainer_multifidelity import Trainer
 #from naslib.defaults.trainer import Trainer
 
+import yaml
+from pathlib import Path
+import os
+
+demo_config = None
+with open(os.path.join(str(Path(__file__).parent), 'mf_demo.yaml'), "r") as stream:
+    try:
+        demo_config = yaml.safe_load(stream)
+    except yaml.YAMLError as exc:
+        print(exc)
+
 # init search space
 search_space = NB201()
 
@@ -27,10 +38,19 @@ utils.log_args(config)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 
-# define optimizer 
-optimizer = SH(config)
-# optimizer = RS(config)
-# ptimizer = HB(config)
+# define optimizer
+config_optimizer = demo_config['optimizer']
+if config_optimizer == 'SH':
+    optimizer = SH(config)
+elif config_optimizer == 'HB':
+    optimizer = HB(config)
+elif config_optimizer == 'RS':
+    optimizer = RS(config)
+elif config_optimizer == 'BOHB':
+    raise Exception('Not implemented yet, ミ●﹏☉ミ')
+else:
+    raise Exception('invalid config')
+
 # load nasbench data, there data seems to be generalised
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 

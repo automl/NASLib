@@ -1,0 +1,3 @@
+optimizer: SH
+# Activates/deactivates plotting
+plot: True
