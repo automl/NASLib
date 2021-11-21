@@ -5,8 +5,10 @@ import copy
 import random
 import torch
 
+from naslib.search_spaces.core import primitives as core_ops
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
+from naslib.search_spaces.nasbenchasr.primitives import CellLayerNorm, Head, ops, PadConvReluNorm
 from naslib.utils.utils import get_project_root
 from naslib.search_spaces.nasbenchasr.conversions import flatten, copy_structure
 
@@ -22,6 +24,13 @@ class NasBenchASRSearchSpace(Graph):
     """
 
     QUERYABLE = True
+    OPTIMIZER_SCOPE = [
+        'cells_stage_1',
+        'cells_stage_2',
+        'cells_stage_3',
+        'cells_stage_4'
+    ]
+
 
     def __init__(self):
         super().__init__()
@@ -31,6 +40,105 @@ class NasBenchASRSearchSpace(Graph):
         self.accs = None
         self.compact = None
 
+        self.n_blocks = 4
+        self.n_cells_per_block = [3, 4, 5, 6]
+        self.features = 80
+        self.filters = [600, 800, 1000, 1200]
+        self.cnn_time_reduction_kernels = [8, 8, 8, 8]
+        self.cnn_time_reduction_strides = [1, 1, 2, 2]
+        self.scells_per_block = [3, 4, 5, 6]
+        self.num_classes = 48
+        self.dropout_rate = 0.0
+        self.use_norm = True
+
+        self._create_macro_graph()
+
+
+    def _create_macro_graph(self):
+        cell = self._create_cell()
+
+        # Macrograph defintion
+        n_nodes = self.n_blocks + 2
+        self.add_nodes_from(range(1, n_nodes+1))
+
+        for node in range(1, n_nodes):
+            self.add_edge(node, node+1)
+
+        # Create the cell blocks and add them as subgraphs of nodes 2 ... 5
+        for idx, node in enumerate(range(2, 2+self.n_blocks)):
+            scope = f'cells_stage_{idx+1}'
+            cells_block = self._create_cells_block(cell, n=self.n_cells_per_block[idx], scope=scope)
+            self.nodes[node]['subgraph'] = cells_block.set_input([node-1])
+
+            # Assign the list of operations to the cell edges
+            cells_block.update_edges(
+                update_func=lambda edge: _set_cell_edge_ops(edge, filters=self.filters[idx], use_norm=self.use_norm),
+                scope=scope,
+                private_edge_data=True
+            )
+
+        # Assign the PadConvReluNorm operation to the edges of the macro graph
+        start_node = 1
+        for idx, node in enumerate(range(start_node, start_node+self.n_blocks)):
+            op = PadConvReluNorm(
+                in_channels= self.features if node==start_node else self.filters[idx-1],
+                out_channels=self.filters[idx],
+                kernel_size=self.cnn_time_reduction_kernels[idx],
+                dilation=1,
+                strides=self.cnn_time_reduction_strides[idx],
+                groups=1,
+                name=f'conv_{idx}'
+            )
+
+            self.edges[node, node+1].set('op', op)
+
+        # Assign the LSTM + Linear layer to the last edge in the macro graph
+        head = Head(self.dropout_rate, self.filters[-1], self.num_classes)
+        self.edges[self.n_blocks + 1, self.n_blocks + 2].set('op', head)
+
+
+    def _create_cells_block(self, cell, n, scope):
+        block = Graph()
+        block.name = f'{n}_cells_block'
+
+        block.add_nodes_from(range(1, n+2))
+
+        for node in range(2, n+2):
+            block.add_node(node, subgraph=cell.copy().set_scope(scope).set_input([node-1]))
+
+        for node in range(1, n+2):
+            block.add_edge(node, node+1)
+
+        return block
+
+    def _create_cell(self):
+        cell = Graph()
+        cell.name = 'cell'
+        # ASR Cell requires two edges between two consecutive nodes, which isn't supported by the NASLib Graph.
+        # Solution: use three nodes and their edges to represent two nodes with two edges between them as follows:
+        # Desired:
+        #   Two edges between Node 1 and Node 2. The first edge to hold {Zero, Id} and the second edge to hold {Linear, 1x5 conv, ... Zero}
+        # Solution:
+        #   Add nodes 1, 2 and 3.
+        #   Edge 1-2 has Id
+        #   Edge 2-3 holds {Linear, 1x5 conv, ... Zero}
+        #   Edge 1-3 holds {Zero, Id}
+
+        cell.add_nodes_from(range(1, 8))
+
+        # Create edges
+        for i in range(1, 7):
+            cell.add_edge(i, i+1)
+
+        for i in range(1, 6, 2):
+            for j in range(i + 2, 8, 2):
+                cell.add_edge(i, j)
+
+
+        cell.add_node(8)
+        cell.add_edge(7, 8) # For optional layer normalization
+
+        return cell
 
     def query(self, metric=None, dataset=None, path=None, epoch=-1,
               full_lc=False, dataset_api=None):
@@ -183,3 +291,30 @@ class NasBenchASRSearchSpace(Graph):
     def get_max_epochs(self):
         return 39
 
+
+def _set_cell_edge_ops(edge, filters, use_norm):
+
+    if use_norm and edge.head == 7:
+        edge.data.set('op', CellLayerNorm(filters))
+        edge.data.finalize()
+    elif edge.head % 2 == 0: # Edge from intermediate node
+        edge.data.set(
+            'op', [
+                ops['linear'](filters, filters),
+                ops['conv5'](filters, filters),
+                ops['conv5d2'](filters, filters),
+                ops['conv7'](filters, filters),
+                ops['conv7d2'](filters, filters),
+                ops['zero'](filters, filters)
+            ]
+        )
+    elif edge.tail % 2 == 0: # Edge to intermediate node. Should always be Identity.
+        edge.data.finalize()
+    else:
+        edge.data.set(
+            'op',
+            [
+                core_ops.Zero(stride=1),
+                core_ops.Identity()
+            ]
+        )
