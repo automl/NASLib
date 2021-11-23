@@ -206,7 +206,7 @@ class Trainer(object):
             e += used_budget
 
         self.optimizer.after_training()
-        self._log_optimizer_stats()
+        #self._log_optimizer_stats()
         
 
         if summary_writer is not None:
