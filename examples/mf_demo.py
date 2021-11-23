@@ -22,12 +22,24 @@ import os
 
 import mf_plot
 
+from shutil import copyfile
+
 demo_config = None
 with open(os.path.join(str(Path(__file__).parent), 'mf_demo.yaml'), "r") as stream:
     try:
         demo_config = yaml.safe_load(stream)
     except yaml.YAMLError as exc:
         print(exc)
+
+config_optimizer = demo_config['optimizer']
+config_path_optimizer = os.path.join(
+    utils.get_project_root(), "benchmarks", "nas_predictors", "discrete_config"
+) + "_" + config_optimizer + ".yaml"
+default_config_path = os.path.join(
+    utils.get_project_root(), "benchmarks", "nas_predictors", "discrete_config.yaml"
+) 
+
+copyfile(config_path_optimizer, default_config_path)
 
 # init search space
 search_space = NB201()
@@ -41,7 +53,7 @@ logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 
 # define optimizer
-config_optimizer = demo_config['optimizer']
+
 if config_optimizer == 'SH':
     optimizer = SH(config)
 elif config_optimizer == 'HB':
