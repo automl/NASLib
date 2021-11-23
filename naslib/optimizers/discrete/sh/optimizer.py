@@ -168,7 +168,6 @@ class SuccessiveHalving(MetaOptimizer):
             best_arch.query(
                 Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
             ),
-
         )
 
     def update_optimizer_stats(self):
