@@ -188,7 +188,7 @@ class SuccessiveHalving(MetaOptimizer):
                 metric, 
                 self.dataset, 
                 dataset_api=self.dataset_api, 
-                epoch=self.fidelity
+                epoch=int(self.fidelity)
             )
             self.optimizer_stats[arch_hash][metric_name].append(metric_value)
         self.optimizer_stats[arch_hash]['fidelity'].append(self.fidelity) 
@@ -210,7 +210,7 @@ class SuccessiveHalving(MetaOptimizer):
             best_arch.query(
                 Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelity
             ),
-            self.fidelity,
+            int(self.fidelity),
             best_arch_hash,
         )
 

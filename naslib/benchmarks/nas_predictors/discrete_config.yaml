@@ -11,7 +11,8 @@ search:
   fidelity: -1
   min_fidelity: 1
   number_archs: 80
-  eta: 2
+  budget_max: 81
+  eta: 3
   budget_type: epoch 
 
 
