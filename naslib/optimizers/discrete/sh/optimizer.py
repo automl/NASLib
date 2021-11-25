@@ -14,10 +14,8 @@ class SuccessiveHalving(MetaOptimizer):
     """
     Optimizer is randomly sampling architectures and queries/trains on the corresponding fidelities.
     After that, models will be discarded according to eta.
-    TODO: Implement training
+    DONE: Implement training
     """
-
-    # training the models is not implemented
     using_step_function = False
 
     def __init__(
@@ -126,13 +124,7 @@ class SuccessiveHalving(MetaOptimizer):
             self.fidelity_counter = 0
         # TODO: budget equals 
         return budget
-        # required if we want to train the models and not only query.
-        # architecture_i.parse()
-        # architecture_i.train()
-        # architecture_i = architecture_i.to(self.device)
-        # self.sampled_archs.append(architecture_i)
-        # self.weight_optimizers.append(self.weight_optimizer(architecture_i.parameters(), 0.01))
-
+       
     def _update_history(self, child):
         if len(self.history) < 100:
             self.history.append(child)
@@ -200,9 +192,5 @@ class SuccessiveHalving(MetaOptimizer):
     def get_op_optimizer(self):
         return self.weight_optimizer
     
-    # TODO: we really do not need this
-    def get_end(self):
-        return self.end
-
     def get_checkpointables(self):
         return {"model": self.history}

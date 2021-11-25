@@ -10,8 +10,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 
 class HyperBand(MetaOptimizer):
     """
-    This is right now only a little bit more as pseudocode, so it not runnable what is currently working on
-    # TODO: Write fancy comment 🌈
+    This is a Hyperband Implementation, that uses the Sucessive Halving Algorithm with different settings.
     """
 
     # training the models is not implemented
@@ -187,14 +186,3 @@ class HyperBand(MetaOptimizer):
 
     def get_checkpointables(self):
         return {"model": self.history}
-
-# #from naslib.optimizers.core.metaclasses import MetaOptimizer
-# class SuccessiveHalving(MetaOptimizer):
-#     #also import or simular in NASLib?
-
-# 	def _advance_to_next_stage(self, config_ids, losses):
-# 		"""
-# 			#SuccessiveHalving simply continues the best based on the current loss.
-# 		"""
-# 		ranks = np.argsort(np.argsort(losses))
-# 		return(ranks < self.num_configs[self.stage])
