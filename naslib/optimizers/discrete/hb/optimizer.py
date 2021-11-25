@@ -1,9 +1,8 @@
-#from hpbandster.core.base_iteration import BaseIteration
-import numpy as np
 import numpy as np
 import torch
 import copy
 import math
+from collections import defaultdict
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
@@ -55,6 +54,7 @@ class HyperBand(MetaOptimizer):
         self.sh = None
         self.first = True # TODO: think about a more ellegant solution 
         self.b = (self.s_max + 1)* self.budget_max
+        self.optimizer_stats = defaultdict(lambda: defaultdict(list))
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
             search_space.QUERYABLE
@@ -87,6 +87,7 @@ class HyperBand(MetaOptimizer):
             self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
         
         budget = self.sh.new_epoch() 
+        self.update_optimizer_stats()
         return budget
                 
     def _update_history(self, child):
@@ -105,7 +106,11 @@ class HyperBand(MetaOptimizer):
         return max(self.sampled_archs, key=lambda x: x.accuracy).arch
 
     def train_statistics(self, report_incumbent=True):
+        return(
+            0.42 , 0.42 , 0.42, 0.42
 
+
+        )
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:
@@ -148,7 +153,32 @@ class HyperBand(MetaOptimizer):
             best_arch_hash,
         )
 
+    def update_optimizer_stats(self):
+        """
+        Updates statistics of optimizer to be able to create useful plots
+        here only hacky way from sh
+        """
+        arch = self.sh.sampled_archs[self.sh.fidelity_counter-1].arch
+        arch_hash = hash(self.sh.sampled_archs[self.sh.fidelity_counter- 1])
+        # this dict contains metrics to save
+        metrics = {
+            "train_acc": Metric.TRAIN_ACCURACY,
+            "val_acc": Metric.VAL_ACCURACY,
+            "test_acc": Metric.TEST_ACCURACY,
+            "train_time": Metric.TRAIN_TIME
+        }
+        for metric_name, metric in metrics.items():
+            metric_value = arch.query(
+                metric, 
+                self.dataset, 
+                dataset_api=self.dataset_api, 
+                epoch=int(81)
+            )
+            self.optimizer_stats[arch_hash][metric_name].append(metric_value)
+        self.optimizer_stats[arch_hash]['fidelity'].append(self.sh.fidelity) 
+
     def test_statistics(self):
+        return False
         best_arch = self.get_final_architecture()
         return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
