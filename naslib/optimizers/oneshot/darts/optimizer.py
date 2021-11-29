@@ -361,7 +361,10 @@ class MixedOp(AbstractPrimitive):
     def __init__(self, primitives):
         super().__init__(locals())
         self.primitives = primitives
-        for i, primitive in enumerate(primitives):
+        self.add_primitive_modules()
+
+    def add_primitive_modules(self):
+        for i, primitive in enumerate(self.primitives):
             self.add_module("primitive-{}".format(i), primitive)
 
     def forward(self, x, edge_data):
@@ -370,3 +373,78 @@ class MixedOp(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return self.primitives
+
+    def set_embedded_ops(self, primitives):
+        self.primitives = primitives
+
+class PartialConnectionOp(AbstractPrimitive):
+    """
+    Partial Connection Operation.
+
+    This class takes a MixedOp and replaces its primitives with the fewer channel version of those primitives.
+    """
+
+    def __init__(self, mixed_op: MixedOp, k: int):
+        super().__init__(locals())
+        self.k = k
+        self.mixed_op = mixed_op
+
+        pc_primitives = []
+        for primitive in mixed_op.get_embedded_ops():
+            pc_primitives.append(self._create_pc_primitive(primitive))
+
+        self.mixed_op.set_embedded_ops(pc_primitives)
+        self.mixed_op.add_primitive_modules()
+
+    def _create_pc_primitive(self, primitive: AbstractPrimitive) -> AbstractPrimitive:
+        """
+        Creates primitives with fewer channels for Partial Connection operation.
+        """
+        init_params = primitive.init_params
+        self.mp = torch.nn.MaxPool2d(2,2)
+
+        try:
+            #TODO: Force all AbstractPrimitives with convolutions to use 'C_in' and 'C_out' in the initializer
+            init_params['C_in'] = init_params['C_in']//self.k
+
+            if 'C_out' in init_params:
+                init_params['C_out'] = init_params['C_out']//self.k
+            elif 'C' in init_params:
+                init_params['C'] = init_params['C']//self.k
+        except KeyError:
+            return primitive
+
+        pc_primitive = primitive.__class__(**init_params)
+        return pc_primitive
+
+    def _shuffle_channels(self, x):
+        batchsize, num_channels, height, width = x.data.size()
+        channels_per_group = num_channels // self.k
+
+        # reshape
+        x = x.view(batchsize, self.k, channels_per_group, height, width)
+        x = torch.transpose(x, 1, 2).contiguous()
+
+        # flatten
+        x = x.view(batchsize, -1, height, width)
+
+        return x
+
+    def forward(self, x, edge_data):
+        dim_2 = x.shape[1]
+        xtemp = x[ : , :  dim_2//self.k, :, :]
+        xtemp2 = x[ : ,  dim_2//self.k:, :, :]
+
+        temp1 = self.mixed_op(xtemp, edge_data)
+
+        if temp1.shape[2] == x.shape[2]:
+            result = torch.cat([temp1, xtemp2],dim=1)
+        else:
+            # TODO: Verify that downsampling in every graph reduces the size in exactly half
+            result = torch.cat([temp1, self.mp(xtemp2)], dim=1)
+
+        result = self._shuffle_channels(result)
+        return result
+
+    def get_embedded_ops(self):
+        return self.mixed_op.get_embedded_ops()
