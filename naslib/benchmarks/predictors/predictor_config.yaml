@@ -1,4 +1,3 @@
-
 # The experiment type can be single, vary_train_size, vary_fidelity, or vary_both
 # single will use train_size_single and fidleity_single 
 # vary_train_size will use train_size_list and fidelity_single
