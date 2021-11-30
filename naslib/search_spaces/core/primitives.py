@@ -99,13 +99,13 @@ class PartialConnectionOp(AbstractPrimitive):
         self.mp = torch.nn.MaxPool2d(2,2)
 
         try:
-            #TODO: Force all AbstractPrimitives with convolutions to use 'C_in' and 'C_out' in the initializer
-            init_params['C_in'] = init_params['C_in']//self.k
+            #TODO: Force all AbstractPrimitives with convolutions/channels to use 'C_in' and 'C_out' in the initializer
+            init_params['C_in'] = init_params['C_in']//self.k if init_params['C_in'] is not None else None
 
             if 'C_out' in init_params:
-                init_params['C_out'] = init_params['C_out']//self.k
+                init_params['C_out'] = init_params['C_out']//self.k if init_params['C_out'] is not None else None
             elif 'C' in init_params:
-                init_params['C'] = init_params['C']//self.k
+                init_params['C'] = init_params['C']//self.k if init_params['C'] is not None else None
         except KeyError:
             return primitive
 

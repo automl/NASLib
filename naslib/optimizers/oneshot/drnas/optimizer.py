@@ -6,7 +6,7 @@ from torch.distributions.dirichlet import Dirichlet
 from torch.distributions.kl import kl_divergence
 import torch.nn.functional as F
 
-from naslib.search_spaces.core.primitives import AbstractPrimitive, MixedOp
+from naslib.search_spaces.core.primitives import MixedOp, PartialConnectionOp
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
@@ -35,14 +35,17 @@ class DrNASOptimizer(DARTSOptimizer):
         if edge.data.has("sampled_arch_weight"):
             edge.data.remove("sampled_arch_weight")
 
-    @staticmethod
-    def update_ops(edge):
+    def update_ops(self, edge):
         """
         Function to replace the primitive ops at the edges
         with the DrNAS specific DrNASMixedOp.
         """
         primitives = edge.data.op
-        edge.data.set("op", DrNASMixedOp(primitives))
+
+        if not self.partial_connection:
+            edge.data.set("op", DrNASMixedOp(primitives))
+        else:
+            edge.data.set("op", PartialConnectionOp(DrNASMixedOp(primitives), k=self.partial_connection_factor))
 
     def __init__(
         self,

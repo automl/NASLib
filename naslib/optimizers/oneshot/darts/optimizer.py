@@ -3,7 +3,7 @@ import torch
 import logging
 from torch.autograd import Variable
 
-from naslib.search_spaces.core.primitives import MixedOp
+from naslib.search_spaces.core.primitives import MixedOp, PartialConnectionOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
@@ -30,14 +30,17 @@ class DARTSOptimizer(MetaOptimizer):
         )
         edge.data.set("alpha", alpha, shared=True)
 
-    @staticmethod
-    def update_ops(edge):
+    def update_ops(self, edge):
         """
         Function to replace the primitive ops at the edges
         with the DARTS specific MixedOp.
         """
         primitives = edge.data.op
-        edge.data.set("op", DARTSMixedOp(primitives))
+
+        if not self.partial_connection:
+            edge.data.set("op", DARTSMixedOp(primitives))
+        else:
+            edge.data.set("op", PartialConnectionOp(DARTSMixedOp(primitives), k=self.partial_connection_factor))
 
     def __init__(
         self,
@@ -58,6 +61,8 @@ class DARTSOptimizer(MetaOptimizer):
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
         self.loss = loss_criteria
+        self.partial_connection = self.config.search.partial_connection
+        self.partial_connection_factor = self.config.search.partial_connection_factor
         self.grad_clip = self.config.search.grad_clip
 
         self.architectural_weights = torch.nn.ParameterList()
@@ -84,7 +89,7 @@ class DARTSOptimizer(MetaOptimizer):
 
         # 2. replace primitives with mixed_op
         graph.update_edges(
-            self.__class__.update_ops, scope=scope, private_edge_data=True
+            self.update_ops, scope=scope, private_edge_data=True
         )
 
         for alpha in graph.get_all_edge_data("alpha"):

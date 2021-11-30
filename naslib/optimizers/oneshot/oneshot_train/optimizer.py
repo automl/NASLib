@@ -2,7 +2,7 @@ import torch
 import logging
 import numpy as np
 
-from naslib.search_spaces.core.primitives import MixedOp
+from naslib.search_spaces.core.primitives import MixedOp, PartialConnectionOp
 from naslib.search_spaces.darts.conversions import Genotype
 from naslib.optimizers import DARTSOptimizer
 
@@ -27,14 +27,18 @@ class OneShotNASOptimizer(DARTSOptimizer):
             )
         edge.data.set("alpha", alpha, shared=True)
 
-    @staticmethod
-    def update_ops(edge):
+    def update_ops(self, edge):
         """
         Function to replace the primitive ops at the edges
         with the OneShotOp, which is just a summation of these ops.
         """
         primitives = edge.data.op
         edge.data.set("op", OneShotOp(primitives))
+
+        if not self.partial_connection:
+            edge.data.set("op", OneShotOp(primitives))
+        else:
+            edge.data.set("op", PartialConnectionOp(OneShotOp(primitives), k = self.partial_connection_factor))
 
     def __init__(
         self,

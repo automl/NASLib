@@ -2,7 +2,7 @@ import logging
 
 import torch
 
-from naslib.search_spaces.core.primitives import MixedOp
+from naslib.search_spaces.core.primitives import MixedOp, PartialConnectionOp
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 
 logger = logging.getLogger(__name__)
@@ -45,14 +45,17 @@ class GDASOptimizer(DARTSOptimizer):
         self.tau_step = (self.tau_min - self.tau_max) / self.epochs
         self.tau_curr = torch.Tensor([self.tau_max])  # make it checkpointable
 
-    @staticmethod
-    def update_ops(edge):
+    def update_ops(self, edge):
         """
         Function to replace the primitive ops at the edges
         with the GDAS specific GDASMixedOp.
         """
         primitives = edge.data.op
-        edge.data.set("op", GDASMixedOp(primitives))
+        if not self.partial_connection:
+            edge.data.set("op", GDASMixedOp(primitives))
+        else:
+            edge.data.set("op", PartialConnectionOp(GDASMixedOp(primitives), k=self.partial_connection_factor))
+
 
     def adapt_search_space(self, search_space, scope=None):
         """

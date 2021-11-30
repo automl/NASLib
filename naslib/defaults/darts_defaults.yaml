@@ -30,6 +30,10 @@ search:
   
   fidelity: 200
 
+  # Partial Connection (from PC-DARTS)
+  partial_connection: False
+  partial_connection_factor: 4
+
   # GDAS
   tau_max: 10
   tau_min: 0.1
