@@ -2,7 +2,7 @@ import torch
 import logging
 import numpy as np
 
-from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.primitives import MixedOp
 from naslib.search_spaces.darts.conversions import Genotype
 from naslib.optimizers import DARTSOptimizer
 
@@ -141,16 +141,13 @@ class OneShotNASOptimizer(DARTSOptimizer):
         return NotImplementedError
 
 
-class OneShotOp(AbstractPrimitive):
+class OneShotOp(MixedOp):
     """
     One-Shot representation of the discrete search space.
     """
 
     def __init__(self, primitives):
-        super().__init__(locals())
-        self.primitives = primitives
-        for i, primitive in enumerate(primitives):
-            self.add_module("primitive-{}".format(i), primitive)
+        super().__init__(primitives)
 
     def forward(self, x, edge_data):
         """
@@ -158,5 +155,3 @@ class OneShotOp(AbstractPrimitive):
         """
         return sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
 
-    def get_embedded_ops(self):
-        return self.primitives

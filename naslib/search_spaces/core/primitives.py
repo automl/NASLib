@@ -47,6 +47,32 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
         return type(self).__name__
 
 
+class MixedOp(AbstractPrimitive):
+    """
+    Continous relaxation of the discrete search space.
+    """
+
+    def __init__(self, primitives):
+        super().__init__(locals())
+        self.primitives = primitives
+        self._add_primitive_modules()
+
+    def _add_primitive_modules(self):
+        for i, primitive in enumerate(self.primitives):
+            self.add_module("primitive-{}".format(i), primitive)
+
+    @abstractmethod
+    def forward(self, x, edge_data):
+        raise NotImplementedError()
+
+    def get_embedded_ops(self):
+        return self.primitives
+
+    def set_embedded_ops(self, primitives):
+        self.primitives = primitives
+        self._add_primitive_modules()
+
+
 class Identity(AbstractPrimitive):
     """
     An implementation of the Identity operation.

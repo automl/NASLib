@@ -3,7 +3,7 @@ import torch
 import logging
 from torch.autograd import Variable
 
-from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
@@ -37,7 +37,7 @@ class DARTSOptimizer(MetaOptimizer):
         with the DARTS specific MixedOp.
         """
         primitives = edge.data.op
-        edge.data.set("op", MixedOp(primitives))
+        edge.data.set("op", DARTSMixedOp(primitives))
 
     def __init__(
         self,
@@ -353,20 +353,14 @@ class DARTSOptimizer(MetaOptimizer):
         return criterion(pred, target)
 
 
-class MixedOp(AbstractPrimitive):
+class DARTSMixedOp(MixedOp):
     """
     Continous relaxation of the discrete search space.
     """
 
     def __init__(self, primitives):
-        super().__init__(locals())
-        self.primitives = primitives
-        for i, primitive in enumerate(primitives):
-            self.add_module("primitive-{}".format(i), primitive)
+        super().__init__(primitives)
 
     def forward(self, x, edge_data):
         normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
         return sum(w * op(x, None) for w, op in zip(normed_alphas, self.primitives))
-
-    def get_embedded_ops(self):
-        return self.primitives

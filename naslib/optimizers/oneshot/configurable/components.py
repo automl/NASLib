@@ -2,9 +2,10 @@ from abc import ABCMeta, abstractmethod
 import torch
 import torch.nn.functional as F
 from torch.distributions.dirichlet import Dirichlet
-from naslib.optimizers.oneshot.darts.optimizer import MixedOp
+from naslib.optimizers.oneshot.darts.optimizer import DARTSMixedOp
 from naslib.optimizers.oneshot.drnas.optimizer import DrNASMixedOp
 from naslib.optimizers.oneshot.gdas.optimizer import GDASMixedOp
+from naslib.search_spaces.core.primitives import MixedOp
 
 
 class AbstractGraphModifier(metaclass=ABCMeta):
@@ -63,7 +64,7 @@ class AbstractArchitectureSampler(AbstractGraphModifier):
 
 
 class DARTSSampler(AbstractArchitectureSampler):
-    mixed_op = MixedOp
+    mixed_op = DARTSMixedOp
 
     def update_graph_edges(self, graph, scope):
         graph.update_edges(self._add_alphas, scope=scope, private_edge_data=False)
