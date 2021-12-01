@@ -54,6 +54,7 @@ class SuccessiveHalving(MetaOptimizer):
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
         self.end = False
+        self.old_fidelity = 0
 
         self.optimizer_stats = defaultdict(lambda: defaultdict(list))
 
@@ -88,7 +89,7 @@ class SuccessiveHalving(MetaOptimizer):
             dataset_api=self.dataset_api,
         )
 
-        budget = 1
+        budget = (self.fidelity - self.old_fidelity) / self.budget_max
         # DONE: make query type secure
         if self.budget_type == 'time':
             # DONE: make dependent on performance_metric
@@ -112,6 +113,7 @@ class SuccessiveHalving(MetaOptimizer):
         # DONE: fidelity is changed for new epoch, what make the wrong values in the dictonary
         self._update_history(model)
         if self.fidelity_counter == self.number_archs:
+            self.old_fidelity = self.fidelity
             self.fidelity = math.floor(self.eta*self.fidelity) #
             self.sampled_archs.sort(key = lambda model: model.accuracy, reverse= True)
             if self.fidelity > self.budget_max:
