@@ -88,7 +88,7 @@ class SuccessiveHalving(MetaOptimizer):
             dataset_api=self.dataset_api,
         )
 
-        budget = 1
+        budget = 1 # <-- divide by max_fidelity to get consistent results
         # DONE: make query type secure
         if self.budget_type == 'time':
             # DONE: make dependent on performance_metric
