@@ -68,7 +68,7 @@ class HyperBand(MetaOptimizer):
         after https://arxiv.org/pdf/1603.06560.pdf
         """
         # TODO: rethink because of s
-        if  self.sh == None or self.sh.get_end():
+        if  self.sh == None or self.sh.end:
             #if sh is finish go to something diffrent as initial budget
                     #n = ((self.b ) / (self.budget_max))* ((self.eta**self.s)/(self.s + 1))
             self.s -= 1
