@@ -3,7 +3,7 @@ import torch
 import logging
 from torch.autograd import Variable
 
-from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.primitives import AbstractPrimitive, EdgeNormalization
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
@@ -18,6 +18,34 @@ class DARTSOptimizer(MetaOptimizer):
     Implementation of the DARTS paper as in
         Liu et al. 2019: DARTS: Differentiable Architecture Search.
     """
+
+    @staticmethod
+    def add_betas(edge):
+        """
+        Function to add the architectural weights to the edges.
+        """
+        beta = torch.nn.Parameter(
+            1e-3 * torch.randn(size=[1], requires_grad=True)
+        )
+        edge.data.set("edge_normalization_beta", beta, shared=True)
+
+
+    @staticmethod
+    def add_edge_normalization(node, in_edges, out_edges):
+        node_data = node[1]
+        print('IN', in_edges)
+        print('OUT', out_edges)
+
+        all_in_edges_final = True
+
+        for _, edge_data in in_edges:
+            if not edge_data.is_final():
+                all_in_edges_final = False
+
+        if not in_edges or all_in_edges_final:
+            return
+
+        node_data['comb_op'] = EdgeNormalization(node_data['comb_op'])
 
     @staticmethod
     def add_alphas(edge):
@@ -85,6 +113,16 @@ class DARTSOptimizer(MetaOptimizer):
         # 2. replace primitives with mixed_op
         graph.update_edges(
             self.__class__.update_ops, scope=scope, private_edge_data=True
+        )
+
+        # 3. add betas
+        graph.update_edges(
+            self.__class__.add_betas, scope=scope, private_edge_data=False
+        )
+
+        # 4. add comb op in nodes
+        graph.update_nodes(
+            self.__class__.add_edge_normalization, scope=scope
         )
 
         for alpha in graph.get_all_edge_data("alpha"):
