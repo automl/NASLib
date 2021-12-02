@@ -52,7 +52,10 @@ class SuccessiveHalving(MetaOptimizer):
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
         self.end = False
-
+        #if tpe:
+            #self.p = config.search.p
+            #self.percentile = config.search.percentile
+            #self.N_min = config.search.N_min
         self.optimizer_stats = defaultdict(lambda: defaultdict(list))
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
@@ -73,6 +76,7 @@ class SuccessiveHalving(MetaOptimizer):
         model.arch = self.search_space.clone()
         if len(self.sampled_archs) < self.number_archs:
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)
+           #model = sample_method() this can be a self.sample_method() or self.sample(method)
         else:
             model = self.sampled_archs[self.fidelity_counter]
        
@@ -194,3 +198,21 @@ class SuccessiveHalving(MetaOptimizer):
     
     def get_checkpointables(self):
         return {"model": self.history}
+
+    """
+    def sample(self, method):
+        if method == "random" or (random.randint(1,100)/100) < self.p:
+            model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
+            model.arch = self.search_space.clone()
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
+            return model        
+        b = self.sampled_archs.argmax(key = lambda model: model.accuracy, reverse= True)) if length(self.sampled_archs)>= (self.N_min +2) else False
+        if not(b): 
+            model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
+            model.arch = self.search_space.clone()
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
+            return model 
+        KDE.fit() #what is the kde #TODO here more infos are needed
+        draw ns samples from kde
+        return max(l(lambda)/g(lamdba))
+    """

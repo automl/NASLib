@@ -1,0 +1,3 @@
+for bohb, hyperbamd can be completly be the same. But for succesive halving we sample totally different.
+because instead of random sampling we use a model. That could be into succesive halving or in other method. 
+I comment how i think we can change it.
