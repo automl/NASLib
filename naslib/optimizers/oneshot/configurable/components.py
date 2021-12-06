@@ -5,7 +5,7 @@ from torch.distributions.dirichlet import Dirichlet
 from naslib.optimizers.oneshot.darts.optimizer import DARTSMixedOp
 from naslib.optimizers.oneshot.drnas.optimizer import DrNASMixedOp
 from naslib.optimizers.oneshot.gdas.optimizer import GDASMixedOp
-from naslib.search_spaces.core.primitives import MixedOp
+from naslib.search_spaces.core.primitives import MixedOp, PartialConnectionOp
 
 
 class AbstractGraphModifier(metaclass=ABCMeta):
@@ -199,7 +199,24 @@ class GDASSampler(DARTSSampler):
         if edge.data.has("sampled_arch_weight"):
             edge.data.remove("sampled_arch_weight")
 
+class PartialChannelConnection(AbstractEdgeOpModifier):
+    def __init__(self, k):
+        super(AbstractEdgeOpModifier, self).__init__()
+        self.k = k
 
+    def update_graph_edges(self, graph, scope):
+        graph.update_edges(
+            update_func=lambda edge: self._wrap_mixed_op(edge),
+            scope=scope,
+            private_edge_data=False,
+        )
+
+    def _wrap_mixed_op(self, edge):
+        """Function to wrap PartialConnectionOps around the mixedops at the edges."""
+        mixedop = edge.data.op
+
+        assert isinstance(mixedop, MixedOp)
+        edge.data.set("op", PartialConnectionOp(mixedop, k=self.k))
 class DummyAbstractArchSampler(AbstractArchitectureSampler):
     def update_graph_nodes(self, graph, scope):
         pass
