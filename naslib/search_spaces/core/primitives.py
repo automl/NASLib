@@ -47,6 +47,34 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
         return type(self).__name__
 
 
+class AbstractCombOp(metaclass=ABCMeta):
+    """
+    Use this class to create custom combination operations to be used in nodes.
+    """
+
+    def __init__(self, comb_op):
+        self.comb_op = comb_op
+
+    def __call__(self, tensors, edges_data=None):
+        return self.comb_op(tensors)
+
+    @property
+    def op_name(self):
+        return type(self).__name__
+
+
+class EdgeNormalization(AbstractCombOp):
+    """
+    Combination operation to use for edge normalization.
+
+    Returns the weighted sum of input tensors based on the (softmax of) edge weights.
+    """
+
+    def __call__(self, tensors, edges_data):
+        weights = [edge_data.edge_normalization_beta for edge_data in edges_data]
+        weighted_tensors = [t*w for t, w in zip(tensors, torch.softmax(torch.Tensor(weights), dim=-1))]
+        return super(EdgeNormalization, self).__call__(weighted_tensors)
+
 class MixedOp(AbstractPrimitive):
     """
     Continous relaxation of the discrete search space.
