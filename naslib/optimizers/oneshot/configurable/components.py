@@ -253,7 +253,7 @@ class PartialChannelConnection(AbstractEdgeOpModifier):
         graph.update_edges(
             update_func=lambda edge: self._wrap_mixed_op(edge),
             scope=scope,
-            private_edge_data=False,
+            private_edge_data=True,
         )
 
     def _wrap_mixed_op(self, edge):
