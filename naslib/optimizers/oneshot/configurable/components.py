@@ -5,7 +5,7 @@ from torch.distributions.dirichlet import Dirichlet
 from naslib.optimizers.oneshot.darts.optimizer import DARTSMixedOp
 from naslib.optimizers.oneshot.drnas.optimizer import DrNASMixedOp
 from naslib.optimizers.oneshot.gdas.optimizer import GDASMixedOp
-from naslib.search_spaces.core.primitives import MixedOp, PartialConnectionOp
+from naslib.search_spaces.core.primitives import EdgeNormalizationCombOp, MixedOp, PartialConnectionOp
 
 
 class AbstractGraphModifier(metaclass=ABCMeta):
@@ -40,6 +40,50 @@ class AbstractCombOpModifier(AbstractGraphModifier):
     def update_graph_nodes(self, graph, scope):
         pass
 
+    @abstractmethod
+    def get_arch_weights(self, graph):
+        raise NotImplementedError
+
+class EdgeNormalization(AbstractCombOpModifier):
+    arch_weights_name = 'edge_normalization_beta'
+
+    def _add_betas(self, edge):
+        """
+        Function to add the architectural weights to the edges.
+        """
+        beta = torch.nn.Parameter(
+            1e-3 * torch.randn(size=[1], requires_grad=True)
+        )
+        edge.data.set(self.arch_weights_name, beta, shared=True)
+
+    def _add_normalization_op(self, node, in_edges, out_edges):
+        node_data = node[1]
+
+        all_in_edges_final = True
+
+        for _, edge_data in in_edges:
+            if not edge_data.is_final():
+                all_in_edges_final = False
+                break
+
+        if not in_edges or all_in_edges_final:
+            return
+
+        node_data['comb_op'] = EdgeNormalizationCombOp(node_data['comb_op'])
+
+    def update_graph_edges(self, graph, scope):
+        graph.update_edges(self._add_betas, scope=scope, private_edge_data=False)
+
+    def update_graph_nodes(self, graph, scope):
+        graph.update_nodes(self._add_normalization_op, scope=scope, single_instances=False)
+
+    def get_arch_weights(self, graph):
+        arch_weights = []
+        for weight in graph.get_all_edge_data(self.arch_weights_name):
+            arch_weights.append(weight)
+
+        return arch_weights
+
 
 class AbstractArchitectureSampler(AbstractGraphModifier):
 
@@ -65,6 +109,7 @@ class AbstractArchitectureSampler(AbstractGraphModifier):
 
 class DARTSSampler(AbstractArchitectureSampler):
     mixed_op = DARTSMixedOp
+    arch_weights_name = 'alpha'
 
     def update_graph_edges(self, graph, scope):
         graph.update_edges(self._add_alphas, scope=scope, private_edge_data=False)
@@ -72,8 +117,8 @@ class DARTSSampler(AbstractArchitectureSampler):
 
     def get_arch_weights(self, graph):
         arch_weights = []
-        for alpha in graph.get_all_edge_data('alpha'):
-            arch_weights.append(alpha)
+        for weight in graph.get_all_edge_data(self.arch_weights_name):
+            arch_weights.append(weight)
 
         return arch_weights
 
@@ -82,10 +127,10 @@ class DARTSSampler(AbstractArchitectureSampler):
         Function to add the architectural weights to the edges.
         """
         len_primitives = len(edge.data.op)
-        alpha = torch.nn.Parameter(
+        weights = torch.nn.Parameter(
             1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
         )
-        edge.data.set('alpha', alpha, shared=True)
+        edge.data.set(self.arch_weights_name, weights, shared=True)
 
     def update_graph_nodes(self, graph, scope):
         pass
@@ -111,7 +156,7 @@ class DrNASSampler(DARTSSampler):
 
     def sample_arch_weights(self, graph, scope):
         graph.update_edges(
-            update_func=lambda edge: self._sample_alphas(edge),
+            update_func=lambda edge: self._sample_arch_weights(edge),
             scope=scope,
             private_edge_data=False,
         )
@@ -123,8 +168,8 @@ class DrNASSampler(DARTSSampler):
             private_edge_data=False,
         )
 
-    def _sample_alphas(self, edge):
-        beta = F.elu(edge.data.alpha) + 1
+    def _sample_arch_weights(self, edge):
+        beta = F.elu(edge.data.get(self.arch_weights_name)) + 1
         weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
         edge.data.set("sampled_arch_weight", weights, shared=True)
 
@@ -155,7 +200,7 @@ class GDASSampler(DARTSSampler):
 
     def sample_arch_weights(self, graph, scope):
         graph.update_edges(
-            update_func=lambda edge: self._sample_alphas(edge),
+            update_func=lambda edge: self._sample_arch_weights(edge),
             scope=scope,
             private_edge_data=False,
         )
@@ -167,8 +212,8 @@ class GDASSampler(DARTSSampler):
             private_edge_data=False,
         )
 
-    def _sample_alphas(self, edge):
-        arch_parameters = torch.unsqueeze(edge.data.alpha, dim=0)
+    def _sample_arch_weights(self, edge):
+        arch_parameters = torch.unsqueeze(edge.data.get(self.arch_weights_name), dim=0)
 
         while True:
             gumbels = -torch.empty_like(arch_parameters).exponential_().log()
@@ -217,6 +262,8 @@ class PartialChannelConnection(AbstractEdgeOpModifier):
 
         assert isinstance(mixedop, MixedOp)
         edge.data.set("op", PartialConnectionOp(mixedop, k=self.k))
+
+
 class DummyAbstractArchSampler(AbstractArchitectureSampler):
     def update_graph_nodes(self, graph, scope):
         pass
