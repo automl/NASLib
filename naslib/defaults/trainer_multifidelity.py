@@ -8,7 +8,6 @@ import copy
 import torch
 import numpy as np
 
-#from fvcore.common.checkpoint import PeriodicCheckpointer
 from fvcore.common.checkpoint import Checkpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -17,7 +16,7 @@ from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
 
 from typing import Callable
-#from .additional_primitives import DropPathWrapper #Can be causes issues
+# from .additional_primitives import DropPathWrapper #Can be causes issues
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class Trainer(object):
             }
         )
 
-    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None, report_incumbent=True):
+    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None] = None, report_incumbent=True):
         """
         Start the architecture search.
 
@@ -113,7 +112,7 @@ class Trainer(object):
         while e < self.epochs:
 
             start_time = time.time()
-            #return function_eqalisation difference time to run or number of elovations 
+            # return function_eqalisation difference time to run or number of elovations
             used_budget = self.optimizer.new_epoch()
 
             if self.optimizer.using_step_function:
@@ -165,7 +164,7 @@ class Trainer(object):
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
                 # train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
-                #only for debugging is it but out
+                # only for debugging is it but out
                 (
                     train_acc,
                     valid_acc,
@@ -185,7 +184,7 @@ class Trainer(object):
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
-            self.periodic_checkpointer.save(e) # define the name in accurate , also 
+            self.periodic_checkpointer.save(e)  # define the name in accurate , also
             # TODO: change step into save for checkpointer
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
@@ -202,12 +201,11 @@ class Trainer(object):
             self._log_and_reset_accuracies(e, summary_writer)
             if after_epoch is not None:
                 after_epoch(e)
-    
+
             e += used_budget
 
         self.optimizer.after_training()
-        #self._log_optimizer_stats()
-        
+        # self._log_optimizer_stats()
 
         if summary_writer is not None:
             summary_writer.close()
@@ -260,12 +258,12 @@ class Trainer(object):
 
     def evaluate(
         self,
-        retrain:bool=True,
-        search_model:str="",
-        resume_from:str="",
-        best_arch:Graph=None,
-        dataset_api:object=None,
-        metric:Metric=None,
+        retrain: bool = True,
+        search_model: str = "",
+        resume_from: str = "",
+        best_arch: Graph = None,
+        dataset_api: object = None,
+        metric: Metric = None,
     ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -574,8 +572,8 @@ class Trainer(object):
         """
         checkpointables = self.optimizer.get_checkpointables()
         checkpointables.update(add_checkpointables)
-        #name make no sense
-        self.periodic_checkpointer = utils.Checkpointer( #TODO rename periodic_checkpointer 
+        # TODO name make no sense
+        self.periodic_checkpointer = utils.Checkpointer(  # TODO rename periodic_checkpointer
             model=checkpointables.pop("model"),
             save_dir=self.config.save + "/search"
             if search
@@ -583,13 +581,13 @@ class Trainer(object):
             # **checkpointables #NOTE: this is throwing an Error
         )
 
-        #self.periodic_checkpointer = PeriodicCheckpointer(
+        # self.periodic_checkpointer = PeriodicCheckpointer(
         #   checkpointer,
         #    period=period,
         #    max_iter=self.config.search.epochs
         #    if search
         #    else self.config.evaluation.epochs,
-        #)
+        # )
 
         if resume_from:
             logger.info("loading model from file {}".format(resume_from))
