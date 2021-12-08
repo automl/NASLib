@@ -58,7 +58,7 @@ class HyperBand(MetaOptimizer):
         self.first = True # TODO: think about a more ellegant solution 
         self.b = (self.s_max + 1)* self.budget_max
 
-        self.optimizer_stats = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        self.optimizer_stats = dict()
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
             search_space.QUERYABLE
@@ -91,6 +91,7 @@ class HyperBand(MetaOptimizer):
             self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
         
         budget = self.sh.new_epoch() 
+        self.update_optimizer_stats()
         return budget
                 
     def _update_history(self, child):
@@ -157,24 +158,7 @@ class HyperBand(MetaOptimizer):
         Updates statistics of optimizer to be able to create useful plots
         TODO i have to expand the dictionary such that we keep track of all parallel sh evaluations
         """
-        arch = self.sampled_archs[self.fidelity_counter].arch
-        arch_hash = hash(self.sampled_archs[self.fidelity_counter])
-        # this dict contains metrics to save
-        metrics = {
-            "train_acc": Metric.TRAIN_ACCURACY,
-            "val_acc": Metric.VAL_ACCURACY,
-            "test_acc": Metric.TEST_ACCURACY,
-            "train_time": Metric.TRAIN_TIME
-        }
-        for metric_name, metric in metrics.items():
-            metric_value = arch.query(
-                metric, 
-                self.dataset, 
-                dataset_api=self.dataset_api, 
-                epoch=int(self.fidelity)
-            )
-            self.optimizer_stats[self.s][arch_hash][metric_name].append(metric_value)
-        self.optimizer_stats[self.s][arch_hash]['fidelity'].append(self.fidelity)
+        self.optimizer_stats[self.s] = self.sh.optimizer_stats
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
