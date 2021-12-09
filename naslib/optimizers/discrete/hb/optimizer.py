@@ -1,9 +1,8 @@
-#from hpbandster.core.base_iteration import BaseIteration
-import numpy as np
 import numpy as np
 import torch
 import copy
 import math
+from collections import defaultdict
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
@@ -13,8 +12,7 @@ from collections import defaultdict
 
 class HyperBand(MetaOptimizer):
     """
-    This is right now only a little bit more as pseudocode, so it not runnable what is currently working on
-    # TODO: Write fancy comment 🌈
+    This is a Hyperband Implementation, that uses the Sucessive Halving Algorithm with different settings.
     """
 
     # training the models is not implemented
@@ -73,7 +71,7 @@ class HyperBand(MetaOptimizer):
         after https://arxiv.org/pdf/1603.06560.pdf
         """
         # TODO: rethink because of s
-        if  self.sh == None or self.sh.get_end():
+        if  self.sh == None or self.sh.end:
             #if sh is finish go to something diffrent as initial budget
                     #n = ((self.b ) / (self.budget_max))* ((self.eta**self.s)/(self.s + 1))
             self.s -= 1
@@ -110,7 +108,11 @@ class HyperBand(MetaOptimizer):
         return max(self.sampled_archs, key=lambda x: x.accuracy).arch
 
     def train_statistics(self, report_incumbent=True):
+        return(
+            0.42 , 0.42 , 0.42, 0.42
 
+
+        )
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:
@@ -160,7 +162,32 @@ class HyperBand(MetaOptimizer):
         """
         self.optimizer_stats[self.s] = self.sh.optimizer_stats
 
+    def update_optimizer_stats(self):
+        """
+        Updates statistics of optimizer to be able to create useful plots
+        here only hacky way from sh
+        """
+        arch = self.sh.sampled_archs[self.sh.fidelity_counter-1].arch
+        arch_hash = hash(self.sh.sampled_archs[self.sh.fidelity_counter- 1])
+        # this dict contains metrics to save
+        metrics = {
+            "train_acc": Metric.TRAIN_ACCURACY,
+            "val_acc": Metric.VAL_ACCURACY,
+            "test_acc": Metric.TEST_ACCURACY,
+            "train_time": Metric.TRAIN_TIME
+        }
+        for metric_name, metric in metrics.items():
+            metric_value = arch.query(
+                metric, 
+                self.dataset, 
+                dataset_api=self.dataset_api, 
+                epoch=int(81)
+            )
+            self.optimizer_stats[arch_hash][metric_name].append(metric_value)
+        self.optimizer_stats[arch_hash]['fidelity'].append(self.sh.fidelity) 
+
     def test_statistics(self):
+        return False
         best_arch = self.get_final_architecture()
         return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
@@ -169,14 +196,3 @@ class HyperBand(MetaOptimizer):
 
     def get_checkpointables(self):
         return {"model": self.history}
-
-# #from naslib.optimizers.core.metaclasses import MetaOptimizer
-# class SuccessiveHalving(MetaOptimizer):
-#     #also import or simular in NASLib?
-
-# 	def _advance_to_next_stage(self, config_ids, losses):
-# 		"""
-# 			#SuccessiveHalving simply continues the best based on the current loss.
-# 		"""
-# 		ranks = np.argsort(np.argsort(losses))
-# 		return(ranks < self.num_configs[self.stage])

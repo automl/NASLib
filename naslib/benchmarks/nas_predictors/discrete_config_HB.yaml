@@ -10,10 +10,10 @@ search:
   epochs: 158
   fidelity: -1
   min_fidelity: 1
-  number_archs: 80
-  eta: 2
+  number_archs: 81
+  eta: 3
   budget_type: epoch 
-  budget_max: 500
+  budget_max: 81
 
 
   predictor_type: var_sparse_gp

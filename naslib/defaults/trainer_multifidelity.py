@@ -16,7 +16,7 @@ from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
 
 from typing import Callable
-# from .additional_primitives import DropPathWrapper #Can be causes issues
+from .additional_primitives import DropPathWrapper #Can be causes issues
 
 logger = logging.getLogger(__name__)
 
@@ -184,7 +184,7 @@ class Trainer(object):
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
-            self.periodic_checkpointer.save(e)  # define the name in accurate , also
+            self.checkpointer.save(e) # define the name in accurate , also 
             # TODO: change step into save for checkpointer
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
@@ -197,7 +197,6 @@ class Trainer(object):
                 )
 
             self._log_to_json()
-
             self._log_and_reset_accuracies(e, summary_writer)
             if after_epoch is not None:
                 after_epoch(e)
@@ -205,7 +204,7 @@ class Trainer(object):
             e += used_budget
 
         self.optimizer.after_training()
-        # self._log_optimizer_stats()
+        self._log_optimizer_stats()
 
         if summary_writer is not None:
             summary_writer.close()
@@ -415,7 +414,7 @@ class Trainer(object):
                                 )
 
                     scheduler.step()
-                    self.periodic_checkpointer.step(e)
+                    self.checkpointer.step(e)
                     self._log_and_reset_accuracies(e)
 
             # Disable drop path
@@ -572,8 +571,7 @@ class Trainer(object):
         """
         checkpointables = self.optimizer.get_checkpointables()
         checkpointables.update(add_checkpointables)
-        # TODO name make no sense
-        self.periodic_checkpointer = utils.Checkpointer(  # TODO rename periodic_checkpointer
+        self.checkpointer = utils.Checkpointer( 
             model=checkpointables.pop("model"),
             save_dir=self.config.save + "/search"
             if search
@@ -581,19 +579,12 @@ class Trainer(object):
             # **checkpointables #NOTE: this is throwing an Error
         )
 
-        # self.periodic_checkpointer = PeriodicCheckpointer(
-        #   checkpointer,
-        #    period=period,
-        #    max_iter=self.config.search.epochs
-        #    if search
-        #    else self.config.evaluation.epochs,
-        # )
-
+    
         if resume_from:
             logger.info("loading model from file {}".format(resume_from))
             # TODO: maybe there is an implementation error, because the variable resume_from will not be used if resume equals to True
-            checkpoint = self.periodic_checkpointer.resume_or_load("resume_from", resume=True)
-            if self.periodic_checkpointer.has_checkpoint():
+            checkpoint = self.checkpointer.resume_or_load("resume_from", resume=True)
+            if self.checkpointer.has_checkpoint():
                 return checkpoint.get("iteration", -1) + 1
         return 0
 
