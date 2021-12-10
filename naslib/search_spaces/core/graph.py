@@ -9,7 +9,7 @@ from networkx.algorithms.dag import lexicographical_topological_sort
 
 from naslib.utils.utils import iter_flatten, AttrDict
 from naslib.utils.logging import log_formats, log_first_n
-from .primitives import Identity, AbstractPrimitive
+from .primitives import AbstractCombOp, AbstractPrimitive, Identity
 from .query_metrics import Metric
 
 logger = logging.getLogger(__name__)
@@ -369,9 +369,14 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 if len(node["input"].values()) == 1:
                     x = list(node["input"].values())[0]
                 else:
-                    x = node["comb_op"](
-                        [node["input"][k] for k in sorted(node["input"].keys())]
-                    )
+                    comb_op = node["comb_op"]
+                    input_tensors = [node["input"][k] for k in sorted(node["input"].keys())]
+
+                    if isinstance(comb_op, AbstractCombOp):
+                        in_edges = [self.get_edge_data(u, v) for u, v in sorted(self.in_edges(node_idx), key=lambda x: x[0])]
+                        x = comb_op(input_tensors, in_edges)
+                    else:
+                        x = comb_op(input_tensors)
             node["input"] = {}  # clear the input as we have processed it
 
             if (
