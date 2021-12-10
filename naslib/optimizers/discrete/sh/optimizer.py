@@ -213,7 +213,8 @@ class SuccessiveHalving(MetaOptimizer):
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
             return model 
-        KDE.fit() #what is the kde #TODO here more infos are needed
+        something like new_result
+        something like get config 
         draw ns samples from kde
-        return max(l(lambda)/g(lamdba))
-    """
+        return sample
+"""
