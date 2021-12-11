@@ -56,7 +56,7 @@ class HyperBand(MetaOptimizer):
         self.first = True # TODO: think about a more ellegant solution 
         self.b = (self.s_max + 1)* self.budget_max
 
-        self.optimizer_stats = dict()
+        self.optimizer_stats = defaultdict(lambda: defaultdict(list))
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
             search_space.QUERYABLE
@@ -88,7 +88,8 @@ class HyperBand(MetaOptimizer):
             self.sh = SH(self.sh_config) #should be in config 
             self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
         
-        budget = self.sh.new_epoch() 
+        budget = self.sh.new_epoch()
+
         self.update_optimizer_stats()
         return budget
                 
@@ -105,14 +106,12 @@ class HyperBand(MetaOptimizer):
         """
         Returns the sampled architecture with the lowest validation error.
         """
-        return max(self.sampled_archs, key=lambda x: x.accuracy).arch
+        all_sampled = copy.deepcopy(self.sampled_archs) #This is because we also want the running into accound, but not later
+        all_sampled.extend(self.sh.sampled_archs)
+        return max(all_sampled, key=lambda x: x.accuracy).arch
 
     def train_statistics(self, report_incumbent=True):
-        return(
-            0.42 , 0.42 , 0.42, 0.42
-
-
-        )
+        
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:
