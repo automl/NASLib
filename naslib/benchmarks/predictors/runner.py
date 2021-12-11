@@ -71,6 +71,8 @@ supported_predictors = {
     "grad_norm": ZeroCostV2(config, batch_size=64, method_type="grad_norm"),
     "grasp": ZeroCostV2(config, batch_size=64, method_type="grasp"),
     "jacov": ZeroCostV1(config, batch_size=64, method_type="jacov"),
+    "jacov2": ZeroCostV2(config, batch_size=64, method_type="jacov"),
+    "params": ZeroCostV2(config, batch_size=64, method_type="params"),
     "lce": LCEPredictor(metric=Metric.VAL_ACCURACY),
     "lce_m": LCEMPredictor(metric=Metric.VAL_ACCURACY),
     "lcsvr": SVR_Estimator(
@@ -145,8 +147,8 @@ supported_search_spaces = {
     "nasbench201": NasBench201SearchSpace(),
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
-    'transbench101_micro': TransBench101SearchSpaceMicro(),
-    'transbench101_macro': TransBench101SearchSpaceMacro()}
+    'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
+    'transbench101_macro': TransBench101SearchSpaceMacro()
 }
 
 """

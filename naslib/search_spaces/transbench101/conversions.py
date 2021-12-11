@@ -1,18 +1,3 @@
-
-"""
-There are three representations
-'naslib': the NASBench201SearchSpace object
-'op_indices': A list of six ints, which is the simplest representation
-'arch_str': The string representation used in the original nasbench201 paper
-
-This file currently has the following conversions:
-naslib -> op_indices
-op_indices -> naslib
-naslib -> arch_str
-
-Note: we could add more conversions, but this is all we need for now
-"""
-
 from naslib.search_spaces.core.graph import Graph
 
 
@@ -53,7 +38,7 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
         # function that adds the op index from the dictionary to each edge
         if (edge.head, edge.tail) in edge_op_dict:
             for i, op in enumerate(edge.data.op):
-                if op.get_op_name == edge_op_dict[(edge.head, edge.tail)]:
+                if op.get_op_name == edge_op_dict[(edge.head, edge.tail)] or (op.get_op_name == 'FactorizedReduce' and edge_op_dict[(edge.head, edge.tail)] == 'Identity'):
                     index = i
                     break
             edge.data.set('op_index', index, shared=True)
@@ -129,8 +114,6 @@ def convert_naslib_to_transbench101_micro(naslib_object):
     op_edge_list = [
         '{}'.format(edge_op_dict[(i, j)]) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
     ]
-    print('op_edge_list =', op_edge_list)
-    print('ij =', [(i, j) for i, j in cell.edges])
 
     return '64-41414-{}_{}{}_{}{}{}'.format(*op_edge_list)
 

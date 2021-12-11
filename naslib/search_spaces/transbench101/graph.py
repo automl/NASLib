@@ -206,7 +206,6 @@ class TransBench101SearchSpaceMicro(Graph):
             
             
         arch_str = convert_naslib_to_transbench101_micro(self) 
-        print('arch_str =', arch_str)
           
         query_results = dataset_api['api']
         task = dataset_api['task']
@@ -311,7 +310,6 @@ class TransBench101SearchSpaceMicro(Graph):
         naslib object accordingly.
         """
         op_indices = np.random.randint(4, size=(6))
-        print('op_indices rs =', op_indices)
         self.set_op_indices(op_indices)
 
 

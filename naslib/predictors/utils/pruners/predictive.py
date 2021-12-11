@@ -116,7 +116,7 @@ def find_measures(
     dataloader,  # a data loader (typically for training data)
     dataload_info,  # a tuple with (dataload_type = {random, grasp}, number_of_batches_for_random_or_images_per_class_for_grasp, number of classes)
     device,  # GPU/CPU device used
-    loss_fn=F.cross_entropy,  # loss function to use within the zero-cost metrics
+    loss_fn,  # loss function to use within the zero-cost metrics
     measure_names=None,  # an array of measure names to compute, if left blank, all measures are computed by default
     measures_arr=None,
 ):  # [not used] if the measures are already computed but need to be summarized, pass them here

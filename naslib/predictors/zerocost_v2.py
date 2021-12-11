@@ -11,6 +11,8 @@ import random
 import numpy as np
 import torch
 import logging
+import torch.nn.functional as F
+from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
 
 from naslib.predictors.predictor import Predictor
 from naslib.utils.utils import get_project_root, get_train_val_loaders
@@ -53,6 +55,7 @@ class ZeroCostV2(Predictor):
         for test_arch in xtest:
             count += 1
             logger.info("zero cost: {} of {}".format(count, len(xtest)))
+            
             if "nasbench201" in self.config.search_space:
                 ops_to_nb201 = {
                     "AvgPool1x1": "avg_pool_3x3",
@@ -90,6 +93,8 @@ class ZeroCostV2(Predictor):
                     )
                     measure_score = -10e8
                     return measure_score
+                
+            
 
             elif "darts" in self.config.search_space:
                 test_genotype = convert_compact_to_genotype(test_arch.compact)
@@ -114,15 +119,41 @@ class ZeroCostV2(Predictor):
                     num_mods=3,
                     num_classes=self.num_classes,
                 )
+            else:
+                """
+                note: parsing the NASLib object creates the nn.Module.
+                Technically we can do this for nb101 / 201 / darts as well,
+                but are keeping the original code above for consistency.
+                """
+                test_arch.parse()
+                network = test_arch
+                logger.info('Parsed architecture')
+
+            # set up loss function
+            if self.config.dataset in ['class_object', 'class_scene']:
+                loss_fn = SoftmaxCrossEntropyWithLogits()
+            elif self.config.dataset == 'autoencoder':
+                loss_fn = torch.nn.L1Loss()
+            else:
+                loss_fn = F.cross_entropy
 
             network = network.to(self.device)
-            score = predictive.find_measures(
-                network,
-                self.train_loader,
-                (self.dataload, self.num_imgs_or_batches, self.num_classes),
-                self.device,
-                measure_names=[self.method_type],
-            )
+
+            #try: # useful when launching bash scripts
+            if True:
+                score = predictive.find_measures(
+                    network,
+                    self.train_loader,
+                    (self.dataload, self.num_imgs_or_batches, self.num_classes),
+                    self.device,
+                    loss_fn=loss_fn,
+                    measure_names=[self.method_type],
+                )
+            #except: # useful when launching bash scripts
+            #    print('find_measures failed')
+            #    score = -1e8
+
+            # some of the values need to be flipped
             if math.isnan(score):
                 score = -1e8
 
