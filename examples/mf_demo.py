@@ -61,7 +61,7 @@ elif config_optimizer == 'HB':
 elif config_optimizer == 'RS':
     optimizer = RS(config)
 elif config_optimizer == 'BOHB':
-    raise Exception('Not implemented yet, ミ●﹏☉ミ')
+    optimizer = HB(config)
 else:
     raise Exception('invalid config')
 

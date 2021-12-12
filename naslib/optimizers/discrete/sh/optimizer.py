@@ -1,13 +1,13 @@
 import numpy as np
 import torch
-
+import random
 import math
 
 from collections import defaultdict
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
-
+import statsmodels.api as sm
 
 class SuccessiveHalving(MetaOptimizer):
     """
@@ -52,8 +52,15 @@ class SuccessiveHalving(MetaOptimizer):
         self.history = torch.nn.ModuleList()
         self.end = False
         self.old_fidelity = 0
-
-        #if tpe:
+        self.method = config.search.method
+        #right now only for testing 
+        if self.method == "tpe":#
+            self.p = 0.15
+            self.N_min = 0
+            self.min_points_in_model = 0
+            self.configs = defaultdict(lambda: defaultdict(list))
+            self.losses = defaultdict(lambda: defaultdict(list))
+            self.top_n_percent = 15
             #self.p = config.search.p
             #self.percentile = config.search.percentile
             #self.N_min = config.search.N_min
@@ -66,6 +73,7 @@ class SuccessiveHalving(MetaOptimizer):
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
+    
 
     def new_epoch(self):
         """
@@ -73,15 +81,15 @@ class SuccessiveHalving(MetaOptimizer):
         # TODO: with this kind of architekeur, in evaluation only the last fideltiy
         """
 
-        model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
-        model.arch = self.search_space.clone()
+        #model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
+        #model.arch = self.search_space.clone()
         if len(self.sampled_archs) < self.number_archs:
-            model.arch.sample_random_architecture(dataset_api=self.dataset_api)
-           #model = sample_method() this can be a self.sample_method() or self.sample(method)
+            #model.arch.sample_random_architecture(dataset_api=self.dataset_api)
+            model = self.sample(self.method)   # this can be a self.sample_method() or self.sample(method)
         else:
             model = self.sampled_archs[self.fidelity_counter]
 
-# 		    return(ranks < self.num_configs[self.stage])
+#             return(ranks < self.num_configs[self.stage])
 
         model.accuracy = model.arch.query(
             self.performance_metric,
@@ -200,21 +208,218 @@ class SuccessiveHalving(MetaOptimizer):
     def get_checkpointables(self):
         return {"model": self.history}
 
-    """
+    
     def sample(self, method):
         if method == "random" or (random.randint(1,100)/100) < self.p:
             model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
-            return model        
-        b = self.sampled_archs.argmax(key = lambda model: model.accuracy, reverse= True)) if length(self.sampled_archs)>= (self.N_min +2) else False
+                 
+        b = self.sampled_archs.argmax(key = lambda model: model.accuracy, reverse= True) if len(self.sampled_archs) >= (self.N_min +2) else False
         if not(b): 
             model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
-            return model 
-        something like new_result
-        something like get config 
-        draw ns samples from kde
-        return sample
+            
+        self.train_KDE(model)
+        #sample_KDE()
+        return None
+
+    def train_KDE(self, model):
+        budget = self.fidelity
+        if budget not in self.configs.keys():
+            self.configs[budget] = []
+            self.losses[budget] = []
+        print(model.arch.__str__)
+        self.configs[budget].append(model.arch.__str__) #which data has to be in train is to test
+        self.losses[budget].append(model.arch.query(
+            self.performance_metric,
+            self.dataset,
+            epoch=int(self.fidelity),
+            dataset_api=self.dataset_api,
+        ))
+        train_configs = np.array(self.configs[budget])
+        train_losses = np.array(self.losses[budget])
+        
+        # Refit KDE for the current budget
+        idx = np.argsort(train_losses)
+
+        n_good= max(self.min_points_in_model, (self.top_n_percent * train_configs.shape[0])//100 )
+        n_bad = max(self.min_points_in_model, ((100-self.top_n_percent)*train_configs.shape[0])//100)
+
+        train_data_good = self.impute_conditional_data(train_configs[idx[:n_good]])
+        train_data_bad  = self.impute_conditional_data(train_configs[idx[n_good:n_good+n_bad]])
+        
+        # quick rule of thumb
+        bw_estimation = 'normal_reference'
+        bad_kde = sm.nonparametric.KDEMultivariate(data=train_data_bad,  var_type="u", bw=bw_estimation) #TODO what the hell is var_type
+        good_kde = sm.nonparametric.KDEMultivariate(data=train_data_good, var_type="u", bw=bw_estimation)
+
+        bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth,None)
+        good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth,None)
+
+        self.kde_models[budget] = {
+                'good': good_kde,
+                'bad' : bad_kde
+        }
+
+
+    def impute_conditional_data(self, array):
+
+        return_array = np.empty_like(array)
+
+        for i in range(array.shape[0]):
+            datum = np.copy(array[i])
+            nan_indices = np.argwhere(np.isnan(datum)).flatten()
+
+            while (np.any(nan_indices)):
+                nan_idx = nan_indices[0]
+                valid_indices = np.argwhere(np.isfinite(array[:,nan_idx])).flatten()
+                if len(valid_indices) > 0:  
+                # pick one of them at random and overwrite all NaN values
+                    row_idx = np.random.choice(valid_indices)
+                    datum[nan_indices] = array[row_idx, nan_indices]
+
+                else:
+                    # no good point in the data has this value activated, so fill it with a valid but random value
+                    t = self.vartypes[nan_idx]
+                    if t == 0:
+                        datum[nan_idx] = np.random.rand()
+                    else:
+                        datum[nan_idx] = np.random.randint(t)
+                nan_indices = np.argwhere(np.isnan(datum)).flatten()
+            return_array[i,:] = datum
+        return(return_array)
+"""
+def get_config(self, budget):
+        
+            #Function to sample a new configuration
+            #This function is called inside Hyperband to query a new configuration
+            #Parameters:
+            #-----------
+            #budget: float
+            #    the budget for which this configuration is scheduled
+            #returns: config
+            #    should return a valid configuration
+        
+        
+        self.logger.debug('start sampling a new configuration.')
+        
+
+        sample = None
+        info_dict = {}
+        
+        # If no model is available, sample from prior
+        # also mix in a fraction of random configs
+        if len(self.kde_models.keys()) == 0 or np.random.rand() < self.random_fraction:
+            sample =  self.configspace.sample_configuration()
+            info_dict['model_based_pick'] = False
+
+        best = np.inf
+        best_vector = None
+
+        if sample is None:
+            try:
+                
+                #sample from largest budget
+                budget = max(self.kde_models.keys())
+
+                l = self.kde_models[budget]['good'].pdf
+                g = self.kde_models[budget]['bad' ].pdf
+            
+                minimize_me = lambda x: max(1e-32, g(x))/max(l(x),1e-32)
+                
+                kde_good = self.kde_models[budget]['good']
+                kde_bad = self.kde_models[budget]['bad']
+
+                for i in range(self.num_samples):
+                    idx = np.random.randint(0, len(kde_good.data))
+                    datum = kde_good.data[idx]
+                    vector = []
+                    
+                    for m,bw,t in zip(datum, kde_good.bw, self.vartypes):
+                        
+                        bw = max(bw, self.min_bandwidth)
+                        if t == 0:
+                            bw = self.bw_factor*bw
+                            try:
+                                vector.append(sps.truncnorm.rvs(-m/bw,(1-m)/bw, loc=m, scale=bw))
+                            except:
+                                self.logger.warning("Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"%(datum, kde_good.bw, m))
+                                self.logger.warning("data in the KDE:\n%s"%kde_good.data)
+                        else:
+                            
+                            if np.random.rand() < (1-bw):
+                                vector.append(int(m))
+                            else:
+                                vector.append(np.random.randint(t))
+                    val = minimize_me(vector)
+
+                    if not np.isfinite(val):
+                        self.logger.warning('sampled vector: %s has EI value %s'%(vector, val))
+                        self.logger.warning("data in the KDEs:\n%s\n%s"%(kde_good.data, kde_bad.data))
+                        self.logger.warning("bandwidth of the KDEs:\n%s\n%s"%(kde_good.bw, kde_bad.bw))
+                        self.logger.warning("l(x) = %s"%(l(vector)))
+                        self.logger.warning("g(x) = %s"%(g(vector)))
+
+                        # right now, this happens because a KDE does not contain all values for a categorical parameter
+                        # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
+                        # if the good_kde has a finite value, i.e. there is no config with that value in the bad kde, so it shouldn't be terrible.
+                        if np.isfinite(l(vector)):
+                            best_vector = vector
+                            break
+
+                    if val < best:
+                        best = val
+                        best_vector = vector
+
+                if best_vector is None:
+                    self.logger.debug("Sampling based optimization with %i samples failed -> using random configuration"%self.num_samples)
+                    sample = self.configspace.sample_configuration().get_dictionary()
+                    info_dict['model_based_pick']  = False
+                else:
+                    self.logger.debug('best_vector: {}, {}, {}, {}'.format(best_vector, best, l(best_vector), g(best_vector)))
+                    for i, hp_value in enumerate(best_vector):
+                        if isinstance(
+                            self.configspace.get_hyperparameter(
+                                self.configspace.get_hyperparameter_by_idx(i)
+                            ),
+                            ConfigSpace.hyperparameters.CategoricalHyperparameter
+                        ):
+                            best_vector[i] = int(np.rint(best_vector[i]))
+                    sample = ConfigSpace.Configuration(self.configspace, vector=best_vector).get_dictionary()
+                    
+                    try:
+                        sample = ConfigSpace.util.deactivate_inactive_hyperparameters(
+                                    configuration_space=self.configspace,
+                                    configuration=sample
+                                    )
+                        info_dict['model_based_pick'] = True
+
+                    except Exception as e:
+                        self.logger.warning(("="*50 + "\n")*3 +\
+                                "Error converting configuration:\n%s"%sample+\
+                                "\n here is a traceback:" +\
+                                traceback.format_exc())
+                        raise(e)
+
+            except:
+                self.logger.warning("Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc()))
+                sample = self.configspace.sample_configuration()
+                info_dict['model_based_pick']  = False
+
+
+        try:
+            sample = ConfigSpace.util.deactivate_inactive_hyperparameters(
+                configuration_space=self.configspace,
+                configuration=sample.get_dictionary()
+            ).get_dictionary()
+        except Exception as e:
+            self.logger.warning("Error (%s) converting configuration: %s -> "
+                                "using random configuration!",
+                                e,
+                                sample)
+            sample = self.configspace.sample_configuration().get_dictionary()
+        self.logger.debug('done sampling a new configuration.')
+        return sample, info_dict
 """

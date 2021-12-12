@@ -14,7 +14,7 @@ search:
   eta: 3
   budget_type: epoch 
   budget_max: 81
-
+  method: random
 
   predictor_type: var_sparse_gp
   num_init: 10  
