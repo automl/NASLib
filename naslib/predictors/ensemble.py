@@ -8,6 +8,7 @@ from naslib.predictors.gcn import GCNPredictor
 from naslib.predictors.bonas import BonasPredictor
 from naslib.predictors.bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression
 from naslib.predictors.seminas import SemiNASPredictor
+from naslib.predictors.multifidelity import TreeParserEstimator
 from naslib.predictors.gp import (
     GPPredictor,
     SparseGPPredictor,
@@ -110,6 +111,7 @@ class Ensemble(Predictor):
                 max_zerocost=1000,
                 config=self.config,
             ),
+
         }
 
         return [
