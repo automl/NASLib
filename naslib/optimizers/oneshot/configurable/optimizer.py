@@ -91,7 +91,7 @@ class ConfigurableOptimizer(MetaOptimizer):
         optimizer.zero_grad()
         logits = graph(data)
         loss = loss_criterion(logits, target)
-        loss.backward()
+        loss.backward(retain_graph=is_arch_optimizer)
 
         if grad_clip:
             parameters = self.architectural_weights.parameters() if is_arch_optimizer else graph.parameters()
@@ -124,16 +124,11 @@ class ConfigurableOptimizer(MetaOptimizer):
         input_train, target_train = data_train
         input_val, target_val = data_val
 
-        # Sample architecture weights
+        # Sample architecture weights. #TODO: Verify that using retain_graph=True for arch opt works as expected.
         self.arch_sampler.sample_arch_weights(self.graph, self.scope)
 
         # Update architecture weights
         logits_val, val_loss = self._arch_optimizer_step(input_val, target_val)
-
-        # Sample architectural weights again
-        # Ideally, save the RNG state from before the previous sampling and set it
-        # again here
-        self.arch_sampler.sample_arch_weights(self.graph, self.scope)
 
         # Update op weights
         logits_train, train_loss = self._graph_optimizer_step(input_train, target_train)
