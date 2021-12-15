@@ -177,19 +177,22 @@ class GDASMixedOp(MixedOp):
         super().__init__(primitives)
         self.min_cuda_memory = min_cuda_memory
 
-    def forward(self, x, edge_data):
+    def get_weights(self, edge_data):
+        return edge_data.sampled_arch_weight, edge_data.argmax
+
+    def process_weights(self, weights):
+        return weights
+
+    def apply_weights(self, x, weights):
         """
         Applies the gumbel softmax to the architecture weights
         before forwarding `x` through the graph as in DARTS
         """
-        # sampled_arch_weight = edge_data.sampled_arch_weight
-        # result1 = sum(w * op(x, None) for w, op in zip(sampled_arch_weight, self.primitives))
 
-        weights = edge_data.sampled_arch_weight
-        argmax = edge_data.argmax
+        sampled_weights, argmax = weights[0], weights[1]
 
         weighted_sum = sum(
-            weights[i] * op(x, None) if i == argmax else weights[i]
+            sampled_weights[i] * op(x, None) if i == argmax else sampled_weights[i]
             for i, op in enumerate(self.primitives)
         )
 
