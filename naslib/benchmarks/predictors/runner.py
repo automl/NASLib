@@ -60,6 +60,7 @@ supported_predictors = {
     "bonas": BonasPredictor(encoding_type="bonas", hpo_wrapper=True),
     "dngo": DNGOPredictor(encoding_type="adjacency_one_hot"),
     "fisher": ZeroCostV2(config, batch_size=64, method_type="fisher"),
+    "flops": ZeroCostV2(config, batch_size=64, method_type="flops"),
     "gcn": GCNPredictor(encoding_type="gcn", hpo_wrapper=True),
     "gp": GPPredictor(encoding_type="adjacency_one_hot"),
     "gpwl": GPWLPredictor(
@@ -72,7 +73,6 @@ supported_predictors = {
     "grasp": ZeroCostV2(config, batch_size=64, method_type="grasp"),
     "jacov": ZeroCostV1(config, batch_size=64, method_type="jacov"),
     "jacov2": ZeroCostV2(config, batch_size=64, method_type="jacov"),
-    "params": ZeroCostV2(config, batch_size=64, method_type="params"),
     "lce": LCEPredictor(metric=Metric.VAL_ACCURACY),
     "lce_m": LCEMPredictor(metric=Metric.VAL_ACCURACY),
     "lcsvr": SVR_Estimator(
@@ -82,6 +82,7 @@ supported_predictors = {
     "mlp": MLPPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=True),
     "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False),
     "ngb": NGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
+    "params": ZeroCostV2(config, batch_size=64, method_type="params"),
     "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False),
     "seminas": SemiNASPredictor(encoding_type="seminas", semi=True, hpo_wrapper=False),
     "snip": ZeroCostV2(config, batch_size=64, method_type="snip"),
