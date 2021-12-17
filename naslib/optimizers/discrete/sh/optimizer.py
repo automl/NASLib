@@ -4,7 +4,9 @@ import random
 import math
 
 from collections import defaultdict
-
+from naslib.predictors import predictor
+from naslib.predictors import ensemble
+from naslib.predictors.ensemble import Ensemble
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -54,11 +56,12 @@ class SuccessiveHalving(MetaOptimizer):
         self.old_fidelity = 0
         self.method = config.search.method
         #right now only for testing 
-        #if self.method == "tpe":#
-            
+        if self.method == "tpe":#
+            self.ss_type= config.search_space
+            self.encoding_type = config.search.encoding_type
             #self.p = config.search.p
             #self.percentile = config.search.percentile
-            #self.N_min = config.search.N_min
+            self.N_min = 5
         self.optimizer_stats = defaultdict(lambda: defaultdict(list))
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
@@ -78,9 +81,11 @@ class SuccessiveHalving(MetaOptimizer):
 
         #model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
         #model.arch = self.search_space.clone()
+        #TODO is num_init needed 
         if len(self.sampled_archs) < self.number_archs:
-            #model.arch.sample_random_architecture(dataset_api=self.dataset_api)
-            model = self.sample(self.method)   # this can be a self.sample_method() or self.sample(method)
+            #model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
+            model = self.sample(self.method)
+            
         else:
             model = self.sampled_archs[self.fidelity_counter]
 
@@ -205,20 +210,22 @@ class SuccessiveHalving(MetaOptimizer):
 
     
     def sample(self, method):
-        if method == "random" or (random.randint(1,100)/100) < self.p:
+        if method == "random" or  len(self.sampled_archs) < self.N_min:
             model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
-                 
-        b = self.sampled_archs.argmax(key = lambda model: model.accuracy, reverse= True) if len(self.sampled_archs) >= (self.N_min +2) else False
-        if not(b): 
-            model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
-            model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
-            
-        self.train_KDE(model)
+        else:         
+            xtrain = [m.arch for m in self.sampled_archs]
+            ytrain = [m.accuracy for m in self.sampled_archs]
+            ensemble =   Ensemble(
+                predictor_type= "tpe",  
+                num_ensemble= 1,
+                encoding_type= self.encoding_type,
+                ss_type=  self.ss_type
+                )
+            train_error = ensemble.fit(xtrain,ytrain,self.fidelity)
         #sample_KDE()
-        return None
+        return model
 
  
 """

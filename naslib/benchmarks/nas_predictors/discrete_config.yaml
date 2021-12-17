@@ -16,8 +16,8 @@ search:
   budget_max: 81
   method: tpe
 
-
-  predictor_type: var_sparse_gp
+  
+  predictor_type: tpe
   num_init: 10  
   k: 10
 

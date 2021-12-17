@@ -215,7 +215,7 @@ def encode_gcn_transbench101(arch):
 def encode_bonas_nasbench201(arch):
     """
     Input:
-    a list of categorical ops starting from 0
+    a list of categorical ops startfroming  0
     """
     ops = arch.get_op_indices()
     # offset ops list by one, add input and output to ops list

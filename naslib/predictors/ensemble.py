@@ -1,6 +1,8 @@
 import numpy as np
 import copy
 
+from torch._C import TracingState
+
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.mlp import MLPPredictor
 from naslib.predictors.trees import LGBoost, XGBoost, NGBoost, RandomForestPredictor
@@ -8,7 +10,7 @@ from naslib.predictors.gcn import GCNPredictor
 from naslib.predictors.bonas import BonasPredictor
 from naslib.predictors.bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression
 from naslib.predictors.seminas import SemiNASPredictor
-from naslib.predictors.multifidelity import TreeParserEstimator
+from naslib.predictors.tpe import TreeParserEstimator
 from naslib.predictors.gp import (
     GPPredictor,
     SparseGPPredictor,
@@ -111,6 +113,11 @@ class Ensemble(Predictor):
                 max_zerocost=1000,
                 config=self.config,
             ),
+            "tpe": TreeParserEstimator(
+                encoding_type=self.encoding_type,
+                ss_type = self.ss_type ),
+
+            
 
         }
 
