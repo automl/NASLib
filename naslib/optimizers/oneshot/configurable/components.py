@@ -161,7 +161,7 @@ class DrNASSampler(DARTSSampler):
         super().update_graph(graph, scope)
         self.anchor = Dirichlet(
             torch.ones_like(
-                torch.nn.utils.parameters_to_vector(self.architectural_weights)
+                torch.nn.utils.parameters_to_vector(self.get_arch_weights(graph))
             ).to(self.device)
         )
 
@@ -180,7 +180,7 @@ class DrNASSampler(DARTSSampler):
         )
 
     def _sample_arch_weights(self, edge):
-        beta = F.elu(edge.data.get(self.arch_weights_name)) + 1
+        beta = F.elu(edge.data.get(self.arch_weights_name, None)) + 1
         weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
         edge.data.set("sampled_arch_weight", weights, shared=True)
 
@@ -224,7 +224,7 @@ class GDASSampler(DARTSSampler):
         )
 
     def _sample_arch_weights(self, edge):
-        arch_parameters = torch.unsqueeze(edge.data.get(self.arch_weights_name), dim=0)
+        arch_parameters = torch.unsqueeze(edge.data.get(self.arch_weights_name, None), dim=0)
 
         while True:
             gumbels = -torch.empty_like(arch_parameters).exponential_().log()
