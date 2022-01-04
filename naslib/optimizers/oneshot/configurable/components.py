@@ -26,23 +26,33 @@ class AbstractGraphModifier(metaclass=ABCMeta):
 
 
 class AbstractEdgeOpModifier(AbstractGraphModifier):
-    def update_graph_edges(self, graph, scope):
-        pass
-
-    def update_graph_nodes(self, graph, scope):
-        pass
+    pass
 
 
 class AbstractCombOpModifier(AbstractGraphModifier):
+    @abstractmethod
+    def get_arch_weights(self, graph):
+        raise NotImplementedError
+
+
+class NoEdgeOpModifer(AbstractEdgeOpModifier):
     def update_graph_edges(self, graph, scope):
         pass
 
     def update_graph_nodes(self, graph, scope):
         pass
 
-    @abstractmethod
+
+class NoCombOpModifier(AbstractCombOpModifier):
+    def update_graph_edges(self, graph, scope):
+        pass
+
+    def update_graph_nodes(self, graph, scope):
+        pass
+
     def get_arch_weights(self, graph):
-        raise NotImplementedError
+        return None
+
 
 class EdgeNormalization(AbstractCombOpModifier):
     arch_weights_name = 'edge_normalization_beta'
@@ -101,7 +111,8 @@ class AbstractArchitectureSampler(AbstractGraphModifier):
 
     def _update_ops(self, edge):
         primitives = edge.data.op
-        edge.data.set("op", self.__class__.mixed_op(primitives))
+        op = self.__class__.mixed_op(primitives)
+        edge.data.set('op', op)
 
     def set_device(self, device):
         self.device = device

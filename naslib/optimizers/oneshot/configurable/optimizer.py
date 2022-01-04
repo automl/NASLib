@@ -6,7 +6,7 @@ import torch
 import numpy as np
 import logging
 
-from naslib.optimizers.oneshot.configurable.components import AbstractArchitectureSampler, AbstractCombOpModifier, AbstractEdgeOpModifier
+from naslib.optimizers.oneshot.configurable.components import AbstractArchitectureSampler, AbstractCombOpModifier, AbstractEdgeOpModifier, NoCombOpModifier, NoEdgeOpModifer
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +16,8 @@ class ConfigurableOptimizer(MetaOptimizer):
         self,
         config,
         arch_sampler: AbstractArchitectureSampler,
-        mixed_op_modifier: AbstractEdgeOpModifier,
-        comb_op_modifier: AbstractCombOpModifier,
+        edge_op_modifier: AbstractEdgeOpModifier=None,
+        comb_op_modifier: AbstractCombOpModifier=None,
 
         # The rest are the same as the other optimizers
         op_optimizer=torch.optim.SGD,
@@ -27,8 +27,8 @@ class ConfigurableOptimizer(MetaOptimizer):
         super(ConfigurableOptimizer, self).__init__()
         self.config = config
         self.arch_sampler = arch_sampler
-        self.mixed_op_modifier = mixed_op_modifier
-        self.comb_op_modifier = comb_op_modifier
+        self.edge_op_modifier = NoEdgeOpModifer() if edge_op_modifier is None else edge_op_modifier
+        self.comb_op_modifier = NoCombOpModifier() if comb_op_modifier is None else comb_op_modifier
 
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
@@ -110,7 +110,7 @@ class ConfigurableOptimizer(MetaOptimizer):
             scope = graph.OPTIMIZER_SCOPE
 
         self.arch_sampler.update_graph(graph, scope) # DARTS, DrNAS, or GDAS
-        self.mixed_op_modifier.update_graph(graph, scope) # Partial Connections
+        self.edge_op_modifier.update_graph(graph, scope) # Partial Connections
         self.comb_op_modifier.update_graph(graph, scope) # Edge Normalization
 
         graph.parse()
@@ -131,8 +131,6 @@ class ConfigurableOptimizer(MetaOptimizer):
         logits_val, val_loss = self._arch_optimizer_step(input_val, target_val)
 
         # Sample architectural weights again
-        # Ideally, save the RNG state from before the previous sampling and set it
-        # again here
         self.arch_sampler.sample_arch_weights(self.graph, self.scope)
 
         # Update op weights
