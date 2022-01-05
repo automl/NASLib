@@ -178,7 +178,7 @@ class GDASMixedOp(MixedOp):
         self.min_cuda_memory = min_cuda_memory
 
     def get_weights(self, edge_data):
-        return edge_data.sampled_arch_weight, edge_data.argmax
+        return edge_data.sampled_arch_weight
 
     def process_weights(self, weights):
         return weights
@@ -189,10 +189,10 @@ class GDASMixedOp(MixedOp):
         before forwarding `x` through the graph as in DARTS
         """
 
-        sampled_weights, argmax = weights[0], weights[1]
+        argmax = torch.argmax(weights)
 
         weighted_sum = sum(
-            sampled_weights[i] * op(x, None) if i == argmax else sampled_weights[i]
+            weights[i] * op(x, None) if i == argmax else weights[i]
             for i, op in enumerate(self.primitives)
         )
 

@@ -246,10 +246,8 @@ class GDASSampler(DARTSSampler):
                 break
 
         weights = hardwts[0]
-        argmaxs = index[0].item()
 
         edge.data.set("sampled_arch_weight", weights, shared=True)
-        edge.data.set("argmax", argmaxs, shared=True)
 
     def _remove_sampled_alphas(self, edge):
         if edge.data.has("sampled_arch_weight"):
