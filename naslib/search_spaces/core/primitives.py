@@ -113,12 +113,12 @@ class MixedOp(AbstractPrimitive):
         weights = self.get_weights(edge_data)
 
         if self.pre_process_hook:
-            self.pre_process_hook(weights)
+            weights = self.pre_process_hook(weights, edge_data)
 
         weights = self.process_weights(weights)
 
         if self.post_process_hook:
-            self.post_process_hook(weights)
+            weights = self.post_process_hook(weights, edge_data)
 
         return self.apply_weights(x, weights)
 

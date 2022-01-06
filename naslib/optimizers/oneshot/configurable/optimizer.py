@@ -126,6 +126,7 @@ class ConfigurableOptimizer(MetaOptimizer):
 
         # Sample architecture weights
         self.arch_sampler.sample_arch_weights(self.graph, self.scope)
+        self.arch_sampler.weights_modifier_step(self.graph, self.scope)
 
         # Update architecture weights
         logits_val, val_loss = self._arch_optimizer_step(input_val, target_val)
