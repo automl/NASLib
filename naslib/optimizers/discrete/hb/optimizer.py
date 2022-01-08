@@ -176,29 +176,7 @@ class HyperBand(MetaOptimizer):
         """
         self.optimizer_stats[self.s] = self.sh.optimizer_stats
 
-    def update_optimizer_stats(self):
-        """
-        Updates statistics of optimizer to be able to create useful plots
-        here only hacky way from sh
-        """
-        arch = self.sh.sampled_archs[self.sh.fidelity_counter-1].arch
-        arch_hash = hash(self.sh.sampled_archs[self.sh.fidelity_counter- 1])
-        # this dict contains metrics to save
-        metrics = {
-            "train_acc": Metric.TRAIN_ACCURACY,
-            "val_acc": Metric.VAL_ACCURACY,
-            "test_acc": Metric.TEST_ACCURACY,
-            "train_time": Metric.TRAIN_TIME
-        }
-        for metric_name, metric in metrics.items():
-            metric_value = arch.query(
-                metric, 
-                self.dataset, 
-                dataset_api=self.dataset_api, 
-                epoch=int(81)
-            )
-            self.optimizer_stats[arch_hash][metric_name].append(metric_value)
-        self.optimizer_stats[arch_hash]['fidelity'].append(self.sh.fidelity) 
+
 
     def test_statistics(self):
         return False

@@ -31,7 +31,7 @@ def plot_sh():
     plt.xscale('log', base=2)
     plt.rcParams['grid.linestyle'] = 'dotted'
     plt.show()
-    plt.savefig('plot_nb201.pdf', bbox_inches = 'tight', pad_inches = 0.1)
+    plt.savefig('plot_sh_nb201.pdf', bbox_inches = 'tight', pad_inches = 0.1)
 
 def plot_hb():
     """
@@ -39,7 +39,7 @@ def plot_hb():
     """
     folder = os.path.expanduser('./run/cifar10/nas_predictors/nasbench201')
     predictor = 'var_sparse_gp'
-    results = get_results(predictor, folder, 'hb_stats.json', metric='test_acc')
+    results = get_results(predictor, folder, 'sh_stats.json', metric='test_acc')
     s = len(results)
     
     figure, axis = plt.subplots(s, 1)
@@ -47,9 +47,10 @@ def plot_hb():
         for arch, stats in sh_stats.items():
             x = stats['fidelity']
             values = stats['val_acc']
-            axis[sh, 0].plot(x, values, linestyle='-', label=arch)
+            axis[int(sh)].plot(x, values, linestyle='-', label=arch, marker='x')
+            axis[int(sh)].set_xscale('log', base=3)
     plt.show()
-
+    plt.savefig('plot_hb_nb201.pdf', bbox_inches = 'tight', pad_inches = 0.1)
 
 
 if __name__ == '__main__':

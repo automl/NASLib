@@ -56,8 +56,10 @@ logger.setLevel(logging.INFO)
 
 if config_optimizer == 'SH':
     optimizer = SH(config)
+    plot_func = mf_plot.plot_sh
 elif config_optimizer == 'HB':
     optimizer = HB(config)
+    plot_func = mf_plot.plot_hb
 elif config_optimizer == 'RS':
     optimizer = RS(config)
 elif config_optimizer == 'BOHB':
@@ -83,4 +85,4 @@ if demo_config['plot'] == False:
     exit()
 
 # TODO: Make this dependent on optimizer type, currently statistics are just for SH available
-mf_plot.plot_sh()
+plot_func()
