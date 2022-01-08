@@ -60,6 +60,7 @@ class HyperBand(MetaOptimizer):
         self.encoding_type = config.search.encoding_type
         self.ss_type= config.search_space
         self.optimizer_stats = defaultdict(lambda: defaultdict(list))
+        self.ensemble = None
         
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
