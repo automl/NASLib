@@ -38,13 +38,13 @@ class SuccessiveHalving(MetaOptimizer):
         self.weight_optimizer = weight_optimizer
         self.loss = loss_criteria
         self.grad_clip = grad_clip
-        self.budget_max = config.search.budget_max
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
         self.end = False
         self.fidelity = config.search.min_fidelity
         self.number_archs = config.search.number_archs
         self.eta = config.search.eta
+        self.budget_max = config.search.budget_max 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.budget_type = config.search.budget_type  # is not for one query is overall
         self.fidelity_counter = 0
@@ -72,7 +72,8 @@ class SuccessiveHalving(MetaOptimizer):
         Sample a new architecture to train.
         # TODO: with this kind of architekeur, in evaluation only the last fideltiy
         """
-
+        # TODO: error is occuring on fidelity: 128 on architecture number: 1
+        # fidelity is not calculated corretly and therefore epoch is maybe not correct 
         model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
         model.arch = self.search_space.clone()
         if len(self.sampled_archs) < self.number_archs:
