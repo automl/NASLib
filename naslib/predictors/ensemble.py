@@ -103,6 +103,7 @@ class Ensemble(Predictor):
                 min_train_size=0,
                 max_zerocost=100,
             ),
+            #remove temporar for debugging 
             "omni_seminas": OmniSemiNASPredictor(
                 zero_cost=["jacov"],
                 lce=[],
@@ -115,7 +116,8 @@ class Ensemble(Predictor):
             ),
             "tpe": TreeParserEstimator(
                 encoding_type=self.encoding_type,
-                ss_type = self.ss_type ),
+                ss_type = self.ss_type,
+                config = self.config ),
 
             
 
@@ -148,10 +150,16 @@ class Ensemble(Predictor):
     def query(self, xtest, info=None):
         predictions = []
         for i in range(self.num_ensemble):
-            prediction = self.ensemble[i].query(xtest, info)
+            prediction = self.ensemble[i].query(xtest, info) #added info dict
+            predictions.append(prediction)
+        return np.array(predictions)
+    def query_tpe(self, xtest, info=None):
+        predictions = []
+        for i in range(self.num_ensemble):
+            prediction, info_dict = self.ensemble[i].query(xtest, info) #added info dict
             predictions.append(prediction)
 
-        return np.array(predictions)
+        return np.array(predictions), info_dict #added info dict
 
     def set_hyperparams(self, params):
         if self.ensemble is None:

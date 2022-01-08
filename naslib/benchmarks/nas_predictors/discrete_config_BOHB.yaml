@@ -10,10 +10,10 @@ search:
   epochs: 158
   fidelity: -1
   min_fidelity: 1
-  number_archs: 81
+  number_archs: 1000
   eta: 3
   budget_type: epoch 
-  budget_max: 81
+  budget_max: 1000
   method: tpe
 
   

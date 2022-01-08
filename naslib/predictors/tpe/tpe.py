@@ -1,7 +1,11 @@
+from logging import error
+
 import statsmodels.api as sm
 from collections import defaultdict
 import numpy as np
 
+
+from naslib.search_spaces.core.query_metrics import Metric
 from naslib.predictors.utils.encodings import encode
 import scipy.stats as sps
 import scipy.optimize as spo
@@ -12,18 +16,24 @@ class TreeParserEstimator(): #TODO maybe this need
     def __init__(
         self,
         encoding_type="adjacency_one_hot",
-        ss_type="nasbench201"
+        ss_type="nasbench201",
+        config = None,
+        dataset_api = None
     ):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
         self.p = 0.15
         self.N_min = 0
+        self.num_samples = 64  #maybe same then number of essembles, not sure 
+        self.dataset_api = dataset_api
+        self.kde_models = defaultdict(lambda: defaultdict(list))
         self.min_points_in_model = 1
-        self.configs = defaultdict(lambda: defaultdict(list))
-        self.losses = defaultdict(lambda: defaultdict(list))
         self.top_n_percent = 15
-        self.min_bandwith = 1e-3
-        self.search_space = None #thing about later
+        self.min_bandwidth = 1e-3
+        self.random_fraction = 0.15
+        self.configspace = config[0] #thing about later
+        self.dataset_api = config[1]
+        self.dataset = config[2]
     def set_hyperparams(self, _):
         pass
 
@@ -67,13 +77,20 @@ class TreeParserEstimator(): #TODO maybe this need
 
         train_good_data = xtrain[idx[:n_good]]
         train_bad_data = xtrain[idx[n_good:n_good+n_bad]]
-        good_var_type = "".join("u" for i in range(len(train_good_data)))
-        bad_var_type = "".join("u" for i in range(len(train_bad_data)))
+        #TODO check if this is only special for nasbench-201
+        self.kde_vartype = "".join("u" for i in range(len(list(train_good_data[0,0]))))
+        #train_good_data = train_good_data[0]
+        #train_bad_data = train_bad_data[0]self.vartypes = np.array(self.vartypes, dtype=int)
+        #TODO why is there an issue with opteration 4 Attention1x1 ???
+        self.vartypes = [5,5,5,5,5,5] #TODO I think this has to discuss with the autors
+        self.vartypes = np.array(self.vartypes, dtype=int)
+        print(self.vartypes)
+        #self.vartypes is needed 
         # quick rule of thumb
         bw_estimation = 'normal_reference'
-        bad_kde = sm.nonparametric.KDEMultivariate(data=train_good_data,  var_type= good_var_type, bw=bw_estimation) #var_type is type of hyperparameter
+        good_kde = sm.nonparametric.KDEMultivariate(data=train_good_data,  var_type= self.kde_vartype, bw=bw_estimation) #var_type is type of hyperparameter
         # c : continuous, u : unordered (discrete),  o : ordered (discrete)
-        good_kde = sm.nonparametric.KDEMultivariate(data=train_bad_data, var_type=  bad_var_type, bw=bw_estimation) 
+        bad_kde = sm.nonparametric.KDEMultivariate(data=train_bad_data, var_type=  self.kde_vartype, bw=bw_estimation) 
         bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth,None)
         good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth,None)
 
@@ -82,7 +99,7 @@ class TreeParserEstimator(): #TODO maybe this need
                 'bad' : bad_kde
         }
     
-    def query(self, budget):
+    def query(self, _, budget):
         """
             Function to sample a new configuration
             This function is called inside Hyperband to query a new configuration
@@ -93,20 +110,20 @@ class TreeParserEstimator(): #TODO maybe this need
             returns: config
                 should return a valid configuration
         """
-        sample = None
+        sampled = False
         info_dict = {}
-        
+        sample =  torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
+        sample.arch = self.configspace.clone()
         # If no model is available, sample from prior
         # also mix in a fraction of random configs
         if len(self.kde_models.keys()) == 0 or np.random.rand() < self.random_fraction:
-            sample =  self.configspace.sample_configuration()
+            sample.arch.sample_random_architecture(dataset_api=self.dataset_api) 
             info_dict['model_based_pick'] = False
-        sample =  torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
-        sample.arch = self.search_space.clone()
+       
         best = np.inf
         best_vector = None
 
-        if sample is None:
+        if not(sampled):
             try:
                 
                 #sample from largest budget
@@ -133,8 +150,8 @@ class TreeParserEstimator(): #TODO maybe this need
                             try:
                                 vector.append(sps.truncnorm.rvs(-m/bw,(1-m)/bw, loc=m, scale=bw))
                             except:
-                                self.logger.warning("Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"%(datum, kde_good.bw, m))
-                                self.logger.warning("data in the KDE:\n%s"%kde_good.data)
+                                print("Truncated Normal failed for:\ndatum=%s\nbandwidth=%s\nfor entry with value %s"%(datum, kde_good.bw, m))
+                                print("data in the KDE:\n%s"%kde_good.data)
                         else:
                             
                             if np.random.rand() < (1-bw):
@@ -144,11 +161,11 @@ class TreeParserEstimator(): #TODO maybe this need
                     val = minimize_me(vector)
 
                     if not np.isfinite(val):
-                        self.logger.warning('sampled vector: %s has EI value %s'%(vector, val))
-                        self.logger.warning("data in the KDEs:\n%s\n%s"%(kde_good.data, kde_bad.data))
-                        self.logger.warning("bandwidth of the KDEs:\n%s\n%s"%(kde_good.bw, kde_bad.bw))
-                        self.logger.warning("l(x) = %s"%(l(vector)))
-                        self.logger.warning("g(x) = %s"%(g(vector)))
+                        print('sampled vector: %s has EI value %s'%(vector, val))
+                        print("data in the KDEs:\n%s\n%s"%(kde_good.data, kde_bad.data))
+                        print("bandwidth of the KDEs:\n%s\n%s"%(kde_good.bw, kde_bad.bw))
+                        print("l(x) = %s"%(l(vector)))
+                        print("g(x) = %s"%(g(vector)))
 
                         # right now, this happens because a KDE does not contain all values for a categorical parameter
                         # this cannot be fixed with the statsmodels KDE, so for now, we are just going to evaluate this one
@@ -162,11 +179,11 @@ class TreeParserEstimator(): #TODO maybe this need
                         best_vector = vector
 
                 if best_vector is None:
-                    self.logger.debug("Sampling based optimization with %i samples failed -> using random configuration"%self.num_samples)
+                    print("Sampling based optimization with %i samples failed -> using random configuration"%self.num_samples)
                     sample.arch.sample_random_architecture(dataset_api=self.dataset_api) 
                     info_dict['model_based_pick']  = False
                 else:
-                    self.logger.debug('best_vector: {}, {}, {}, {}'.format(best_vector, best, l(best_vector), g(best_vector)))
+                    print('best_vector: {}, {}, {}, {}'.format(best_vector, best, l(best_vector), g(best_vector)))
                     #for i, hp_value in enumerate(best_vector):
                     #    if isinstance(
                     #       self.configspace.get_hyperparameter(
@@ -175,18 +192,25 @@ class TreeParserEstimator(): #TODO maybe this need
                     #        ConfigSpace.hyperparameters.CategoricalHyperparameter
                     #   ):
                     #       best_vector[i] = int(np.rint(best_vector[i]))
-                    sample.arch.convert_op_indices_to_naslib(best_vector)
-            except:
-                self.logger.warning("Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc()))
-                sample = self.configspace.sample_configuration()
+                    sample.arch.set_op_indices(best_vector)
+            except Exception as e:
+                #print("Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc()))
+                #print("Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc())
+                #sample.arch.sample_configuration() v v v 
+                print(e)
+                sample.arch.sample_random_architecture(dataset_api=self.dataset_api) 
                 info_dict['model_based_pick']  = False
-
-
-  
-        self.logger.debug('done sampling a new configuration.')
-        return sample, info_dict
+        accuracy = sample.arch.query(
+                Metric.VAL_ACCURACY,
+                self.dataset,
+                epoch=int(budget),
+                dataset_api=self.dataset_api,
+            )
+        info_dict["model"] = sample
+        #print('done sampling a new configuration.')
+        return accuracy, info_dict
     
     
-    
+#    "Sampling based optimization with %i samples failed\n %s \nUsing random configuration"%(self.num_samples, traceback.format_exc())
 
  

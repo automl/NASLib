@@ -5,6 +5,8 @@ import math
 from collections import defaultdict
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers.core.metaclasses import MetaOptimizer
+from naslib.predictors import ensemble
+from naslib.predictors.ensemble import Ensemble
 from naslib.search_spaces.core.query_metrics import Metric
 
 from collections import defaultdict
@@ -42,7 +44,7 @@ class HyperBand(MetaOptimizer):
         self.sh_config = copy.deepcopy(config)
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
-
+        self.method = config.search.method
         #self.fidelit_min = config.search.min_fidelity
         self.budget_max = config.search.budget_max
         self.eta = config.search.eta
@@ -55,8 +57,10 @@ class HyperBand(MetaOptimizer):
         self.sh = None
         self.first = True # TODO: think about a more ellegant solution 
         self.b = (self.s_max + 1)* self.budget_max
-
+        self.encoding_type = config.search.encoding_type
+        self.ss_type= config.search_space
         self.optimizer_stats = defaultdict(lambda: defaultdict(list))
+        
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
             search_space.QUERYABLE
@@ -64,6 +68,16 @@ class HyperBand(MetaOptimizer):
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
+        if self.method == "tpe":
+            
+            self.ensemble =   Ensemble(
+                    predictor_type= "tpe",  
+                    num_ensemble= 1,
+                    encoding_type= self.encoding_type,
+                    ss_type=  self.ss_type,
+                    config = [self.search_space.clone(),self.dataset_api, self.dataset],   #replace with config maybe or not 
+
+                    )
 
     def new_epoch(self):
         """
@@ -84,8 +98,8 @@ class HyperBand(MetaOptimizer):
             r = self.budget_max * self.eta ** (-self.s)
             self.sh_config.search.number_archs = n
             self.sh_config.search.min_fidelity  = r 
-           
-            self.sh = SH(self.sh_config) #should be in config 
+
+            self.sh = SH(self.sh_config,  esemble = self.ensemble) #should be in config 
             self.sh.adapt_search_space(self.search_space, dataset_api= self.dataset_api)
         
         budget = self.sh.new_epoch()
