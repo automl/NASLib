@@ -1,6 +1,6 @@
 import os
 import json
-#from matplotlib.lines import _LineStyle
+# from matplotlib.lines import _LineStyle
 import matplotlib.pyplot as plt
 
 from collections import defaultdict
@@ -28,6 +28,7 @@ def plot_sh():
         x = stats['fidelity']
         values = stats['val_acc']
         plt.plot(x, values, linestyle='-', label=arch)
+    plt.xscale('log', base=2)
     plt.rcParams['grid.linestyle'] = 'dotted'
     plt.show()
     plt.savefig('plot_nb201.pdf', bbox_inches = 'tight', pad_inches = 0.1)
