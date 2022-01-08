@@ -75,10 +75,10 @@ class TransBench101SearchSpaceMicro(Graph):
         #
         self.name = "makrograph"
 
-        self.n_modules = 3
+        self.n_modules = 5 # short: 3
         self.blocks_per_module = [2] * self.n_modules # Change to customize number of blocks per module
-        self.module_stages = ["r_stage_1", "n_stage_1", "r_stage_2"] # "n_stage_2", "r_stage_3"]
-        self.base_channels = 16
+        self.module_stages = ["r_stage_1", "n_stage_1", "r_stage_2", "n_stage_2", "r_stage_3"]
+        self.base_channels = 64 # short: 16
 
         n_nodes = 1 + self.n_modules + 1 # Stem, modules, decoder
 
@@ -139,7 +139,9 @@ class TransBench101SearchSpaceMicro(Graph):
                         nn.Linear(n_channels, self.num_classes)
                     )
         elif task == "autoencoder":
-            return ops.GenerativeDecoder((64, 32), (64, 2048)) # TODO: Fix
+            #return ops.GenerativeDecoder((64, 32), (256, 2048)) # Short
+            return ops.GenerativeDecoder((512, 32), (512, 2048)) # Full TNB
+
         else:
             return None # TODO: handle other tasks
 

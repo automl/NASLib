@@ -320,12 +320,20 @@ class PredictorEvaluator(object):
             for key in hyperparams:
                 results_dict["hp_" + key] = hyperparams[key]
         results_dict["cv_score"] = cv_score
-        # print abridged results on one line:
-        logger.info(
-            "train_size: {}, fidelity: {}, kendall tau {}".format(
-                train_size, fidelity, np.round(results_dict["kendalltau"], 4)
+        
+        # note: specific code for zero-cost experiments:
+        method_type = None
+        if hasattr(self.predictor, 'method_type'):
+            method_type = self.predictor.method_type
+        print(
+            "dataset: {}, predictor: {}, spearman {}".format(
+                self.dataset, self.predictor.method_type, np.round(results_dict["spearman"], 4)
             )
         )
+        print("full ytest", results_dict["full_ytest"])
+        print("full testpred", results_dict["full_testpred"])
+        # end specific code for zero-cost experiments.
+        
         # print entire results dict:
         print_string = ""
         for key in results_dict:
@@ -426,6 +434,8 @@ class PredictorEvaluator(object):
             "kt_1dec",
             "precision_10",
             "precision_20",
+            "full_ytest",
+            "full_testpred",
         ]
         metrics_dict = {}
 
@@ -456,6 +466,9 @@ class PredictorEvaluator(object):
                 metrics_dict["precision_{}".format(k)] = (
                     sum(top_ytest & top_test_pred) / k
                 )
+            metrics_dict["full_ytest"] = list(ytest)
+            metrics_dict["full_testpred"] = list(test_pred)
+
         except:
             for metric in METRICS:
                 metrics_dict[metric] = float("nan")

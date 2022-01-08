@@ -535,8 +535,7 @@ class GenerativeDecoder(AbstractPrimitive):
         in_channel, in_width = in_dim[0], in_dim[1]
         out_width = target_dim[0]
         num_upsample = int(math.log2(out_width / in_width))
-        # note: added 1 for transbench101-autoencoder
-        assert num_upsample in [1, 2, 3, 4, 5, 6], f'invalid num_upsample: {num_upsample}'
+        assert num_upsample in [2, 3, 4, 5, 6], f'invalid num_upsample: {num_upsample}'
         
         self.conv1 = ConvLayer(in_channel, 1024, 3, 1, 1, nn.LeakyReLU(0.2), norm)
         self.conv2 = ConvLayer(1024, 1024, 3, 2, 1, nn.LeakyReLU(0.2), norm)
