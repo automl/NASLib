@@ -31,7 +31,6 @@ class SNASMixedOp(MixedOp):
         return edge_data.sampled_arch_weight
 
     def process_weights(self, weights):
-        print(weights)
         return weights
 
     def apply_weights(self, x, weights):
@@ -420,7 +419,6 @@ class RandomWeightPertubations(AbstractMixedOpWeightsModifier):
     def new_epoch(self):
         self.epoch += 1
         self.epsilon = 0.03 + (self.epsilon_max - 0.03)*self.epoch/self.epochs_max
-        print(f'Epoch {self.epoch}, epsilon = {self.epsilon}')
 
     def reset(self): #TODO: Is this needed?
         self.epoch = -1
@@ -436,5 +434,4 @@ class RandomWeightPertubations(AbstractMixedOpWeightsModifier):
     def _sample_perturbations(self, edge):
         n_ops = len(edge.data.op.primitives)
         perturbations = torch.zeros([n_ops]).uniform_(-self.epsilon, self.epsilon)
-        print(self.perturbations_name, perturbations)
         edge.data.set(self.perturbations_name, perturbations, shared=True)
