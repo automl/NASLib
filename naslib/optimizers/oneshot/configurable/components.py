@@ -8,6 +8,21 @@ from naslib.optimizers.oneshot.gdas.optimizer import GDASMixedOp
 from naslib.search_spaces.core.primitives import EdgeNormalizationCombOp, MixedOp, PartialConnectionOp
 
 
+class OneShotMixedOp(MixedOp):
+
+    def __init__(self, primitives):
+        super().__init__(primitives)
+
+    def get_weights(self, edge_data):
+        return edge_data.alpha
+
+    def process_weights(self, weights):
+        return weights
+
+    def apply_weights(self, x, weights):
+        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
+
+
 class SNASMixedOp(MixedOp):
     def __init__(self, primitives):
         super().__init__(primitives)
