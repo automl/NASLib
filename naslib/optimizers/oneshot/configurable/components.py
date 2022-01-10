@@ -8,6 +8,21 @@ from naslib.optimizers.oneshot.gdas.optimizer import GDASMixedOp
 from naslib.search_spaces.core.primitives import EdgeNormalizationCombOp, MixedOp, PartialConnectionOp
 
 
+class SNASMixedOp(MixedOp):
+    def __init__(self, primitives):
+        super().__init__(primitives)
+
+    def get_weights(self, edge_data):
+        return edge_data.sampled_arch_weight
+
+    def process_weights(self, weights):
+        print(weights)
+        return weights
+
+    def apply_weights(self, x, weights):
+        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
+
+
 class AbstractGraphModifier(metaclass=ABCMeta):
     @abstractmethod
     def update_graph_edges(self, graph, scope):
@@ -270,6 +285,45 @@ class GDASSampler(DARTSSampler):
     def _remove_sampled_alphas(self, edge):
         if edge.data.has("sampled_arch_weight"):
             edge.data.remove("sampled_arch_weight")
+
+
+class SNASSampler(DARTSSampler):
+
+    mixed_op = SNASMixedOp
+
+    def __init__(self, temp, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.temp = temp
+
+    def new_epoch(self):
+        super().new_epoch()
+
+    def sample_arch_weights(self, graph, scope):
+        graph.update_edges(
+            update_func=lambda edge: self._sample_arch_weights(edge),
+            scope=scope,
+            private_edge_data=False,
+        )
+
+    def _sample_arch_weights(self, edge):
+        log_alpha = edge.data.alpha
+        u = torch.zeros_like(log_alpha).uniform_()
+        softmax = torch.nn.Softmax(-1)
+        weight = softmax((log_alpha + (-((-(u.log())).log()))) / self.temp)
+
+        edge.data.set('sampled_arch_weight', weight, shared=True)
+
+    def remove_sampled_arch_weights(self, graph, scope):
+        graph.update_edges(
+            update_func=self._remove_sampled_weights,
+            scope=scope,
+            private_edge_data=False,
+        )
+
+    def _remove_sampled_weights(self, edge):
+        if edge.data.has('sampled_arch_weight'):
+            edge.data.remove('sampled_arch_weight')
+
 
 class PartialChannelConnection(AbstractEdgeOpModifier):
     def __init__(self, k):
