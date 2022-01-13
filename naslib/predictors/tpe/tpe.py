@@ -18,21 +18,20 @@ class TreeParserEstimator(): #TODO maybe this need
         encoding_type="adjacency_one_hot",
         ss_type="nasbench201",
         config = None,
-        dataset_api = None
+        search_params = None
     ):
-        self.encoding_type = encoding_type
+        self.encoding_type = config.search.encoding_type
         self.ss_type = ss_type
-        self.p = 0.15
-        self.N_min = 0
-        self.num_samples = 64  #maybe same then number of essembles, not sure 
-        self.dataset_api = dataset_api
+        self.p = config.p
+        self.N_min = config.N_min
+        self.num_samples = config.num_ensemble #maybe same then number of essembles, not sure 
         self.kde_models = defaultdict(lambda: defaultdict(list))
-        self.min_points_in_model = 1
-        self.top_n_percent = 15
-        self.min_bandwidth = 1e-3
-        self.random_fraction = 0.15
-        self.configspace = config[0] #thing about later
-        self.dataset_api = config[1]
+        self.min_points_in_model = config.min_points_in_model
+        self.top_n_percent = config.top_n_percent
+        self.min_bandwidth = config.min_bandwidth
+        self.random_fraction = config.random_fraction 
+        self.configspace = search_params#thing about later
+        self.dataset_api = search_params[1]
         self.dataset = config[2]
     def set_hyperparams(self, _):
         pass
@@ -119,7 +118,7 @@ class TreeParserEstimator(): #TODO maybe this need
         if len(self.kde_models.keys()) == 0 or np.random.rand() < self.random_fraction:
             sample.arch.sample_random_architecture(dataset_api=self.dataset_api) 
             info_dict['model_based_pick'] = False
-       
+            sampled = True
         best = np.inf
         best_vector = None
 

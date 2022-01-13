@@ -12,3 +12,4 @@ from .discrete.bananas.optimizer import Bananas
 from .discrete.bp.optimizer import BasePredictor
 from .discrete.npenas.optimizer import Npenas
 from .discrete.hb.optimizer import HyperBand
+from .discrete.bohb.optimizer import BOHB

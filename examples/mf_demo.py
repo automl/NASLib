@@ -12,6 +12,7 @@ from naslib.optimizers import RandomSearch as RS
 from naslib.optimizers import RegularizedEvolution as RE
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers import HyperBand as HB
+from naslib.optimizers import BOHB 
 
 from naslib.defaults.trainer_multifidelity import Trainer
 #from naslib.defaults.trainer import Trainer
@@ -63,7 +64,7 @@ elif config_optimizer == 'HB':
 elif config_optimizer == 'RS':
     optimizer = RS(config)
 elif config_optimizer == 'BOHB':
-    optimizer = HB(config)
+    optimizer = BOHB(config)
 else:
     raise Exception('invalid config')
 

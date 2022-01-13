@@ -18,11 +18,16 @@ search:
 
   
   predictor_type: tpe
+  N_min: 0
+  min_points_in_model: 6
+  top_n_percent: 15
+  min_bandwith: 1e-3
+  random_fraction: 0.15
   num_init: 10  
   k: 10
 
   # BANANAS
-  num_ensemble: 3
+  num_ensemble: 64 #num_samples in tpe 
   acq_fn_type: its
   acq_fn_optimization: random_sampling
   encoding_type: adjacency_one_hot

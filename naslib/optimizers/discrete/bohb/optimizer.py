@@ -12,7 +12,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 from collections import defaultdict
 
 
-class HyperBand(MetaOptimizer):
+class BOHB(MetaOptimizer):
     """
     This is a Hyperband Implementation, that uses the Sucessive Halving Algorithm with different settings.
     """
@@ -37,13 +37,16 @@ class HyperBand(MetaOptimizer):
             loss_criteria (TODO): The loss
             grad_clip (float): Where to clip the gradients (default None).
         """
-        super(HyperBand, self).__init__()
+        super(BOHB, self).__init__()
         self.weight_optimizer = weight_optimizer
         self.loss = loss_criteria
         self.grad_clip = grad_clip
         self.sh_config = copy.deepcopy(config)
+        self.tpe_config = copy.deepcopy(config)
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
+        self.method = config.search.method
+        #self.fidelit_min = config.search.min_fidelity
         self.budget_max = config.search.budget_max
         self.eta = config.search.eta
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -55,8 +58,9 @@ class HyperBand(MetaOptimizer):
         self.sh = None
         self.first = True # TODO: think about a more ellegant solution 
         self.b = (self.s_max + 1)* self.budget_max
+        self.encoding_type = config.search.encoding_type
         self.optimizer_stats = defaultdict(lambda: defaultdict(list))
-       
+        self.ensemble = None
         
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -65,6 +69,16 @@ class HyperBand(MetaOptimizer):
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
+        if self.method == "tpe":
+            #self.tpe_config.search_space = self.search_space.clone()
+            #self.tpe_config.dataset_api  = self.dataset_api
+            self.ensemble =   Ensemble(
+                    predictor_type= "tpe",  
+                    num_ensemble= 1,
+                    search_params = [self.search_space.clone(),self.dataset_api, self.dataset],
+                    config = self.tpe_config,   #replace with config maybe or not 
+
+                    )
 
     def new_epoch(self):
         """
