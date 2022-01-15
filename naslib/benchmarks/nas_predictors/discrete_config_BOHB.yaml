@@ -16,7 +16,7 @@ search:
   budget_max: 1000
   method: tpe
 
-  
+  p: 0.15
   predictor_type: tpe
   N_min: 0
   min_points_in_model: 6

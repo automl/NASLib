@@ -30,6 +30,7 @@ class Ensemble(Predictor):
         ss_type=None,
         hpo_wrapper=True,
         config=None,
+        hyperparams = None,
     ):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
@@ -37,8 +38,9 @@ class Ensemble(Predictor):
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
         self.config = config
-        self.hyperparams = None
+        self.hyperparams = hyperparams
         self.ensemble = None
+        
 
     def get_ensemble(self):
         # TODO: if encoding_type is not None, set the encoding type
@@ -115,7 +117,9 @@ class Ensemble(Predictor):
             #     config=self.config,
             # ),
             "tpe": TreeParserEstimator(
-                config = self.config ),
+                #TODO review if more needed 
+                 config = self.config,
+                ),
 
             
 

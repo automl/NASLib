@@ -20,21 +20,23 @@ class TreeParserEstimator(): #TODO maybe this need
         config = None,
         search_params = None
     ):
-        self.encoding_type = config.search.encoding_type
+        self.encoding_type = encoding_type
         self.ss_type = ss_type
-        self.p = config.p
-        self.N_min = config.N_min
-        self.num_samples = config.num_ensemble #maybe same then number of essembles, not sure 
+        
+        
         self.kde_models = defaultdict(lambda: defaultdict(list))
-        self.min_points_in_model = config.min_points_in_model
-        self.top_n_percent = config.top_n_percent
-        self.min_bandwidth = config.min_bandwidth
-        self.random_fraction = config.random_fraction 
-        self.configspace = search_params#thing about later
-        self.dataset_api = search_params[1]
+        
+        self.configspace = config[0]#thing about later
+        self.dataset_api = config[1]
         self.dataset = config[2]
-    def set_hyperparams(self, _):
-        pass
+    def set_hyperparams(self, hyperparams): #here set config 
+        self.num_samples = int(hyperparams.search.num_ensemble)
+        self.min_points_in_model = int(hyperparams.search.min_points_in_model)
+        self.top_n_percent = int(hyperparams.search.top_n_percent)
+        self.min_bandwith = float(hyperparams.search.min_bandwith)
+        self.random_fraction = float(hyperparams.search.random_fraction )
+        self.p = float(hyperparams.search.p)
+        self.N_min = int(hyperparams.search.N_min)
 
 
 
@@ -90,8 +92,8 @@ class TreeParserEstimator(): #TODO maybe this need
         good_kde = sm.nonparametric.KDEMultivariate(data=train_good_data,  var_type= self.kde_vartype, bw=bw_estimation) #var_type is type of hyperparameter
         # c : continuous, u : unordered (discrete),  o : ordered (discrete)
         bad_kde = sm.nonparametric.KDEMultivariate(data=train_bad_data, var_type=  self.kde_vartype, bw=bw_estimation) 
-        bad_kde.bw = np.clip(bad_kde.bw, self.min_bandwidth,None)
-        good_kde.bw = np.clip(good_kde.bw, self.min_bandwidth,None)
+        bad_kde.bw = np.clip(bad_kde.bw, float(self.min_bandwith),None)
+        good_kde.bw = np.clip(good_kde.bw, float(self.min_bandwith),None)
 
         self.kde_models[budget] = {
                 'good': good_kde,
@@ -143,7 +145,7 @@ class TreeParserEstimator(): #TODO maybe this need
                     
                     for m,bw,t in zip(datum, kde_good.bw, self.vartypes):
                         
-                        bw = max(bw, self.min_bandwidth)
+                        bw = max(bw, self.min_bandwith)
                         if t == 0:
                             bw = self.bw_factor*bw
                             try:
