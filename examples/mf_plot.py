@@ -22,7 +22,7 @@ def plot_sh():
     """
     folder = os.path.expanduser('./run/cifar10/nas_predictors/nasbench201')
     predictor = 'var_sparse_gp'
-    results = get_results(predictor, folder, 'sh_stats.json', metric='test_acc')
+    results = get_results(predictor, folder, 'successivehalving_stats.json', metric='test_acc')
 
     for arch, stats in results.items():
         x = stats['fidelity']
@@ -39,7 +39,7 @@ def plot_hb():
     """
     folder = os.path.expanduser('./run/cifar10/nas_predictors/nasbench201')
     predictor = 'var_sparse_gp'
-    results = get_results(predictor, folder, 'hb_stats.json', metric='test_acc')
+    results = get_results(predictor, folder, 'hyperband_stats.json', metric='test_acc')
     s = len(results)
     
     figure, axis = plt.subplots(s, 1)
