@@ -588,7 +588,7 @@ class Trainer(object):
                 return checkpoint.get("iteration", -1) + 1
         return 0
 
-    def _log_optimizer_stats(self, filename="sh_stats.json"):
+    def _log_optimizer_stats(self):
         """Log extended statistics to json file"""
         if not os.path.exists(self.config.save):
             os.makedirs(self.config.save)
