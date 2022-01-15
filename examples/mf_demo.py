@@ -84,5 +84,4 @@ trainer.evaluate(dataset_api=dataset_api)
 if demo_config['plot'] == False:
     exit()
 
-# TODO: Make this dependent on optimizer type, currently statistics are just for SH available
 plot_func()

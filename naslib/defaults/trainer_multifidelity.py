@@ -592,6 +592,8 @@ class Trainer(object):
         """Log extended statistics to json file"""
         if not os.path.exists(self.config.save):
             os.makedirs(self.config.save)
+        optimizer_name = self.optimizer.__class__.__name__.lower()
+        filename = "{}.json".format(optimizer_name)
         with codecs.open(
             os.path.join(self.config.save, filename), "w", encoding="utf-8"
         ) as file:
