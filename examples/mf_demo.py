@@ -56,15 +56,19 @@ logger.setLevel(logging.INFO)
 # define optimizer
 
 if config_optimizer == 'SH':
+    predictor = "var_sparse_gp"
     optimizer = SH(config)
     plot_func = mf_plot.plot_sh
 elif config_optimizer == 'HB':
+    predictor = "var_sparse_gp"
     optimizer = HB(config)
     plot_func = mf_plot.plot_hb
 elif config_optimizer == 'RS':
     optimizer = RS(config)
 elif config_optimizer == 'BOHB':
     optimizer = BOHB(config)
+    plot_func = mf_plot.plot_hb
+    predictor = "tpe"
 else:
     raise Exception('invalid config')
 
@@ -86,4 +90,4 @@ if demo_config['plot'] == False:
     exit()
 
 # TODO: Make this dependent on optimizer type, currently statistics are just for SH available
-plot_func()
+plot_func(predictor)

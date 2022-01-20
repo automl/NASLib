@@ -7,18 +7,17 @@ out_dir: run
 search:
   seed: 0
   checkpoint_freq: 10 # 1000
-  epochs: 158
-  fidelity: -1
+  epochs: 16.125
   min_fidelity: 1
-  number_archs: 1000
+  number_archs: 81
   eta: 3
   budget_type: epoch 
-  budget_max: 1000
+  budget_max: 81
   method: tpe
 
   p: 0.15
   predictor_type: tpe
-  N_min: 0
+  N_min: 50
   min_points_in_model: 6
   top_n_percent: 15
   min_bandwith: 1e-3

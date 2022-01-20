@@ -60,9 +60,7 @@ class SuccessiveHalving(MetaOptimizer):
         if self.method == "tpe":#
             self.ss_type= config.search_space
             self.encoding_type = config.search.encoding_type
-            #self.p = config.search.p
-            #self.percentile = config.search.percentile
-            self.N_min = 100 #This has to be higher then 
+            self.N_min =  config.search.N_min #This has to be higher then 
             self.ensemble = esemble
         self.optimizer_stats = defaultdict(lambda: defaultdict(list))
 

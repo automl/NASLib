@@ -16,12 +16,12 @@ def get_results(predictor, path, filename, metric='valid_acc'):
         result = json.load(open(result_file))
         return result
 
-def plot_sh():
+def plot_sh(predictor):
     """
     Plots learning curves for successive halving
     """
     folder = os.path.expanduser('./run/cifar10/nas_predictors/nasbench201')
-    predictor = 'var_sparse_gp'
+    predictor = predictor
     results = get_results(predictor, folder, 'sh_stats.json', metric='test_acc')
 
     for arch, stats in results.items():
@@ -33,12 +33,12 @@ def plot_sh():
     plt.show()
     plt.savefig('plot_sh_nb201.pdf', bbox_inches = 'tight', pad_inches = 0.1)
 
-def plot_hb():
+def plot_hb(predictor): #or an extra method
     """
     Plots learning curves for hyperband
     """
     folder = os.path.expanduser('./run/cifar10/nas_predictors/nasbench201')
-    predictor = 'var_sparse_gp'
+    predictor = predictor
     results = get_results(predictor, folder, 'sh_stats.json', metric='test_acc')
     s = len(results)
     
@@ -54,4 +54,4 @@ def plot_hb():
 
 
 if __name__ == '__main__':
-    plot_sh()
+    plot_hb("tpe")
