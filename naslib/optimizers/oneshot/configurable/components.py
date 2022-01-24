@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from enum import Enum, auto
 import torch
 import torch.nn.functional as F
 from torch.distributions.dirichlet import Dirichlet
@@ -7,6 +8,9 @@ from naslib.optimizers.oneshot.drnas.optimizer import DrNASMixedOp
 from naslib.optimizers.oneshot.gdas.optimizer import GDASMixedOp
 from naslib.search_spaces.core.primitives import EdgeNormalizationCombOp, MixedOp, PartialConnectionOp
 
+class OptimizationStrategy(Enum):
+    ALTERNATING = auto() # Arch weights optimized using validation data, model weights using train data
+    SIMULTANEOUS = auto() # Arch and model weights optimized simultaneously using train data (e.g., SNAS)
 
 class OneShotMixedOp(MixedOp):
 
@@ -166,6 +170,7 @@ class AbstractArchitectureSampler(AbstractGraphModifier):
 class DARTSSampler(AbstractArchitectureSampler):
     mixed_op = DARTSMixedOp
     arch_weights_name = 'alpha'
+    optimization_stratgey = OptimizationStrategy.ALTERNATING
 
     def update_graph_edges(self, graph, scope):
         graph.update_edges(self._add_alphas, scope=scope, private_edge_data=False)
@@ -304,6 +309,7 @@ class GDASSampler(DARTSSampler):
 class SNASSampler(DARTSSampler):
 
     mixed_op = SNASMixedOp
+    optimization_stratgey = OptimizationStrategy.SIMULTANEOUS
 
     def __init__(self, temp, *args, **kwargs):
         super().__init__(*args, **kwargs)
