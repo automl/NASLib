@@ -145,11 +145,9 @@ class HyperBand(MetaOptimizer):
             best_arch.query(
                 Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
             ),
-
         )
-    def train_model_statistics(self, report_incumbent=True):
-
         
+    def train_model_statistics(self, report_incumbent=True):
         best_arch = self.sampled_archs[self.fidelity_counter -1].arch
         best_arch_hash = hash(self.sampled_archs[self.fidelity_counter -1])
         return (

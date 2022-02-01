@@ -45,6 +45,7 @@ class SuccessiveHalving(MetaOptimizer):
         self.dataset = config.dataset
         self.end = False
         self.fidelity = config.search.min_fidelity
+        self.min_fidelity = config.search.min_fidelity
         self.number_archs = config.search.number_archs
         self.eta = config.search.eta
         self.budget_max = config.search.budget_max 
@@ -164,20 +165,25 @@ class SuccessiveHalving(MetaOptimizer):
         else:
             best_arch = self.sampled_archs[-1].arch
 
-        return (
-            best_arch.query(
-                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
-            ),
-        )
+        metrics = [
+            Metric.TRAIN_ACCURACY,
+            Metric.VAL_ACCURACY,
+            Metric.TEST_ACCURACY,
+            Metric.TRAIN_TIME
+        ]
+        results = []
+        for metric in metrics:
+            result = best_arch.query(
+                metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.fidelity)
+            )
+            results.append(result)
+        if self.fidelity != self.min_fidelity: # TODO: Maybe there is a better way to solve this.
+            i = metrics.index(Metric.TRAIN_TIME)
+            results[i] = results[i] - best_arch.query(
+                    metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.old_fidelity)
+                )
+            print(f"Current_fidelity: {self.fidelity}\n Old fidelity: {self.old_fidelity}")
+        return tuple(results)
 
     def update_optimizer_stats(self):
         """

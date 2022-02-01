@@ -3,8 +3,10 @@ import sys
 #from nasbench import api
 
 from naslib.defaults.trainer import Trainer
+from naslib.defaults.trainer_multifidelity import Trainer as Trainer_MF
+
 from naslib.optimizers import RandomSearch, Npenas, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor, SuccessiveHalving, HyperBand
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
@@ -20,7 +22,7 @@ logger.setLevel(logging.INFO)
 
 utils.log_args(config)
 
-writer = SummaryWriter(config.save)
+# writer = SummaryWriter(config.save)
 
 supported_optimizers = {
     'rs': RandomSearch(config),
@@ -28,6 +30,8 @@ supported_optimizers = {
     'bananas': Bananas(config),
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
+    'sh': SuccessiveHalving(config),
+    'hb': HyperBand(config),
 }
 
 supported_search_spaces = {
@@ -37,7 +41,7 @@ supported_search_spaces = {
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpace(),
     'transbench101_macro': TransBench101SearchSpace(),
-    'asr': NasBenchASRSearchSpace()
+    'asr': NasBenchASRSearchSpace(),
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
@@ -53,6 +57,11 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-
-trainer.search(resume_from="", summary_writer=writer, report_incumbent=False)
+multi_fidelity_optimizers = {'sh', 'hb'}
+if config.optimizer in multi_fidelity_optimizers:
+    trainer = Trainer_MF(optimizer, config, lightweight_output=True)
+# trainer.search(resume_from="", summary_writer=writer, report_incumbent=False)
+trainer.search(resume_from="", report_incumbent=False)
 trainer.evaluate(resume_from="", dataset_api=dataset_api, metric=metric)
+
+# error: FileNotFoundError: [Errno 2] No such file or directory: '/Users/lars/Projects/NASLib/naslib/data/nasbench_only108.pkl'

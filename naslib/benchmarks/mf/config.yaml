@@ -1,0 +1,22 @@
+start_seed: 5
+trials: 1
+out_dir: run_m1
+out_dir_config: configs_m1
+config_type: bbo-bs
+search_space: nasbench201
+datasets: 
+  - cifar10
+
+optimizers: # sh, rs, ls, ...
+  - sh
+fidelity: -1
+
+HPO: False
+# only relevant if HPO is enabled
+num_config: 100
+
+# for SH: 4
+# for default BBOs: 200
+epochs: 200
+
+predictor: var_sparse_gp
