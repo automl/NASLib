@@ -105,20 +105,19 @@ class Ensemble(Predictor):
                 min_train_size=0,
                 max_zerocost=100,
             ),
-            #remove temporar for debugging 
-            # "omni_seminas": OmniSemiNASPredictor(
-            #     zero_cost=["jacov"],
-            #     lce=[],
-            #     encoding_type="seminas",
-            #     ss_type=self.ss_type,
-            #     run_pre_compute=False,
-            #     semi=True,
-            #     max_zerocost=1000,
-            #     config=self.config,
-            # ),
+            "omni_seminas": OmniSemiNASPredictor(
+                zero_cost=["jacov"],
+                lce=[],
+                encoding_type="seminas",
+                 ss_type=self.ss_type,
+                 run_pre_compute=False,
+                 semi=True,
+                 max_zerocost=1000,
+                 config=self.config,
+             ),
             "tpe": TreeParserEstimator(
                 #TODO review if more needed 
-                 config = self.config,
+                 config = self.hyperparams,
                 ),
 
             
