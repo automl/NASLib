@@ -1,6 +1,7 @@
-import time
 import os
 import subprocess
+import shutil
+
 
 def progressBar(iterable, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
@@ -30,7 +31,26 @@ def progressBar(iterable, prefix = '', suffix = '', decimals = 1, length = 100, 
     # Print New Line on Complete
     print()
 
+def clean_runs(search_space, optimizers_delete :list = [], delete_all=False):
+    dataset_dir = f"/Users/lars/Projects/NASLib/naslib/benchmarks/mf/run_m1/{search_space}"
+    datasets = os.listdir(dataset_dir)
+    for dataset in datasets:
+        optimizer_dir = os.path.join(dataset_dir, dataset)
+        if not os.path.isdir(optimizer_dir):
+            continue
+        optimizers = os.listdir(optimizer_dir)
+        for optimizer in optimizers:
+            if not os.path.isdir(os.path.join(optimizer_dir, optimizer)):
+                continue
+            if not delete_all and not optimizer in optimizers_delete:
+                continue
+            optimizer_path = os.path.join(optimizer_dir, optimizer)
+            shutil.rmtree(optimizer_path)
+            print(optimizer_path)
+
+
 def main():
+    clean_runs("nasbench201", optimizers_delete=['rs'])
     config_files = []
 
     # Obtaining config files
