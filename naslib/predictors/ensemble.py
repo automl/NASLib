@@ -30,6 +30,7 @@ class Ensemble(Predictor):
         ss_type=None,
         hpo_wrapper=True,
         config=None,
+        config_tpe = None,
         hyperparams = None,
     ):
         self.num_ensemble = num_ensemble
@@ -38,6 +39,7 @@ class Ensemble(Predictor):
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
         self.config = config
+        self.config_tpe = config_tpe
         self.hyperparams = hyperparams
         self.ensemble = None
         
@@ -117,7 +119,7 @@ class Ensemble(Predictor):
              ),
             "tpe": TreeParserEstimator(
                 #TODO review if more needed 
-                 config = self.hyperparams,
+                config_tpe  = self.config_tpe,
                 ),
 
             

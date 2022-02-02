@@ -77,7 +77,7 @@ class BOHB(MetaOptimizer):
                     num_ensemble= 1,
                     encoding_type= self.encoding_type,
                     ss_type = self.tpe_config.search_space,
-                    config = [self.search_space.clone(),self.dataset_api, self.dataset],
+                    config_tpe = [self.search_space.clone(),self.dataset_api, self.dataset],
                     hyperparams = self.tpe_config,   #replace with config maybe or not 
 
                     )

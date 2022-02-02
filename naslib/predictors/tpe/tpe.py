@@ -17,7 +17,7 @@ class TreeParserEstimator(): #TODO maybe this need
         self,
         encoding_type="adjacency_one_hot",
         ss_type="nasbench201",
-        config = [None,None,None],
+        config_tpe = [None,None,None],
         search_params = None
     ):
         self.encoding_type = encoding_type
@@ -25,10 +25,10 @@ class TreeParserEstimator(): #TODO maybe this need
         
         
         self.kde_models = defaultdict(lambda: defaultdict(list))
-        if (type(config) == list):
-            self.configspace = config[0]#thing about later
-            self.dataset_api = config[1]
-            self.dataset = config[2]
+        if (type(config_tpe) == list):
+            self.configspace = config_tpe[0]#thing about later
+            self.dataset_api = config_tpe[1]
+            self.dataset = config_tpe[2]
     def set_hyperparams(self, hyperparams): #here set config 
         self.num_samples = int(hyperparams.search.num_ensemble)
         self.min_points_in_model = int(hyperparams.search.min_points_in_model)
