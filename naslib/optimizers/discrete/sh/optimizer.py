@@ -89,7 +89,6 @@ class SuccessiveHalving(MetaOptimizer):
         if len(self.sampled_archs) < self.number_archs:
             #model.arch.sample_random_architecture(dataset_api=self.dataset_api) 
             model = self.sample(self.method)
-            
         else:
             model = self.sampled_archs[self.fidelity_counter]
 
@@ -128,13 +127,13 @@ class SuccessiveHalving(MetaOptimizer):
         self._update_history(model)
         if self.fidelity_counter == self.number_archs:
             self.old_fidelity = self.fidelity
-            self.fidelity = math.floor(self.eta*self.fidelity)
+            # TODO: set budget_max to highest possible fidelity from used benchmark
+            self.fidelity = max(math.floor(self.eta*self.fidelity), 200)
             self.sampled_archs.sort(key=lambda model: model.accuracy, reverse=True)
             if self.fidelity > self.budget_max:
                 self.end = True
             elif(math.floor(self.number_archs/self.eta)) != 0:
                 self.sampled_archs = self.sampled_archs[0:math.floor(self.number_archs/self.eta)]
-
             else:
                 self.end = True
                 self.sampled_archs = [self.sampled_archs[0]]  # but maybe there maybe a different way
