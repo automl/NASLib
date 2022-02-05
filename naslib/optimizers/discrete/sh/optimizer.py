@@ -97,7 +97,7 @@ class SuccessiveHalving(MetaOptimizer):
         model.accuracy = model.arch.query(
             self.performance_metric,
             self.dataset,
-            epoch=int(self.fidelity),
+            epoch=int(self.fidelity)-1,
             dataset_api=self.dataset_api,
         )
 
@@ -109,7 +109,7 @@ class SuccessiveHalving(MetaOptimizer):
             model.time = model.arch.query(  # TODO: this is the time for training from screatch.
                 self.performance_metric,
                 self.dataset,
-                epoch=int(self.fidelity),
+                epoch=int(self.fidelity)-1,
                 dataset_api=self.dataset_api,
             )
             budget = model.time
@@ -128,7 +128,7 @@ class SuccessiveHalving(MetaOptimizer):
         if self.fidelity_counter == self.number_archs:
             self.old_fidelity = self.fidelity
             # TODO: set budget_max to highest possible fidelity from used benchmark
-            self.fidelity = max(math.floor(self.eta*self.fidelity), 200)
+            self.fidelity = min(math.floor(self.eta*self.fidelity), 200)
             self.sampled_archs.sort(key=lambda model: model.accuracy, reverse=True)
             if self.fidelity > self.budget_max:
                 self.end = True
@@ -173,13 +173,13 @@ class SuccessiveHalving(MetaOptimizer):
         results = []
         for metric in metrics:
             result = best_arch.query(
-                metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.fidelity)
+                metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.fidelity)-1
             )
             results.append(result)
         if self.fidelity != self.min_fidelity: # TODO: Maybe there is a better way to solve this.
             i = metrics.index(Metric.TRAIN_TIME)
             results[i] = results[i] - best_arch.query(
-                    metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.old_fidelity)
+                    metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.old_fidelity)-1
                 )
             print(f"Current_fidelity: {self.fidelity}\n Old fidelity: {self.old_fidelity}")
         return tuple(results)
