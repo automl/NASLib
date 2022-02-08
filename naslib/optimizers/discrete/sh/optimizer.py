@@ -202,7 +202,7 @@ class SuccessiveHalving(MetaOptimizer):
                 metric,
                 self.dataset,
                 dataset_api=self.dataset_api,
-                epoch=int(self.fidelity)
+                epoch=int(self.fidelity)-1
             )
             self.optimizer_stats[arch_hash][metric_name].append(metric_value)
         self.optimizer_stats[arch_hash]['fidelity'].append(self.fidelity)
