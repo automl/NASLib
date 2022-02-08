@@ -51,5 +51,5 @@ trainer = Trainer(optimizer, config)
 # if config.eval_only:
 # trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
 # else:
-# trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
-# trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
+trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
+trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
