@@ -120,6 +120,7 @@ def create_configs(
                     "encoding_type": "path",
                     "predictor": predictor,
                     "debug_predictor": False,
+                    # config secton for successive halving
                 },
             }
             path = os.path.join(folder, f"seed_{seed}.yaml")
@@ -158,6 +159,7 @@ def create_configs(
                         "num_candidates": int(np.random.choice(range(5, 50))),
                         "predictor": predictor,
                         "debug_predictor": False,
+                        # config section for successive halving
                     },
                 }
 

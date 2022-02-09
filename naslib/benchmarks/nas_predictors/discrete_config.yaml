@@ -7,13 +7,14 @@ out_dir: run
 search:
   seed: 0
   checkpoint_freq: 10 # 1000
-  epochs: 16.125 # TODO : this setting should be not neccessary!!!
+  epochs: 93
   min_fidelity: 1
-  number_archs: 81
-  eta: 3
+  number_archs: 4250
+  eta: 2
   budget_type: epoch 
-  budget_max: 81
-  method: random
+  method: "random"
+  budget_max: 200
+
 
   predictor_type: var_sparse_gp
   num_init: 10  

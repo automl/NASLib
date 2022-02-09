@@ -176,11 +176,17 @@ class SuccessiveHalving(MetaOptimizer):
                 metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.fidelity)-1
             )
             results.append(result)
+        # Adapt train time
+        # TODO: Write this
+        i = metrics.index(Metric.TRAIN_TIME)
+        train_time = results[i]
+        results[i] = train_time * self.fidelity / self.budget_max
         if self.fidelity != self.min_fidelity: # TODO: Maybe there is a better way to solve this.
-            i = metrics.index(Metric.TRAIN_TIME)
-            results[i] = results[i] - best_arch.query(
-                    metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.old_fidelity)-1
-                )
+            results[i] = train_time * (self.fidelity - self.old_fidelity) / self.budget_max
+            # i = metrics.index(Metric.TRAIN_TIME)
+            # results[i] = results[i] - best_arch.query(
+            #         metric, self.dataset, dataset_api=self.dataset_api, epoch=int(self.old_fidelity)-1
+            #     )
             print(f"Current_fidelity: {self.fidelity}\n Old fidelity: {self.old_fidelity}")
         return tuple(results)
 

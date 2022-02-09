@@ -7,7 +7,7 @@ from glob import glob
 # Allows easier access to config by attributes instead of dictionary key.
 from addict import Dict
 
-from create_configs_2 import create_configs
+from create_configs import create_configs
 # Read YAML file
 with open("config.yaml", 'r') as stream:
     config = yaml.safe_load(stream)
