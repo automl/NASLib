@@ -1,0 +1,51 @@
+seed: 0
+optimizer: bananas
+search_space: nasbench201
+dataset: cifar10
+out_dir: run
+
+search:
+  seed: 0
+  checkpoint_freq: 10 # 1000
+  epochs: 16.125
+  min_fidelity: 1
+  number_archs: 81
+  eta: 3
+  budget_type: epoch 
+  budget_max: 81
+  method: tpe
+
+  p: 0.15
+  predictor_type: var_sparse_gp
+  N_min: 50
+  min_points_in_model: 6
+  top_n_percent: 15
+  min_bandwith: 1e-3
+  random_fraction: 0.15
+  num_init: 10  
+  k: 10
+
+  # BANANAS
+  num_ensemble: 64 #num_samples in tpe 
+  acq_fn_type: its
+  acq_fn_optimization: random_sampling
+  encoding_type: adjacency_one_hot
+  num_arches_to_mutate: 2
+  max_mutations: 1
+  num_candidates: 20
+  
+  # jacov data loader
+  batch_size: 256
+  data_size: 25000
+  cutout: False
+  cutout_length: 16
+  cutout_prob: 1.0
+  train_portion: 0.7
+  
+  # other params
+  debug_predictor: False
+  sample_size: 10
+  population_size: 30
+
+  # TODO: write config file for successive halving
+

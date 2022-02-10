@@ -227,6 +227,19 @@ class NasBench201SearchSpace(Graph):
         op_indices = np.random.randint(5, size=(6))
         self.set_op_indices(op_indices)
 
+
+    def crossover_bin(self, parent, mutant, dim, prob, dataset_api=None):
+        '''Performs the binomial crossover of DE
+        '''
+        target_indices = np.array(convert_naslib_to_op_indices(parent))
+        mutant_indices = np.array(convert_naslib_to_op_indices(mutant))
+        cross_points = np.random.rand(dim) < prob
+        if not np.any(cross_points):
+            cross_points[np.random.randint(0, dim)] = True
+
+        offspring = np.where(cross_points, mutant_indices, target_indices)
+        self.set_op_indices(offspring)
+
     def mutate(self, parent, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
@@ -240,6 +253,10 @@ class NasBench201SearchSpace(Graph):
         op_index = np.random.choice(available)
         op_indices[edge] = op_index
         self.set_op_indices(op_indices)
+
+
+
+
 
     def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
