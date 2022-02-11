@@ -29,6 +29,7 @@ def convert_naslib_to_genotype(naslib_object):
     """convert the naslib representation to Genotype"""
     ops_to_genotype = {
         "Identity": "skip_connect",
+        #"DARTSMixedOp": "DARTSMixedOp",
         "FactorizedReduce": "skip_connect",
         "SepConv3x3": "sep_conv_3x3",
         "DilConv3x3": "dil_conv_3x3",
