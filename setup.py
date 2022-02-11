@@ -4,10 +4,10 @@ import subprocess
 from setuptools import setup, find_packages
 
 # Check for python version
-if sys.version_info.major != 3 or sys.version_info.minor < 6 or sys.version_info.minor > 8:
+if sys.version_info.major != 3 or sys.version_info.minor < 7 or sys.version_info.minor > 9:
     raise ValueError(
         'Unsupported Python version %d.%d.%d found. NASLib requires Python '
-        '3.6, 3.7 or 3.8' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+        '3.7, 3.8 or 3.9' % (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
     )
 
 
@@ -53,7 +53,7 @@ setup(
     license='Apache License 2.0',
     classifiers=['Development Status :: 1 - Beta'],
     packages=find_packages(),
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     platforms=['Linux'],
     install_requires=requirements,
     keywords=['NAS', 'automl'],
