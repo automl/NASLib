@@ -30,7 +30,6 @@ class Ensemble(Predictor):
         ss_type=None,
         hpo_wrapper=True,
         config=None,
-        config_tpe = None,
         hyperparams = None,
     ):
         self.num_ensemble = num_ensemble
@@ -117,10 +116,7 @@ class Ensemble(Predictor):
                  max_zerocost=1000,
                  config=self.config,
              ),
-            "tpe": TreeParserEstimator(
-                #TODO review if more needed 
-                config_tpe  = self.config_tpe,
-                ),
+            
 
             
 
@@ -156,13 +152,6 @@ class Ensemble(Predictor):
             prediction = self.ensemble[i].query(xtest, info) #added info dict
             predictions.append(prediction)
         return np.array(predictions)
-    def query_tpe(self, xtest, info=None):
-        predictions = []
-        for i in range(self.num_ensemble):
-            prediction, info_dict = self.ensemble[i].query(xtest, info) #added info dict
-            predictions.append(prediction)
-
-        return np.array(predictions), info_dict #added info dict
 
     def set_hyperparams(self, params):
         if self.ensemble is None:

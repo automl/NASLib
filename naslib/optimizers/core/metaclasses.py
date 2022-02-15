@@ -38,6 +38,13 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         Return anytime test statistics if provided by the optimizer
         """
         pass
+    
+
+    def compute_epochs(self):
+        """
+        Return anytime epochs if provided by the optimizer
+        """
+        return None
 
     @abstractmethod
     def adapt_search_space(self, search_space, scope=None):
