@@ -1,3 +1,4 @@
+from distutils.command.config import config
 import logging
 
 import torch
@@ -11,30 +12,38 @@ import naslib.search_spaces.core.primitives as ops
 import ProxSGD_for_groups as ProxSGD
 import utils_sparsenas
 
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 
 class GSparseOptimizer(MetaOptimizer):
     """
     Implements Group Sparsity as defined in
-        # Add name of authors
+        # TODO Add name of authors
         GSparsity: Unifying Network Pruning and 
         Neural Architecture Search by Group Sparsity
     """
     def __init__(
         self,
         config,
-        op_optimizer: torch.optim.Optimizer = torch.optim.SGD,        
+        op_optimizer: torch.optim.Optimizer = torch.optim.SGD,    
+        op_optimizer_evaluate: torch.optim.Optimizer = torch.optim.SGD,     
         loss_criteria=torch.nn.CrossEntropyLoss(),
     ):
         """
         Instantiate the optimizer
 
+        Group sparsity paper uses ProxSGD for optimizing operation weights
+            during search phase.
+        And SGD for optimizing weights during evaluation phase.
+
         Args:
             epochs (int): Number of epochs. Required for tau
             mu (float): corresponds to the Weight decay
             threshold (float): threshold of pruning
-            op_optimizer (torch.optim.Optimizer): optimizer for the op weights            
+            op_optimizer (torch.optim.Optimizer: ProxSGD): optimizer for the op weights 
+            op_optmizer_evaluate: (torch.optim.Optimizer): optimizer for the op weights            
             loss_criteria: The loss.
             grad_clip (float): Clipping of the gradients. Default None.
         """
@@ -42,6 +51,7 @@ class GSparseOptimizer(MetaOptimizer):
 
         self.config = config
         self.op_optimizer = op_optimizer
+        self.op_optimizer_evaluate = op_optimizer_evaluate
         self.loss = loss_criteria
         self.dataset = config.dataset
         self.grad_clip = config.search.grad_clip
@@ -68,32 +78,52 @@ class GSparseOptimizer(MetaOptimizer):
         alpha = torch.nn.Parameter(
            torch.ones(size=[len_primitives], requires_grad=False)
         )
-        group = torch.nn.Parameter(
-           torch.zeros(size=[len_primitives], requires_grad=False)
-        )
         edge.data.set("alpha", alpha, shared=True)
-        edge.data.set("group", group, shared=True)
-    
-    def group_primitives(graph):
-        """
-        Function to group similar operations together
-        A group could be the same operation in all cells of the same type (normal or reduce). 
-        For example, one group is op 3 of edge 7 in Cells 0-1/3-4/5-7 (normal cells), 
-        another group is op 3 of edge 7 in Cell 2/5 (reduce cells).
-    
-        A group could also be the same operation in all cells in a stage (there may be multiple stages). 
-        For example, one group is op 3 of edge 7 in all cells of stage_normal_1 (Cells 0-1), 
-        another group is op 3 of edge 7 in all cells of stage_reduce_1 (Cell 2), 
-        another group is op 3 of edge 7 in all cells of stage_normal_2 (Cells 3-4), 
-        another group is op 3 of edge 7 in all cells of stage_reduce_2 (Cell 5), 
-        one group is op 3 of edge 7 in all cells of stage_normal_3 (Cells 6-7).
-    
-        """
-        #makrograph-subgraph_at(4).normal_cell-edge(1,6).primitive-6.op.1.weight'
-        #graph.nodes[5]['subgraph'].edges[1, 6]['op'].primitives[6].op
-        #graph.nodes[5]['subgraph'].edges[1, 6]
-        #graph.nodes[5]['subgraph'].scope
 
+    def adapt_search_space(self, search_space, scope=None, **kwargs):
+        """
+        Modify the search space to fit the optimizer's needs,
+        e.g. discretize, add alpha flag and group name, ...
+        Args:
+            search_space (Graph): The search space we are doing NAS in.
+            scope (str or list(str)): The scope of the search space which
+                should be optimized by the optimizer.
+        """
+        self.search_space = search_space
+        graph = search_space.clone()
+
+        # If there is no scope defined, let's use the search space default one
+        if not scope:
+            scope = graph.OPTIMIZER_SCOPE
+
+        # 1. add alpha flags for pruning
+        graph.update_edges(
+            self.__class__.add_alphas, scope=scope, private_edge_data=False
+        )
+
+        # 2. replace primitives with mixed_op
+        graph.update_edges(
+            self.__class__.update_ops, scope=scope, private_edge_data=True
+        )
+
+        graph.parse()
+
+        # initializing the ProxSGD optmizer for the operation weights
+        self.op_optimizer = self.op_optimizer(
+            graph.parameters(),
+            lr=self.config.search.learning_rate,
+            momentum=self.config.search.momentum,
+            weight_decay=self.config.search.weight_decay,
+            clip_bounds=(0,1),
+            normalization=self.config.search.normalization,
+            normalization_exponent=self.config.search.normalization_exponent
+        )
+
+        graph.train()
+
+        self.graph = graph
+        self.scope = scope
+    
     def step(self, data_train, data_val):
         """
         Run one optimizer step with the batch of training and test data.
@@ -108,67 +138,25 @@ class GSparseOptimizer(MetaOptimizer):
         Returns:
             dict: A dict containing training statistics (TODO)
         """
-        if self.using_step_function:
-            raise NotImplementedError()
+        input_train, target_train = data_train
+        input_val, target_val = data_val
 
-    def train_statistics(self):
-        """
-        If the step function is not used we need the statistics from
-        the optimizer
-        """
-        if not self.using_step_function:
-            raise NotImplementedError()
+        self.graph.train()
+        self.op_optimizer.zero_grad()
+        logits_train = self.graph(input_train)
+        train_loss = self.loss(logits_train, target_train)
+        train_loss.backward()
+        if self.grad_clip:
+            torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
+        self.op_optimizer.step()
 
-    def test_statistics(self):
-        """
-        Return anytime test statistics if provided by the optimizer
-        """
-        pass
-
-    @abstractmethod
-    def adapt_search_space(self, search_space, scope=None):
-        """
-        Modify the search space to fit the optimizer's needs,
-        e.g. discretize, add architectural parameters, ...
-
-        To modify the search space use `search_space.update(...)`
-
-        Good practice is to deepcopy the search space, store
-        the modified version and leave the original search space
-        untouched in case it is beeing used somewhere else.
-
-        Args:
-            search_space (Graph): The search space we are doing NAS in.
-            scope (str or list(str)): The scope of the search space which
-                should be optimized by the optimizer.
-        """
-        raise NotImplementedError()
-
-    def new_epoch(self, epoch):
-        """
-        Function called at the beginning of each new search epoch. To be
-        used as hook for the optimizer.
-
-        Args:
-            epoch (int): Number of the epoch to start.
-        """
-        pass
-
-    def before_training(self):
-        """
-        Function called right before training starts. To be used as hook
-        for the optimizer.
-        """
-        pass
-
-    def after_training(self):
-        """
-        Function called right after training finished. To be used as hook
-        for the optimizer.
-        """
-        pass
-
-    @abstractmethod
+        with torch.no_grad():
+            self.graph.eval()
+            logits_val = self.graph(input_val)
+            val_loss = self.loss(logits_val, target_val)
+        
+        return logits_train, logits_val, train_loss, val_loss
+    
     def get_final_architecture(self):
         """
         Returns the final discretized architecture.
@@ -176,9 +164,54 @@ class GSparseOptimizer(MetaOptimizer):
         Returns:
             Graph: The final architecture.
         """
-        raise NotImplementedError()
+        graph = self.graph.clone().unparse()
+        graph.prepare_discretization()
+        groups_to_prune = []
 
-    @abstractmethod
+        def prune_weights(edge):
+            if edge.data.has("alpha"):
+                primitives = edge.data.op.get_embedded_ops()
+                positions = primitives < self.threshold
+                edge.data.alpha[positions] = 0
+                groups_to_prune.append(edge.data.group[positions].tolist())         
+                    
+        def discretize_ops(edge):
+            if edge.data.has("alpha"):
+                primitives = edge.data.op.get_embedded_ops()
+                alphas = edge.data.alpha.detach().cpu()
+                edge.data.set("op", primitives[np.argmax(alphas)])
+
+        graph.update_edges(prune_weights, scope=self.scope, private_edge_data=True)
+        graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
+        graph.prepare_evaluation()
+        graph.parse()
+        graph = graph.to(self.device)
+        return graph
+
+    def test_statistics(self):
+        """
+        Return anytime test statistics if provided by the optimizer
+        """
+        # nb301 is not there but we use it anyways to generate the arch strings.
+        # if self.graph.QUERYABLE:
+        try:
+            # record anytime performance
+            best_arch = self.get_final_architecture()
+            return best_arch.query(Metric.TEST_ACCURACY, self.dataset)
+        except:
+            return None
+
+    def before_training(self):
+        """
+        Function called right before training starts. To be used as hook
+        for the optimizer.
+        """
+        """
+        Move the graph into cuda memory if available.
+        """
+        self.graph = self.graph.to(self.device)
+
+
     def get_op_optimizer(self):
         """
         This is required for the final validation when
@@ -187,15 +220,10 @@ class GSparseOptimizer(MetaOptimizer):
         Returns:
             (torch.optim.Optimizer): The optimizer used for the op weights update.
         """
+        return self.op_optimizer_evaluate.__class__
 
     def get_model_size(self):
-        """
-        Returns the size of the model parameters in mb, e.g. by using
-        `utils.count_parameters_in_MB()`.
-
-        This is only used for logging purposes.
-        """
-        return 0
+        return count_parameters_in_MB(self.graph)
 
     def get_checkpointables(self):
         """
@@ -206,10 +234,11 @@ class GSparseOptimizer(MetaOptimizer):
         Returns:
             (dict): with name as key and object as value. e.g. graph, arch weights, optimizers, ...
         """
-        pass
-
-
-
+        return {
+            "model": self.graph,
+            "op_optimizer": self.op_optimizer,
+            "op_optimizer_evaluate": self.op_optimizer_evaluate,            
+        }
 
 class GSparseMixedOp(MixedOp):
     def __init__(self, primitives, min_cuda_memory=False):
