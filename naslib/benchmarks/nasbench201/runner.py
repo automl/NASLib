@@ -13,6 +13,7 @@ from naslib.optimizers import (
     LocalSearch,
     Bananas,
     BasePredictor,
+    GSparseOptimizer
 )
 
 from naslib.search_spaces import NasBench201SearchSpace
@@ -36,6 +37,7 @@ supported_optimizers = {
     "ls": RandomSearch(config),
     "bananas": Bananas(config),
     "bp": BasePredictor(config),
+    "gsparsity": GSparseOptimizer(config)
 }
 
 search_space = NasBench201SearchSpace()
@@ -45,11 +47,11 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-# trainer.search()
+trainer.search()
 
 # if not config.eval_only:
 #    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
 #    trainer.search(resume_from=checkpoint)
 
-# checkpoint = utils.get_last_checkpoint(config, search=False) if config.resume else ""
-# trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
+checkpoint = utils.get_last_checkpoint(config, search=False) if config.resume else ""
+trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
