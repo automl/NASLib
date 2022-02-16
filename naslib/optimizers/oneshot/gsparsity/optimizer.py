@@ -9,8 +9,7 @@ from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
 
 import naslib.search_spaces.core.primitives as ops
-import ProxSGD_for_groups as ProxSGD
-import utils_sparsenas
+from naslib.optimizers.oneshot.gsparsity.ProxSGD_for_groups import ProxSGD
 
 import numpy as np
 
@@ -20,14 +19,15 @@ logger = logging.getLogger(__name__)
 class GSparseOptimizer(MetaOptimizer):
     """
     Implements Group Sparsity as defined in
-        # TODO Add name of authors
+        Chatzimichailidis et. al. : 
         GSparsity: Unifying Network Pruning and 
         Neural Architecture Search by Group Sparsity
     """
+    mu=0
     def __init__(
         self,
         config,
-        op_optimizer: torch.optim.Optimizer = torch.optim.SGD,    
+        op_optimizer: torch.optim.Optimizer = ProxSGD,    
         op_optimizer_evaluate: torch.optim.Optimizer = torch.optim.SGD,     
         loss_criteria=torch.nn.CrossEntropyLoss(),
     ):
@@ -55,8 +55,10 @@ class GSparseOptimizer(MetaOptimizer):
         self.loss = loss_criteria
         self.dataset = config.dataset
         self.grad_clip = config.search.grad_clip
+        self.mu = config.search.weight_decay
+        mu = self.mu
         self.threshold = config.search.threshold
-        self.mu = config.search.mu
+        self.normalization_exponent = config.search.normalization_exponent
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     @staticmethod
@@ -76,9 +78,14 @@ class GSparseOptimizer(MetaOptimizer):
         """
         len_primitives = len(edge.data.op)
         alpha = torch.nn.Parameter(
-           torch.ones(size=[len_primitives], requires_grad=False)
+           torch.ones(size=[len_primitives], requires_grad=False), requires_grad=False
+        )
+        weight_decay = torch.nn.Parameter(
+           torch.FloatTensor(len_primitives*[GSparseOptimizer.mu])#, requires_grad=False)
         )
         edge.data.set("alpha", alpha, shared=True)
+        #import ipdb;ipdb.set_trace()
+        #edge.data.set("weight_decay", weight_decay, shared=False)
 
     def adapt_search_space(self, search_space, scope=None, **kwargs):
         """
@@ -109,14 +116,15 @@ class GSparseOptimizer(MetaOptimizer):
         graph.parse()
 
         # initializing the ProxSGD optmizer for the operation weights
+        #import ipdb;ipdb.set_trace()
         self.op_optimizer = self.op_optimizer(
             graph.parameters(),
             lr=self.config.search.learning_rate,
             momentum=self.config.search.momentum,
-            weight_decay=self.config.search.weight_decay,
+            weight_decay=self.mu,
             clip_bounds=(0,1),
-            normalization=self.config.search.normalization,
-            normalization_exponent=self.config.search.normalization_exponent
+            #normalization=self.config.search.normalization,
+            #normalization_exponent=self.normalization_exponent
         )
 
         graph.train()
@@ -145,6 +153,7 @@ class GSparseOptimizer(MetaOptimizer):
         self.op_optimizer.zero_grad()
         logits_train = self.graph(input_train)
         train_loss = self.loss(logits_train, target_train)
+        import ipdb;ipdb.set_trace()
         train_loss.backward()
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
@@ -171,7 +180,8 @@ class GSparseOptimizer(MetaOptimizer):
         def prune_weights(edge):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
-                positions = primitives < self.threshold
+                import ipdb;ipdb.set_trace()
+                positions = primitives < self.threshold #TODO
                 edge.data.alpha[positions] = 0
                 groups_to_prune.append(edge.data.group[positions].tolist())         
                     
@@ -249,6 +259,10 @@ class GSparseMixedOp(MixedOp):
             primitives (list): The primitive operations to sample from.
         """
         super().__init__(primitives)
+        self._ops = torch.nn.ModuleList()
+        
+        #for primitive in primitives:
+            #op = 
         self.min_cuda_memory = min_cuda_memory
 
     def forward(self, x, edge_data):
@@ -259,5 +273,6 @@ class GSparseMixedOp(MixedOp):
         # sampled_arch_weight = edge_data.sampled_arch_weight
 
         summed = sum(op(x, None) for op in self.primitives)
+        import ipdb;ipdb.set_trace()
 
         return summed

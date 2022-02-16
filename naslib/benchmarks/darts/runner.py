@@ -13,6 +13,7 @@ from naslib.optimizers import (
     LocalSearch,
     Bananas,
     BasePredictor,
+    GSparseOptimizer
 )
 
 from naslib.search_spaces import DartsSearchSpace
@@ -36,6 +37,7 @@ supported_optimizers = {
     "ls": RandomSearch(config),
     "bananas": Bananas(config),
     "bp": BasePredictor(config),
+    "gsparsity": GSparseOptimizer(config)
 }
 
 if config.dataset == "cifar100":

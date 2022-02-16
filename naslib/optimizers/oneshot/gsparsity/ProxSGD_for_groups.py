@@ -24,7 +24,7 @@ class ProxSGD(Optimizer):
 
         self.normalization = normalization
         self.normalization_exponent = normalization_exponent
-        defaults = dict(lr=lr, momentum=momentum, clip_bounds=clip_bounds)
+        defaults = dict(lr=lr, momentum=momentum, clip_bounds=clip_bounds)#, weight_decay=weight_decay)
         super(ProxSGD, self).__init__(params, defaults)      
 
     def __setstate__(self, state):
@@ -84,7 +84,8 @@ class ProxSGD(Optimizer):
 
             b_group_norm = torch.sqrt(b_group_norm)
             
-            for x, x_is_scale_op in zip(group['params'], group['scale']):
+            #for x, x_is_scale_op in zip(group['params'], group['scale']):
+            for x in group['params']:
                 #print(len(x.size()),x.size()[0])
                 if x.grad is None:
                     continue
@@ -121,4 +122,5 @@ class ProxSGD(Optimizer):
 
                 x.data.add_(lr, x_hat - x)
                 
+        import ipdb;ipdb.set_trace()
         return loss
