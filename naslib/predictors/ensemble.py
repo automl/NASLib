@@ -10,7 +10,6 @@ from naslib.predictors.gcn import GCNPredictor
 from naslib.predictors.bonas import BonasPredictor
 from naslib.predictors.bnn import DNGOPredictor, BOHAMIANN, BayesianLinearRegression
 from naslib.predictors.seminas import SemiNASPredictor
-from naslib.predictors.tpe import TreeParserEstimator
 from naslib.predictors.gp import (
     GPPredictor,
     SparseGPPredictor,
@@ -38,6 +37,7 @@ class Ensemble(Predictor):
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
         self.config = config
+        self.config_tpe = config_tpe
         self.hyperparams = hyperparams
         self.ensemble = None
         
@@ -105,21 +105,17 @@ class Ensemble(Predictor):
                 min_train_size=0,
                 max_zerocost=100,
             ),
-            #remove temporar for debugging 
-            # "omni_seminas": OmniSemiNASPredictor(
-            #     zero_cost=["jacov"],
-            #     lce=[],
-            #     encoding_type="seminas",
-            #     ss_type=self.ss_type,
-            #     run_pre_compute=False,
-            #     semi=True,
-            #     max_zerocost=1000,
-            #     config=self.config,
-            # ),
-            "tpe": TreeParserEstimator(
-                #TODO review if more needed 
-                 config = self.config,
-                ),
+            "omni_seminas": OmniSemiNASPredictor(
+                zero_cost=["jacov"],
+                lce=[],
+                encoding_type="seminas",
+                 ss_type=self.ss_type,
+                 run_pre_compute=False,
+                 semi=True,
+                 max_zerocost=1000,
+                 config=self.config,
+             ),
+            
 
             
 
@@ -155,13 +151,6 @@ class Ensemble(Predictor):
             prediction = self.ensemble[i].query(xtest, info) #added info dict
             predictions.append(prediction)
         return np.array(predictions)
-    def query_tpe(self, xtest, info=None):
-        predictions = []
-        for i in range(self.num_ensemble):
-            prediction, info_dict = self.ensemble[i].query(xtest, info) #added info dict
-            predictions.append(prediction)
-
-        return np.array(predictions), info_dict #added info dict
 
     def set_hyperparams(self, params):
         if self.ensemble is None:

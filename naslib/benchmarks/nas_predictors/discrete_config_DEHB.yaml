@@ -15,6 +15,9 @@ search:
   min_budget: 12
   epsilon: 1e-6
   predictor_type: var_sparse_gp
-  min_bandwith: 0.001
-  top_n_percent: 0.1
-  min_points_in_model: 7
+  top_n_percent: 0.3
+  enc_dim: 6
+  max_mutations: 1
+  crossover_prob: 0.5   
+  mutate_prob: 0.1
+  n_process: 1

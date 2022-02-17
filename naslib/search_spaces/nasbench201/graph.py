@@ -198,6 +198,41 @@ class NasBench201SearchSpace(Graph):
             # return the value of the metric only at the specified epoch
             return query_results[dataset][metric_to_nb201[metric]][epoch]
 
+    def model_based_sample_architecture(self, dataset_api=None, minimize_me=None, good_kde=None, vartypes=None):
+        """
+        This will perform a model-based architecture sampling and update the edges in the
+        naslib object accordingly.
+        """
+        num_samples = 128
+        random_fraction = 0.33
+        best = np.inf
+        best_vector = None
+        for i in range(num_samples):
+            idx = np.random.randint(0, len(good_kde.data))
+            datum = good_kde.data[idx]
+            vector = []
+            for m, bw, t in zip(datum, good_kde.bw, vartypes):
+                if np.random.rand() < (1 - bw):
+                    vector.append(int(m))
+                else:
+                    vector.append(np.random.randint(t))
+            val = minimize_me(vector)
+            if val < best:
+                best = val
+                best_vector = vector
+        if best_vector is None or np.random.rand() < random_fraction:
+            self.sample_random_architecture(dataset_api=dataset_api)
+        else:
+            for i in range(len(best_vector)):
+                best_vector[i] = int(np.rint(best_vector[i]))
+            self.set_op_indices(best_vector)
+
+
+
+    def get_max_epochs(self):
+        # Return the max number of epochs that can be queried
+        return 199
+
     def get_op_indices(self):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
@@ -227,6 +262,19 @@ class NasBench201SearchSpace(Graph):
         op_indices = np.random.randint(5, size=(6))
         self.set_op_indices(op_indices)
 
+
+    def crossover_bin(self, parent, mutant, dim, prob, dataset_api=None):
+        '''Performs the binomial crossover of DE
+        '''
+        target_indices = np.array(convert_naslib_to_op_indices(parent))
+        mutant_indices = np.array(convert_naslib_to_op_indices(mutant))
+        cross_points = np.random.rand(dim) < prob
+        if not np.any(cross_points):
+            cross_points[np.random.randint(0, dim)] = True
+
+        offspring = np.where(cross_points, mutant_indices, target_indices)
+        self.set_op_indices(offspring)
+
     def mutate(self, parent, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
@@ -240,6 +288,10 @@ class NasBench201SearchSpace(Graph):
         op_index = np.random.choice(available)
         op_indices[edge] = op_index
         self.set_op_indices(op_indices)
+
+
+
+
 
     def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture

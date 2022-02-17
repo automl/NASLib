@@ -11,12 +11,13 @@ from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.optimizers import RandomSearch as RS
 from naslib.optimizers import RegularizedEvolution as RE
 from naslib.optimizers import SuccessiveHalving as SH
-from naslib.optimizers import HyperBand as HB
+from naslib.optimizers import HB
 from naslib.optimizers import BOHB 
+from naslib.optimizers import DEHB
 
 from naslib.defaults.trainer_multifidelity import Trainer
 #from naslib.defaults.trainer import Trainer
-
+# TODO: rethinking logging is rigth now, completly ingnored 
 import yaml
 from pathlib import Path
 import os
@@ -69,6 +70,12 @@ elif config_optimizer == 'BOHB':
     optimizer = BOHB(config)
     plot_func = mf_plot.plot_hb
     predictor = "tpe"
+elif config_optimizer == "DEHB":
+    #i thin kby save dir is soometihng strange
+    
+    predictor = "var_sparse_gp"
+    optimizer = DEHB(config)
+    plot_func = mf_plot.plot_hb
 else:
     raise Exception('invalid config')
 
