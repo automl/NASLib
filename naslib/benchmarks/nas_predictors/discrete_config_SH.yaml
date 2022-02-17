@@ -7,40 +7,11 @@ out_dir: run
 search:
   seed: 0
   checkpoint_freq: 10 # 1000
-  epochs: 4 # TODO : this setting should be not neccessary!!!
   min_fidelity: 1
-  number_archs: 128
+  fidelity: 200
+  budgets: 4000
   eta: 2
-  budget_type: epoch 
-  method: "random"
-  budget_max: 128
-
-
+  max_budget: 200
+  min_budget: 1
+  n_process: 1
   predictor_type: var_sparse_gp
-  num_init: 10  
-  k: 10
-
-  # BANANAS
-  num_ensemble: 3
-  acq_fn_type: its
-  acq_fn_optimization: random_sampling
-  encoding_type: adjacency_one_hot
-  num_arches_to_mutate: 2
-  max_mutations: 1
-  num_candidates: 20
-  
-  # jacov data loader
-  batch_size: 256
-  data_size: 25000
-  cutout: False
-  cutout_length: 16
-  cutout_prob: 1.0
-  train_portion: 0.7
-  
-  # other params
-  debug_predictor: False
-  sample_size: 10
-  population_size: 30
-
-  # TODO: write config file for successive halving
-

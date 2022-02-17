@@ -18,3 +18,4 @@ search:
   min_bandwith: 0.001
   top_n_percent: 0.1
   min_points_in_model: 7
+  n_process: 1

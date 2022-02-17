@@ -10,9 +10,11 @@ search:
   fidelity: 200
   budgets: 4000
   eta: 3
+  n_process: 100
   max_budget: 512
   min_budget: 12
   epsilon: 1e-6
   predictor_type: var_sparse_gp
+
  
   

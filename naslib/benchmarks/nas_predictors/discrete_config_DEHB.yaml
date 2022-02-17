@@ -20,3 +20,4 @@ search:
   max_mutations: 1
   crossover_prob: 0.5   
   mutate_prob: 0.1
+  n_process: 1

@@ -39,7 +39,7 @@ class Trainer(object):
         self.optimizer = optimizer
         self.config = config
         self.lightweight_output = lightweight_output
-        self.n_process = 512 #need to be a parameter
+        self.n_process = config.search.n_process #need to be a parameter
 
         # anytime
         computed_epochs = self.optimizer.compute_epochs()
