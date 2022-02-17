@@ -134,7 +134,14 @@ def create_configs(
             for seed in range(start_seed, start_seed + trials):
                 np.random.seed(seed)
                 random.seed(seed)
-
+                eta = int(np.random.choice(range(2, 5)))
+                fidelity_range = [2**i for i in range(0, 9)]
+                max_fidelity = np.random.choice(fidelity_range)
+                # min fidelity has to be lower/equal to max_fidelity
+                min_fidelity = np.random.choice(
+                    list(
+                        filter(
+                            lambda n: n <= max_fidelity, fidelity_range)))
                 config = {
                     "seed": seed,
                     "search_space": search_space,
@@ -159,7 +166,12 @@ def create_configs(
                         "num_candidates": int(np.random.choice(range(5, 50))),
                         "predictor": predictor,
                         "debug_predictor": False,
-                        # config section for successive halving
+                        # config section for successive halving,
+                        "min_fidelity": min_fidelity,
+                        "max_fidelity": max_fidelity,
+                        "eta": eta,
+                        # config section for BOHB
+                        "tpe_bandwidth": float(np.random.choice(np.arange(0.01, 1.0, 0.01))), # TODO: what is a good range for tpe??
                     },
                 }
 
