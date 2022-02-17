@@ -12,6 +12,8 @@ def get_results(predictor, path, filename, metric='valid_acc'):
     """
     algo_path = os.path.join(path, predictor)
     for seed_dir in os.listdir(algo_path):
+        if not os.path.isdir(os.path.join(algo_path, seed_dir)):
+            continue
         result_file = os.path.join(algo_path, seed_dir, filename)
         result = json.load(open(result_file))
         return result
