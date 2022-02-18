@@ -62,34 +62,43 @@ def get_nasbench201_api(dataset=None):
     return {"nb201_data": data}
 
 
-def get_darts_api(dataset=None, 
-                  nb301_model_path='~/nb_models/xgb_v1.0', 
-                  nb301_runtime_path='~/nb_models/lgb_runtime_v1.0'):
-    # Load the nb301 training data (which contains full learning curves)
-    
-    data_path = os.path.join(get_project_root(), "data/nb301_full_training.pickle")
-    assert os.path.isfile(data_path), "Download nb301_full_training.pickle from\
-    https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa?usp=sharing"
-    with open(data_path, "rb") as f:
-        nb301_data = pickle.load(f)
-        nb301_arches = list(nb301_data.keys())
+def get_darts_api(dataset=None):
+    # Paths to v1.0 model files and data file.
+    nb_models_path = os.path.join(get_project_root(), "data", "nb_models")
+    nb301_model_path=os.path.join(nb_models_path, "xgb_v1.0")
+    nb301_runtime_path=os.path.join(nb_models_path, "lgb_runtime_v1.0")
+    data_path = os.path.join(get_project_root(), "data", "nb301_full_training.pickle")
+
+    models_not_found_msg = "Download the v1.0 models from \
+https://figshare.com/articles/software/nasbench301_models_v1_0_zip/13061510 and put it in naslib/data/nb_models."
+
+    # Verify the model and data files exist
+    assert os.path.exists(nb_models_path), f"Could not find {nb_models_path}. {models_not_found_msg}"
+    assert os.path.exists(nb301_model_path), f"Could not find {nb301_model_path}. {models_not_found_msg}"
+    assert os.path.exists(nb301_runtime_path), f"Could not find {nb301_runtime_path}. {models_not_found_msg}"
+    assert os.path.isfile(data_path), f"Could not find {data_path}. Download nb301_full_training.pickle from\
+        https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa?usp=sharing"
 
     # Load the nb301 performance and runtime models
-    nb301_model_path = os.path.expanduser(nb301_model_path)
-    nb301_runtime_path = os.path.expanduser(nb301_runtime_path)
-    assert os.path.exists(nb301_model_path), "Download v1.0 models from\
-    https://github.com/automl/nasbench301"
-    assert os.path.exists(nb301_runtime_path), "Download v1.0 models from\
-    https://github.com/automl/nasbench301"
+    try:
+        import nasbench301
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError('No module named \'nasbench301\'. \
+            Please install nasbench301 from https://github.com/crwhite14/nasbench301')
 
-    import nasbench301
     performance_model = nasbench301.load_ensemble(
         nb301_model_path
     )
     runtime_model = nasbench301.load_ensemble(
         nb301_runtime_path
     )
+
+    with open(data_path, "rb") as f:
+        nb301_data = pickle.load(f)
+        nb301_arches = list(nb301_data.keys())
+
     nb301_model = [performance_model, runtime_model]
+
     return {
         "nb301_data": nb301_data,
         "nb301_arches": nb301_arches,
