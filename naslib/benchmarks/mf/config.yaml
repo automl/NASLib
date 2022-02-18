@@ -1,17 +1,16 @@
-start_seed: 5
-trials: 1
-out_dir: run_m1
-out_dir_config: configs_m1
+start_seed: 0
+trials: 10
+out_dir: run
+out_dir_config: configs
 config_type: bbo-bs
 search_space: nasbench201
 datasets: 
   - cifar10
-
 optimizers: # sh, rs, ls, ...
-  - sh
+  - rs
 fidelity: -1
 
-HPO: False
+HPO: True
 # only relevant if HPO is enabled
 num_config: 100
 

@@ -13,14 +13,16 @@ with open("config.yaml", 'r') as stream:
     config = yaml.safe_load(stream)
 
 def check_config(search_space, dataset, optimizer, trials, HPO, num_config):
-    folder = os.path.join(".", "bbo", "configs_m1", search_space, dataset, optimizer)
+    folder = os.path.join(".", "configs", search_space, dataset, optimizer)
     test = os.path.join(folder, "**", "*.yaml")  
     files = glob(test, recursive=True)
+    print(f"{len(files)} files")
     num_config = num_config if HPO else 1
-    if len(files) == trials:
+    if len(files) == trials * num_config:
         print("Created config file(s) successfully")
         return
-    print("Config file(s) not successfully created")        
+    print("Config file(s) not successfully created")
+    exit(1)
 
 # convert such that config elements are accessiable via attributes
 config = Dict(config)

@@ -80,7 +80,7 @@ def create_configs(
         # first generate the default config at config 0
         config_id = 0
         # TODO: add config out dir to config
-        folder = f"/Users/lars/Projects/NASLib/naslib/benchmarks/bbo/configs_m1/{search_space}/{dataset}/{optimizer}/config_{config_id}"
+        folder = f"./configs/{search_space}/{dataset}/{optimizer}/config_{config_id}"
         # folder = f"naslib/benchmarks/bbo/configs_cpu/{search_space}/{dataset}/{optimizer}/config_{config_id}"
         os.makedirs(folder, exist_ok=True)       
             
@@ -128,7 +128,7 @@ def create_configs(
                 yaml.dump(config, fh)
         num_config = num_config if HPO else 1
         for config_id in range(1, num_config):
-            folder = f"naslib/benchmarks/bbo/configs_m1/{search_space}/{dataset}/{optimizer}/config_{config_id}"
+            folder = f"./configs/{search_space}/{dataset}/{optimizer}/config_{config_id}"
             os.makedirs(folder, exist_ok=True)
             
             for seed in range(start_seed, start_seed + trials):
@@ -174,8 +174,9 @@ def create_configs(
                         "tpe_bandwidth": float(np.random.choice(np.arange(0.01, 1.0, 0.01))), # TODO: what is a good range for tpe??
                     },
                 }
-
-                path = os.path.join(folder, f"/seed_{seed}.yaml")
+                print(f"folder: {folder}")
+                path = os.path.join(folder, f"seed_{seed}.yaml")
+                print(f"path: {path}")
                 with open(path, "w") as fh:
                     yaml.dump(config, fh)
     
