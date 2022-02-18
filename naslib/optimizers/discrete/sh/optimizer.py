@@ -89,24 +89,31 @@ class  SuccessiveHalving(MetaOptimizer):
             self.prev_round = 0
             self.process = i
 
-        if self.prev_round < round:  # reset round_number for each new round
-            self.prev_round = round
-            self.round_number = 0
-
-        if epoch < self.round_sizes[round]:
+        
+        if epoch < self.round_sizes[self.round_number]:
             # sample random architectures
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)   
-            model.epoch = self.fidelities[round]
+            model.epoch = self.fidelities[self.round_number]
             model.accuracy = model.arch.query(self.performance_metric,
                                               self.dataset, 
                                               epoch=model.epoch, 
                                               dataset_api=self.dataset_api)
+            print(model.epoch)
             self._update_history(model)
             self.next_round.append(model)
 
         else:
+            if len(self.current_round) == 0:
+                # if we are at the end of a round of hyperband, continue training only the best 
+                logger.info("Starting a new round: continuing to train the best arches")
+                self.round_number += 1
+                cutoff = self.round_sizes[self.round_number]
+                self.current_round = sorted(self.next_round, key=lambda x: -x.accuracy)[:cutoff]
+                self.next_round = []
+
+
             # train the next architecture
             model = self.current_round.pop()
             """
@@ -114,11 +121,12 @@ class  SuccessiveHalving(MetaOptimizer):
             just for simplicity, we treat it as if we start to train it again from scratch
             """
             model = copy.deepcopy(model)
-            model.epoch = self.fidelities[round]
+            model.epoch = self.fidelities[self.round_number]
             model.accuracy = model.arch.query(self.performance_metric,
                                               self.dataset, 
                                               epoch=model.epoch, 
                                               dataset_api=self.dataset_api)
+            print(model.epoch)
             self._update_history(model)
             self.next_round.append(model)
 
