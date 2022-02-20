@@ -13,7 +13,7 @@ from naslib.utils import utils, setup_logger, get_dataset_api
 
 from torch.utils.tensorboard import SummaryWriter
 
-config = utils.get_config_from_args(config_type='nas')
+config = utils.get_config_from_args(config_type='bbo-bs')
 
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)

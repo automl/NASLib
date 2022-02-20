@@ -113,6 +113,8 @@ class NasBench201SearchSpace(Graph):
         self.edges[19, 20].set(
             "op",
             ops.Sequential(
+                nn.BatchNorm2d(channels[-1]),
+                nn.ReLU(inplace=True),
                 nn.AdaptiveAvgPool2d(1),
                 nn.Flatten(),
                 nn.Linear(channels[-1], self.num_classes),
@@ -270,8 +272,8 @@ def _set_cell_ops(edge, C):
         [
             ops.Identity(),
             ops.Zero(stride=1),
-            ops.ReLUConvBN(C, C, kernel_size=3),
-            ops.ReLUConvBN(C, C, kernel_size=1),
-            ops.AvgPool1x1(kernel_size=3, stride=1),
+            ops.ReLUConvBN(C, C, kernel_size=3, affine=False, track_running_stats=False, bias=True),
+            ops.ReLUConvBN(C, C, kernel_size=1, affine=False, track_running_stats=False, bias=True),
+            ops.AvgPool1x1(kernel_size=3, stride=1, affine=False),
         ],
     )

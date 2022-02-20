@@ -183,9 +183,9 @@ class TransBench101SearchSpace(Graph):
                 Metric.TRAIN_ACCURACY: 'train_ssim',
                 Metric.VAL_ACCURACY: 'valid_ssim',
                 Metric.TEST_ACCURACY: 'test_ssim',
-                Metric.TRAIN_LOSS: 'train_loss',
-                Metric.VAL_LOSS: 'valid_loss',
-                Metric.TEST_LOSS: 'test_loss',
+                Metric.TRAIN_LOSS: 'train_l1_loss',
+                Metric.VAL_LOSS: 'valid_l1_loss',
+                Metric.TEST_LOSS: 'test_l1_loss',
                 Metric.TRAIN_TIME: 'time_elapsed',
             }
         

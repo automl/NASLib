@@ -9,43 +9,99 @@ import numpy as np
 def main(args):
 
     if args.config_type == 'bbo-bs':
-        # this is hardcoded for now -- needs to be changed later!!!
-        folder = f"naslib/benchmarks/bbo/configs/{args.search_space}/{args.dataset}"
-        os.makedirs(folder, exist_ok=True)
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
+        num_config = 100 
+        
+        # first generate the default config at config 0
+        config_id = 0
+        folder = f"naslib/benchmarks/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
+        os.makedirs(folder, exist_ok=True)       
+            
+        for seed in range(args.start_seed, args.start_seed + args.trials):
+            np.random.seed(seed)
+            random.seed(seed)
 
-        for i in range(args.start_seed, args.start_seed + args.trials):
             config = {
-                "seed": i,
+                "seed": seed,
                 "search_space": args.search_space,
                 "dataset": args.dataset,
                 "optimizer": args.optimizer,
                 "out_dir": args.out_dir,
+                "config_id": config_id,
                 "search": {
+                    "sample_size": 10,
+                    "population_size": 50,
+                    "num_init": 10,
+                    "k":10,
+                    "num_ensemble": 3,
+                    "acq_fn_type": "its",
+                    "num_arches_to_mutate": 1,
+                    "max_mutations": 1,
+                    "num_candidates": 50,
                     "checkpoint_freq": args.checkpoint_freq,
                     "epochs": args.epochs,
                     "fidelity": args.fidelity,
-                    "sample_size": 10,
-                    "population_size": 30,
-                    "num_init": 10,
-                    "k": 20,
                     "num_ensemble": 3,
                     "acq_fn_type": "its",
                     "acq_fn_optimization": args.acq_fn_optimization,
                     "encoding_type": "path",
-                    "num_arches_to_mutate": 2,
+                    "num_arches_to_mutate": 5,
                     "max_mutations": 1,
-                    "num_candidates": 30,
+                    "num_candidates": 200,
                     "predictor": args.predictor,
+                    "predictor_type": "bananas",
                     "debug_predictor": False,
                 },
             }
 
-            path = folder + f"/config_{args.optimizer}_{i}.yaml"
+
+            path = folder + f"/seed_{seed}.yaml"
 
             with open(path, "w") as fh:
                 yaml.dump(config, fh)
+
+        for config_id in range(1, num_config):
+            folder = f"naslib/benchmarks/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
+            os.makedirs(folder, exist_ok=True)
+            
+            
+            for seed in range(args.start_seed, args.start_seed + args.trials):
+                np.random.seed(seed)
+                random.seed(seed)
+
+                config = {
+                    "seed": seed,
+                    "search_space": args.search_space,
+                    "dataset": args.dataset,
+                    "optimizer": args.optimizer,
+                    "out_dir": args.out_dir,
+                    "config_id": config_id,
+                    "search": {
+                        "checkpoint_freq": args.checkpoint_freq,
+                        "epochs": args.epochs,
+                        "fidelity": args.fidelity,
+                        "sample_size": int(np.random.choice(range(5, 100))),
+                        "population_size": int(np.random.choice(range(5, 100))),
+                        "num_init": int(np.random.choice(range(5, 100))),
+                        "k":int(np.random.choice(range(10, 50))),
+                        "num_ensemble": 3,
+                        "acq_fn_type": "its",
+                        "acq_fn_optimization": args.acq_fn_optimization,
+                        "encoding_type": "path",
+                        "num_arches_to_mutate": int(np.random.choice(range(1, 20))),
+                        "max_mutations": int(np.random.choice(range(1, 20))),
+                        "num_candidates": int(np.random.choice(range(5, 50))),
+                        "predictor": args.predictor,
+                        "debug_predictor": False,
+                    },
+                }
+
+
+                path = folder + f"/seed_{seed}.yaml"
+
+                with open(path, "w") as fh:
+                    yaml.dump(config, fh)
     
     elif args.config_type == "predictor-bs":
         folder = f"naslib/benchmarks/predictors-bs/configs_{args.search_space}/{args.dataset}"
@@ -145,7 +201,7 @@ def main(args):
                     "num_arches_to_mutate": 2,
                     "max_mutations": 1,
                     "num_candidates": 100,
-                    "predictor_type": "feedforward",
+                    "predictor_type": "bananas",
                     "debug_predictor": False,
                 },
             }
@@ -320,7 +376,7 @@ if __name__ == "__main__":
     parser.add_argument("--trials", type=int, default=100, help="Number of trials")
     parser.add_argument("--optimizer", type=str, default="rs", help="which optimizer")
     parser.add_argument("--predictor_type", type=str, default="full", help="which predictor")
-    parser.add_argument("--predictor", type=str, default="xgb", help="which predictor")
+    parser.add_argument("--predictor", type=str, default="bananas", help="which predictor")
     parser.add_argument(
         "--test_size", type=int, default=30, help="Test set size for predictor"
     )
