@@ -109,18 +109,19 @@ def main(args):
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
 
+        max_train_size = 1000
         if args.search_space == "nasbench101":
             total_epochs = 108 - 1
-            max_train_size = 1000
         elif args.search_space == "nasbench201":
             total_epochs = 200 - 1
-            max_train_size = 1000
         elif args.search_space == "darts":
             total_epochs = 96 - 1
-            max_train_size = 500
         elif args.search_space == "nlp":
             total_epochs = 50 - 1
-            max_train_size = 1000
+        elif args.search_space in ["transbench101_micro", "transnasbench101_macro"]:
+            total_epochs = 10
+        elif args.search_spaze == "asr":
+            total_epochs = 40
 
         train_size_list = [
             int(j)
@@ -132,7 +133,6 @@ def main(args):
                 base=2.0,
             )
         ]
-        # train_size_list = [i for i in train_size_list if i < 230]
         fidelity_list = [
             int(j)
             for j in np.logspace(
@@ -291,7 +291,7 @@ def main(args):
                 "train_size_single": args.train_size_single,
                 "fidelity_single": args.fidelity_single,
                 "fidelity_list": fidelity_list,
-                "max_hpo_time": 900,
+                "max_hpo_time": args.max_hpo_time,
             }
 
             with open(folder + f"/config_{args.predictor}_{i}.yaml", "w") as fh:
@@ -441,6 +441,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--walks", type=int, default=1000, help="number of random walks"
+    )
+    parser.add_argument(
+        "--max_hpo_time", type=int, default=3000, help="HPO time"
     )
     
     args = parser.parse_args()

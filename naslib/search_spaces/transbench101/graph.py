@@ -36,14 +36,14 @@ class TransBench101SearchSpace(Graph):
     QUERYABLE = True
 
 
-    def __init__(self):
+    def __init__(self, space):
         super().__init__()
         self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
         self.op_indices = None
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
-        self.space = 'micro'
+        self.space = space
         #
         # Cell definition
         #
@@ -130,6 +130,7 @@ class TransBench101SearchSpace(Graph):
 #             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
+            
             
         if self.space=='micro':
             arch_str = convert_naslib_to_transbench101_micro(self.op_indices) 
@@ -225,13 +226,16 @@ class TransBench101SearchSpace(Graph):
         self.op_indices = op_indices
 #         convert_op_indices_to_naslib(op_indices, self)
 
+
     def get_arch_iterator(self, dataset_api=None):
         return itertools.product(range(4), repeat=6)
 
+    
     def set_spec(self, op_indices, dataset_api=None):
         # this is just to unify the setters across search spaces
         # TODO: change it to set_spec on all search spaces
         self.set_op_indices(op_indices)
+
 
     def sample_random_architecture_micro(self, dataset_api=None):
         """
@@ -271,8 +275,8 @@ class TransBench101SearchSpace(Graph):
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
         """
-        parent_op_indices = parent.get_op_indices()
-        op_indices = list(parent_op_indices)
+        parent_op_indices = list(parent.get_op_indices())
+        op_indices = parent_op_indices
 
         edge = np.random.choice(len(parent_op_indices))
         available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
@@ -280,14 +284,16 @@ class TransBench101SearchSpace(Graph):
         op_indices[edge] = op_index
         self.set_op_indices(op_indices)
 
+
+
     def mutate_macro(self, parent, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
         """
-        parent_op_indices = parent.get_op_indices()
+        parent_op_indices = list(parent.get_op_indices())
         parent_op_ind = parent_op_indices[parent_op_indices!=0]
-        
+
         def f(g):
             r = len(g)
             p = sum([int(i==4 or i==3) for i in g])
@@ -327,8 +333,6 @@ class TransBench101SearchSpace(Graph):
         elif self.space=='macro':
             self.mutate_macro(parent, dataset_api)
         
-
-
     def get_nbhd_micro(self, dataset_api=None):
         # return all neighbors of the architecture
         self.get_op_indices()
@@ -337,7 +341,7 @@ class TransBench101SearchSpace(Graph):
             available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
             
             for op_index in available:
-                nbr_op_indices = list(self.op_indices).copy()
+                nbr_op_indices = list(self.op_indices.copy())
                 nbr_op_indices[edge] = op_index
                 nbr = TransBench101SearchSpace()
                 nbr.set_op_indices(nbr_op_indices)
@@ -348,11 +352,10 @@ class TransBench101SearchSpace(Graph):
         random.shuffle(nbrs)
         return nbrs
 
-
     def get_nbhd_macro(self, dataset_api=None):
         # return all neighbors of the architecture
         self.get_op_indices()
-        op_ind = self.op_indices[self.op_indices!=0]
+        op_ind = list(self.op_indices[self.op_indices!=0])
         nbrs = []
 
         def f(g):
@@ -387,21 +390,15 @@ class TransBench101SearchSpace(Graph):
 
         random.shuffle(nbrs)
         return nbrs
-    
-    
+
     def get_nbhd(self, dataset_api=None):
         if self.space=='micro':
-            return self.get_nbhd_micro(dataset_api)
+            self.get_nbhd_micro(dataset_api)
         elif self.space=='macro':
-            return self.get_nbhd_macro(dataset_api)
-        
-        
-
+            self.get_nbhd_macro(dataset_api)
 
     def get_type(self):
-#         return 'transbench101'
         return 'transbench101'
-
     
 def _set_cell_ops(edge, C):
     edge.data.set('op', [
@@ -410,6 +407,3 @@ def _set_cell_ops(edge, C):
         ops.ReLUConvBN(C, C, kernel_size=3),
         ops.ReLUConvBN(C, C, kernel_size=1),
     ])
-    
-    
-
