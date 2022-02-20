@@ -46,7 +46,11 @@ def main(args):
                     "acq_fn_type": "its",
                     "acq_fn_optimization": args.acq_fn_optimization,
                     "encoding_type": "path",
+                    "num_arches_to_mutate": 5,
+                    "max_mutations": 1,
+                    "num_candidates": 200,
                     "predictor": args.predictor,
+                    "predictor_type": "bananas",
                     "debug_predictor": False,
                 },
             }
@@ -197,7 +201,7 @@ def main(args):
                     "num_arches_to_mutate": 2,
                     "max_mutations": 1,
                     "num_candidates": 100,
-                    "predictor_type": "feedforward",
+                    "predictor_type": "bananas",
                     "debug_predictor": False,
                 },
             }
@@ -372,7 +376,7 @@ if __name__ == "__main__":
     parser.add_argument("--trials", type=int, default=100, help="Number of trials")
     parser.add_argument("--optimizer", type=str, default="rs", help="which optimizer")
     parser.add_argument("--predictor_type", type=str, default="full", help="which predictor")
-    parser.add_argument("--predictor", type=str, default="xgb", help="which predictor")
+    parser.add_argument("--predictor", type=str, default="bananas", help="which predictor")
     parser.add_argument(
         "--test_size", type=int, default=30, help="Test set size for predictor"
     )
