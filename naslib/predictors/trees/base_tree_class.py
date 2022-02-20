@@ -11,6 +11,7 @@ class BaseTree(Predictor):
         ss_type="nasbench201",
         zc=False,
         hpo_wrapper=False,
+        hparams_from_file=None,
     ):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
@@ -18,6 +19,7 @@ class BaseTree(Predictor):
         self.zc = zc
         self.hyperparams = None
         self.hpo_wrapper = hpo_wrapper
+        self.hparams_from_file = hparams_from_file
 
     @property
     def default_hyperparams(self):

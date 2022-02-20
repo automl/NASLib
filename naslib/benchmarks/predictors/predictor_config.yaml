@@ -6,12 +6,12 @@
 experiment_type: single
 
 # nasbench101, nasbench201, darts, nlp, transbench101_micro
-search_space: transbench101_micro
+search_space: nasbench201
 
 # nasbench201 datasets: cifar10, cifar100, ImageNet16-120
 # transbench101 datasets: class_scene, class_object,
 # jigsaw, room_layout, segmentsemantic, normal, autoencoder
-dataset: jigsaw
+dataset: cifar10
 
 # one of the 31 predictors in benchmarks/predictors/runner.py
 predictor: synflow
@@ -35,6 +35,10 @@ out_dir: run
 
 # maximum number of seconds to run cross-validation (for model-based predictors)
 max_hpo_time: 0
+
+# load the hyperparams from the specified file.
+# otherwise, set to None or False
+hparams_from_file: predictor_hpo_configs/hpo_config_1.json
 
 # random seed
 seed: 1000

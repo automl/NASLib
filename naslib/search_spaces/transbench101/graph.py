@@ -205,8 +205,7 @@ class TransBench101SearchSpaceMicro(Graph):
 #             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
-            
-            
+        
         arch_str = convert_naslib_to_transbench101_micro(self) 
           
         query_results = dataset_api['api']
@@ -298,9 +297,11 @@ class TransBench101SearchSpaceMicro(Graph):
         self.op_indices = op_indices
         convert_op_indices_to_naslib(op_indices, self)
 
+
     def get_arch_iterator(self, dataset_api=None):
         return itertools.product(range(4), repeat=6)
 
+    
     def set_spec(self, op_indices, dataset_api=None):
         # this is just to unify the setters across search spaces
         # TODO: change it to set_spec on all search spaces
@@ -576,15 +577,14 @@ class TransBench101SearchSpaceMacro(Graph):
             op_indices = np.append(op_indices, 0)
         self.set_op_indices(op_indices)
 
-
     def mutate(self, parent, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
         """
-        parent_op_indices = parent.get_op_indices()
+        parent_op_indices = list(parent.get_op_indices())
         parent_op_ind = parent_op_indices[parent_op_indices!=0]
-        
+
         def f(g):
             r = len(g)
             p = sum([int(i==4 or i==3) for i in g])
@@ -621,7 +621,7 @@ class TransBench101SearchSpaceMacro(Graph):
     def get_nbhd(self, dataset_api=None):
         # return all neighbors of the architecture
         self.get_op_indices()
-        op_ind = self.op_indices[self.op_indices!=0]
+        op_ind = list(self.op_indices[self.op_indices!=0])
         nbrs = []
 
         def f(g):
@@ -656,12 +656,9 @@ class TransBench101SearchSpaceMacro(Graph):
 
         random.shuffle(nbrs)
         return nbrs    
-    
 
     def get_type(self):
-#         return 'transbench101'
         return 'transbench101'
-
 
 def _set_op(edge, C_in, downsample):
 
@@ -683,6 +680,3 @@ def _set_op(edge, C_in, downsample):
         ops.ReLUConvBN(C_in, C_out, kernel_size=3, stride=stride),
         ops.ReLUConvBN(C_in, C_out, kernel_size=1, stride=stride),
     ])
-
-    
-

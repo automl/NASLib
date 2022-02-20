@@ -7,7 +7,8 @@ from naslib.optimizers import RandomSearch, Npenas, \
 RegularizedEvolution, LocalSearch, Bananas, BasePredictor, DARTSOptimizer, DrNASOptimizer, GDASOptimizer
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
-DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpaceMicro, TransBench101SearchSpaceMacro
+DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpaceMicro, TransBench101SearchSpaceMacro, NasBenchASRSearchSpace
+
 from naslib.utils import utils, setup_logger, get_dataset_api
 
 from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
@@ -37,6 +38,7 @@ supported_search_spaces = {
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
     'transbench101_macro': TransBench101SearchSpaceMacro()
+    'asr': NasBenchASRSearchSpace(),
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)

@@ -1,5 +1,16 @@
 from naslib.search_spaces.core.graph import Graph
 
+"""
+There are three representations
+'naslib': the NASBench201SearchSpace object
+'op_indices': A list of six ints, which is the simplest representation
+'arch_str': The string representation used in the original nasbench201 paper
+This file currently has the following conversions:
+naslib -> op_indices
+op_indices -> naslib
+naslib -> arch_str
+Note: we could add more conversions, but this is all we need for now
+"""
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
 EDGE_LIST = ((1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4))
@@ -22,7 +33,6 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
     naslib_object is an empty NasBench201SearchSpace() object.
     Do not call this method with a naslib object that has already been 
     discretized (i.e., all edges have a single op).
-
     output: none, but the naslib object now has all edges set
     as in genotype.
     

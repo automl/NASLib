@@ -8,6 +8,7 @@ from __future__ import print_function
 import logging
 import itertools
 import os
+import json
 import random
 import sys
 import math
@@ -516,6 +517,7 @@ class SemiNASPredictor(Predictor):
         semi=False,
         hpo_wrapper=False,
         synthetic_factor=1,
+        hparams_from_file=False,
     ):
         self.encoding_type = encoding_type
         self.semi = semi
@@ -525,6 +527,7 @@ class SemiNASPredictor(Predictor):
         self.hpo_wrapper = hpo_wrapper
         self.default_hyperparams = {"gcn_hidden": 64, "batch_size": 100, "lr": 1e-3}
         self.hyperparams = None
+        self.hparams_from_file = hparams_from_file
 
     def generate_synthetic_data(self, model, num_synthetic):
         synthetic_input = []
@@ -574,9 +577,16 @@ class SemiNASPredictor(Predictor):
         pretrain_epochs=50,
     ):
 
-        if self.hyperparams is None:
+        if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
+        and os.path.exists(self.hparams_from_file):
+            # note: this could be split to separate hyperparams for nao and seminas, 
+            # but currently there is no need to do that
+            self.hyperparams = json.load(open(self.hparams_from_file, 'rb'))['seminas']
+            print('loaded hyperparams from', self.hparams_from_file)
+            print('hparams', self.hyperparams)
+        elif self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
-
+            
         batch_size = self.hyperparams["batch_size"]
         gcn_hidden = self.hyperparams["gcn_hidden"]
         lr = self.hyperparams["lr"]
@@ -611,7 +621,12 @@ class SemiNASPredictor(Predictor):
             encoder_length = 35
             decoder_length = 35
             vocab_size = 9
-            
+
+        elif self.ss_type == "asr":
+            self.max_n = 9
+            encoder_length = 44
+            decoder_length = 44
+            vocab_size = 9
             
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)

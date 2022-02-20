@@ -1,13 +1,17 @@
 import numpy as np
+import os
+import json
 
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
 
 class BNN(Predictor):
-    def __init__(self, encoding_type="adjacency_one_hot", ss_type="nasbench201"):
+    def __init__(self, encoding_type="adjacency_one_hot", 
+                 ss_type="nasbench201", hparams_from_file=None):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
+        self.hparams_from_file=hparams_from_file
 
     def get_model(self, **kwargs):
         return NotImplementedError("Model needs to be defined.")
@@ -28,6 +32,12 @@ class BNN(Predictor):
         _ytrain = np.array(ytrain)
 
         self.model = self.get_model(**kwargs)
+        if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
+        and os.path.exists(self.hparams_from_file):
+            self.num_steps = json.load(open(self.hparams_from_file, 'rb'))['bohamiann']['num_steps']
+            print('loaded hyperparams from', self.hparams_from_file)
+        else:
+            self.num_steps = 100
         self.train_model(_xtrain, _ytrain)
 
         train_pred = self.query(xtrain)

@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH -p mldlc_gpu-rtx2080 #bosch_gpu-rtx2080 #bosch_cpu-cascadelake #bosch_gpu-rtx2080 #mldlc_gpu-rtx2080 #alldlc_gpu-rtx2080 #gpu_tesla-P100     #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
+#SBATCH -p alldlc_gpu-rtx2080 #bosch_gpu-rtx2080 #bosch_cpu-cascadelake #bosch_gpu-rtx2080 #mldlc_gpu-rtx2080 #alldlc_gpu-rtx2080 #gpu_tesla-P100     #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH -t 0-02:00           # time (D-HH:MM)
 #SBATCH -o slurmlog/%A.%N.out       # STDOUT  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e slurmlog/%A.%N.err       # STDERR  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -J bbo-exps              # sets the job name. 
-#SBATCH --mem=7G  
+#SBATCH --mem=10G  
 
 # Print some information about the job to STDOUT
 

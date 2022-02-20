@@ -1,5 +1,7 @@
 from sklearn.ensemble import RandomForestRegressor as RF
 import numpy as np
+import os
+import json
 
 from naslib.predictors.trees import BaseTree
 from naslib.predictors.trees.ngb import loguniform
@@ -47,6 +49,10 @@ class RandomForestPredictor(BaseTree):
         return model.fit(X_train, y_train)
 
     def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
-        if self.hyperparams is None:
+        if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
+        and os.path.exists(self.hparams_from_file):
+            self.hyperparams = json.load(open(self.hparams_from_file, 'rb'))['rf']
+            print('loaded hyperparams from', self.hparams_from_file)
+        elif self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
         return super(RandomForestPredictor, self).fit(xtrain, ytrain, params, **kwargs)

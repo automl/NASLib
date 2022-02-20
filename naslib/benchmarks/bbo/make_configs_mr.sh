@@ -26,7 +26,7 @@ config_type=bbo-bs
 # search space / data:
 search_space=mr
 
-dataset=(seg, video, 3ddet, cls)
+dataset=(seg video 3ddet cls)
 
 # epoch number to get the values 
 fidelity=-1
