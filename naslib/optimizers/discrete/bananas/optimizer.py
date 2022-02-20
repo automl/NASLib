@@ -173,9 +173,9 @@ class Bananas(MetaOptimizer):
                         ):
                             candidate = arch.clone()
                             for edit in range(int(self.max_mutations)):
-                                arch = self.search_space.clone()
-                                arch.mutate(candidate, dataset_api=self.dataset_api)
-                                candidate = arch
+                                arch_ = self.search_space.clone()
+                                arch_.mutate(candidate, dataset_api=self.dataset_api)
+                                candidate = arch_
                             candidates.append(candidate)
 
                 else:
