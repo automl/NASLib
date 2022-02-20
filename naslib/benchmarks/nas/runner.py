@@ -4,11 +4,14 @@ import sys
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import RandomSearch, Npenas, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor, DARTSOptimizer, DrNASOptimizer, GDASOptimizer
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
-DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpace, NasBenchASRSearchSpace
+DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpaceMicro, TransBench101SearchSpaceMacro, NasBenchASRSearchSpace
+
 from naslib.utils import utils, setup_logger, get_dataset_api
+
+from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
 
 config = utils.get_config_from_args(config_type='nas')
 
@@ -23,6 +26,9 @@ supported_optimizers = {
     'bananas': Bananas(config),
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
+    'darts': DARTSOptimizer(config),
+    'drnas': DrNASOptimizer(config),
+    'gdas': GDASOptimizer(config),
 }
 
 supported_search_spaces = {
@@ -30,8 +36,8 @@ supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(),
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
-    'transbench101_micro': TransBench101SearchSpace('micro'),
-    'transbench101_macro': TransBench101SearchSpace('macro'),
+    'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
+    'transbench101_macro': TransBench101SearchSpaceMacro()
     'asr': NasBenchASRSearchSpace(),
 }
 
@@ -42,8 +48,18 @@ search_space = supported_search_spaces[config.search_space]
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
+# optimizer.adapt_search_space(search_space)
+ 
+import torch
+
+if config.dataset in ['class_object', 'class_scene']:
+    optimizer.loss = SoftmaxCrossEntropyWithLogits()
+elif config.dataset == 'autoencoder':
+    optimizer.loss = torch.nn.L1Loss()
+    
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
 trainer.search(resume_from="")
 trainer.evaluate(resume_from="", dataset_api=dataset_api)
+# trainer.evaluate(resume_from="")

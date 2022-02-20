@@ -40,7 +40,8 @@ from naslib.search_spaces import (
     NasBench201SearchSpace,
     DartsSearchSpace,
     NasBenchNLPSearchSpace,
-    TransBench101SearchSpace,
+    TransBench101SearchSpaceMicro,
+    TransBench101SearchSpaceMacro
     NasBenchASRSearchSpace,
 )
 
@@ -62,6 +63,7 @@ supported_predictors = {
     "bonas": BonasPredictor(encoding_type="bonas", hpo_wrapper=True),
     "dngo": DNGOPredictor(encoding_type="adjacency_one_hot"),
     "fisher": ZeroCostV2(config, batch_size=64, method_type="fisher"),
+    "flops": ZeroCostV2(config, batch_size=64, method_type="flops"),
     "gcn": GCNPredictor(encoding_type="gcn", hpo_wrapper=True),
     "gp": GPPredictor(encoding_type="adjacency_one_hot", 
                       hparams_from_file=config.hparams_from_file),
@@ -74,6 +76,7 @@ supported_predictors = {
     "grad_norm": ZeroCostV2(config, batch_size=64, method_type="grad_norm"),
     "grasp": ZeroCostV2(config, batch_size=64, method_type="grasp"),
     "jacov": ZeroCostV1(config, batch_size=64, method_type="jacov"),
+    "jacov2": ZeroCostV2(config, batch_size=64, method_type="jacov"),
     "lce": LCEPredictor(metric=Metric.VAL_ACCURACY),
     "lce_m": LCEMPredictor(metric=Metric.VAL_ACCURACY),
     "lcsvr": SVR_Estimator(
@@ -85,6 +88,7 @@ supported_predictors = {
     "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False, 
                             hparams_from_file=config.hparams_from_file),
     "ngb": NGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
+    "params": ZeroCostV2(config, batch_size=64, method_type="params"),
     "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
                                 hparams_from_file=config.hparams_from_file),
     "seminas": SemiNASPredictor(encoding_type="seminas", semi=True, hpo_wrapper=False, 
@@ -153,8 +157,8 @@ supported_search_spaces = {
     "nasbench201": NasBench201SearchSpace(),
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
-    'transbench101_micro': TransBench101SearchSpace('micro'),
-    'transbench101_macro': TransBench101SearchSpace('macro'),
+    'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
+    'transbench101_macro': TransBench101SearchSpaceMacro()
     "asr": NasBenchASRSearchSpace(),
 }
 

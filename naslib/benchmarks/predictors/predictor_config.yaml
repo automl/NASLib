@@ -1,4 +1,3 @@
-
 # The experiment type can be single, vary_train_size, vary_fidelity, or vary_both
 # single will use train_size_single and fidleity_single 
 # vary_train_size will use train_size_list and fidelity_single
@@ -6,26 +5,25 @@
 # vary_both will use train_size_list and fidelity_list
 experiment_type: single
 
-# nasbench101, nasbench201, darts, nlp, 
-# transbench101_micro, transbench101_macro, asr
+# nasbench101, nasbench201, darts, nlp, transbench101_micro
 search_space: nasbench201
 
 # nasbench201 datasets: cifar10, cifar100, ImageNet16-120
-# transbench101 datasets: class_scene, class_object, 
+# transbench101 datasets: class_scene, class_object,
 # jigsaw, room_layout, segmentsemantic, normal, autoencoder
 dataset: cifar10
 
 # one of the 31 predictors in benchmarks/predictors/runner.py
-predictor: xgb
+predictor: synflow
 
 # 0: mutation-based, or 1: uniformly random, train/test sets
 uniform_random: 1
 
 # test set size
-test_size: 100
+test_size: 2
 
 # size of the training set (used by model-based predictors)
-train_size_single: 50
+train_size_single: 3
 train_size_list: [5, 8, 14, 24, 42, 71, 121, 205]
 
 # num. epochs to train the test set arches (used by learning curve methods)
