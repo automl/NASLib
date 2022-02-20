@@ -19,6 +19,7 @@ from naslib.search_spaces.darts.conversions import (
     convert_naslib_to_compact,
     convert_naslib_to_genotype,
     make_compact_mutable,
+    make_compact_immutable,
 )
 from naslib.search_spaces.core.query_metrics import Metric
 from .primitives import FactorizedReduce
@@ -394,6 +395,7 @@ class DartsSearchSpace(Graph):
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: "train_losses",
             Metric.VAL_ACCURACY: "val_accuracies",
+            Metric.TEST_ACCURACY: "val_accuracies",
             Metric.TRAIN_TIME: "runtime",
         }
 
@@ -406,6 +408,7 @@ class DartsSearchSpace(Graph):
             """
             assert metric in [
                 Metric.VAL_ACCURACY,
+                Metric.TEST_ACCURACY,
                 Metric.TRAIN_LOSS,
                 Metric.TRAIN_TIME,
                 Metric.HP,
@@ -454,10 +457,21 @@ class DartsSearchSpace(Graph):
     def get_hash(self):
         return self.get_compact()
 
+    def get_arch_iterator(self, dataset_api=None):
+        # currently set up for nasbench301 data, not surrogate
+        arch_list = np.array(dataset_api["nb301_arches"])
+        random.shuffle(arch_list)
+        return arch_list
+
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact
         self.compact = compact
         convert_compact_to_naslib(compact, self)
+
+    def set_spec(self, compact, dataset_api=None):
+        # this is just to unify the setters across search spaces
+        # TODO: change it to set_spec on all search spaces
+        self.set_compact(make_compact_immutable(compact))
 
     def sample_random_architecture(self, dataset_api=None):
         """
@@ -589,8 +603,8 @@ def _set_ops(edge, C, stride):
             if stride == 1
             else FactorizedReduce(C, C, stride, affine=False),
             ops.Zero(stride=stride),
-            ops.MaxPool(C, 3, stride),
-            ops.AvgPool(C, 3, stride),
+            ops.MaxPool(C, 3, stride, use_bn=True),
+            ops.AvgPool(C, 3, stride, use_bn=True),
             ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
             ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
             ops.DilConv(

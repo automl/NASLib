@@ -25,17 +25,17 @@ with open("requirements.txt", "r") as f:
     for line in f:
         requirements.append(line.strip())
 
-git_nasbench = "git+https://github.com/yashsmehta/nasbench.git@master"
-
-try:
-    import nasbench
-except ImportError:
-    if '--user' in sys.argv:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
-            '--user', git_nasbench], check=False)
-    else:
-        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
-            git_nasbench], check=False)
+#git_nasbench = "git+https://github.com/yashsmehta/nasbench.git@master"
+#
+#try:
+    #import nasbench
+#except ImportError:
+    #if '--user' in sys.argv:
+        #subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            #'--user', git_nasbench], check=False)
+    #else:
+        #subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            #git_nasbench], check=False)
 
 
 print('-- Building version ' + version)

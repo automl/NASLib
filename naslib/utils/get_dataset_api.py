@@ -20,10 +20,10 @@ def get_transbench101_api(dataset=None):
 
 def get_nasbench101_api(dataset=None):
     # load nasbench101
-    from nasbench import api
+    import naslib.utils.nb101_api as api
 
     nb101_data = api.NASBench(
-        os.path.join(get_project_root(), "data", "nasbench_only108.tfrecord")
+        os.path.join(get_project_root(), "data", "nasbench_only108.pkl")
     )
     return {"api": api, "nb101_data": nb101_data}
 
@@ -140,7 +140,10 @@ def get_dataset_api(search_space=None, dataset=None):
 
     elif search_space == "nlp":
         return get_nlp_api(dataset=dataset)
-    
+
+    elif search_space == 'transbench101':
+        return get_transbench101_api(dataset=dataset)
+
     elif search_space == 'transbench101_micro':
         return get_transbench101_api(dataset=dataset)
     

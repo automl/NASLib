@@ -6,7 +6,7 @@ from torch.distributions.dirichlet import Dirichlet
 from torch.distributions.kl import kl_divergence
 import torch.nn.functional as F
 
-from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.primitives import AbstractPrimitive, MixedOp
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
@@ -164,7 +164,7 @@ class DrNASOptimizer(DARTSOptimizer):
         return graph
 
 
-class DrNASMixedOp(AbstractPrimitive):
+class DrNASMixedOp(MixedOp):
     def __init__(self, primitives, min_cuda_memory=False):
         """
         Initialize the mixed ops
@@ -172,21 +172,16 @@ class DrNASMixedOp(AbstractPrimitive):
         Args:
             primitives (list): The primitive operations to sample from.
         """
-        super().__init__(locals())
-        self.primitives = primitives
-        for i, primitive in enumerate(primitives):
-            self.add_module("primitive-{}".format(i), primitive)
+        super().__init__(primitives)
+        self.min_cuda_memory = min_cuda_memory
 
     def forward(self, x, edge_data):
         """
         applies the previously sampled weights from the dirichlet distribution
         before forwarding `x` through the graph as in DARTS
         """
-        weigsum = sum(
+        weighted_sum = sum(
             w * op(x, None)
             for w, op in zip(edge_data.sampled_arch_weight, self.primitives)
         )
-        return weigsum
-
-    def get_embedded_ops(self):
-        return self.primitives
+        return weighted_sum

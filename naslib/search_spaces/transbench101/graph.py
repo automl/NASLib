@@ -2,6 +2,7 @@ import os
 import pickle
 import numpy as np
 import random
+import itertools
 import torch
 import torch.nn as nn
 
@@ -130,7 +131,6 @@ class TransBench101SearchSpace(Graph):
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
             
-            
         if self.space=='micro':
             arch_str = convert_naslib_to_transbench101_micro(self.op_indices) 
         elif self.space=='macro':
@@ -182,9 +182,9 @@ class TransBench101SearchSpace(Graph):
                 Metric.TRAIN_ACCURACY: 'train_ssim',
                 Metric.VAL_ACCURACY: 'valid_ssim',
                 Metric.TEST_ACCURACY: 'test_ssim',
-                Metric.TRAIN_LOSS: 'train_loss',
-                Metric.VAL_LOSS: 'valid_loss',
-                Metric.TEST_LOSS: 'test_loss',
+                Metric.TRAIN_LOSS: 'train_l1_loss',
+                Metric.VAL_LOSS: 'valid_l1_loss',
+                Metric.TEST_LOSS: 'test_l1_loss',
                 Metric.TRAIN_TIME: 'time_elapsed',
             }
         
@@ -225,6 +225,13 @@ class TransBench101SearchSpace(Graph):
         self.op_indices = op_indices
 #         convert_op_indices_to_naslib(op_indices, self)
 
+    def get_arch_iterator(self, dataset_api=None):
+        return itertools.product(range(4), repeat=6)
+
+    def set_spec(self, op_indices, dataset_api=None):
+        # this is just to unify the setters across search spaces
+        # TODO: change it to set_spec on all search spaces
+        self.set_op_indices(op_indices)
 
     def sample_random_architecture_micro(self, dataset_api=None):
         """
@@ -265,15 +272,13 @@ class TransBench101SearchSpace(Graph):
         update the naslib object and op_indices
         """
         parent_op_indices = parent.get_op_indices()
-        op_indices = parent_op_indices
+        op_indices = list(parent_op_indices)
 
         edge = np.random.choice(len(parent_op_indices))
         available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
         op_index = np.random.choice(available)
         op_indices[edge] = op_index
         self.set_op_indices(op_indices)
-
-
 
     def mutate_macro(self, parent, dataset_api=None):
         """
@@ -332,7 +337,7 @@ class TransBench101SearchSpace(Graph):
             available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
             
             for op_index in available:
-                nbr_op_indices = self.op_indices.copy()
+                nbr_op_indices = list(self.op_indices).copy()
                 nbr_op_indices[edge] = op_index
                 nbr = TransBench101SearchSpace()
                 nbr.set_op_indices(nbr_op_indices)

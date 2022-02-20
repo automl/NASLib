@@ -254,7 +254,7 @@ def convert_compact_to_genotype(compact):
         genotype.append([])
 
         for j in range(8):
-            genotype[i].append((OPS[cell[j][1] - 1], cell[j][0]))
+            genotype[i].append((OPS[cell[j][1]], cell[j][0]))
 
     return Genotype(
         normal=genotype[0],
@@ -282,6 +282,15 @@ def make_compact_mutable(compact):
                 arch_list[-1][-1].append(num)
     return arch_list
 
+def make_compact_immutable(compact):
+    # convert list to tuple so that it is hashable
+    arch_list = []
+    for cell in compact:
+        arch_list.append([])
+        for pair in cell:
+            arch_list[-1].append(tuple(pair))
+        arch_list[-1] = tuple(arch_list[-1])
+    return tuple(arch_list)
 
 def convert_naslib_to_config(naslib_object):
     genotype = convert_naslib_to_genotype(naslib_object)

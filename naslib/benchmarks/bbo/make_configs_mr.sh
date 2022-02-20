@@ -1,3 +1,4 @@
+
 export OMP_NUM_THREADS=2
 # optimizers=(rs)
 optimizers=(rs re ls npenas bananas)
@@ -23,9 +24,9 @@ out_dir=run_cpu
 config_type=bbo-bs
 
 # search space / data:
-search_space=asr
+search_space=mr
 
-dataset=(TIMIT)
+dataset=(seg video 3ddet cls)
 
 # epoch number to get the values 
 fidelity=-1

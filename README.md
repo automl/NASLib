@@ -88,6 +88,13 @@ If you use this code in your own work, please use the following bibtex entries:
   author={Ruchte, Michael and Zela, Arber and Siems, Julien and Grabocka, Josif and Hutter, Frank}, 
   year={2020}, publisher={GitHub}, 
   howpublished={\url{https://github.com/automl/NASLib}} }
+  
+@inproceedings{mehta2022bench,
+  title={NAS-Bench-Suite: NAS Evaluation is (Now) Surprisingly Easy},
+  author={Mehta, Yash and White, Colin and Zela, Arber and Krishnakumar, Arjun and Zabergja, Guri and Moradian, Shakiba and Safari, Mahmoud and Yu, Kaicheng and Hutter, Frank},
+  booktitle={International Conference on Learning Representations},
+  year={2022}
+}
  ``` 
  
 
