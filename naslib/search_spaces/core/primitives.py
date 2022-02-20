@@ -86,14 +86,43 @@ class MixedOp(AbstractPrimitive):
         super().__init__(locals())
         self.primitives = primitives
         self._add_primitive_modules()
+        self.pre_process_hook = None
+        self.post_process_hook = None
 
     def _add_primitive_modules(self):
         for i, primitive in enumerate(self.primitives):
             self.add_module("primitive-{}".format(i), primitive)
 
+    def set_pre_process_hook(self, fn):
+        self.set_pre_process_hook = fn
+
+    def set_post_process_hook(self, fn):
+        self.post_process_hook = fn
+
     @abstractmethod
-    def forward(self, x, edge_data):
+    def get_weights(self, edge_data):
         raise NotImplementedError()
+
+    @abstractmethod
+    def process_weights(self, weights):
+        raise NotImplementedError()
+
+    @abstractmethod
+    def apply_weights(self, x, weights):
+        raise NotImplementedError()
+
+    def forward(self, x, edge_data):
+        weights = self.get_weights(edge_data)
+
+        if self.pre_process_hook:
+            weights = self.pre_process_hook(weights, edge_data)
+
+        weights = self.process_weights(weights)
+
+        if self.post_process_hook:
+            weights = self.post_process_hook(weights, edge_data)
+
+        return self.apply_weights(x, weights)
 
     def get_embedded_ops(self):
         return self.primitives

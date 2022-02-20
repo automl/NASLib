@@ -175,13 +175,15 @@ class DrNASMixedOp(MixedOp):
         super().__init__(primitives)
         self.min_cuda_memory = min_cuda_memory
 
-    def forward(self, x, edge_data):
-        """
-        applies the previously sampled weights from the dirichlet distribution
-        before forwarding `x` through the graph as in DARTS
-        """
+    def get_weights(self, edge_data):
+        return edge_data.sampled_arch_weight
+
+    def process_weights(self, weights):
+        return weights
+
+    def apply_weights(self, x, weights):
         weighted_sum = sum(
             w * op(x, None)
-            for w, op in zip(edge_data.sampled_arch_weight, self.primitives)
+            for w, op in zip(weights, self.primitives)
         )
         return weighted_sum
