@@ -136,12 +136,12 @@ def create_configs(
                 random.seed(seed)
                 eta = int(np.random.choice(range(2, 5)))
                 fidelity_range = [2**i for i in range(0, 9)]
-                max_fidelity = np.random.choice(fidelity_range)
+                max_fidelity = int(np.random.choice(fidelity_range))
                 # min fidelity has to be lower/equal to max_fidelity
-                min_fidelity = np.random.choice(
+                min_fidelity = int(np.random.choice(
                     list(
                         filter(
-                            lambda n: n <= max_fidelity, fidelity_range)))
+                            lambda n: n <= max_fidelity, fidelity_range))))
                 config = {
                     "seed": seed,
                     "search_space": search_space,
