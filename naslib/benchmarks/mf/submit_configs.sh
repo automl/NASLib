@@ -1,6 +1,6 @@
 #!/bin/bash
 # define variable names
-workspace=/work/dlclarge2/gernel-naslib-experiments/
+workspace=/work/dlclarge2/gernel-naslib-experiments
 
 
 #SBATCH -p mlhiwidlc_gpu-rtx2080 #bosch_gpu-rtx2080    #bosch_cpu-cascadelake  # partition (queue)
