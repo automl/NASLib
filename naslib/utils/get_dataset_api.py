@@ -131,6 +131,12 @@ def get_asr_api(dataset=None):
         'asr_data': d,
     }
 
+def get_natsbenchsize_api(dataset=None):
+    from nats_bench import create
+
+    # Create the API for size search space
+    api = create(None, 'sss', fast_mode=True, verbose=True)
+    return api
 
 def get_dataset_api(search_space=None, dataset=None):
 
@@ -151,6 +157,9 @@ def get_dataset_api(search_space=None, dataset=None):
 
     elif search_space == "asr":
         return get_asr_api(dataset=dataset)
+
+    elif search_space == 'natsbenchsize':
+        return get_natsbenchsize_api(dataset=dataset)
 
     elif search_space == "test":
         return None

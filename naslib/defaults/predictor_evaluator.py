@@ -60,16 +60,9 @@ class PredictorEvaluator(object):
         if self.search_space.get_type() == "nasbench101":
             self.full_lc = False
             self.hyperparameters = False
-        elif self.search_space.get_type() == "nasbench201":
-            self.full_lc = True
-            self.hyperparameters = True
-        elif self.search_space.get_type() == "darts":
-            self.full_lc = True
-            self.hyperparameters = True
-        elif self.search_space.get_type() == "nlp":
-            self.full_lc = True
-            self.hyperparameters = True
-        elif self.search_space.get_type() == "transbench101":
+        elif self.search_space.get_type() in ["nasbench201", "darts", 
+                                              "nlp", "transbench101", 
+                                              "asr"]:
             self.full_lc = True
             self.hyperparameters = True
         else:
@@ -320,12 +313,20 @@ class PredictorEvaluator(object):
             for key in hyperparams:
                 results_dict["hp_" + key] = hyperparams[key]
         results_dict["cv_score"] = cv_score
-        # print abridged results on one line:
-        logger.info(
-            "train_size: {}, fidelity: {}, kendall tau {}".format(
-                train_size, fidelity, np.round(results_dict["kendalltau"], 4)
+        
+        # note: specific code for zero-cost experiments:
+        method_type = None
+        if hasattr(self.predictor, 'method_type'):
+            method_type = self.predictor.method_type
+        print(
+            "dataset: {}, predictor: {}, spearman {}".format(
+                self.dataset, method_type, np.round(results_dict["spearman"], 4)
             )
         )
+        print("full ytest", results_dict["full_ytest"])
+        print("full testpred", results_dict["full_testpred"])
+        # end specific code for zero-cost experiments.
+        
         # print entire results dict:
         print_string = ""
         for key in results_dict:
@@ -426,6 +427,8 @@ class PredictorEvaluator(object):
             "kt_1dec",
             "precision_10",
             "precision_20",
+            "full_ytest",
+            "full_testpred",
         ]
         metrics_dict = {}
 
@@ -456,6 +459,9 @@ class PredictorEvaluator(object):
                 metrics_dict["precision_{}".format(k)] = (
                     sum(top_ytest & top_test_pred) / k
                 )
+            metrics_dict["full_ytest"] = list(ytest)
+            metrics_dict["full_testpred"] = list(test_pred)
+
         except:
             for metric in METRICS:
                 metrics_dict[metric] = float("nan")
@@ -524,4 +530,11 @@ class PredictorEvaluator(object):
         with codecs.open(
             os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
         ) as file:
+            for res in self.results:
+                for key, value in res.items():
+                    if type(value) == np.int32 or type(value) == np.int64:
+                        res[key] = int(value)
+                    if type(value) == np.float32 or type(value) == np.float64:
+                        res[key] = float(value)
+
             json.dump(self.results, file, separators=(",", ":"))

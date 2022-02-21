@@ -11,7 +11,10 @@ import random
 import numpy as np
 import torch
 import logging
+import torch.nn.functional as F
+import math
 
+from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
 from naslib.predictors.predictor import Predictor
 from naslib.utils.utils import get_project_root, get_train_val_loaders
 from naslib.predictors.utils.models.build_darts_net import NetworkCIFAR
@@ -19,7 +22,7 @@ from naslib.predictors.utils.models import nasbench2 as nas201_arch
 from naslib.predictors.utils.models import nasbench1 as nas101_arch
 from naslib.predictors.utils.models import nasbench1_spec
 from naslib.predictors.utils.pruners import predictive
-import math
+from naslib.predictors.utils.pruners.measures.model_stats import get_model_stats
 from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
 
 logger = logging.getLogger(__name__)
@@ -53,6 +56,7 @@ class ZeroCostV2(Predictor):
         for test_arch in xtest:
             count += 1
             logger.info("zero cost: {} of {}".format(count, len(xtest)))
+            
             if "nasbench201" in self.config.search_space:
                 ops_to_nb201 = {
                     "AvgPool1x1": "avg_pool_3x3",
@@ -90,6 +94,8 @@ class ZeroCostV2(Predictor):
                     )
                     measure_score = -10e8
                     return measure_score
+                
+            
 
             elif "darts" in self.config.search_space:
                 test_genotype = convert_compact_to_genotype(test_arch.compact)
@@ -114,15 +120,63 @@ class ZeroCostV2(Predictor):
                     num_mods=3,
                     num_classes=self.num_classes,
                 )
+            else:
+                """
+                note: parsing the NASLib object creates the nn.Module.
+                Technically we can do this for nb101 / 201 / darts as well,
+                but are keeping the original code above for consistency.
+                """
+                test_arch.parse()
+                network = test_arch
+                logger.info('Parsed architecture')
+
+            # set up loss function
+            if self.config.dataset in ['class_object', 'class_scene']:
+                loss_fn = SoftmaxCrossEntropyWithLogits()
+            elif self.config.dataset == 'autoencoder':
+                loss_fn = torch.nn.L1Loss()
+            else:
+                loss_fn = F.cross_entropy
 
             network = network.to(self.device)
-            score = predictive.find_measures(
-                network,
-                self.train_loader,
-                (self.dataload, self.num_imgs_or_batches, self.num_classes),
-                self.device,
-                measure_names=[self.method_type],
-            )
+
+            # todo: rearrange the if statements so that nb101/201/darts can use this code as well:
+            try: # useful when launching bash scripts            
+                if self.method_type in ['flops', 'params']:
+                    """
+                    This code is from
+                    https://github.com/microsoft/archai/blob/5fc5e5aa63f3ac51a384b41e32eee4e7e5da2481/archai/common/trainer.py#L201
+                    """
+                    data_iterator = iter(self.train_loader)
+                    x, target = next(data_iterator)
+                    x_shape = list(x.shape)
+                    x_shape[0] = 1 # to prevent overflow errors with large batch size we will use a batch size of 1
+                    model_stats = get_model_stats(network, input_tensor_shape=x_shape, clone_model=True)
+
+                    # important to do to avoid overflow
+                    mega_flops = float(model_stats.Flops)/1e6
+                    mega_params = float(model_stats.parameters)/1e6
+
+                    if self.method_type == 'params':
+                        score = mega_params
+                    elif self.method_type == 'flops':
+                        score = mega_flops
+
+                else:
+
+                    score = predictive.find_measures(
+                        network,
+                        self.train_loader,
+                        (self.dataload, self.num_imgs_or_batches, self.num_classes),
+                        self.device,
+                        loss_fn=loss_fn,
+                        measure_names=[self.method_type],
+                    )
+            except: # useful when launching bash scripts
+                print('find_measures failed')
+                score = -1e8
+
+            # some of the values need to be flipped
             if math.isnan(score):
                 score = -1e8
 

@@ -8,23 +8,26 @@ from torch.utils.data import Dataset
 from sklearn import metrics
 from scipy import stats
 
-from copy import copy
 from collections import OrderedDict
 
 import random
 import os
 import os.path
-import shutil
-from functools import wraps, partial
+from functools import partial
 from pathlib import Path
 
 import numpy as np
 import torch
 import torchvision.transforms as transforms
-import yaml
 
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
+
+from .taskonomy_dataset import get_datasets
+from . import load_ops
+
+from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
+
 
 cat_channels = partial(torch.cat, dim=1)
 
@@ -235,6 +238,7 @@ def get_config_from_args(args=None, config_type="nas"):
         config.save = "{}/{}/{}/{}/{}".format(
             config.out_dir, config.search_space, config.dataset, config.optimizer, config.seed
         )
+
     elif config_type == "bbo-bs":
         # config.seed = args.seed
         config.search.seed = config.seed
@@ -250,7 +254,7 @@ def get_config_from_args(args=None, config_type="nas"):
         )
     
     
-    elif config_type == "predictor":
+    elif config_type == "predictor" and not config.save:
         if config.predictor == "lcsvr" and config.experiment_type == "vary_train_size":
             config.save = "{}/{}/{}/{}_train/{}".format(
                 config.out_dir,
@@ -363,6 +367,37 @@ def get_train_val_loaders(config, mode):
             transform=valid_transform,
             use_num_of_class_only=120,
         )
+    elif dataset == 'jigsaw':
+        cfg = get_jigsaw_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+        
+    elif dataset == 'class_object':
+        cfg = get_class_object_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+        
+    elif dataset == 'class_scene':
+        cfg = get_class_scene_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+        
+    elif dataset == 'autoencoder':
+        cfg = get_autoencoder_configs()
+    
+        train_data, val_data, test_data = get_datasets(cfg)
+        
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
@@ -376,7 +411,7 @@ def get_train_val_loaders(config, mode):
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
         pin_memory=True,
         num_workers=0,
-        worker_init_fn=np.random.seed(seed),
+        worker_init_fn=np.random.seed(seed+1),
     )
 
     valid_queue = torch.utils.data.DataLoader(
@@ -496,6 +531,204 @@ def _data_transforms_ImageNet_16_120(args):
     return train_transform, valid_transform
 
 
+def get_jigsaw_configs():
+    cfg = {}
+    
+    cfg['task_name'] = 'jigsaw'
+
+    cfg['input_dim'] = (255, 255)
+    cfg['target_num_channels'] = 9
+    
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+    
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_dim'] = 1000
+    cfg['target_load_fn'] = load_ops.random_jigsaw_permutation
+    cfg['target_load_kwargs'] = {'classes': cfg['target_dim']}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomGrayscale(0.3),
+        load_ops.MakeJigsawPuzzle(classes=cfg['target_dim'], mode='max', tile_dim=(64, 64), centercrop=0.9, norm=False, totensor=True),
+    ])
+    return cfg
+
+
+def get_class_object_configs():
+    cfg = {}
+    
+    cfg['task_name'] = 'class_object'
+
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3
+    
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+    
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_dim'] = 75
+    
+    cfg['target_load_fn'] = load_ops.load_class_object_logits
+    
+    cfg['target_load_kwargs'] = {'selected': True if cfg['target_dim'] < 1000 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['demo_kwargs'] = {'selected': True if cfg['target_dim'] < 1000 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['normal_params'] = {'mean': [0.5224, 0.5222, 0.5221], 'std': [0.2234, 0.2235, 0.2236]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+       load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+
+def get_class_scene_configs():
+    cfg = {}
+    
+    cfg['task_name'] = 'class_scene'
+
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3
+    
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+    
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_dim'] = 47
+    
+    cfg['target_load_fn'] = load_ops.load_class_scene_logits
+    
+    cfg['target_load_kwargs'] = {'selected': True if cfg['target_dim'] < 365 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['demo_kwargs'] = {'selected': True if cfg['target_dim'] < 365 else False, 'final5k': True if cfg['data_split_dir'].split('/')[-1] == 'final5k' else False}
+    
+    cfg['normal_params'] = {'mean': [0.5224, 0.5222, 0.5221], 'std': [0.2234, 0.2235, 0.2236]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+       load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+
+def get_autoencoder_configs():
+    
+    cfg = {}
+    
+    cfg['task_name'] = 'autoencoder'
+    
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3
+    
+    cfg['target_dim'] = (256, 256)
+    cfg['target_channel'] = 3
+
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+   
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_load_fn'] = load_ops.load_raw_img_label
+    cfg['target_load_kwargs'] = {}
+    
+    cfg['normal_params'] = {'mean': [0.5, 0.5, 0.5], 'std': [0.5, 0.5, 0.5]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+
+
 class TensorDatasetWithTrans(Dataset):
     """
     TensorDataset with support of transforms.
@@ -556,7 +789,7 @@ def get_last_checkpoint(config, search=True):
         )
     except:
         return ""
-
+    
 
 def accuracy(output, target, topk=(1,)):
     """
@@ -574,6 +807,52 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].reshape(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+
+def accuracy_class_object(output, target, topk=(1,)):
+    """
+    Calculate the accuracy given the softmax output and the target.
+    """
+    target = target.argmax(dim=1)
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].reshape(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+def accuracy_class_scene(output, target, topk=(1,)):
+    """
+    Calculate the accuracy given the softmax output and the target.
+    """
+    target = target.argmax(dim=1)
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].reshape(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
+
+def accuracy_autoencoder(output, target, topk=(1,)):
+    ssim_loss= SSIM(data_range=1, size_average=True, channel=3)
+    res = ssim_loss(output, target)
+    """
+    Calculate the accuracy given the softmax output and the target.
+    """
+    return res, res
 
 
 def count_parameters_in_MB(model):

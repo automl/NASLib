@@ -46,7 +46,11 @@ def main(args):
                     "acq_fn_type": "its",
                     "acq_fn_optimization": args.acq_fn_optimization,
                     "encoding_type": "path",
+                    "num_arches_to_mutate": 5,
+                    "max_mutations": 1,
+                    "num_candidates": 200,
                     "predictor": args.predictor,
+                    "predictor_type": "bananas",
                     "debug_predictor": False,
                 },
             }
@@ -105,18 +109,19 @@ def main(args):
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
 
+        max_train_size = 1000
         if args.search_space == "nasbench101":
             total_epochs = 108 - 1
-            max_train_size = 1000
         elif args.search_space == "nasbench201":
             total_epochs = 200 - 1
-            max_train_size = 1000
         elif args.search_space == "darts":
             total_epochs = 96 - 1
-            max_train_size = 500
         elif args.search_space == "nlp":
             total_epochs = 50 - 1
-            max_train_size = 1000
+        elif args.search_space in ["transbench101_micro", "transnasbench101_macro"]:
+            total_epochs = 10
+        elif args.search_spaze == "asr":
+            total_epochs = 40
 
         train_size_list = [
             int(j)
@@ -128,7 +133,6 @@ def main(args):
                 base=2.0,
             )
         ]
-        # train_size_list = [i for i in train_size_list if i < 230]
         fidelity_list = [
             int(j)
             for j in np.logspace(
@@ -197,7 +201,7 @@ def main(args):
                     "num_arches_to_mutate": 2,
                     "max_mutations": 1,
                     "num_candidates": 100,
-                    "predictor_type": "feedforward",
+                    "predictor_type": "bananas",
                     "debug_predictor": False,
                 },
             }
@@ -229,6 +233,9 @@ def main(args):
             max_train_size = 500
         elif args.search_space == "nlp":
             total_epochs = 50 - 1
+            max_train_size = 1000
+        elif args.search_space == "transbench101_micro":
+            total_epochs = 20
             max_train_size = 1000
 
         train_size_list = [
@@ -287,7 +294,7 @@ def main(args):
                 "train_size_single": args.train_size_single,
                 "fidelity_single": args.fidelity_single,
                 "fidelity_list": fidelity_list,
-                "max_hpo_time": 900,
+                "max_hpo_time": args.max_hpo_time,
             }
 
             with open(folder + f"/config_{args.predictor}_{i}.yaml", "w") as fh:
@@ -372,7 +379,7 @@ if __name__ == "__main__":
     parser.add_argument("--trials", type=int, default=100, help="Number of trials")
     parser.add_argument("--optimizer", type=str, default="rs", help="which optimizer")
     parser.add_argument("--predictor_type", type=str, default="full", help="which predictor")
-    parser.add_argument("--predictor", type=str, default="xgb", help="which predictor")
+    parser.add_argument("--predictor", type=str, default="bananas", help="which predictor")
     parser.add_argument(
         "--test_size", type=int, default=30, help="Test set size for predictor"
     )
@@ -437,6 +444,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--walks", type=int, default=1000, help="number of random walks"
+    )
+    parser.add_argument(
+        "--max_hpo_time", type=int, default=3000, help="HPO time"
     )
     
     args = parser.parse_args()

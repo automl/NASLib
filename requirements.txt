@@ -31,3 +31,6 @@ tabulate==0.8.9
 tqdm==4.61.1
 yacs==0.1.8
 scikit-learn==1.0.2
+scikit-image==0.19.2
+pytorch-msssim==0.2.1
+tensorwatch==0.9.1

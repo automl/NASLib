@@ -254,7 +254,7 @@ def convert_compact_to_genotype(compact):
         genotype.append([])
 
         for j in range(8):
-            genotype[i].append((OPS[cell[j][1] - 1], cell[j][0]))
+            genotype[i].append((OPS[cell[j][1]], cell[j][0]))
 
     return Genotype(
         normal=genotype[0],
