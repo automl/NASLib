@@ -2,6 +2,7 @@ from distutils.command.config import config
 import logging
 
 import torch
+from collections.abc import Iterable
 
 from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
@@ -80,10 +81,22 @@ class GSparseOptimizer(MetaOptimizer):
         alpha = torch.nn.Parameter(
            torch.ones(size=[len_primitives], requires_grad=False), requires_grad=False
         )
+        weights = torch.nn.Parameter(
+           torch.FloatTensor(len_primitives*[0.0]), requires_grad=False
+        )
         weight_decay = torch.nn.Parameter(
            torch.FloatTensor(len_primitives*[GSparseOptimizer.mu])#, requires_grad=False)
         )
         edge.data.set("alpha", alpha, shared=True)
+        edge.data.set("weights", weights, shared=True)
+        
+        for i in range(len(edge.data.op)):
+            try:
+                len(edge.data.op[i].op)
+            except Exception:
+                weight = torch.nn.Parameter(torch.tensor(0.0), requires_grad=True)
+                edge.data.op[i].register_parameter('weight', weight)
+
         #import ipdb;ipdb.set_trace()
         #edge.data.set("weight_decay", weight_decay, shared=False)
 
@@ -123,8 +136,8 @@ class GSparseOptimizer(MetaOptimizer):
             momentum=self.config.search.momentum,
             weight_decay=self.mu,
             clip_bounds=(0,1),
-            #normalization=self.config.search.normalization,
-            #normalization_exponent=self.normalization_exponent
+            normalization=self.config.search.normalization,
+            normalization_exponent=self.normalization_exponent
         )
 
         graph.train()
@@ -153,7 +166,7 @@ class GSparseOptimizer(MetaOptimizer):
         self.op_optimizer.zero_grad()
         logits_train = self.graph(input_train)
         train_loss = self.loss(logits_train, target_train)
-        import ipdb;ipdb.set_trace()
+        #import ipdb;ipdb.set_trace()
         train_loss.backward()
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
@@ -175,22 +188,49 @@ class GSparseOptimizer(MetaOptimizer):
         """
         graph = self.graph.clone().unparse()
         graph.prepare_discretization()
-        groups_to_prune = []
 
+        def update_l2_weights(edge):
+            if edge.data.has("alpha"):
+                #primitives = edge.data.op.get_embedded_ops()
+                weight=0.0
+                for i in range(len(edge.data.op.primitives)):
+                    try:
+                        for j in range(len(edge.data.op.primitives[i].op)):
+                            try:
+                                weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.cpu()))**2
+                            except Exception:
+                                continue
+                        edge.data.weights[i]+=weight                            
+                        weight=0.0
+                    except Exception:                        
+                        #import ipdb;ipdb.set_trace()
+                        try:
+                            edge.data.weights[i]+=(edge.data.op.primitives[i].weight.cpu())**2
+                        except Exception:
+                            continue
+                    
         def prune_weights(edge):
             if edge.data.has("alpha"):
-                primitives = edge.data.op.get_embedded_ops()
-                import ipdb;ipdb.set_trace()
-                positions = primitives < self.threshold #TODO
-                edge.data.alpha[positions] = 0
-                groups_to_prune.append(edge.data.group[positions].tolist())         
-                    
+                for i in range(len(edge.data.weights)):
+                    if torch.sqrt(edge.data.weights[i]) < self.threshold:
+                        edge.data.alpha[i]=0
+
         def discretize_ops(edge):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
+                #print(alphas)
+                #import ipdb;ipdb.set_trace()
+                #edge.head
+                #edge.tail
+                #graph.add_node(new_node#>1)
+                #graph.add_edges(edge.head, new_node#)
+                #graph.add_edges(new_node#, edge.tail)
+                #graph.edges(edge.head, new_node#).set("op", the operation)
+                #graph.edges(new_node#, edge.tail).set("op", Identity())
                 edge.data.set("op", primitives[np.argmax(alphas)])
 
+        graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
         graph.update_edges(prune_weights, scope=self.scope, private_edge_data=True)
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
@@ -273,6 +313,11 @@ class GSparseMixedOp(MixedOp):
         # sampled_arch_weight = edge_data.sampled_arch_weight
 
         summed = sum(op(x, None) for op in self.primitives)
-        import ipdb;ipdb.set_trace()
+        #print(summed)
+        
+        summed = torch.nn.functional.normalize(summed)
+        #print(summed)
+        #import ipdb;ipdb.set_trace()
+        #import ipdb;ipdb.set_trace()
 
         return summed

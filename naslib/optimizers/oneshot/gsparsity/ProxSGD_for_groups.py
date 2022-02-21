@@ -24,7 +24,7 @@ class ProxSGD(Optimizer):
 
         self.normalization = normalization
         self.normalization_exponent = normalization_exponent
-        defaults = dict(lr=lr, momentum=momentum, clip_bounds=clip_bounds)#, weight_decay=weight_decay)
+        defaults = dict(lr=lr, momentum=momentum, clip_bounds=clip_bounds, weight_decay=weight_decay)
         super(ProxSGD, self).__init__(params, defaults)      
 
     def __setstate__(self, state):
@@ -122,5 +122,5 @@ class ProxSGD(Optimizer):
 
                 x.data.add_(lr, x_hat - x)
                 
-        import ipdb;ipdb.set_trace()
+        #import ipdb;ipdb.set_trace()
         return loss

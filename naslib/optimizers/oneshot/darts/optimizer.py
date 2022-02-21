@@ -1,3 +1,4 @@
+from ipaddress import summarize_address_range
 import numpy as np
 import torch
 import logging
@@ -364,3 +365,4 @@ class DARTSMixedOp(MixedOp):
     def forward(self, x, edge_data):
         normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
         return sum(w * op(x, None) for w, op in zip(normed_alphas, self.primitives))
+

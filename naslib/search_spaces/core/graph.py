@@ -407,7 +407,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                         )
 
                         edge_output = edge_data.op.forward(x, edge_data=edge_data)
-                        import ipdb;ipdb.set_trace()
+                        #import ipdb;ipdb.set_trace()
                     else:
                         raise ValueError(
                             "Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(

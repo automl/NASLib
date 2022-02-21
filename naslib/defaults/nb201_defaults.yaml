@@ -1,5 +1,5 @@
 seed: 99
-optimizer: gsparstiy
+optimizer: gsparsity
 dataset: cifar10
 out_dir: run
 
