@@ -1,5 +1,7 @@
 import xgboost as xgb
 import numpy as np
+import os
+import json
 
 from naslib.predictors.trees.ngb import loguniform
 from naslib.predictors.trees import BaseTree
@@ -54,6 +56,10 @@ class XGBoost(BaseTree):
         return self.model.predict(self.get_dataset(data))
 
     def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
-        if self.hyperparams is None:
+        if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
+        and os.path.exists(self.hparams_from_file):
+            self.hyperparams = json.load(open(self.hparams_from_file, 'rb'))['xgb']
+            print('loaded hyperparams from', self.hparams_from_file)
+        elif self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
         return super(XGBoost, self).fit(xtrain, ytrain, train_info, params, **kwargs)

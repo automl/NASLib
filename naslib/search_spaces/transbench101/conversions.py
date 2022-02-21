@@ -1,15 +1,14 @@
+from naslib.search_spaces.core.graph import Graph
 
 """
 There are three representations
 'naslib': the NASBench201SearchSpace object
 'op_indices': A list of six ints, which is the simplest representation
 'arch_str': The string representation used in the original nasbench201 paper
-
 This file currently has the following conversions:
 naslib -> op_indices
 op_indices -> naslib
 naslib -> arch_str
-
 Note: we could add more conversions, but this is all we need for now
 """
 
@@ -34,7 +33,6 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
     naslib_object is an empty NasBench201SearchSpace() object.
     Do not call this method with a naslib object that has already been 
     discretized (i.e., all edges have a single op).
-
     output: none, but the naslib object now has all edges set
     as in genotype.
     
@@ -50,7 +48,7 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
         # function that adds the op index from the dictionary to each edge
         if (edge.head, edge.tail) in edge_op_dict:
             for i, op in enumerate(edge.data.op):
-                if op.get_op_name == edge_op_dict[(edge.head, edge.tail)]:
+                if op.get_op_name == edge_op_dict[(edge.head, edge.tail)] or (op.get_op_name == 'FactorizedReduce' and edge_op_dict[(edge.head, edge.tail)] == 'Identity'):
                     index = i
                     break
             edge.data.set('op_index', index, shared=True)
@@ -90,7 +88,8 @@ def convert_naslib_to_str(naslib_object):
         'Zero': 'none',
     }
 
-    cell = naslib_object.edges[2, 3].op
+    cell = naslib_object.nodes[2]['subgraph'].edges[1, 2]['op'].op[1] # TODO: Do this in a clean fashion
+    assert cell.name == "cell" and isinstance(cell, Graph)
     
     edge_op_dict = {
         (i, j): ops_to_nb201[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
@@ -102,39 +101,38 @@ def convert_naslib_to_str(naslib_object):
     return '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
 
 
-# def convert_naslib_to_tb101(naslib_object):
-#     """
-#     Converts naslib object to string representation.
-#     To be used later used later with one-shot optimizers 
-#     """
-    
-#     ops_to_tb101 = {
-#         'ReLUConvBN1x1': '2',
-#         'ReLUConvBN3x3': '3',
-#         'Identity': '1',
-#         'Zero': '0',
-#     }
-
-#     cell = naslib_object.edges[2, 3].op
-    
-#     edge_op_dict = {
-#         (i, j): ops_to_tb101[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
-#     }
-# #     op_edge_list = [
-# #         '{}~{}'.format(edge_op_dict[(i, j)], i-1) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-# #     ]
-#     op_edge_list = [
-#         '{}'.format(edge_op_dict[(i, j)]) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-#     ]
-
-#     return '64-41414-{}_{}{}_{}{}{}'.format(*op_edge_list)
-
-
-def convert_naslib_to_transbench101_micro(op_indices):
+def convert_naslib_to_transbench101_micro(naslib_object):
     """
     Converts naslib object to string representation.
+    To be used later used later with one-shot optimizers 
     """
-    return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
+    
+    ops_to_tb101 = {
+        'ReLUConvBN1x1': '2',
+        'ReLUConvBN3x3': '3',
+        'Identity': '1',
+        'Zero': '0',
+    }
+
+    cell = naslib_object.nodes[2]['subgraph'].edges[1, 2]['op'].op[1]
+    assert cell.name == "cell" and isinstance(cell, Graph)
+    
+    edge_op_dict = {
+        (i, j): ops_to_tb101[cell.edges[i, j]['op'].get_op_name] for i, j in cell.edges
+    }
+
+    op_edge_list = [
+        '{}'.format(edge_op_dict[(i, j)]) for i, j in sorted(edge_op_dict, key=lambda x: x[1])
+    ]
+
+    return '64-41414-{}_{}{}_{}{}{}'.format(*op_edge_list)
+
+
+# def convert_naslib_to_transbench101_micro(op_indices):
+#     """
+#     Converts naslib object to string representation.
+#     """
+#     return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
 
 
 

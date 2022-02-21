@@ -10,7 +10,8 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.nasbenchasr.primitives import CellLayerNorm, Head, ops, PadConvReluNorm
 from naslib.utils.utils import get_project_root
-from naslib.search_spaces.nasbenchasr.conversions import flatten, copy_structure
+from naslib.search_spaces.nasbenchasr.conversions import flatten, \
+copy_structure, make_compact_mutable, make_compact_immutable
 
 
 OP_NAMES = ['linear', 'conv5', 'conv5d2', 'conv7', 'conv7d2', 'zero']
@@ -195,7 +196,7 @@ class NasBenchASRSearchSpace(Graph):
         return self.get_compact()
 
     def set_compact(self, compact):
-        self.compact = compact
+        self.compact = make_compact_immutable(compact)
 
     def sample_random_architecture(self, dataset_api):
         search_space = [[len(OP_NAMES)] + [2]*(idx+1) for idx in
@@ -217,6 +218,7 @@ class NasBenchASRSearchSpace(Graph):
         Todo: edges between initial hidden nodes are not mutated.
         """
         parent_compact = parent.get_compact()
+        parent_compact = make_compact_mutable(parent_compact)
         compact = copy.deepcopy(parent_compact)
 
         for _ in range(int(mutation_rate)):
@@ -273,12 +275,14 @@ class NasBenchASRSearchSpace(Graph):
                     list_of_ops_ids.remove(edge_op)
                     for op_id in list_of_ops_ids:
                         new_compact = copy.deepcopy(compact)
+                        new_compact = make_compact_mutable(new_compact)
                         new_compact[node_id][0] = op_id
                         nbhd = add_to_nbhd(new_compact, nbhd)
                 else:
                     edge_op = compact[node_id][edge_id]
                     new_edge_op = int(not edge_op)
                     new_compact = copy.deepcopy(compact)
+                    new_compact = make_compact_mutable(new_compact)
                     new_compact[node_id][edge_id] = new_edge_op
                     nbhd = add_to_nbhd(new_compact, nbhd)
 

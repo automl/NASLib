@@ -6,12 +6,16 @@ datasets=(cifar10 cifar10 cifar100 ImageNet16-120 \
 cifar10 penntreebank class_scene class_object jigsaw room_layout \
 segmentsemantic normal autoencoder)
 
-run_nbhd_sizes=(1 0 0 0 \
-0 1 0 0 0 0 \
-0 0 0)
+run_acc_stats=(1 1 1 1 \
+1 1 1 1 1 1 \
+1 1 1)
+
+run_nbhd_sizes=(1 1 1 1 \
+1 1 1 1 1 1 \
+1 1 1)
 
 run_autocorrs=(1 1 1 1 \
-0 0 1 1 1 1 \
+1 1 1 1 1 1 \
 1 1 1)
 
 start_seed=$1
@@ -22,7 +26,7 @@ fi
 
 # folders:
 base_file=NASLib/naslib
-s3_folder=stats_sep5
+s3_folder=stats
 out_dir=$s3_folder\_$start_seed
 
 # other variables:
@@ -30,23 +34,25 @@ trials=3
 end_seed=$(($start_seed + $trials - 1))
 save_to_s3=true
 
-max_set_size=16000
+max_set_size=430000
 max_nbhd_trials=500
-max_autocorr_trials=10
-walks=200
+max_autocorr_trials=20
+walks=5000
 
 # create config files
 for i in $(seq 0 $((${#search_spaces[@]}-1)) )
 do
     search_space=${search_spaces[$i]}
     dataset=${datasets[$i]}
+    run_acc_stats=${run_acc_stats[$i]}
     run_nbhd_size=${run_nbhd_sizes[$i]}
     run_autocorr=${run_autocorrs[$i]}
 
     python $base_file/benchmarks/create_configs.py --search_space $search_space --dataset=$dataset \
-    --run_nbhd_size $run_nbhd_size --run_autocorr $run_autocorr --start_seed $start_seed \
-    --trials $trials --out_dir $out_dir --max_set_size $max_set_size --max_nbhd_trials $max_nbhd_trials \
-    --max_autocorr_trials $max_autocorr_trials --walks $walks --config_type statistics
+    --run_acc_stats $run_acc_stats --run_nbhd_size $run_nbhd_size --run_autocorr $run_autocorr \
+    --start_seed $start_seed --trials $trials --out_dir $out_dir --max_set_size $max_set_size \
+    --max_nbhd_trials $max_nbhd_trials --max_autocorr_trials $max_autocorr_trials --walks $walks \
+    --config_type statistics
 done
 
 # run experiments

@@ -26,7 +26,7 @@ class BOHAMIANN(BNN):
         self.model.train(
             xtrain,
             ytrain,
-            num_steps=100,
+            num_steps=self.num_steps,
             num_burn_in_steps=10,
             keep_every=5,
             lr=1e-2,

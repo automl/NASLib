@@ -14,7 +14,6 @@ class BaseGPModel(Predictor):
         ss_type="nasbench201",
         kernel_type=None,
         optimize_gp_hyper=False,
-        num_steps=200,
         zc=False,
     ):
         super(Predictor, self).__init__()
@@ -22,7 +21,6 @@ class BaseGPModel(Predictor):
         self.ss_type = ss_type
         self.kernel_type = kernel_type
         self.optimize_gp_hyper = optimize_gp_hyper
-        self.num_steps = num_steps
         self.zc = zc
 
     def get_dataset(self, encodings, labels=None):

@@ -33,3 +33,10 @@ def copy_structure(data, shape):
             return next(d_it)
     return copy_level(shape)
 
+
+def make_compact_immutable(compact):
+    return tuple([tuple(c) for c in compact])
+
+
+def make_compact_mutable(compact):
+    return [list(c) for c in compact]

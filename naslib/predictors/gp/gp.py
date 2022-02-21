@@ -4,6 +4,8 @@ import pyro
 import pyro.contrib.gp as gp
 import pyro.distributions as dist
 import numpy as np
+import os
+import json
 
 from naslib.predictors.gp import BaseGPModel
 
@@ -14,9 +16,9 @@ class GPPredictor(BaseGPModel):
         encoding_type="adjacency_one_hot",
         ss_type="nasbench201",
         kernel_type="RBF",
-        optimize_gp_hyper=False,
-        num_steps=200,
+        optimize_gp_hyper=True,
         zc=False,
+        hparams_from_file=None,
     ):
         """
         Params:
@@ -31,6 +33,7 @@ class GPPredictor(BaseGPModel):
             variance=torch.tensor(5.0).double(),
             lengthscale=torch.tensor(10.0).double(),
         )
+        self.hparams_from_file = hparams_from_file
 
     def get_model(self, train_data, **kwargs):
         X_train, y_train = train_data
@@ -55,15 +58,11 @@ class GPPredictor(BaseGPModel):
                 mean, cov = self.model(input_data, full_cov=True, noiseless=False)
         return mean.numpy()
 
-
-if __name__ == "__main__":
-    train_dataset = (
-        torch.tensor(np.random.randn(10, 30)),
-        torch.tensor(
-            np.random.randn(
-                10,
-            )
-        ),
-    )
-    model = GPPredictor(kernel_type="RBF")
-    model.train(train_dataset)
+    def fit(self, xtrain, ytrain, train_info=None, params=None, **kwargs):
+        if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
+        and os.path.exists(self.hparams_from_file):
+            self.num_steps = json.load(open(self.hparams_from_file, 'rb'))['gp']['num_steps']
+            print('loaded hyperparams from', self.hparams_from_file)
+        else:
+            self.num_steps = 200
+        return super(GPPredictor, self).fit(xtrain, ytrain, train_info, params, **kwargs)

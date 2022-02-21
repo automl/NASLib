@@ -1,3 +1,4 @@
+from nasbench import api
 import logging
 import sys
 import os
@@ -39,7 +40,9 @@ from naslib.search_spaces import (
     NasBench201SearchSpace,
     DartsSearchSpace,
     NasBenchNLPSearchSpace,
-    TransBench101SearchSpace
+    TransBench101SearchSpaceMicro,
+    TransBench101SearchSpaceMacro
+    NasBenchASRSearchSpace,
 )
 
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -55,12 +58,15 @@ utils.log_args(config)
 supported_predictors = {
     "bananas": Ensemble(predictor_type="bananas", num_ensemble=3, hpo_wrapper=True),
     "bayes_lin_reg": BayesianLinearRegression(encoding_type="adjacency_one_hot"),
-    "bohamiann": BOHAMIANN(encoding_type="adjacency_one_hot"),
+    "bohamiann": BOHAMIANN(encoding_type="adjacency_one_hot", 
+                           hparams_from_file=config.hparams_from_file),
     "bonas": BonasPredictor(encoding_type="bonas", hpo_wrapper=True),
     "dngo": DNGOPredictor(encoding_type="adjacency_one_hot"),
     "fisher": ZeroCostV2(config, batch_size=64, method_type="fisher"),
+    "flops": ZeroCostV2(config, batch_size=64, method_type="flops"),
     "gcn": GCNPredictor(encoding_type="gcn", hpo_wrapper=True),
-    "gp": GPPredictor(encoding_type="adjacency_one_hot"),
+    "gp": GPPredictor(encoding_type="adjacency_one_hot", 
+                      hparams_from_file=config.hparams_from_file),
     "gpwl": GPWLPredictor(
         ss_type=config.search_space,
         kernel_type="wloa",
@@ -70,31 +76,38 @@ supported_predictors = {
     "grad_norm": ZeroCostV2(config, batch_size=64, method_type="grad_norm"),
     "grasp": ZeroCostV2(config, batch_size=64, method_type="grasp"),
     "jacov": ZeroCostV1(config, batch_size=64, method_type="jacov"),
+    "jacov2": ZeroCostV2(config, batch_size=64, method_type="jacov"),
     "lce": LCEPredictor(metric=Metric.VAL_ACCURACY),
     "lce_m": LCEMPredictor(metric=Metric.VAL_ACCURACY),
     "lcsvr": SVR_Estimator(
         metric=Metric.VAL_ACCURACY, all_curve=False, require_hyper=False
     ),
     "lgb": LGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
-    "mlp": MLPPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=True),
-    "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False),
+    "mlp": MLPPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
+                        hparams_from_file=config.hparams_from_file),
+    "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False, 
+                            hparams_from_file=config.hparams_from_file),
     "ngb": NGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
-    "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False),
-    "seminas": SemiNASPredictor(encoding_type="seminas", semi=True, hpo_wrapper=False),
+    "params": ZeroCostV2(config, batch_size=64, method_type="params"),
+    "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
+                                hparams_from_file=config.hparams_from_file),
+    "seminas": SemiNASPredictor(encoding_type="seminas", semi=True, hpo_wrapper=False, 
+                                hparams_from_file=config.hparams_from_file),
     "snip": ZeroCostV2(config, batch_size=64, method_type="snip"),
     "sotl": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTL"),
     "sotle": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLE"),
     "sotlema": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLEMA"),
     "sparse_gp": SparseGPPredictor(
-        encoding_type="adjacency_one_hot", optimize_gp_hyper=True, num_steps=100
+        encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
     ),
     "synflow": ZeroCostV2(config, batch_size=64, method_type="synflow"),
     "valacc": EarlyStopping(metric=Metric.VAL_ACCURACY),
     "valloss": EarlyStopping(metric=Metric.VAL_LOSS),
     "var_sparse_gp": VarSparseGPPredictor(
-        encoding_type="adjacency_one_hot", optimize_gp_hyper=True, num_steps=200
+        encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
     ),
-    "xgb": XGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
+    "xgb": XGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
+                   hparams_from_file=config.hparams_from_file),
     # path encoding experiments:
     "bayes_lin_reg_path": BayesianLinearRegression(encoding_type="path"),
     "bohamiann_path": BOHAMIANN(encoding_type="path"),
@@ -144,12 +157,10 @@ supported_search_spaces = {
     "nasbench201": NasBench201SearchSpace(),
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
-    'transbench101': TransBench101SearchSpace()
+    'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
+    'transbench101_macro': TransBench101SearchSpaceMacro()
+    "asr": NasBenchASRSearchSpace(),
 }
-#    'transbench101_micro': TransBench101SearchSpace('micro'),
-#    'transbench101_macro': TransBench101SearchSpace('micro')}
-
-#}
 
 """
 If the API did not evaluate *all* architectures in the search space, 
