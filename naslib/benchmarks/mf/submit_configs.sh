@@ -25,7 +25,7 @@ for config in $config_dir/*
     for config_file_seed in $config/*
         do
             echo submitted ${config_file_seed}
-            /home/gernel/miniconda3/bin/python -u $workspace/NASLib/naslib/benchmarks/bbo/runner.py --config-file $config_file_seed
+            /home/gernel/miniconda3/bin/python -u $workspace/NASLib/naslib/benchmarks/mf/runner.py --config-file $config_file_seed
         done
     done
  
