@@ -5,11 +5,11 @@ workspace=/work/dlclarge2/gernel-naslib-experiments
 
 #SBATCH -p mlhiwidlc_gpu-rtx2080 #bosch_gpu-rtx2080    #bosch_cpu-cascadelake  # partition (queue)
 #SBATCH -t 0-15:00           # time (D-HH:MM)
-#SBATCH -o $workspace/log/%A.%N.out       # STDOUT  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -e $workspace/log/%A.%N.err       # STDERR  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
+#SBATCH -o /work/dlclarge2/gernel-naslib-experiments/log/%A.%N.out       # STDOUT  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
+#SBATCH -e /work/dlclarge2/gernel-naslib-experiments/log/%A.%N.err       # STDERR  (the folder log has to exist) %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -J naslib-bbo-rs            # sets the job name. 
 #SBATCH --mem=7G  
-#SBATCH --chdir=$workspace/NASLib
+#SBATCH --chdir=/work/dlclarge2/gernel-naslib-experiments/NASLib
 # Print some information about the job to STDOUT
 
 echo "Workingdir: $PWD";
