@@ -3,12 +3,8 @@
 
 import os.path as osp
 import torch
-import json
-import numpy as np
-import matplotlib.pyplot as plt
 from skimage import io
 from torch.utils.data import Dataset
-from torchvision import transforms, utils
 
 from . import load_ops
 

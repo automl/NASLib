@@ -1,19 +1,13 @@
 import os
 import sys
-import math
 import json
-import scipy
 import random
 import numpy as np
-import PIL
 from PIL import Image
 import collections
 import torch
-import transforms3d
-import itertools
-import torchvision
 import torchvision.transforms as T
-from skimage import io, transform
+from skimage import io
 from torchvision.transforms import functional as F
 
 if sys.version_info < (3, 3):
