@@ -11,10 +11,12 @@ throughout the discrete NAS algos, which would lead to memory errors.
 """
 
 def get_transbench101_api(dataset=None):
+    datafile_path = os.path.join(get_project_root(), "data", "transnas-bench_v10141024.pth")
+    assert os.path.exists(datafile_path), f"Could not fine {datafile_path}. Please download transnas-bench_v10141024.pth\
+ from https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101"
+
     from naslib.search_spaces import TransNASBenchAPI
-    api = TransNASBenchAPI(
-        os.path.join(get_project_root(), "data", "transnas-bench_v10141024.pth")
-        ) 
+    api = TransNASBenchAPI(datafile_path)
     return {'api': api, 'task': dataset}
 
 
