@@ -12,6 +12,8 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
 
+from naslib.search_spaces.nasbench201.conversions import convert_naslib_to_str
+
 logger = logging.getLogger(__name__)
     
         
@@ -28,6 +30,8 @@ from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
+
+
 
 logger = logging.getLogger(__name__)
     
@@ -145,14 +149,20 @@ class  SuccessiveHalving(MetaOptimizer):
         latest_arch = self.history[-1]
         return latest_arch.arch, latest_arch.epoch
 
+
     def train_statistics(self):
         best_arch, best_arch_epoch = self.get_final_architecture()
         latest_arch, latest_arch_epoch = self.get_latest_architecture()
+        models = [x for x in self.history if convert_naslib_to_str(x.arch) == convert_naslib_to_str(latest_arch)]
+        train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch)
+        train_time_scaled = train_time * latest_arch_epoch
+        if len(models) > 1:
+            train_time_scaled = train_time_scaled - train_time * models[-2].epoch
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch-1), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
-            latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch), 
+            train_time_scaled, 
         )
     
     def test_statistics(self):
