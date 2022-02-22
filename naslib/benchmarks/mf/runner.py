@@ -30,7 +30,7 @@ supported_optimizers = {
     'bananas': Bananas(config),
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
-    # 'sh': SuccessiveHalving(config),
+    'sh': SuccessiveHalving(config),
     # 'hb': HyperBand(config),
 }
 

@@ -113,14 +113,19 @@ def create_configs(
                     "budget_type": "epoch",
                     "budget_max": 128,
                     "method": "random",
-                    "eta": 2,
+                    "eta": 3,
                     "num_ensemble": 3,
                     "acq_fn_type": "its",
                     "acq_fn_optimization": acq_fn_optimization,
                     "encoding_type": "path",
                     "predictor": predictor,
                     "debug_predictor": False,
-                    # config secton for successive halving
+                    # config secton for successive halving,
+                    "min_budget": 1,
+                    "max_budget": 200,
+                    "fidelity": 200,
+                    "n_process": 1_000_000,
+                    "budgets": 360_000, 
                 },
             }
             path = os.path.join(folder, f"seed_{seed}.yaml")
@@ -134,6 +139,7 @@ def create_configs(
             for seed in range(start_seed, start_seed + trials):
                 np.random.seed(seed)
                 random.seed(seed)
+                # TODO: max_fidelity should be dependent on eta and min_fidelity
                 eta = int(np.random.choice(range(2, 5)))
                 fidelity_range = [2**i for i in range(0, 9)]
                 max_fidelity = int(np.random.choice(fidelity_range))
@@ -167,8 +173,12 @@ def create_configs(
                         "predictor": predictor,
                         "debug_predictor": False,
                         # config section for successive halving,
-                        "min_fidelity": min_fidelity,
-                        "max_fidelity": max_fidelity,
+                        # config secton for successive halving,
+                        "min_budget": min_fidelity,
+                        "max_budget": max_fidelity,
+                        "fidelity": 200,
+                        "n_process": 1_000_000,
+                        "budgets": 360_000, 
                         "eta": eta,
                         # config section for BOHB
                         "tpe_bandwidth": float(np.random.choice(np.arange(0.01, 1.0, 0.01))), # TODO: what is a good range for tpe??
