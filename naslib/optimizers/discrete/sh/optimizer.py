@@ -12,6 +12,8 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
 
+from naslib.search_spaces.nasbench201.conversions import convert_naslib_to_str
+
 logger = logging.getLogger(__name__)
     
         
@@ -28,6 +30,8 @@ from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
+
+
 
 logger = logging.getLogger(__name__)
     
@@ -89,24 +93,31 @@ class  SuccessiveHalving(MetaOptimizer):
             self.prev_round = 0
             self.process = i
 
-        if self.prev_round < round:  # reset round_number for each new round
-            self.prev_round = round
-            self.round_number = 0
-
-        if epoch < self.round_sizes[round]:
+        
+        if epoch < self.round_sizes[self.round_number]:
             # sample random architectures
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)   
-            model.epoch = self.fidelities[round]
+            model.epoch = self.fidelities[self.round_number]
             model.accuracy = model.arch.query(self.performance_metric,
                                               self.dataset, 
                                               epoch=model.epoch, 
                                               dataset_api=self.dataset_api)
+            print(model.epoch)
             self._update_history(model)
             self.next_round.append(model)
 
         else:
+            if len(self.current_round) == 0:
+                # if we are at the end of a round of hyperband, continue training only the best 
+                logger.info("Starting a new round: continuing to train the best arches")
+                self.round_number += 1
+                cutoff = self.round_sizes[self.round_number]
+                self.current_round = sorted(self.next_round, key=lambda x: -x.accuracy)[:cutoff]
+                self.next_round = []
+
+
             # train the next architecture
             model = self.current_round.pop()
             """
@@ -114,11 +125,12 @@ class  SuccessiveHalving(MetaOptimizer):
             just for simplicity, we treat it as if we start to train it again from scratch
             """
             model = copy.deepcopy(model)
-            model.epoch = self.fidelities[round]
+            model.epoch = self.fidelities[self.round_number]
             model.accuracy = model.arch.query(self.performance_metric,
                                               self.dataset, 
                                               epoch=model.epoch, 
                                               dataset_api=self.dataset_api)
+            print(model.epoch)
             self._update_history(model)
             self.next_round.append(model)
 
@@ -137,14 +149,20 @@ class  SuccessiveHalving(MetaOptimizer):
         latest_arch = self.history[-1]
         return latest_arch.arch, latest_arch.epoch
 
+
     def train_statistics(self):
         best_arch, best_arch_epoch = self.get_final_architecture()
         latest_arch, latest_arch_epoch = self.get_latest_architecture()
+        models = [x for x in self.history if convert_naslib_to_str(x.arch) == convert_naslib_to_str(latest_arch)]
+        train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch)
+        train_time_scaled = train_time * latest_arch_epoch
+        if len(models) > 1:
+            train_time_scaled = train_time_scaled - train_time * models[-2].epoch
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch-1), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
-            latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch) * latest_arch_epoch, # TODO: Maybe we have to solve this directly in benchmark API 
+            train_time_scaled, 
         )
     
     def test_statistics(self):
