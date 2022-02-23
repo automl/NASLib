@@ -73,11 +73,11 @@ For `NAS-Bench-301` and `NAS-Bench-NLP`, additionally, you will have to install 
 
 Once set up, you can test if the APIs work as follows:
 ```
-python test_benchmark_apis --all --show_error
+python test_benchmark_apis.py --all --show_error
 ```
 You can also test any one API.
 ```
-python test_benchmark_apis --search_space <search_space> --show_error
+python test_benchmark_apis.py --search_space <search_space> --show_error
 ```
 # Usage
 
