@@ -36,12 +36,12 @@ out_dir: run
 max_hpo_time: 0
 
 # random seed
-seed: 1000
+seed: 3001
 
 # these are used by the zero-cost methods
 search:
-  seed: 1000
-  batch_size: 256
+  seed: 100
+  batch_size: 128
   data_size: 25000
   cutout: False
   cutout_length: 16

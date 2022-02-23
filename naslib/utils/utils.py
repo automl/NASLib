@@ -223,7 +223,7 @@ def get_config_from_args(args=None, config_type="nas"):
 
     # prepare the output directories
     if config_type == "nas":
-        # config.seed = args.seed
+        #config.seed = args.seed
         config.search.seed = config.seed
         # config.optimizer = args.optimizer
         config.evaluation.world_size = args.world_size

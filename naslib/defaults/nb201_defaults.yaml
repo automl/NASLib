@@ -1,4 +1,4 @@
-seed: 99
+seed: 1
 optimizer: gsparsity
 dataset: cifar10
 out_dir: run
@@ -29,6 +29,7 @@ search:
   num_candidates: 100
   
   # GSparsity
+  seed: 50
   grad_clip: 0
   threshold: 0.000001
   weight_decay: 0.0001

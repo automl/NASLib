@@ -1,5 +1,5 @@
 dataset: cifar10
-seed: 99
+seed: 1
 search_space: darts
 out_dir: run
 optimizer: gsparsity
@@ -7,7 +7,7 @@ optimizer: gsparsity
 search:
   seed: 0 
   checkpoint_freq: 5
-  batch_size: 64
+  batch_size: 32
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
@@ -42,15 +42,16 @@ search:
   num_init: 10
 
   #GSparsity
+  seed: 50
   grad_clip: 0
   threshold: 0.000001
   weight_decay: 0.0001
-  learning_rate: 0.001
+  learning_rate: 0.025
   momentum: 0.9
   normalization: div
   normalization_exponent: 0.5
   learning_rate_min: 0.0001
-  epochs: 50
+  epochs: 2
   warm_start_epochs: 0
   train_portion: 0.9
 

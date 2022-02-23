@@ -119,7 +119,7 @@ class ProxSGD(Optimizer):
                 else: #operations are nonprunable
                     x_hat = b
 
-
+                #import ipdb;ipdb.set_trace()
                 x.data.add_(lr, x_hat - x)
                 
         #import ipdb;ipdb.set_trace()

@@ -53,5 +53,5 @@ trainer.search()
 #    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
 #    trainer.search(resume_from=checkpoint)
 
-checkpoint = utils.get_last_checkpoint(config, search=False) if config.resume else ""
+checkpoint = utils.get_last_checkpoint(config, search_model=True) if config.resume else ""
 trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
