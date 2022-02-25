@@ -161,12 +161,14 @@ class BOHB(MetaOptimizer):
 
     def new_epoch(self, epoch, round, i):
         if self.process < i: # re-init for each new process
-            self.current_round = []
+            del self.current_round
+            del self.next_round
             self.current_round_ = []
             self.next_round = []
             self.round_number = 0
             self.prev_round = 0
             self.process = i
+            self.clean_history()
 
         if self.prev_round < round:  # reset round_number for each new round
             self.prev_round = round
@@ -237,6 +239,12 @@ class BOHB(MetaOptimizer):
 
     def _update_history(self, child):
         self.history.append(child)
+    
+    def clean_history(self):
+        best_arch = max(self.history, key=lambda x: x.accuracy)
+        self.history = []
+        self.history.append(best_arch)
+
 
     def get_final_architecture(self):
         
