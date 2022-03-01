@@ -7,7 +7,7 @@
 experiment_type: single
 
 # nasbench101, nasbench201, darts, or nlp
-search_space: nasbench201
+search_space: nasbench101
 
 # cifar10, cifar100, or ImageNet16-120 (only important for nasbench201)
 dataset: cifar10
@@ -36,12 +36,12 @@ out_dir: run
 max_hpo_time: 0
 
 # random seed
-seed: 3001
+seed: 11
 
 # these are used by the zero-cost methods
 search:
-  seed: 100
-  batch_size: 128
+  seed: 11
+  batch_size: 32
   data_size: 25000
   cutout: False
   cutout_length: 16

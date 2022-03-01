@@ -81,9 +81,9 @@ class GSparseOptimizer(MetaOptimizer):
     def add_alphas(edge):
         """
         Function to add the pruning flag 'alpha' to the edges.
-        And initialize a group name for all primitives.
+        And add a parameter 'weights' that will be used for storing the l2 norm
+        of the weights of the operations which later is used for pruning.
         """
-
         len_primitives = len(edge.data.op)
         alpha = torch.nn.Parameter(
            torch.ones(size=[len_primitives], requires_grad=False), requires_grad=False
@@ -91,49 +91,33 @@ class GSparseOptimizer(MetaOptimizer):
         weights = torch.nn.Parameter(
            torch.FloatTensor(len_primitives*[0.0]), requires_grad=False
         )
-
         edge.data.set("alpha", alpha, shared=True)
         edge.data.set("weights", weights, shared=True)        
 
     @staticmethod
     def add_weights(edge):
+        """
+        Operations like Identity(), Zero(stride=1) etc do not have weights of their own, 
+        neither contained suboperations that have weights, just to optimize over such operations
+        we attach a 'weight' parameter to them, which is used in the forward() of the MixedOp
+        thus updating them and optimizing over them.
+        IMPORTANT: In GroupSparsity, suboperation that do not have weights are ignored from 
+        optimization point of view, i.e. they are not given weights explicitely to be used while
+        calculating the weight of the operation containing them.
+        """
         device=torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         for i in range(len(edge.data.op)):
             try:                
                 len(edge.data.op[i].op)                
-            except Exception:
+            except AttributeError:
                 weight = torch.nn.Parameter(torch.FloatTensor([1.0]), requires_grad=True)
-                #edge.data.op[i].weight=weight
                 edge.data.op[i].register_parameter("weight", weight)
-                #edge.data.op[i]=GSparseOptimizer.replace_operation(edge.data.op[i])
-    
-    '''
-    @staticmethod
-    def replace_operation(original_operation):
-        if original_operation.__class__ == primitives.Identity().__class__:
-            return weighted_operations.Identity()
-        elif original_operation.__class__ == primitives.Zero(stride=1).__class__:
-            return weighted_operations.Zero(stride=original_operation.stride)
-        elif original_operation.__class__ == primitives.Zero(stride=1).__class__:
-            stride=original_operation.stride
-            try:
-                C_in=original_operation.C_in
-                C_out=original_operation.C_out
-                affine=original_operation.affine
-            except Exception:
-                C_in=None
-                C_out=None
-                affine=True
-            return weighted_operations.AvgPool1x1(kernel=3, stride=stride, C_in=C_in, C_out=C_out, affine=affine)
-        else:
-            return original_operation
-    '''
     
 
     def adapt_search_space(self, search_space, scope=None, **kwargs):
         """
         Modify the search space to fit the optimizer's needs,
-        e.g. discretize, add alpha flag and group name, ...
+        e.g. discretize, add alpha flag and shared weight parameter, ...
         Args:
             search_space (Graph): The search space we are doing NAS in.
             scope (str or list(str)): The scope of the search space which
@@ -174,9 +158,7 @@ class GSparseOptimizer(MetaOptimizer):
             normalization=self.normalization,
             normalization_exponent=self.normalization_exponent
         )
-
         graph.train()
-
         self.graph = graph
         self.scope = scope
     
@@ -198,12 +180,6 @@ class GSparseOptimizer(MetaOptimizer):
         input_val, target_val = data_val
 
         self.graph.train()
-        #lists_n=[]
-        #lists_p=[]
-        #for name, param in self.graph.named_parameters():
-        #    lists_n.append(name)
-        #    lists_p.append(param)        
-        #import ipdb;ipdb.set_trace()
         self.op_optimizer.zero_grad()
         logits_train = self.graph(input_train)
         train_loss = self.loss(logits_train, target_train)
@@ -230,8 +206,14 @@ class GSparseOptimizer(MetaOptimizer):
         graph.prepare_discretization()
 
         def update_l2_weights(edge):
+            """
+            For operations like SepConv etc that contain suboperations like Conv2d() etc. the square of 
+            l2 norm of the weights is stored in the corresponding weights shared attribute.
+            Suboperations like ReLU are ignored as they have no weights of their own.
+            For operations (not suboperations) like Identity() etc. that do not have weights,
+            the weights attached to them are used.
+            """
             if edge.data.has("alpha"):
-                #primitives = edge.data.op.get_embedded_ops()
                 weight=0.0
                 for i in range(len(edge.data.op.primitives)):
                     try:
@@ -241,31 +223,28 @@ class GSparseOptimizer(MetaOptimizer):
                                 for shape in edge.data.op.primitives[i].op[j].weight.shape:
                                     size*=shape
                                 weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight,2)**2).item()/size
-                            except Exception:
-                                continue
+                            except AttributeError:
+                                continue                            
                         edge.data.weights[i]+=weight                            
                         weight=0.0
-                    except Exception:                        
-                        #import ipdb;ipdb.set_trace()
-                        #try:
-                        #print("operation: ",edge.data.op.primitives[i] )
-                        #print("weight: ", edge.data.op.primitives[i].weight.cpu())
-                        #import ipdb;ipdb.set_trace()
+                    except AttributeError:                        
                         edge.data.weights[i]+=(edge.data.op.primitives[i].weight.item())**2
-                            #print(edge.data.op.primitives[i].weight)
-                        #except Exception:
-                        #    continue
+
                     
         def prune_weights(edge):
-            if edge.data.has("alpha"):
-                print(edge.data.weights)
+            """
+            Operations whose l2 norm of the weights across all cells of the same
+            type (normal or reduced) is less than the threshold are pruned away.
+            To achieve this, the alpha flag for the corresponding operation is
+            turned off (replaced with zero).
+            """
+            if edge.data.has("alpha"):                
                 for i in range(len(edge.data.weights)):
                     if torch.sqrt(edge.data.weights[i]) < self.threshold:
                         edge.data.alpha[i]=0
         
         def reinitialize_l2_weights(edge):
-            if edge.data.has("alpha"):
-                print(edge.data.weights)
+            if edge.data.has("alpha"):                
                 for i in range(len(edge.data.weights)):
                     edge.data.weights[i]=0
 
@@ -273,22 +252,12 @@ class GSparseOptimizer(MetaOptimizer):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
-                '''
-                nonlocal graph
-                #import ipdb;ipdb.set_trace() #Add node and edge only in current cell
-                positions = alphas.nonzero()
-                if len(positions)>1:
-                    head=edge.head
-                    tail=edge.tail
-                    for pos in positions:
-                        new_node=len(graph.nodes)+1
-                        graph.add_node(new_node)
-                        graph.add_edge(head, new_node)
-                        graph.add_edge(new_node, tail)
-                        graph.edges[head, new_node].set("op", primitives[pos])
-                else:
-                    edge.data.set("op", primitives[positions.item()])
-                '''
+                """
+                Only the operations whose alpha are non-zero are retained,
+                others are pruned away. If on an edge, more than 1 operations 
+                are to be retained, then the operation of the edge is set to a MixedOp
+                of these operations.
+                """
                 positions = alphas.nonzero()
                 if len(positions)>1:
                     operations=[]
@@ -298,6 +267,7 @@ class GSparseOptimizer(MetaOptimizer):
                 else:
                     edge.data.set("op", primitives[positions.item()])
 
+        # Detailed description of the operations are provided in the functions.
         graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
         graph.update_edges(prune_weights, scope=self.scope, private_edge_data=True)
         graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
@@ -368,28 +338,23 @@ class GSparseMixedOp(MixedOp):
         Args:
             primitives (list): The primitive operations to sample from.
         """
-        super().__init__(primitives)
-        self._ops = torch.nn.ModuleList()
-        
-        #for primitive in primitives:
-            #op = 
+        super().__init__(primitives)        
         self.min_cuda_memory = min_cuda_memory
 
     def forward(self, x, edge_data):
         """
-        Applies the gumbel softmax to the architecture weights
-        before forwarding `x` through the graph as in DARTS
+        Output of operations like Identity(), that do not have weighted suboperations
+        like Conv2d(), are multipled with the weight parameter attached to them, so 
+        that these weights are optimized as well, during the training phase.
         """
-        # sampled_arch_weight = edge_data.sampled_arch_weight
         #summed = sum(op(x, None) for op in self.primitives)
         summed=0
         for op in self.primitives:
             try:                
                 len(op.op)  
                 summed+=op(x, None)
-            except Exception:
+            except AttributeError:                
                 if op.training and edge_data.has("alpha"):
-                    #import ipdb;ipdb.set_trace()
                     summed+=op.weight*op(x,None)
                 else:
                     summed+=op(x, None)
