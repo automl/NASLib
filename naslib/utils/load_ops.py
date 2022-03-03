@@ -15,6 +15,7 @@ import torchvision
 import torchvision.transforms as T
 from skimage import io, transform
 from torchvision.transforms import functional as F
+from pathlib import Path
 
 if sys.version_info < (3, 3):
     sequence = collections.Sequence
@@ -299,9 +300,9 @@ def load_class_object_logits(label_path, selected=False, normalize=True, final5k
     except:
         print(f'corrupted: {label_path}')
         raise
-    lib_data_dir = os.path.abspath(os.path.dirname(__file__))
+    lib_data_dir = Path(__file__).parent.parent
     if selected:
-        selection_file = os.path.join(lib_data_dir, 'class_object_final5k.npy') if final5k else os.path.join(lib_data_dir, 'class_object_selected.npy')
+        selection_file = os.path.join(lib_data_dir, "data", "class_object_final5k.npy") if final5k else os.path.join(lib_data_dir, "data", "class_object_selected.npy")
         selection = np.load(selection_file)
         logits = logits[selection.astype(bool)]
         if normalize:
@@ -320,9 +321,9 @@ def load_class_scene_logits(label_path, selected=False, normalize=True, final5k=
         logits = np.load(label_path)
     except:
         raise FileNotFoundError(f'corrupted: {label_path}')
-    lib_data_dir = os.path.abspath(os.path.dirname(__file__))
+    lib_data_dir = Path(__file__).parent.parent
     if selected:
-        selection_file = os.path.join(lib_data_dir, 'class_scene_final5k.npy') if final5k else os.path.join(lib_data_dir, 'class_scene_selected.npy')
+        selection_file = os.path.join(lib_data_dir, "data", "class_scene_final5k.npy") if final5k else os.path.join(lib_data_dir, "data", "class_scene_selected.npy")
         selection = np.load(selection_file)
         logits = logits[selection.astype(bool)]
         if normalize:
@@ -413,5 +414,5 @@ def load_raw_img_label(label_path):
 
 def get_permutation_set(mode, classes=1000):
     assert mode in ['max', 'avg']
-    permutation_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), f'permutations_hamming_{mode}_{classes}.npy')
+    permutation_path = os.path.join(Path(__file__).parent.parent, "data", f'permutations_hamming_{mode}_{classes}.npy')
     return np.load(permutation_path)
