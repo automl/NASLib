@@ -6,7 +6,7 @@ import torch
 import numpy as np
 import logging
 
-from naslib.optimizers.oneshot.configurable.components import AbstractArchitectureSampler, AbstractCombOpModifier, AbstractEdgeOpModifier
+from naslib.optimizers.oneshot.configurable.components import AbstractArchitectureSampler, AbstractCombOpModifier, AbstractEdgeOpModifier, NoCombOpModifier, NoEdgeOpModifer, OptimizationStrategy
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +16,8 @@ class ConfigurableOptimizer(MetaOptimizer):
         self,
         config,
         arch_sampler: AbstractArchitectureSampler,
-        mixed_op_modifier: AbstractEdgeOpModifier,
-        comb_op_modifier: AbstractCombOpModifier,
+        edge_op_modifier: AbstractEdgeOpModifier=None,
+        comb_op_modifier: AbstractCombOpModifier=None,
 
         # The rest are the same as the other optimizers
         op_optimizer=torch.optim.SGD,
@@ -27,8 +27,8 @@ class ConfigurableOptimizer(MetaOptimizer):
         super(ConfigurableOptimizer, self).__init__()
         self.config = config
         self.arch_sampler = arch_sampler
-        self.mixed_op_modifier = mixed_op_modifier
-        self.comb_op_modifier = comb_op_modifier
+        self.edge_op_modifier = NoEdgeOpModifer() if edge_op_modifier is None else edge_op_modifier
+        self.comb_op_modifier = NoCombOpModifier() if comb_op_modifier is None else comb_op_modifier
 
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
@@ -68,36 +68,66 @@ class ConfigurableOptimizer(MetaOptimizer):
     def _arch_optimizer_step(self, train, target):
         return self._optimizer_step(
             graph=self.graph,
-            optimizer=self.arch_optimizer,
             loss_criterion=self.loss,
             data=train,
             target=target,
-            grad_clip=self.grad_clip,
-            is_arch_optimizer=True
+            arch_grad_clip=self.grad_clip, # TODO: Add arch_grad_clip to config
+            arch_optimizer=self.arch_optimizer
         )
 
     def _graph_optimizer_step(self, train, target):
         return self._optimizer_step(
             graph=self.graph,
-            optimizer=self.op_optimizer,
             loss_criterion=self.loss,
             data=train,
             target=target,
             grad_clip=self.grad_clip,
-            is_arch_optimizer=False
+            optimizer=self.op_optimizer,
         )
 
-    def _optimizer_step(self, graph, optimizer, loss_criterion, data, target, grad_clip, is_arch_optimizer):
-        optimizer.zero_grad()
+    def _simultaneous_optimizer_step(self, train, target):
+        return self._optimizer_step(
+            graph=self.graph,
+            loss_criterion=self.loss,
+            data=train,
+            target=target,
+            grad_clip=self.grad_clip,
+            optimizer=self.op_optimizer,
+            arch_grad_clip=self.grad_clip, # TODO: Add arch_grad_clip to config
+            arch_optimizer=self.arch_optimizer
+        )
+
+    def _optimizer_step(self, graph, loss_criterion, data, target, grad_clip=None, arch_grad_clip=None, optimizer=None, arch_optimizer=None):
+
+        assert not (optimizer is None and arch_optimizer is None), "No optimizers given!"
+
+        # Zero the gradients
+        if optimizer is not None:
+            optimizer.zero_grad()
+
+        if arch_optimizer is not None:
+            arch_optimizer.zero_grad()
+
+        # Pass data through the model, compute loss, backpropagate
         logits = graph(data)
         loss = loss_criterion(logits, target)
         loss.backward()
 
-        if grad_clip:
-            parameters = self.architectural_weights.parameters() if is_arch_optimizer else graph.parameters()
+        # Clip gradients
+        if arch_grad_clip is not None and arch_optimizer is not None:
+            parameters = self.architectural_weights.parameters()
+            torch.nn.utils.clip_grad_norm_(parameters, arch_grad_clip)
+
+        if grad_clip is not None and optimizer is not None:
+            parameters = graph.parameters()
             torch.nn.utils.clip_grad_norm_(parameters, grad_clip)
 
-        optimizer.step()
+        # Optimizer step
+        if optimizer is not None:
+            optimizer.step()
+
+        if arch_optimizer is not None:
+            arch_optimizer.step()
 
         return logits, loss
 
@@ -110,7 +140,7 @@ class ConfigurableOptimizer(MetaOptimizer):
             scope = graph.OPTIMIZER_SCOPE
 
         self.arch_sampler.update_graph(graph, scope) # DARTS, DrNAS, or GDAS
-        self.mixed_op_modifier.update_graph(graph, scope) # Partial Connections
+        self.edge_op_modifier.update_graph(graph, scope) # Partial Connections
         self.comb_op_modifier.update_graph(graph, scope) # Edge Normalization
 
         graph.parse()
@@ -121,18 +151,26 @@ class ConfigurableOptimizer(MetaOptimizer):
         self.scope = scope
 
     def step(self, data_train, data_val):
-        input_train, target_train = data_train
-        input_val, target_val = data_val
 
         # Sample architecture weights
         self.arch_sampler.sample_arch_weights(self.graph, self.scope)
+        self.arch_sampler.weights_modifier_step(self.graph, self.scope)
+
+        if self.arch_sampler.optimization_stratgey == OptimizationStrategy.ALTERNATING:
+            step_fn = self.step_alternating
+        elif self.arch_sampler.optimization_strategy == OptimizationStrategy.SIMULTANEOUS:
+            step_fn = self.step_simultaneous
+
+        return step_fn(data_train, data_val)
+
+    def step_alternating(self, data_train, data_val):
+        input_train, target_train = data_train
+        input_val, target_val = data_val
 
         # Update architecture weights
         logits_val, val_loss = self._arch_optimizer_step(input_val, target_val)
 
         # Sample architectural weights again
-        # Ideally, save the RNG state from before the previous sampling and set it
-        # again here
         self.arch_sampler.sample_arch_weights(self.graph, self.scope)
 
         # Update op weights
@@ -142,6 +180,13 @@ class ConfigurableOptimizer(MetaOptimizer):
         self.arch_sampler.remove_sampled_arch_weights(self.graph, self.scope)
 
         return logits_train, logits_val, train_loss, val_loss
+
+    def step_simultaneous(self, data_train, data_val):
+        input_train, target_train = data_train
+
+        # Update architecture weights
+        logits_train, train_loss = self._simultaneous_optimizer_step(input_train, target_train)
+        return logits_train, None, train_loss, None
 
     def new_epoch(self, epoch):
         self.arch_sampler.new_epoch()

@@ -361,6 +361,11 @@ class DARTSMixedOp(MixedOp):
     def __init__(self, primitives):
         super().__init__(primitives)
 
-    def forward(self, x, edge_data):
-        normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
-        return sum(w * op(x, None) for w, op in zip(normed_alphas, self.primitives))
+    def get_weights(self, edge_data):
+        return edge_data.alpha
+
+    def process_weights(self, weights):
+        return torch.softmax(weights, dim=-1)
+
+    def apply_weights(self, x, weights):
+        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))

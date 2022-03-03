@@ -320,7 +320,7 @@ class PredictorEvaluator(object):
             method_type = self.predictor.method_type
         print(
             "dataset: {}, predictor: {}, spearman {}".format(
-                self.dataset, self.predictor.method_type, np.round(results_dict["spearman"], 4)
+                self.dataset, method_type, np.round(results_dict["spearman"], 4)
             )
         )
         print("full ytest", results_dict["full_ytest"])

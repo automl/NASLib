@@ -149,9 +149,11 @@ class OneShotOp(MixedOp):
     def __init__(self, primitives):
         super().__init__(primitives)
 
-    def forward(self, x, edge_data):
-        """
-        Element-wise summation of the output tensors coming from each edge.
-        """
-        return sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
+    def get_weights(self, edge_data):
+        return edge_data.alpha
 
+    def process_weights(self, weights):
+        return weights
+
+    def apply_weights(self, x, weights):
+        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))

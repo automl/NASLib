@@ -1,11 +1,6 @@
-from nasbench import api
 import logging
-import sys
-import os
-import naslib as nl
 
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
-
 from naslib.predictors import (
     BayesianLinearRegression,
     BOHAMIANN,
@@ -41,12 +36,11 @@ from naslib.search_spaces import (
     DartsSearchSpace,
     NasBenchNLPSearchSpace,
     TransBench101SearchSpaceMicro,
-    TransBench101SearchSpaceMacro
+    TransBench101SearchSpaceMacro,
     NasBenchASRSearchSpace,
 )
 
 from naslib.utils import utils, setup_logger, get_dataset_api
-from naslib.utils.utils import get_project_root
 
 
 config = utils.get_config_from_args(config_type="predictor")
@@ -158,7 +152,7 @@ supported_search_spaces = {
     "darts": DartsSearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
-    'transbench101_macro': TransBench101SearchSpaceMacro()
+    'transbench101_macro': TransBench101SearchSpaceMacro(),
     "asr": NasBenchASRSearchSpace(),
 }
 

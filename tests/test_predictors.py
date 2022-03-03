@@ -117,7 +117,7 @@ class PredictorsTest(unittest.TestCase):
         self.assertAlmostEqual(predictor_evaluator.results[-1]['spearman'], 0.37142857142, places=3)
         
     def test_GPPredictor(self):
-        predictor = GPPredictor(encoding_type=None)
+        predictor = GPPredictor(encoding_type=None, optimize_gp_hyper=False)
         predictor_evaluator = PredictorEvaluator(predictor, config=self.config)
         predictor_evaluator.adapt_search_space(self.search_space, load_labeled=self.load_labeled,
                                                dataset_api=self.dataset_api)
