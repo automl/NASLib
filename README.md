@@ -96,6 +96,16 @@ trainer.evaluate()      # Evaluate the best architecture
 
 For more examples see [naslib tutorial](examples/naslib_tutorial.ipynb), [intro to search spaces](examples/search_spaces.ipynb) and [intro to predictors](examples/predictors.md).
 
+### Scripts for running multiple experiments on a cluster
+The `scripts` folder contains code for generating config files for running experiments across various configurations and seeds. It writes them into the `naslib/configs` folder. 
+
+```bash
+cd scripts
+bash bbo/make_configs_asr.sh
+```
+
+It also contains `scheduler.sh` files to automatically read these generated config files and submits a corresponding job to the cluster using SLURM.
+
 ## Contributing
 We welcome contributions to the library along with any potential issues or suggestions. Please create a pull request to the Develop branch.
 
