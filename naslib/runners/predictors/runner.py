@@ -42,8 +42,6 @@ from naslib.search_spaces import (
 )
 
 from naslib.utils import utils, setup_logger, get_dataset_api
-from naslib.utils.utils import get_project_root
-
 
 config = utils.get_config_from_args(config_type="predictor")
 utils.set_seed(config.seed)

@@ -7,6 +7,8 @@ search_space: nasbench201
 # jigsaw, room_layout, segmentsemantic, normal, autoencoder
 dataset: cifar10
 
+# output results to this directory
+out_dir: run
 # random seed (only important for autocorrelation)
 seed: 1000
 

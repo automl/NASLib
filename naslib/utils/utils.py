@@ -223,7 +223,6 @@ def get_config_from_args(args=None, config_type="nas"):
     except AttributeError:
         for arg, value in pairwise(args):
             config[arg] = value
-
     # prepare the output directories
     if config_type == "nas":
         # config.seed = args.seed
@@ -254,7 +253,7 @@ def get_config_from_args(args=None, config_type="nas"):
         )
     
     
-    elif config_type == "predictor" and not config.save:
+    elif config_type == "predictor" and not hasattr(config, 'save'):
         if config.predictor == "lcsvr" and config.experiment_type == "vary_train_size":
             config.save = "{}/{}/{}/{}_train/{}".format(
                 config.out_dir,

@@ -1,22 +1,20 @@
-import os
-import pickle
 import numpy as np
 import random
 import itertools
 import torch
 import torch.nn as nn
-from torch.nn.modules.conv import Conv2d
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.darts.primitives import FactorizedReduce
-from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.core.primitives import AbstractPrimitive, Sequential
+from naslib.search_spaces.core.graph import Graph
+from naslib.search_spaces.core.primitives import Sequential
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.search_spaces.transbench101.conversions import convert_op_indices_to_naslib, \
-convert_naslib_to_op_indices, convert_naslib_to_str, convert_naslib_to_transbench101_micro, convert_naslib_to_transbench101_macro #, convert_naslib_to_tb101
-
-from naslib.utils.utils import get_project_root
-
+from naslib.search_spaces.transbench101.conversions import (
+    convert_op_indices_to_naslib,
+    convert_naslib_to_op_indices,
+    convert_naslib_to_transbench101_micro,
+    convert_naslib_to_transbench101_macro
+)
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
         
@@ -173,11 +171,6 @@ class TransBench101SearchSpaceMicro(Graph):
 
             if downsample:
                 C_in *= 2
-            
-            print(cell.name, cell.scope)
-            #for e in cell.edges(data=True):
-            #    print(e)
-
 
     def _create_module(self, n_blocks, scope, cell):
         blocks = []
@@ -322,7 +315,7 @@ class TransBench101SearchSpaceMicro(Graph):
         update the naslib object and op_indices
         """
         parent_op_indices = parent.get_op_indices()
-        op_indices = parent_op_indices
+        op_indices = list(parent_op_indices)
 
         edge = np.random.choice(len(parent_op_indices))
         available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
@@ -340,7 +333,7 @@ class TransBench101SearchSpaceMicro(Graph):
             available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
             
             for op_index in available:
-                nbr_op_indices = self.op_indices.copy()
+                nbr_op_indices = list(self.op_indices).copy()
                 nbr_op_indices[edge] = op_index
                 nbr = TransBench101SearchSpaceMicro()
                 nbr.set_op_indices(nbr_op_indices)

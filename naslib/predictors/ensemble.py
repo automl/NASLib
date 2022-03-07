@@ -78,13 +78,11 @@ class Ensemble(Predictor):
                 ss_type=self.ss_type,
                 encoding_type="adjacency_one_hot",
                 optimize_gp_hyper=True,
-                num_steps=100,
             ),
             "var_sparse_gp": VarSparseGPPredictor(
                 ss_type=self.ss_type,
                 encoding_type="adjacency_one_hot",
                 optimize_gp_hyper=True,
-                num_steps=200,
                 zc=False,
             ),
             "xgb": XGBoost(
