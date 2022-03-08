@@ -272,8 +272,8 @@ def _set_cell_ops(edge, C):
         [
             ops.Identity(),
             ops.Zero(stride=1),
-            ops.ReLUConvBN(C, C, kernel_size=3, affine=False, track_running_stats=False, bias=True),
-            ops.ReLUConvBN(C, C, kernel_size=1, affine=False, track_running_stats=False, bias=True),
+            ops.ReLUConvBN(C, C, kernel_size=3, affine=False, track_running_stats=False),
+            ops.ReLUConvBN(C, C, kernel_size=1, affine=False, track_running_stats=False),
             ops.AvgPool1x1(kernel_size=3, stride=1, affine=False),
         ],
     )
