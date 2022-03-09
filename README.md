@@ -145,5 +145,4 @@ and our paper: <a href="https://arxiv.org/abs/2104.01177">How Powerful are Perfo
   volume={34},
   year={2021}
 }
-}
 ```
