@@ -12,6 +12,10 @@ naslib -> arch_str
 Note: we could add more conversions, but this is all we need for now
 """
 
+import torch
+
+from naslib.search_spaces.core.primitives import AbstractPrimitive
+
 OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
 EDGE_LIST = ((1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4))
 
@@ -61,8 +65,32 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
         else:
             primitives = edge.data.primitives
 
+        chosen_op = primitives[edge.data.op_index]
+        primitives[edge.data.op_index] = update_batchnorms(chosen_op)
+
         edge.data.set("op", primitives[edge.data.op_index])
         edge.data.set("primitives", primitives)  # store for later use
+
+    def update_batchnorms(op: AbstractPrimitive) -> AbstractPrimitive:
+        """ Makes batchnorms in the op affine, if they exist """
+        init_params = op.init_params
+        has_batchnorm = False
+
+        for module in op.modules():
+            if isinstance(module, torch.nn.BatchNorm2d):
+                has_batchnorm = True
+                break
+
+        if not has_batchnorm:
+            return op
+
+        if 'affine' in init_params:
+            init_params['affine'] = True
+        if 'track_running_stats' in init_params:
+            init_params['track_running_stats'] = True
+
+        new_op = type(op)(**init_params)
+        return new_op
 
     naslib_object.update_edges(
         add_op_index, scope=naslib_object.OPTIMIZER_SCOPE, private_edge_data=False

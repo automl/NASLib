@@ -194,8 +194,6 @@ class TransBench101SearchSpaceMicro(Graph):
         assert isinstance(metric, Metric)
         if metric == Metric.ALL:
             raise NotImplementedError()
-#         if metric != Metric.RAW and metric != Metric.ALL:
-#             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
         
@@ -346,7 +344,6 @@ class TransBench101SearchSpaceMicro(Graph):
     
 
     def get_type(self):
-#         return 'transbench101'
         return 'transbench101'
 
 
@@ -374,80 +371,6 @@ class TransBench101SearchSpaceMacro(Graph):
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
-        #
-        # Cell definition
-        #
-#         cell = Graph()
-#         cell.name = "cell"    # Use the same name for all cells with shared attributes
-
-#         # Input node
-#         cell.add_node(1)
-
-#         # Intermediate nodes
-#         cell.add_node(2)
-#         cell.add_node(3)
-
-#         # Output node
-#         cell.add_node(4)
-
-#         # Edges
-#         cell.add_edges_densly()
-
-#         #
-#         # Makrograph definition
-#         #
-#         self.name = "makrograph"
-
-#         # Cell is on the edges
-#         # 1-2:               Preprocessing
-#         # 2-3, ..., 6-7:     cells stage 1
-#         # 7-8:               residual block stride 2
-#         # 8-9, ..., 12-13:   cells stage 2
-#         # 13-14:             residual block stride 2
-#         # 14-15, ..., 18-19: cells stage 3
-#         # 19-20:             post-processing
-
-#         total_num_nodes = 20
-#         self.add_nodes_from(range(1, total_num_nodes+1))
-#         self.add_edges_from([(i, i+1) for i in range(1, total_num_nodes)])
-
-#         channels = [16, 32, 64]
-
-#         #
-#         # operations at the edges
-#         #
-
-#         # preprocessing
-#         self.edges[1, 2].set('op', ops.Stem(channels[0]))
-        
-#         # stage 1
-#         for i in range(2, 7):
-#             self.edges[i, i+1].set('op', cell.copy().set_scope('stage_1'))
-        
-#         # stage 2
-#         self.edges[7, 8].set('op', ResNetBasicblock(C_in=channels[0], C_out=channels[1], stride=2))
-#         for i in range(8, 13):
-#             self.edges[i, i+1].set('op', cell.copy().set_scope('stage_2'))
-
-#         # stage 3
-#         self.edges[13, 14].set('op', ResNetBasicblock(C_in=channels[1], C_out=channels[2], stride=2))
-#         for i in range(14, 19):
-#             self.edges[i, i+1].set('op', cell.copy().set_scope('stage_3'))
-
-#         # post-processing
-#         self.edges[19, 20].set('op', ops.Sequential(
-#             nn.AdaptiveAvgPool2d(1),
-#             nn.Flatten(),
-#             nn.Linear(channels[-1], self.num_classes)
-#         ))
-        
-#         # set the ops at the cells (channel dependent)
-#         for c, scope in zip(channels, self.OPTIMIZER_SCOPE):
-#             self.update_edges(
-#                 update_func=lambda edge: _set_cell_ops(edge, C=c),
-#                 scope=scope,
-#                 private_edge_data=True
-#             )
         
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
@@ -456,8 +379,6 @@ class TransBench101SearchSpaceMacro(Graph):
         assert isinstance(metric, Metric)
         if metric == Metric.ALL:
             raise NotImplementedError()
-#         if metric != Metric.RAW and metric != Metric.ALL:
-#             assert dataset in ['cifar10', 'cifar100', 'ImageNet16-120'], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
             
@@ -551,7 +472,6 @@ class TransBench101SearchSpaceMacro(Graph):
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
-#         convert_op_indices_to_naslib(op_indices, self)
 
         
     def sample_random_architecture(self, dataset_api=None):
