@@ -1,0 +1,24 @@
+config_id: 0
+dataset: TIMIT
+optimizer: rs
+out_dir: run_cpu
+search:
+  acq_fn_optimization: random_sampling
+  acq_fn_type: its
+  checkpoint_freq: 5000
+  debug_predictor: false
+  encoding_type: path
+  epochs: 200
+  fidelity: -1
+  k: 10
+  max_mutations: 1
+  num_arches_to_mutate: 5
+  num_candidates: 200
+  num_ensemble: 3
+  num_init: 10
+  population_size: 50
+  predictor: var_sparse_gp
+  predictor_type: bananas
+  sample_size: 10
+search_space: asr
+seed: 0

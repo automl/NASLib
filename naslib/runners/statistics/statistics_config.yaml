@@ -1,0 +1,28 @@
+
+# nasbench101, nasbench201, darts, nlp, transbench101
+search_space: nasbench201
+
+# nasbench201 datasets: cifar10, cifar100, ImageNet16-120
+# transbench101 datasets: class_scene, class_object, 
+# jigsaw, room_layout, segmentsemantic, normal, autoencoder
+dataset: cifar10
+
+# output results to this directory
+out_dir: run
+# random seed (only important for autocorrelation)
+seed: 1000
+
+# stats that can be computed by iterating through
+# all architectures in the search space
+run_acc_stats: 1
+max_set_size: 1000
+
+# compute the average nbhd size
+run_nbhd_size: 1
+max_nbhd_trials: 500
+
+# autocorrelation parameters
+run_autocorr: 1
+max_autocorr_trials: 10
+autocorr_size: 36
+walks: 500

@@ -656,7 +656,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
         except:
             log_first_n(
                 logging.WARN,
-                "Update function could not be veryfied. Be cautious with the "
+                "Update function could not be verified. Be cautious with the "
                 "setting of `private_edge_data` in `update_edges()`",
                 n=5,
             )
