@@ -3,31 +3,8 @@ import logging
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
 
 from naslib.predictors import (
-    BayesianLinearRegression,
-    BOHAMIANN,
-    BonasPredictor,
-    DNGOPredictor,
-    EarlyStopping,
-    Ensemble,
-    GCNPredictor,
-    GPPredictor,
-    LCEPredictor,
-    LCEMPredictor,
-    LGBoost,
-    MLPPredictor,
-    NGBoost,
-    OmniNGBPredictor,
-    OmniSemiNASPredictor,
-    RandomForestPredictor,
-    SVR_Estimator,
-    SemiNASPredictor,
-    SoLosspredictor,
-    SparseGPPredictor,
-    VarSparseGPPredictor,
-    XGBoost,
     ZeroCostV1,
     ZeroCostV2,
-    GPWLPredictor,
 )
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -50,100 +27,15 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    "bananas": Ensemble(predictor_type="bananas", num_ensemble=3, hpo_wrapper=True),
-    "bayes_lin_reg": BayesianLinearRegression(encoding_type="adjacency_one_hot"),
-    "bohamiann": BOHAMIANN(encoding_type="adjacency_one_hot", 
-                           hparams_from_file=config.hparams_from_file),
-    "bonas": BonasPredictor(encoding_type="bonas", hpo_wrapper=True),
-    "dngo": DNGOPredictor(encoding_type="adjacency_one_hot"),
     "fisher": ZeroCostV2(config, batch_size=64, method_type="fisher"),
     "flops": ZeroCostV2(config, batch_size=64, method_type="flops"),
-    "gcn": GCNPredictor(encoding_type="gcn", hpo_wrapper=True),
-    "gp": GPPredictor(encoding_type="adjacency_one_hot", 
-                      hparams_from_file=config.hparams_from_file),
-    "gpwl": GPWLPredictor(
-        ss_type=config.search_space,
-        kernel_type="wloa",
-        optimize_gp_hyper=True,
-        h="auto",
-    ),
     "grad_norm": ZeroCostV2(config, batch_size=64, method_type="grad_norm"),
     "grasp": ZeroCostV2(config, batch_size=64, method_type="grasp"),
     "jacov": ZeroCostV1(config, batch_size=64, method_type="jacov"),
     "jacov2": ZeroCostV2(config, batch_size=64, method_type="jacov"),
-    "lce": LCEPredictor(metric=Metric.VAL_ACCURACY),
-    "lce_m": LCEMPredictor(metric=Metric.VAL_ACCURACY),
-    "lcsvr": SVR_Estimator(
-        metric=Metric.VAL_ACCURACY, all_curve=False, require_hyper=False
-    ),
-    "lgb": LGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
-    "mlp": MLPPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
-                        hparams_from_file=config.hparams_from_file),
-    "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False, 
-                            hparams_from_file=config.hparams_from_file),
-    "ngb": NGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
     "params": ZeroCostV2(config, batch_size=64, method_type="params"),
-    "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
-                                hparams_from_file=config.hparams_from_file),
-    "seminas": SemiNASPredictor(encoding_type="seminas", semi=True, hpo_wrapper=False, 
-                                hparams_from_file=config.hparams_from_file),
     "snip": ZeroCostV2(config, batch_size=64, method_type="snip"),
-    "sotl": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTL"),
-    "sotle": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLE"),
-    "sotlema": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLEMA"),
-    "sparse_gp": SparseGPPredictor(
-        encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
-    ),
     "synflow": ZeroCostV2(config, batch_size=64, method_type="synflow"),
-    "valacc": EarlyStopping(metric=Metric.VAL_ACCURACY),
-    "valloss": EarlyStopping(metric=Metric.VAL_LOSS),
-    "var_sparse_gp": VarSparseGPPredictor(
-        encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
-    ),
-    "xgb": XGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
-                   hparams_from_file=config.hparams_from_file),
-    # path encoding experiments:
-    "bayes_lin_reg_path": BayesianLinearRegression(encoding_type="path"),
-    "bohamiann_path": BOHAMIANN(encoding_type="path"),
-    "dngo_path": DNGOPredictor(encoding_type="path"),
-    "gp_path": GPPredictor(encoding_type="path"),
-    "lgb_path": LGBoost(encoding_type="path", hpo_wrapper=False),
-    "ngb_path": NGBoost(encoding_type="path", hpo_wrapper=False),
-    # omni:
-    "omni_ngb": OmniNGBPredictor(
-        encoding_type="adjacency_one_hot",
-        config=config,
-        zero_cost=["jacov"],
-        lce=["sotle"],
-    ),
-    "omni_seminas": OmniSemiNASPredictor(
-        encoding_type="seminas",
-        config=config,
-        semi=True,
-        hpo_wrapper=False,
-        zero_cost=["jacov"],
-        lce=["sotle"],
-        jacov_onehot=True,
-    ),
-    # omni ablation studies:
-    "omni_ngb_no_lce": OmniNGBPredictor(
-        encoding_type="adjacency_one_hot", config=config, zero_cost=["jacov"], lce=[]
-    ),
-    "omni_seminas_no_lce": OmniSemiNASPredictor(
-        encoding_type="seminas",
-        config=config,
-        semi=True,
-        hpo_wrapper=False,
-        zero_cost=["jacov"],
-        lce=[],
-        jacov_onehot=True,
-    ),
-    "omni_ngb_no_zerocost": OmniNGBPredictor(
-        encoding_type="adjacency_one_hot", config=config, zero_cost=[], lce=["sotle"]
-    ),
-    "omni_ngb_no_encoding": OmniNGBPredictor(
-        encoding_type=None, config=config, zero_cost=["jacov"], lce=["sotle"]
-    ),
 }
 
 supported_search_spaces = {
