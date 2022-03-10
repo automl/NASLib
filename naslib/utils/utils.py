@@ -220,6 +220,7 @@ def get_config_from_args(args=None, config_type="nas"):
     
     
     elif config_type == "predictor":
+        config.search.seed = config.seed
         if config.predictor == "lcsvr" and config.experiment_type == "vary_train_size":
             config.save = "{}/{}/{}/{}_train/{}".format(
                 config.out_dir,
