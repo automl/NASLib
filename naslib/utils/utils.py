@@ -179,7 +179,7 @@ def get_config_from_args(args=None, config_type="nas"):
                 arg1, arg2 = arg.split(".")
                 config[arg1][arg2] = type(config[arg1][arg2])(value)
             else:
-                config[arg] = type(config[arg])(value)
+                config[arg] = type(config[arg])(value) if arg in config else value
 
         config.eval_only = args.eval_only
         config.resume = args.resume
