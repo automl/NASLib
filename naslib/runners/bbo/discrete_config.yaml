@@ -20,7 +20,6 @@ config_id: 0
 search:
   # for bohb
   budgets: 50000000
-  seed: 0
   checkpoint_freq: 1000
   fidelity: 108 
   

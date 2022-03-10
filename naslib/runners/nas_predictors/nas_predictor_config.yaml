@@ -13,7 +13,6 @@ fidelity_list: [5]
 fidelity_single: 5
 
 search:
-  seed: 0
   checkpoint_freq: 1000
   epochs: 50
   fidelity: -1
