@@ -28,39 +28,10 @@ class UtilsTest(unittest.TestCase):
     def test_get_config_from_args_default_nas(self):
         self._test_get_config_from_args_default(config_type="nas")
 
-    def test_get_config_from_args_default_predictor(self):
-        self._test_get_config_from_args_default(config_type="predictor")
-
-    def test_get_config_from_args_default_nas_predictor(self):
-        self._test_get_config_from_args_default(config_type="nas_predictor")
-
-    def test_get_config_from_args_default_bbo_bs(self):
-        self._test_get_config_from_args_default(config_type="bbo-bs")
-
-    def test_get_config_from_args_default_oneshot(self):
-        self._test_get_config_from_args_default(config_type="oneshot")
-
-    def test_get_config_from_args_default_statistics(self):
-        self._test_get_config_from_args_default(config_type="statistics")
-
     ####### Tests for get_config_from_args with custom args #######
     def test_get_config_from_args_nas(self):
         self._test_get_config_from_args(config_type="nas")
 
-    def test_get_config_from_args_predictor(self):
-        self._test_get_config_from_args(config_type="predictor")
-
-    def test_get_config_from_args_nas_predictor(self):
-        self._test_get_config_from_args(config_type="nas_predictor")
-
-    def test_get_config_from_args_bbo_bs(self):
-        self._test_get_config_from_args(config_type="bbo-bs")
-
-    def test_get_config_from_args_oneshot(self):
-        self._test_get_config_from_args(config_type="oneshot")
-
-    def test_get_config_from_args_statistics(self):
-        self._test_get_config_from_args(config_type="statistics")
 
     ####### Helper methods #######
     def _test_get_config_from_args_default(self, config_type):
@@ -113,11 +84,6 @@ class UtilsTest(unittest.TestCase):
     def _get_config_path(self, config_type):
         config_paths = {
             "nas": "defaults/darts_defaults.yaml",
-            "predictor": "runners/predictors/predictor_config.yaml",
-            "bbo-bs": "runners/bbo/discrete_config.yaml",
-            "nas_predictor": "runners/nas_predictors/discrete_config.yaml",
-            "oneshot": "runners/nas_predictors/nas_predictor_config.yaml",
-            "statistics": "runners/statistics/statistics_config.yaml"
         }
 
         config_path_full = os.path.join(
