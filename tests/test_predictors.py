@@ -23,7 +23,7 @@ class PredictorsTest(unittest.TestCase):
 
     def setUp(self):
         self.args = utils.parse_args(args=['--config-file', 'assets/test_predictor.yaml'])
-        self.config = utils.get_config_from_args(self.args)
+        self.config = utils.get_config_from_args(self.args, config_type='predictor')
         self.search_space = supported_search_spaces[self.config.search_space]
         utils.set_seed(self.config.seed)
         self.load_labeled = (True if self.config.search_space in ['darts', 'nlp'] else False)
