@@ -137,7 +137,7 @@ def load_config(path):
 def load_default_config(config_type="nas"):
     config_paths = {
         "nas": "defaults/darts_defaults.yaml",
-        "predictor": "runners/predictors/predictor_config.yaml",
+        "predictor": "runners/predictor_config.yaml",
         "bbo-bs": "runners/bbo/discrete_config.yaml",
         "nas_predictor": "runners/nas_predictors/discrete_config.yaml",
         "oneshot": "runners/nas_predictors/nas_predictor_config.yaml",
