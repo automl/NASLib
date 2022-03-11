@@ -18,7 +18,7 @@
 </p>
 
 <p align="center">
-  <img src="https://repobeats.axiom.co/api/embed/44112451b6b665f03b7c7dc35dbeff8050df036f.svg" />
+  <img src="https://repobeats.axiom.co/api/embed/44112451b6b665f03b7c7dc35dbeff8050df036f.svg" width="750" />
 </p>
 
 
