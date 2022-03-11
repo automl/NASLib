@@ -6,11 +6,6 @@ torch==1.9.0
 torchvision==0.10.0
 fvcore==0.1.5.post20210630
 pytest==6.2.4
-pytest-cov==2.12.1
-codecov==2.1.11
-coverage==5.5
-pre-commit==2.13.0
-black==21.7b0
 pytorch-msssim==0.2.1
 tensorwatch==0.9.1
 scikit-learn==1.0.2
