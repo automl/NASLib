@@ -195,6 +195,7 @@ def get_config_from_args(args=None, config_type="nas"):
 
     # prepare the output directories
     if config_type == "predictor" and not hasattr(config, 'save'):
+        config.search.seed = config.seed
         config.save = "{}/{}/{}/{}/{}".format(
             config.out_dir,
             config.dataset,
