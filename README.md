@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="images/naslib-logo.png" width="650" height="400">
+  <img src="images/naslib-logo.png" width="400" height="250">
 </div>
 
 <p align="center">
@@ -17,7 +17,13 @@
   </a>
 </p>
 
+<p align="center">
+  <img src="https://repobeats.axiom.co/api/embed/44112451b6b665f03b7c7dc35dbeff8050df036f.svg" />
+</p>
 
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 **NASLib** is a modular and flexible framework created with the aim of providing a common codebase to the community to facilitate research on **Neural Architecture Search** (NAS). It offers high-level abstractions for designing and reusing search spaces, interfaces to benchmarks and evaluation pipelines, enabling the implementation and extension of state-of-the-art NAS methods with a few lines of code. The modularized nature of NASLib
 allows researchers to easily innovate on individual components (e.g., define a new
 search space while reusing an optimizer and evaluation pipeline, or propose a new
