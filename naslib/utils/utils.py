@@ -65,19 +65,11 @@ def default_argument_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument(
-        "--config-file",
-        default="{}/runners/predictors/predictor_config.yaml".format(
-            get_project_root()
-        ),
-        metavar="FILE",
-        help="path to config file",
-    )
-    # parser.add_argument("--config-file", default="{}/defaults/darts_defaults.yaml".format(get_project_root()), metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file", default=None, metavar="FILE", help="path to config file")
     parser.add_argument(
         "--eval-only", action="store_true", help="perform evaluation only"
     )
-    parser.add_argument("--seed", default=0, help="random seed")
+    parser.add_argument("--seed", default=None, help="random seed")
     parser.add_argument(
         "--resume", action="store_true", help="Resume from last checkpoint"
     )
@@ -136,6 +128,29 @@ def pairwise(iterable):
     a = iter(iterable)
     return zip(a, a)
 
+def load_config(path):
+    with open(path) as f:
+        config = CfgNode.load_cfg(f)
+
+    return config
+
+def load_default_config(config_type="nas"):
+    config_paths = {
+        "nas": "defaults/darts_defaults.yaml",
+        "predictor": "runners/predictor_config.yaml",
+        "bbo-bs": "runners/bbo/discrete_config.yaml",
+        "nas_predictor": "runners/nas_predictors/discrete_config.yaml",
+        "oneshot": "runners/nas_predictors/nas_predictor_config.yaml",
+        "statistics": "runners/statistics/statistics_config.yaml"
+    }
+
+    config_path_full = os.path.join(
+        *(
+            [get_project_root()] + config_paths[config_type].split('/')
+        )
+    )
+
+    return load_config(config_path_full)
 
 def get_config_from_args(args=None, config_type="nas"):
     """
@@ -148,17 +163,14 @@ def get_config_from_args(args=None, config_type="nas"):
         args: args from a different argument parser than the default one.
     """
 
-    # load the default base
-    with open(
-        os.path.join(
-            get_project_root(), "runners", "predictor_config.yaml"
-        )
-    ) as f:
-        config = CfgNode.load_cfg(f)
-
     if args is None:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
+
+    if args.config_file is None:
+        config = load_default_config(config_type=config_type)
+    else:
+        config = load_config(path=args.config_file)
 
     # Override file args with ones from command line
     try:
@@ -167,21 +179,20 @@ def get_config_from_args(args=None, config_type="nas"):
                 arg1, arg2 = arg.split(".")
                 config[arg1][arg2] = type(config[arg1][arg2])(value)
             else:
-                config[arg] = value
+                config[arg] = type(config[arg])(value) if arg in config else value
 
         config.eval_only = args.eval_only
         config.resume = args.resume
         config.model_path = args.model_path
-        if config_type != "nas_predictor":
-            config.seed = args.seed
 
         # load config file
         config.set_new_allowed(True)
-        config.merge_from_file(args.config_file)
         config.merge_from_list(args.opts)
+
     except AttributeError:
         for arg, value in pairwise(args):
             config[arg] = value
+
     # prepare the output directories
     if config_type == "predictor" and not hasattr(config, 'save'):
         config.save = "{}/{}/{}/{}/{}".format(
@@ -259,7 +270,7 @@ def get_train_val_loaders(config, mode):
 
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
-        
+
     elif dataset == 'class_object':
         cfg = get_class_object_configs()
 
@@ -267,7 +278,7 @@ def get_train_val_loaders(config, mode):
 
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
-        
+
     elif dataset == 'class_scene':
         cfg = get_class_scene_configs()
 
@@ -275,12 +286,12 @@ def get_train_val_loaders(config, mode):
 
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
-        
+
     elif dataset == 'autoencoder':
         cfg = get_autoencoder_configs()
-    
+
         train_data, val_data, test_data = get_datasets(cfg)
-        
+
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
     else:

@@ -1,16 +1,8 @@
 import unittest
-import logging
-import torch
 import os
-import argparse
 
-from collections import namedtuple
-
-from naslib.search_spaces import SimpleCellSearchSpace
-from naslib.optimizers import DARTSOptimizer, GDASOptimizer
-from naslib.utils import utils, setup_logger
-
-
+from naslib.utils import utils
+from fvcore.common.config import CfgNode
 class UtilsTest(unittest.TestCase):
 
     def test_get_config_from_args_config_file(self):
@@ -32,6 +24,75 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(config.seed, 1)
         self.assertEqual(config.search.epochs, 42)
 
+    ####### Tests for get_config_from_args with default args #######
+    def test_get_config_from_args_default_nas(self):
+        self._test_get_config_from_args_default(config_type="nas")
+
+    ####### Tests for get_config_from_args with custom args #######
+    def test_get_config_from_args_nas(self):
+        self._test_get_config_from_args(config_type="nas")
+
+
+    ####### Helper methods #######
+    def _test_get_config_from_args_default(self, config_type):
+        config_filepath = self._get_config_path(config_type=config_type)
+        with open(file=config_filepath) as f:
+            config_parent = CfgNode.load_cfg(f)
+
+        config_child = utils.get_config_from_args(config_type=config_type)
+        self.assertTrue(self._verify_child_config_consistent(config_parent, config_child))
+
+    def _test_get_config_from_args(self, config_type):
+
+        args = ['seed', '9001', 'dataset', 'new_dataset']
+        args = utils.parse_args(args=args)
+
+        config_file = self._get_config_path(config_type)
+
+        with open(file=config_file) as f:
+            config_parent = CfgNode.load_cfg(f)
+
+        config_child = utils.get_config_from_args(args=args, config_type=config_type)
+
+        self.assertEqual(config_child.seed, 9001)
+        self.assertEqual(config_child.dataset, 'new_dataset')
+
+        config_child.seed = config_parent.seed
+        config_child.dataset = config_parent.dataset
+
+        self.assertTrue(self._verify_child_config_consistent(config_parent, config_child))
+
+
+    def _verify_child_config_consistent(self, parent_config, child_config):
+        """ Returns True if all the attributes present in both configs have the same value in both of them.
+            child_config may have additional keys, which are ignored.
+        """
+        for k in parent_config:
+            if k not in child_config:
+                # print(f"{k} not found in child_config")
+                return False
+
+            if isinstance(parent_config[k], CfgNode):
+                return self._verify_child_config_consistent(parent_config[k], child_config[k])
+            else:
+                if parent_config[k] != child_config[k]:
+                    # print(f'{parent_config[k]} != {child_config[k]} for {k} in parent_config')
+                    return False
+
+        return True
+
+    def _get_config_path(self, config_type):
+        config_paths = {
+            "nas": "defaults/darts_defaults.yaml",
+        }
+
+        config_path_full = os.path.join(
+            *(
+                [utils.get_project_root()] + config_paths[config_type].split('/')
+            )
+        )
+
+        return config_path_full
 
 class LoggingTest(unittest.TestCase):
     pass

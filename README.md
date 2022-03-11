@@ -140,8 +140,9 @@ and our paper: <a href="https://arxiv.org/abs/2104.01177">How Powerful are Perfo
 ```bibtex
 @article{white2021powerful,
   title={How Powerful are Performance Predictors in Neural Architecture Search?},
-  author={White, Colin and Zela, Arber and Ru, Binxin and Liu, Yang and Hutter, Frank},
-  journal={arXiv preprint arXiv:2104.01177},
+  author={White, Colin and Zela, Arber and Ru, Robin and Liu, Yang and Hutter, Frank},
+  journal={Advances in Neural Information Processing Systems},
+  volume={34},
   year={2021}
 }
 ```
