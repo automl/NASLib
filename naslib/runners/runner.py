@@ -1,12 +1,7 @@
 import logging
 
 from naslib.evaluators.zc_evaluator import PredictorEvaluator
-
-from naslib.predictors import (
-    ZeroCostV1,
-    ZeroCostV2,
-)
-
+from naslib.predictors import ZeroCost
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import (
     NasBench101SearchSpace,
@@ -17,25 +12,24 @@ from naslib.search_spaces import (
     TransBench101SearchSpaceMacro,
     NasBenchASRSearchSpace,
 )
-
 from naslib.utils import utils, setup_logger, get_dataset_api
 
-config = utils.get_config_from_args(config_type="predictor")
+
+config = utils.get_config_from_args()
 utils.set_seed(config.seed)
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_predictors = {
-    "fisher": ZeroCostV2(config, batch_size=64, method_type="fisher"),
-    "flops": ZeroCostV2(config, batch_size=64, method_type="flops"),
-    "grad_norm": ZeroCostV2(config, batch_size=64, method_type="grad_norm"),
-    "grasp": ZeroCostV2(config, batch_size=64, method_type="grasp"),
-    "jacov": ZeroCostV1(config, batch_size=64, method_type="jacov"),
-    "jacov2": ZeroCostV2(config, batch_size=64, method_type="jacov"),
-    "params": ZeroCostV2(config, batch_size=64, method_type="params"),
-    "snip": ZeroCostV2(config, batch_size=64, method_type="snip"),
-    "synflow": ZeroCostV2(config, batch_size=64, method_type="synflow"),
+    "fisher": ZeroCost(config, batch_size=64, method_type="fisher"),
+    "flops": ZeroCost(config, batch_size=64, method_type="flops"),
+    "grad_norm": ZeroCost(config, batch_size=64, method_type="grad_norm"),
+    "grasp": ZeroCost(config, batch_size=64, method_type="grasp"),
+    "jacov": ZeroCost(config, batch_size=64, method_type="jacov"),
+    "params": ZeroCost(config, batch_size=64, method_type="params"),
+    "snip": ZeroCost(config, batch_size=64, method_type="snip"),
+    "synflow": ZeroCost(config, batch_size=64, method_type="synflow"),
 }
 
 supported_search_spaces = {
@@ -49,7 +43,7 @@ supported_search_spaces = {
 }
 
 """
-If the API did not evaluate *all* architectures in the search space, 
+If the API did not evaluate *all* architectures in the search space,
 set load_labeled=True
 """
 load_labeled = True if config.search_space in ["darts", "nlp"] else False

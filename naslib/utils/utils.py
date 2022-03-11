@@ -108,7 +108,7 @@ def load_default_config():
 
     return load_config(config_path_full)
 
-def get_config_from_args(args=None, config_type="nas"):
+def get_config_from_args(args=None):
     """
     Parses command line arguments and merges them with the defaults
     from the config file.
@@ -146,18 +146,13 @@ def get_config_from_args(args=None, config_type="nas"):
             config[arg] = value
 
     # prepare the output directories
-    if config_type == "predictor" and not hasattr(config, 'save'):
-        config.search.seed = config.seed
-        config.save = "{}/{}/{}/{}/{}".format(
-            config.out_dir,
-            config.dataset,
-            "predictors",
-            config.predictor,
-            config.seed,
-        )
-    else:
-        print("invalid config type in utils/utils.py")
-
+    config.save = "{}/{}/{}/{}/{}".format(
+        config.out_dir,
+        config.dataset,
+        "predictors",
+        config.predictor,
+        config.seed,
+    )
     config.data = "{}/data".format(get_project_root())
 
     create_exp_dir(config.save)
