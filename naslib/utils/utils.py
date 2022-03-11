@@ -148,54 +148,13 @@ def get_config_from_args(args=None, config_type="nas"):
         args: args from a different argument parser than the default one.
     """
 
-    if config_type == "nas":
-        # load the default base
-        with open(
-            os.path.join(get_project_root(), "defaults", "darts_defaults.yaml")
-        ) as f:
-            config = CfgNode.load_cfg(f)
-    elif config_type == "predictor":
-        # load the default base
-        with open(
-            os.path.join(
-                get_project_root(), "runners", "predictors", "predictor_config.yaml"
-            )
-        ) as f:
-            config = CfgNode.load_cfg(f)
-    elif config_type == "bbo-bs":
-        # load the default base
-        with open(
-            os.path.join(
-                get_project_root(), "runners", "bbo", "discrete_config.yaml"
-            )
-        ) as f:
-            config = CfgNode.load_cfg(f)
-    elif config_type == "nas_predictor":
-        # load the default base
-        # with open(os.path.join(get_project_root(), 'runners', 'nas_predictors', 'nas_predictor_config.yaml')) as f:
-        with open(
-            os.path.join(
-                get_project_root(), "runners", "nas_predictors", "discrete_config.yaml"
-            )
-        ) as f:
-            config = CfgNode.load_cfg(f)
-    elif config_type == "oneshot":
-        with open(
-            os.path.join(
-                get_project_root(),
-                "runners", "nas_predictors",
-                "nas_predictor_config.yaml",
-            )
-        ) as f:
-            config = CfgNode.load_cfg(f)
-    elif config_type == "statistics":
-        # load the default base
-        with open(
-            os.path.join(
-                get_project_root(), "runners", "statistics", "statistics_config.yaml"
-            )
-        ) as f:
-            config = CfgNode.load_cfg(f)
+    # load the default base
+    with open(
+        os.path.join(
+            get_project_root(), "runners", "predictor_config.yaml"
+        )
+    ) as f:
+        config = CfgNode.load_cfg(f)
 
     if args is None:
         args = parse_args()
@@ -224,85 +183,12 @@ def get_config_from_args(args=None, config_type="nas"):
         for arg, value in pairwise(args):
             config[arg] = value
     # prepare the output directories
-    if config_type == "nas":
-        # config.seed = args.seed
-        config.search.seed = config.seed
-        # config.optimizer = args.optimizer
-        config.evaluation.world_size = args.world_size
-        config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
-        config.evaluation.rank = args.rank
-        config.evaluation.dist_url = args.dist_url
-        config.evaluation.dist_backend = args.dist_backend
-        config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
-        config.save = "{}/{}/{}/{}/{}".format(
-            config.out_dir, config.search_space, config.dataset, config.optimizer, config.seed
-        )
-
-    elif config_type == "bbo-bs":
-        # config.seed = args.seed
-        config.search.seed = config.seed
-        # config.optimizer = args.optimizer
-        config.evaluation.world_size = args.world_size
-        config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu
-        config.evaluation.rank = args.rank
-        config.evaluation.dist_url = args.dist_url
-        config.evaluation.dist_backend = args.dist_backend
-        config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
-        config.save = "{}/{}/{}/{}/config_{}/{}".format(
-            config.out_dir, config.search_space, config.dataset, config.optimizer, config.config_id, config.seed
-        )
-    
-    
-    elif config_type == "predictor" and not hasattr(config, 'save'):
-        if config.predictor == "lcsvr" and config.experiment_type == "vary_train_size":
-            config.save = "{}/{}/{}/{}_train/{}".format(
-                config.out_dir,
-                config.dataset,
-                "predictors",
-                config.predictor,
-                config.seed,
-            )
-        elif config.predictor == "lcsvr" and config.experiment_type == "vary_fidelity":
-            config.save = "{}/{}/{}/{}_fidelity/{}".format(
-                config.out_dir,
-                config.dataset,
-                "predictors",
-                config.predictor,
-                config.seed,
-            )
-        else:
-            config.save = "{}/{}/{}/{}/{}".format(
-                config.out_dir,
-                config.dataset,
-                "predictors",
-                config.predictor,
-                config.seed,
-            )
-    elif config_type == "nas_predictor":
-        config.search.seed = config.seed
-        config.save = "{}/{}/{}/{}/{}/{}".format(
-            config.out_dir,
-            config.dataset,
-            "nas_predictors",
-            config.search_space,
-            config.search.predictor_type,
-            config.seed,
-        )
-    elif config_type == "oneshot":
-        config.save = "{}/{}/{}/{}/{}/{}".format(
-            config.out_dir,
-            config.dataset,
-            "nas_predictors",
-            config.search_space,
-            config.search.predictor_type,
-            config.seed,
-        )
-    elif config_type == "statistics":
+    if config_type == "predictor" and not hasattr(config, 'save'):
         config.save = "{}/{}/{}/{}/{}".format(
             config.out_dir,
-            config.search_space,
             config.dataset,
-            "statistics",
+            "predictors",
+            config.predictor,
             config.seed,
         )
     else:

@@ -139,103 +139,8 @@ class PredictorEvaluator(object):
                 arch.load_labeled_architecture(dataset_api=self.dataset_api)
 
             arch_hash = arch.get_hash()
-            if False: # removing this for consistency, for now
-                continue
-            else:
-                arch_hash_map[arch_hash] = True
+            arch_hash_map[arch_hash] = True
 
-            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
-            xdata.append(arch)
-            ydata.append(accuracy)
-            info.append(info_dict)
-            train_times.append(train_time)
-
-        return [xdata, ydata, info, train_times], arch_hash_map
-
-    def load_mutated_test(self, data_size=10, arch_hash_map={}):
-        """
-        Load a test set not uniformly at random, but by picking some random
-        architectures and then mutation the best ones. This better emulates
-        distributions in local or mutation-based NAS algorithms.
-        """
-        assert (
-            self.load_labeled == False
-        ), "Mutation is only implemented for load_labeled = False"
-        xdata = []
-        ydata = []
-        info = []
-        train_times = []
-
-        # step 1: create a large pool of architectures
-        while len(xdata) < self.mutate_pool:
-            arch = self.search_space.clone()
-            arch.sample_random_architecture(dataset_api=self.dataset_api)
-            arch_hash = arch.get_hash()
-            if arch_hash in arch_hash_map:
-                continue
-            else:
-                arch_hash_map[arch_hash] = True
-            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
-            xdata.append(arch)
-            ydata.append(accuracy)
-            info.append(info_dict)
-            train_times.append(train_time)
-
-        # step 2: prune the pool down to the top 5 architectures
-        indices = np.flip(np.argsort(ydata))[: self.num_arches_to_mutate]
-        xdata = [xdata[i] for i in indices]
-        ydata = [ydata[i] for i in indices]
-        info = [info[i] for i in indices]
-        train_times = [train_times[i] for i in indices]
-
-        # step 3: mutate the top architectures to generate the full list
-        while len(xdata) < data_size:
-            idx = np.random.choice(self.num_arches_to_mutate)
-            arch = xdata[idx].clone()
-            mutation_factor = np.random.choice(self.max_mutation_rate) + 1
-            for i in range(mutation_factor):
-                new_arch = self.search_space.clone()
-                new_arch.mutate(arch, dataset_api=self.dataset_api)
-                arch = new_arch
-
-            arch_hash = arch.get_hash()
-            if arch_hash in arch_hash_map:
-                continue
-            else:
-                arch_hash_map[arch_hash] = True
-            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
-            xdata.append(arch)
-            ydata.append(accuracy)
-            info.append(info_dict)
-            train_times.append(train_time)
-
-        return [xdata, ydata, info, train_times], arch_hash_map
-
-    def load_mutated_train(self, data_size=10, arch_hash_map={}, test_data=[]):
-        """
-        Load a training set not uniformly at random, but by picking architectures
-        from the test set and mutating the best ones. There is still no overlap
-        between the training and test sets. This better emulates local or
-        mutation-based NAS algorithms.
-        """
-        assert (
-            self.load_labeled == False
-        ), "Mutation is only implemented for load_labeled = False"
-        xdata = []
-        ydata = []
-        info = []
-        train_times = []
-
-        while len(xdata) < data_size:
-            idx = np.random.choice(len(test_data[0]))
-            parent = test_data[0][idx]
-            arch = self.search_space.clone()
-            arch.mutate(parent, dataset_api=self.dataset_api)
-            arch_hash = arch.get_hash()
-            if arch_hash in arch_hash_map:
-                continue
-            else:
-                arch_hash_map[arch_hash] = True
             accuracy, train_time, info_dict = self.get_full_arch_info(arch)
             xdata.append(arch)
             ydata.append(accuracy)
@@ -344,12 +249,9 @@ class PredictorEvaluator(object):
         self.predictor.pre_process()
 
         logger.info("Load the test set")
-        if self.uniform_random:
-            test_data, arch_hash_map = self.load_dataset(
-                load_labeled=self.load_labeled, data_size=self.test_size
-            )
-        else:
-            test_data, arch_hash_map = self.load_mutated_test(data_size=self.test_size)
+        test_data, arch_hash_map = self.load_dataset(
+            load_labeled=self.load_labeled, data_size=self.test_size
+        )
 
         logger.info("Load the training set")
         max_train_size = self.train_size_single
@@ -357,18 +259,11 @@ class PredictorEvaluator(object):
         if self.experiment_type in ["vary_train_size", "vary_both"]:
             max_train_size = self.train_size_list[-1]
 
-        if self.uniform_random:
-            full_train_data, _ = self.load_dataset(
-                load_labeled=self.load_labeled,
-                data_size=max_train_size,
-                arch_hash_map=arch_hash_map,
-            )
-        else:
-            full_train_data, _ = self.load_mutated_train(
-                data_size=max_train_size,
-                arch_hash_map=arch_hash_map,
-                test_data=test_data,
-            )
+        full_train_data, _ = self.load_dataset(
+            load_labeled=self.load_labeled,
+            data_size=max_train_size,
+            arch_hash_map=arch_hash_map,
+        )
 
         # if the predictor requires unlabeled data (e.g. SemiNAS), generate it:
         reqs = self.predictor.get_data_reqs()

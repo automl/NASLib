@@ -18,7 +18,6 @@ from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogit
 from naslib.predictors.predictor import Predictor
 from naslib.utils.utils import get_project_root, get_train_val_loaders
 from naslib.predictors.utils.models.build_darts_net import NetworkCIFAR
-from naslib.predictors.utils.models import nasbench2 as nas201_arch
 from naslib.predictors.utils.models import nasbench1 as nas101_arch
 from naslib.predictors.utils.models import nasbench1_spec
 from naslib.predictors.utils.pruners import predictive
@@ -56,46 +55,15 @@ class ZeroCostV2(Predictor):
         for test_arch in xtest:
             count += 1
             logger.info("zero cost: {} of {}".format(count, len(xtest)))
-            
+
+            #TODO: unify these when graphs are fixed for every space
             if "nasbench201" in self.config.search_space:
-                ops_to_nb201 = {
-                    "AvgPool1x1": "avg_pool_3x3",
-                    "ReLUConvBN1x1": "nor_conv_1x1",
-                    "ReLUConvBN3x3": "nor_conv_3x3",
-                    "Identity": "skip_connect",
-                    "Zero": "none",
-                }
-                # convert the naslib representation to nasbench201
-                cell = test_arch.edges[2, 3].op
-                edge_op_dict = {
-                    (i, j): ops_to_nb201[cell.edges[i, j]["op"].get_op_name]
-                    for i, j in cell.edges
-                }
-                op_edge_list = [
-                    "{}~{}".format(edge_op_dict[(i, j)], i - 1)
-                    for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-                ]
-                arch_str = "|{}|+|{}|{}|+|{}|{}|{}|".format(*op_edge_list)
-                arch_config = {
-                    "name": "infer.tiny",
-                    "C": 16,
-                    "N": 5,
-                    "arch_str": arch_str,
-                    "num_classes": self.num_classes,
-                }
-                network = nas201_arch.get_model_from_arch_str(
-                    arch_str, self.num_classes
-                )  # create the network from configuration
-                # zero-cost-proxy author has the following checking lines (which I think might be optional)
-                arch_str2 = nas201_arch.get_arch_str_from_model(network)
-                if arch_str != arch_str2:
-                    print(
-                        f"Value Error: orig_arch={arch_str}, convert_arch={arch_str2}"
-                    )
-                    measure_score = -10e8
-                    return measure_score
-                
-            
+                test_arch.prepare_discretization()
+                test_arch.prepare_evaluation()
+                test_arch.parse()
+
+                network = test_arch
+                logger.info('Parsed architecture')
 
             elif "darts" in self.config.search_space:
                 test_genotype = convert_compact_to_genotype(test_arch.compact)
