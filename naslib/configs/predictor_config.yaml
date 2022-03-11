@@ -1,0 +1,30 @@
+# nasbench101, nasbench201, darts, nlp, transbench101_micro
+search_space: nasbench201
+
+# nasbench201 datasets: cifar10, cifar100, ImageNet16-120
+# transbench101 datasets: class_scene, class_object,
+# jigsaw, room_layout, segmentsemantic, normal, autoencoder
+dataset: cifar10
+
+# one of the predictors in runners/runner.py
+predictor: synflow
+
+# test set size
+test_size: 2
+
+# size of the training set
+train_size: 3
+
+# output results to this directory
+out_dir: run
+
+# random seed
+seed: 1000
+
+# these are used by the zero-cost methods
+batch_size: 256
+data_size: 25000
+cutout: False
+cutout_length: 16
+cutout_prob: 1.0
+train_portion: 0.7

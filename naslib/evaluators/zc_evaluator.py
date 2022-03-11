@@ -8,10 +8,8 @@ import copy
 import torch
 from scipy import stats
 from sklearn import metrics
-import math
 
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.utils import generate_kfold, cross_validation
 
 logger = logging.getLogger(__name__)
 
@@ -24,28 +22,14 @@ class PredictorEvaluator(object):
     """
 
     def __init__(self, predictor, config=None):
-
         self.predictor = predictor
         self.config = config
-        self.experiment_type = config.experiment_type
-
         self.test_size = config.test_size
-        self.train_size_single = config.train_size_single
-        self.train_size_list = config.train_size_list
-        self.fidelity_single = config.fidelity_single
-        self.fidelity_list = config.fidelity_list
-        self.max_hpo_time = config.max_hpo_time
-
+        self.train_size = config.train_size
         self.dataset = config.dataset
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results = [config]
-
-        # mutation parameters
-        self.uniform_random = config.uniform_random
-        self.mutate_pool = 10
-        self.num_arches_to_mutate = 5
-        self.max_mutation_rate = 3
 
     def adapt_search_space(
         self, search_space, load_labeled, scope=None, dataset_api=None
@@ -55,20 +39,6 @@ class PredictorEvaluator(object):
         self.predictor.set_ss_type(self.search_space.get_type())
         self.load_labeled = load_labeled
         self.dataset_api = dataset_api
-
-        # nasbench101 does not have full learning curves or hyperparameters
-        if self.search_space.get_type() == "nasbench101":
-            self.full_lc = False
-            self.hyperparameters = False
-        elif self.search_space.get_type() in ["nasbench201", "darts", 
-                                              "nlp", "transbench101", 
-                                              "asr"]:
-            self.full_lc = True
-            self.hyperparameters = True
-        else:
-            raise NotImplementedError(
-                "This search space is not yet implemented in PredictorEvaluator."
-            )
 
     def get_full_arch_info(self, arch):
         """
@@ -85,7 +55,6 @@ class PredictorEvaluator(object):
         data_reqs = self.predictor.get_data_reqs()
         if data_reqs["requires_partial_lc"]:
             # add partial learning curve if applicable
-            assert self.full_lc, "This predictor requires learning curve info"
             if type(data_reqs["metric"]) is list:
                 for metric_i in data_reqs["metric"]:
                     metric_lc = arch.query(
@@ -104,14 +73,6 @@ class PredictorEvaluator(object):
                     dataset_api=self.dataset_api,
                 )
                 info_dict["lc"] = lc
-            if data_reqs["requires_hyperparameters"]:
-                assert (
-                    self.hyperparameters
-                ), "This predictor requires querying arch hyperparams"
-                for hp in data_reqs["hyperparams"]:
-                    info_dict[hp] = arch.query(
-                        Metric.HP, dataset=self.dataset, dataset_api=self.dataset_api
-                    )[hp]
         return accuracy, train_time, info_dict
 
     def load_dataset(self, load_labeled=False, data_size=10, arch_hash_map={}):
@@ -149,9 +110,9 @@ class PredictorEvaluator(object):
 
         return [xdata, ydata, info, train_times], arch_hash_map
 
-    def single_evaluate(self, train_data, test_data, fidelity):
+    def single_evaluate(self, train_data, test_data):
         """
-        Evaluate the predictor for a single (train_data / fidelity) pair
+        Evaluate the predictor.
         """
         xtrain, ytrain, train_info, train_times = train_data
         xtest, ytest, test_info, _ = test_data
@@ -160,46 +121,10 @@ class PredictorEvaluator(object):
         data_reqs = self.predictor.get_data_reqs()
 
         logger.info("Fit the predictor")
-        if data_reqs["requires_partial_lc"]:
-            """
-            todo: distinguish between predictors that need LC info
-            at training time vs test time
-            """
-            train_info = copy.deepcopy(train_info)
-            test_info = copy.deepcopy(test_info)
-            for info_dict in train_info:
-                lc_related_keys = [key for key in info_dict.keys() if "lc" in key]
-                for lc_key in lc_related_keys:
-                    info_dict[lc_key] = info_dict[lc_key][:fidelity]
-
-            for info_dict in test_info:
-                lc_related_keys = [key for key in info_dict.keys() if "lc" in key]
-                for lc_key in lc_related_keys:
-                    info_dict[lc_key] = info_dict[lc_key][:fidelity]
-
-        self.predictor.reset_hyperparams()
         fit_time_start = time.time()
-        cv_score = 0
-        if (
-            self.max_hpo_time > 0
-            and len(xtrain) >= 10
-            and self.predictor.get_hpo_wrapper()
-        ):
-
-            # run cross-validation (for model-based predictors)
-            hyperparams, cv_score = self.run_hpo(
-                xtrain,
-                ytrain,
-                train_info,
-                start_time=fit_time_start,
-                metric="kendalltau",
-            )
-            self.predictor.set_hyperparams(hyperparams)
-
         self.predictor.fit(xtrain, ytrain, train_info)
-        hyperparams = self.predictor.get_hyperparams()
-
         fit_time_end = time.time()
+
         test_pred = self.predictor.query(xtest, test_info)
         query_time_end = time.time()
 
@@ -209,20 +134,11 @@ class PredictorEvaluator(object):
 
         logger.info("Compute evaluation metrics")
         results_dict = self.compare(ytest, test_pred)
-        results_dict["train_size"] = train_size
-        results_dict["fidelity"] = fidelity
         results_dict["train_time"] = np.sum(train_times)
         results_dict["fit_time"] = fit_time_end - fit_time_start
         results_dict["query_time"] = (query_time_end - fit_time_end) / len(xtest)
-        if hyperparams:
-            for key in hyperparams:
-                results_dict["hp_" + key] = hyperparams[key]
-        results_dict["cv_score"] = cv_score
-        
-        # note: specific code for zero-cost experiments:
-        method_type = None
-        if hasattr(self.predictor, 'method_type'):
-            method_type = self.predictor.method_type
+
+        method_type = self.predictor.method_type
         print(
             "dataset: {}, predictor: {}, spearman {}".format(
                 self.dataset, method_type, np.round(results_dict["spearman"], 4)
@@ -230,8 +146,7 @@ class PredictorEvaluator(object):
         )
         print("full ytest", results_dict["full_ytest"])
         print("full testpred", results_dict["full_testpred"])
-        # end specific code for zero-cost experiments.
-        
+
         # print entire results dict:
         print_string = ""
         for key in results_dict:
@@ -240,12 +155,9 @@ class PredictorEvaluator(object):
                 print_string += key + ": {}, ".format(np.round(results_dict[key], 4))
         logger.info(print_string)
         self.results.append(results_dict)
-        """
-        Todo: query_time currently does not include the time taken to train a partial learning curve
-        """
+
 
     def evaluate(self):
-
         self.predictor.pre_process()
 
         logger.info("Load the test set")
@@ -254,14 +166,9 @@ class PredictorEvaluator(object):
         )
 
         logger.info("Load the training set")
-        max_train_size = self.train_size_single
-
-        if self.experiment_type in ["vary_train_size", "vary_both"]:
-            max_train_size = self.train_size_list[-1]
-
         full_train_data, _ = self.load_dataset(
             load_labeled=self.load_labeled,
-            data_size=max_train_size,
+            data_size=self.train_size,
             arch_hash_map=arch_hash_map,
         )
 
@@ -279,34 +186,9 @@ class PredictorEvaluator(object):
 
         # some of the predictors use a pre-computation step to save time in batch experiments:
         self.predictor.pre_compute(full_train_data[0], test_data[0], unlabeled_data)
-
-        if self.experiment_type == "single":
-            train_size = self.train_size_single
-            fidelity = self.fidelity_single
-            self.single_evaluate(full_train_data, test_data, fidelity=fidelity)
-
-        elif self.experiment_type == "vary_train_size":
-            fidelity = self.fidelity_single
-            for train_size in self.train_size_list:
-                train_data = [data[:train_size] for data in full_train_data]
-                self.single_evaluate(train_data, test_data, fidelity=fidelity)
-
-        elif self.experiment_type == "vary_fidelity":
-            train_size = self.train_size_single
-            for fidelity in self.fidelity_list:
-                self.single_evaluate(full_train_data, test_data, fidelity=fidelity)
-
-        elif self.experiment_type == "vary_both":
-            for train_size in self.train_size_list:
-                train_data = [data[:train_size] for data in full_train_data]
-
-                for fidelity in self.fidelity_list:
-                    self.single_evaluate(train_data, test_data, fidelity=fidelity)
-
-        else:
-            raise NotImplementedError()
-
+        self.single_evaluate(full_train_data, test_data)
         self._log_to_json()
+
         return self.results
 
     def compare(self, ytest, test_pred):
@@ -368,55 +250,6 @@ class PredictorEvaluator(object):
             logger.info(test_pred)
 
         return metrics_dict
-
-    def run_hpo(
-        self,
-        xtrain,
-        ytrain,
-        train_info,
-        start_time,
-        metric="kendalltau",
-        max_iters=5000,
-    ):
-        logger.info(f"Starting cross validation")
-        n_train = len(xtrain)
-        split_indices = generate_kfold(n_train, 3)
-        # todo: try to run this without copying the predictor
-        predictor = copy.deepcopy(self.predictor)
-
-        best_score = -1e6
-        best_hyperparams = None
-
-        t = 0
-        while t < max_iters:
-            t += 1
-            hyperparams = predictor.set_random_hyperparams()
-            cv_score = cross_validation(
-                xtrain, ytrain, predictor, split_indices, metric
-            )
-            if np.isnan(cv_score) or cv_score < 0:
-                # todo: this will not work for mae/rmse
-                cv_score = 0
-
-            if cv_score > best_score or t == 0:
-                best_hyperparams = hyperparams
-                best_score = cv_score
-                logger.info(f"new best score={cv_score}, hparams = {hyperparams}")
-
-            if (time.time() - start_time) > self.max_hpo_time * (
-                len(xtrain) / 1000
-            ) + 20:
-                # we always give at least 20 seconds, and the time scales with train_size
-                break
-
-        if math.isnan(best_score):
-            best_hyperparams = predictor.default_hyperparams
-
-        logger.info(f"Finished {t} rounds")
-        logger.info(f"Best hyperparams = {best_hyperparams} Score = {best_score}")
-        self.predictor.hyperparams = best_hyperparams
-
-        return best_hyperparams.copy(), best_score
 
     def _log_to_json(self):
         """log statistics to json file"""

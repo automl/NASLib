@@ -67,43 +67,6 @@ def default_argument_parser():
     )
     parser.add_argument("--config-file", default=None, metavar="FILE", help="path to config file")
     parser.add_argument(
-        "--eval-only", action="store_true", help="perform evaluation only"
-    )
-    parser.add_argument("--seed", default=None, help="random seed")
-    parser.add_argument(
-        "--resume", action="store_true", help="Resume from last checkpoint"
-    )
-    parser.add_argument(
-        "--model-path", type=str, default=None, help="Path to saved model weights"
-    )
-    parser.add_argument(
-        "--world-size",
-        default=1,
-        type=int,
-        help="number of nodes for distributed training",
-    )
-    parser.add_argument(
-        "--rank", default=0, type=int, help="node rank for distributed training"
-    )
-    parser.add_argument("--gpu", default=None, type=int, help="GPU id to use.")
-    parser.add_argument(
-        "--dist-url",
-        default="tcp://127.0.0.1:8888",
-        type=str,
-        help="url used to set up distributed training",
-    )
-    parser.add_argument(
-        "--dist-backend", default="nccl", type=str, help="distributed backend"
-    )
-    parser.add_argument(
-        "--multiprocessing-distributed",
-        action="store_true",
-        help="Use multi-processing distributed training to launch "
-        "N processes per node, which has N GPUs. This is the "
-        "fastest way to use PyTorch for either single node or "
-        "multi node data parallel training",
-    )
-    parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
         default=None,
@@ -134,19 +97,12 @@ def load_config(path):
 
     return config
 
-def load_default_config(config_type="nas"):
-    config_paths = {
-        "nas": "defaults/darts_defaults.yaml",
-        "predictor": "runners/predictor_config.yaml",
-        "bbo-bs": "runners/bbo/discrete_config.yaml",
-        "nas_predictor": "runners/nas_predictors/discrete_config.yaml",
-        "oneshot": "runners/nas_predictors/nas_predictor_config.yaml",
-        "statistics": "runners/statistics/statistics_config.yaml"
-    }
+def load_default_config():
+    config_paths = "configs/predictor_config.yaml"
 
     config_path_full = os.path.join(
         *(
-            [get_project_root()] + config_paths[config_type].split('/')
+            [get_project_root()] + config_paths.split('/')
         )
     )
 
@@ -168,7 +124,7 @@ def get_config_from_args(args=None, config_type="nas"):
     logger.info("Command line args: {}".format(args))
 
     if args.config_file is None:
-        config = load_default_config(config_type=config_type)
+        config = load_default_config()
     else:
         config = load_config(path=args.config_file)
 
@@ -180,10 +136,6 @@ def get_config_from_args(args=None, config_type="nas"):
                 config[arg1][arg2] = type(config[arg1][arg2])(value)
             else:
                 config[arg] = type(config[arg])(value) if arg in config else value
-
-        config.eval_only = args.eval_only
-        config.resume = args.resume
-        config.model_path = args.model_path
 
         # load config file
         config.set_new_allowed(True)
@@ -220,8 +172,7 @@ def get_train_val_loaders(config, mode):
     """
     data = config.data
     dataset = config.dataset
-    seed = config.search.seed
-    config = config.search if mode == "train" else config.evaluation
+    seed = config.seed
     if dataset == "cifar10":
         train_transform, valid_transform = _data_transforms_cifar10(config)
         train_data = dset.CIFAR10(

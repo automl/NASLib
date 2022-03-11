@@ -20,6 +20,8 @@ from naslib.utils.utils import get_project_root
 
 from .primitives import ResNetBasicblock
 
+NUM_VERTICES = 6
+NUM_OPS = 5
 
 OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
 
@@ -82,14 +84,14 @@ class NasBench201SearchSpace(Graph):
         self.add_nodes_from(range(1, total_num_nodes + 1))
         self.add_edges_from([(i, i + 1) for i in range(1, total_num_nodes)])
 
-        channels = [16, 32, 64]
+        self.channels = [16, 32, 64]
 
         #
         # operations at the edges
         #
 
         # preprocessing
-        self.edges[1, 2].set("op", ops.Stem(channels[0]))
+        self.edges[1, 2].set("op", ops.Stem(self.channels[0]))
 
         # stage 1
         for i in range(2, 7):
@@ -97,14 +99,14 @@ class NasBench201SearchSpace(Graph):
 
         # stage 2
         self.edges[7, 8].set(
-            "op", ResNetBasicblock(C_in=channels[0], C_out=channels[1], stride=2)
+            "op", ResNetBasicblock(C_in=self.channels[0], C_out=self.channels[1], stride=2)
         )
         for i in range(8, 13):
             self.edges[i, i + 1].set("op", cell.copy().set_scope("stage_2"))
 
         # stage 3
         self.edges[13, 14].set(
-            "op", ResNetBasicblock(C_in=channels[1], C_out=channels[2], stride=2)
+            "op", ResNetBasicblock(C_in=self.channels[1], C_out=self.channels[2], stride=2)
         )
         for i in range(14, 19):
             self.edges[i, i + 1].set("op", cell.copy().set_scope("stage_3"))
@@ -113,18 +115,21 @@ class NasBench201SearchSpace(Graph):
         self.edges[19, 20].set(
             "op",
             ops.Sequential(
-                nn.BatchNorm2d(channels[-1]),
+                nn.BatchNorm2d(self.channels[-1]),
                 nn.ReLU(inplace=True),
                 nn.AdaptiveAvgPool2d(1),
                 nn.Flatten(),
-                nn.Linear(channels[-1], self.num_classes),
+                nn.Linear(self.channels[-1], self.num_classes),
             ),
         )
 
+        self._set_cell_ops()
+
+    def _set_cell_ops(self):
         # set the ops at the cells (channel dependent)
-        for c, scope in zip(channels, self.OPTIMIZER_SCOPE):
+        for scope, c in zip(self.OPTIMIZER_SCOPE, self.channels):
             self.update_edges(
-                update_func=lambda edge: _set_cell_ops(edge, C=c),
+                update_func=lambda edge: NasBench201SearchSpace._set_ops(edge, C=c),
                 scope=scope,
                 private_edge_data=True,
             )
@@ -200,6 +205,19 @@ class NasBench201SearchSpace(Graph):
             # return the value of the metric only at the specified epoch
             return query_results[dataset][metric_to_nb201[metric]][epoch]
 
+    @staticmethod
+    def _set_ops(edge, C):
+        edge.data.set(
+            "op",
+            [
+                ops.Identity(),
+                ops.Zero(stride=1),
+                ops.ReLUConvBN(C, C, kernel_size=3, affine=False, track_running_stats=False),
+                ops.ReLUConvBN(C, C, kernel_size=1, affine=False, track_running_stats=False),
+                ops.AvgPool1x1(kernel_size=3, stride=1, affine=False),
+            ],
+        )
+
     def get_op_indices(self):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
@@ -207,9 +225,9 @@ class NasBench201SearchSpace(Graph):
 
     def get_hash(self):
         return tuple(self.get_op_indices())
-    
+
     def get_arch_iterator(self, dataset_api=None):
-        return itertools.product(range(5), repeat=6)
+        return itertools.product(range(NUM_OPS), repeat=NUM_VERTICES)
 
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
@@ -226,54 +244,10 @@ class NasBench201SearchSpace(Graph):
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
-        op_indices = np.random.randint(5, size=(6))
+        op_indices = np.random.randint(NUM_OPS, size=(NUM_VERTICES))
         self.set_op_indices(op_indices)
-
-    def mutate(self, parent, dataset_api=None):
-        """
-        This will mutate one op from the parent op indices, and then
-        update the naslib object and op_indices
-        """
-        parent_op_indices = parent.get_op_indices()
-        op_indices = list(parent_op_indices)
-
-        edge = np.random.choice(len(parent_op_indices))
-        available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
-        op_index = np.random.choice(available)
-        op_indices[edge] = op_index
-        self.set_op_indices(op_indices)
-
-    def get_nbhd(self, dataset_api=None):
-        # return all neighbors of the architecture
-        self.get_op_indices()
-        nbrs = []
-        for edge in range(len(self.op_indices)):
-            available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
-
-            for op_index in available:
-                nbr_op_indices = list(self.op_indices).copy()
-                nbr_op_indices[edge] = op_index
-                nbr = NasBench201SearchSpace()
-                nbr.set_op_indices(nbr_op_indices)
-                nbr_model = torch.nn.Module()
-                nbr_model.arch = nbr
-                nbrs.append(nbr_model)
-
-        random.shuffle(nbrs)
-        return nbrs
 
     def get_type(self):
         return "nasbench201"
 
 
-def _set_cell_ops(edge, C):
-    edge.data.set(
-        "op",
-        [
-            ops.Identity(),
-            ops.Zero(stride=1),
-            ops.ReLUConvBN(C, C, kernel_size=3, affine=False, track_running_stats=False),
-            ops.ReLUConvBN(C, C, kernel_size=1, affine=False, track_running_stats=False),
-            ops.AvgPool1x1(kernel_size=3, stride=1, affine=False),
-        ],
-    )

@@ -1,6 +1,6 @@
 import logging
 
-from naslib.defaults.predictor_evaluator import PredictorEvaluator
+from naslib.evaluators.zc_evaluator import PredictorEvaluator
 
 from naslib.predictors import (
     ZeroCostV1,

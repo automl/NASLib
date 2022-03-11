@@ -245,7 +245,7 @@ class DartsSearchSpace(Graph):
 
         for scope, c in zip(stages, self.channels):
             self.update_edges(
-                update_func=lambda edge: _set_ops(edge, c, stride=1),
+                update_func=lambda edge: DartsSearchSpace._set_ops(edge, c, stride=1),
                 scope=scope,
                 private_edge_data=True,
             )
@@ -258,7 +258,7 @@ class DartsSearchSpace(Graph):
                 stride = 2 if u in (1, 2) else 1
                 if not data.is_final():
                     edge = AttrDict(data=data)
-                    _set_ops(edge, c, stride)
+                    DartsSearchSpace._set_ops(edge, c, stride)
 
         #
         # Combining operations
@@ -274,7 +274,8 @@ class DartsSearchSpace(Graph):
         """
 
         self.update_nodes(
-            _truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True
+            DartsSearchSpace._truncate_input_edges, scope=self.OPTIMIZER_SCOPE,
+            single_instances=True
         )
 
     def prepare_evaluation(self):
@@ -321,7 +322,7 @@ class DartsSearchSpace(Graph):
         )
 
         self.update_edges(
-            update_func=_double_channels,
+            update_func=DartsSearchSpace._double_channels,
             scope=self.OPTIMIZER_SCOPE,
             private_edge_data=True,
         )
@@ -449,6 +450,94 @@ class DartsSearchSpace(Graph):
             else:
                 return -1
 
+    @staticmethod
+    def _set_ops(edge, C, stride):
+        """
+        Replace the 'op' at the edges with the ones defined here.
+        This function is called by the framework for every edge in
+        the defined scope.
+        Args:
+            current_egde_data (EdgeData): The data that currently sits
+                at the edge.
+            C (int): convolutional channels
+            stride (int): stride for the operation
+
+        Returns:
+            EdgeData: the updated EdgeData object.
+        """
+        edge.data.set(
+            "op",
+            [
+                ops.Identity()
+                if stride == 1
+                else FactorizedReduce(C, C, stride, affine=False),
+                ops.Zero(stride=stride),
+                ops.MaxPool(C, 3, stride, use_bn=True),
+                ops.AvgPool(C, 3, stride, use_bn=True),
+                ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
+                ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
+                ops.DilConv(
+                    C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False
+                ),
+                ops.DilConv(
+                    C, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False
+                ),
+            ],
+        )
+
+    @staticmethod
+    def _truncate_input_edges(node, in_edges, out_edges):
+        """
+        Removes input edges if there are more than k.
+        """
+
+        def _largest_post_softmax_weight(edge) -> int:
+            _, edge_data = edge
+
+            alpha = edge_data.alpha.detach()
+            # The zero operation has its value set to -inf to ensure it never gets selected
+            # This hack just ensures that it is the weakest softmax activation, since softmax can't
+            # take inf as input
+            alpha[1] = torch.min(alpha) - 0.001
+            alpha_softmax = F.softmax(alpha)
+
+            return torch.max(alpha_softmax)
+
+        k = 2
+        if len(in_edges) >= k:
+            if any(e.has("alpha") or (e.has("final") and e.final) for _, e in in_edges):
+                # We are in the one-shot case
+                for _, data in in_edges:
+                    if data.has("final") and data.final:
+                        return  # We are looking at an out node
+                    data.alpha.data[1] = -float("Inf")
+                sorted_edge_ids = sorted(in_edges, key=_largest_post_softmax_weight, reverse=True)
+                keep_edges, _ = zip(*sorted_edge_ids[:k])
+                for edge_id, edge_data in in_edges:
+                    if edge_id not in keep_edges:
+                        edge_data.delete()
+            else:
+                # We are in the discrete case (e.g. random search)
+                for _, data in in_edges:
+                    if isinstance(data.op, list) and data.op[1].get_op_name == "Zero":
+                        data.op.pop(1)
+                if any(e.has("final") and e.final for _, e in in_edges):
+                    return  # TODO: how about mixed final and non-final?
+                else:
+                    for _ in range(len(in_edges) - k):
+                        in_edges[random.randint(0, len(in_edges) - 1)][1].delete()
+
+    @staticmethod
+    def _double_channels(edge):
+        init_params = edge.data.op.init_params
+        if "C_in" in init_params:
+            init_params["C_in"] = int(init_params["C_in"] * 2.25)
+        if "C_out" in init_params:
+            init_params["C_out"] = int(init_params["C_out"] * 2.25)
+        if "affine" in init_params:
+            init_params["affine"] = True
+        edge.data.set("op", edge.data.op.__class__(**init_params))
+
     def get_compact(self):
         if self.compact is None:
             self.compact = convert_naslib_to_compact(self)
@@ -480,7 +569,7 @@ class DartsSearchSpace(Graph):
         """
         compact = [[], []]
         for i in range(NUM_VERTICES):
-            ops = np.random.choice(range(NUM_OPS), 4)
+            ops = np.random.choice(range(NUM_OPS), NUM_VERTICES)
 
             nodes_in_normal = np.random.choice(range(i + 2), 2, replace=False)
             nodes_in_reduce = np.random.choice(range(i + 2), 2, replace=False)
@@ -582,92 +671,6 @@ class DartsSearchSpace(Graph):
         return "darts"
 
 
-def _set_ops(edge, C, stride):
-    """
-    Replace the 'op' at the edges with the ones defined here.
-    This function is called by the framework for every edge in
-    the defined scope.
-    Args:
-        current_egde_data (EdgeData): The data that currently sits
-            at the edge.
-        C (int): convolutional channels
-        stride (int): stride for the operation
-
-    Returns:
-        EdgeData: the updated EdgeData object.
-    """
-    edge.data.set(
-        "op",
-        [
-            ops.Identity()
-            if stride == 1
-            else FactorizedReduce(C, C, stride, affine=False),
-            ops.Zero(stride=stride),
-            ops.MaxPool(C, 3, stride, use_bn=True),
-            ops.AvgPool(C, 3, stride, use_bn=True),
-            ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
-            ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
-            ops.DilConv(
-                C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False
-            ),
-            ops.DilConv(
-                C, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False
-            ),
-        ],
-    )
-
-
-def _truncate_input_edges(node, in_edges, out_edges):
-    """
-    Removes input edges if there are more than k.
-    """
-
-    def _largest_post_softmax_weight(edge) -> int:
-        _, edge_data = edge
-
-        alpha = edge_data.alpha.detach()
-        # The zero operation has its value set to -inf to ensure it never gets selected
-        # This hack just ensures that it is the weakest softmax activation, since softmax can't
-        # take inf as input
-        alpha[1] = torch.min(alpha) - 0.001
-        alpha_softmax = F.softmax(alpha)
-
-        return torch.max(alpha_softmax)
-
-    k = 2
-    if len(in_edges) >= k:
-        if any(e.has("alpha") or (e.has("final") and e.final) for _, e in in_edges):
-            # We are in the one-shot case
-            for _, data in in_edges:
-                if data.has("final") and data.final:
-                    return  # We are looking at an out node
-                data.alpha.data[1] = -float("Inf")
-            sorted_edge_ids = sorted(in_edges, key=_largest_post_softmax_weight, reverse=True)
-            keep_edges, _ = zip(*sorted_edge_ids[:k])
-            for edge_id, edge_data in in_edges:
-                if edge_id not in keep_edges:
-                    edge_data.delete()
-        else:
-            # We are in the discrete case (e.g. random search)
-            for _, data in in_edges:
-                if isinstance(data.op, list) and data.op[1].get_op_name == "Zero":
-                    data.op.pop(1)
-            if any(e.has("final") and e.final for _, e in in_edges):
-                return  # TODO: how about mixed final and non-final?
-            else:
-                for _ in range(len(in_edges) - k):
-                    in_edges[random.randint(0, len(in_edges) - 1)][1].delete()
-
-
-def _double_channels(edge):
-    init_params = edge.data.op.init_params
-    if "C_in" in init_params:
-        init_params["C_in"] = int(init_params["C_in"] * 2.25)
-    if "C_out" in init_params:
-        init_params["C_out"] = int(init_params["C_out"] * 2.25)
-    if "affine" in init_params:
-        init_params["affine"] = True
-    edge.data.set("op", edge.data.op.__class__(**init_params))
 
 
 def channel_concat(tensors):
