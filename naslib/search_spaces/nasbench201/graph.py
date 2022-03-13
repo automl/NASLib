@@ -40,9 +40,9 @@ class NasBench201SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self):
+    def __init__(self, n_classes=10):
         super().__init__()
-        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
+        self.num_classes = n_classes
         self.op_indices = None
 
         self.max_epoch = 199

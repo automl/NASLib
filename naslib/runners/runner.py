@@ -2,16 +2,7 @@ import logging
 
 from naslib.evaluators.zc_evaluator import PredictorEvaluator
 from naslib.predictors import ZeroCost
-from naslib.search_spaces.core.query_metrics import Metric
-from naslib.search_spaces import (
-    NasBench101SearchSpace,
-    NasBench201SearchSpace,
-    DartsSearchSpace,
-    NasBenchNLPSearchSpace,
-    TransBench101SearchSpaceMicro,
-    TransBench101SearchSpaceMacro,
-    NasBenchASRSearchSpace,
-)
+from naslib.search_spaces import get_search_space
 from naslib.utils import utils, setup_logger, get_dataset_api
 
 
@@ -32,16 +23,6 @@ supported_predictors = {
     "synflow": ZeroCost(config, batch_size=64, method_type="synflow"),
 }
 
-supported_search_spaces = {
-    "nasbench101": NasBench101SearchSpace(),
-    "nasbench201": NasBench201SearchSpace(),
-    "darts": DartsSearchSpace(),
-    "nlp": NasBenchNLPSearchSpace(),
-    'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
-    'transbench101_macro': TransBench101SearchSpaceMacro(),
-    "asr": NasBenchASRSearchSpace(),
-}
-
 """
 If the API did not evaluate *all* architectures in the search space,
 set load_labeled=True
@@ -52,7 +33,7 @@ dataset_api = get_dataset_api(config.search_space, config.dataset)
 # initialize the search space and predictor
 utils.set_seed(config.seed)
 predictor = supported_predictors[config.predictor]
-search_space = supported_search_spaces[config.search_space]
+search_space = get_search_space(name=config.search_space, dataset=config.dataset)
 
 # initialize the PredictorEvaluator class
 predictor_evaluator = PredictorEvaluator(predictor, config=config)

@@ -59,7 +59,7 @@ class DartsSearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self):
+    def __init__(self, n_classes=10):
         """
         Initialize a new instance of the DARTS search space.
         Note:
@@ -72,7 +72,7 @@ class DartsSearchSpace(Graph):
         self.channels = [16, 32, 64]
         self.compact = None
         self.load_labeled = None
-        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
+        self.num_classes = n_classes
         self.max_epoch = 97
         self.space_name = "darts"
 
