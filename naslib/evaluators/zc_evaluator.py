@@ -47,32 +47,13 @@ class PredictorEvaluator(object):
         """
         info_dict = {}
         accuracy = arch.query(
-            metric=self.metric, dataset=self.dataset, dataset_api=self.dataset_api
+            metric=self.metric, dataset=self.dataset,
+            dataset_api=self.dataset_api
         )
         train_time = arch.query(
-            metric=Metric.TRAIN_TIME, dataset=self.dataset, dataset_api=self.dataset_api
+            metric=Metric.TRAIN_TIME, dataset=self.dataset,
+            dataset_api=self.dataset_api
         )
-        data_reqs = self.predictor.get_data_reqs()
-        if data_reqs["requires_partial_lc"]:
-            # add partial learning curve if applicable
-            if type(data_reqs["metric"]) is list:
-                for metric_i in data_reqs["metric"]:
-                    metric_lc = arch.query(
-                        metric=metric_i,
-                        full_lc=True,
-                        dataset=self.dataset,
-                        dataset_api=self.dataset_api,
-                    )
-                    info_dict[f"{metric_i.name}_lc"] = metric_lc
-
-            else:
-                lc = arch.query(
-                    metric=data_reqs["metric"],
-                    full_lc=True,
-                    dataset=self.dataset,
-                    dataset_api=self.dataset_api,
-                )
-                info_dict["lc"] = lc
         return accuracy, train_time, info_dict
 
     def load_dataset(self, load_labeled=False, data_size=10, arch_hash_map={}):
@@ -172,20 +153,6 @@ class PredictorEvaluator(object):
             arch_hash_map=arch_hash_map,
         )
 
-        # if the predictor requires unlabeled data (e.g. SemiNAS), generate it:
-        reqs = self.predictor.get_data_reqs()
-        unlabeled_data = None
-        if reqs["unlabeled"]:
-            logger.info("Load unlabeled data")
-            unlabeled_size = max_train_size * reqs["unlabeled_factor"]
-            [unlabeled_data, _, _, _], _ = self.load_dataset(
-                load_labeled=self.load_labeled,
-                data_size=unlabeled_size,
-                arch_hash_map=arch_hash_map,
-            )
-
-        # some of the predictors use a pre-computation step to save time in batch experiments:
-        self.predictor.pre_compute(full_train_data[0], test_data[0], unlabeled_data)
         self.single_evaluate(full_train_data, test_data)
         self._log_to_json()
 

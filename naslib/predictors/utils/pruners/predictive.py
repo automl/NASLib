@@ -19,6 +19,7 @@ import torch.nn.functional as F
 
 from .p_utils import *
 from . import measures
+from .measures.model_stats import get_model_stats
 
 import types
 import copy
@@ -138,7 +139,7 @@ def find_measures(
         x_shape = list(x.shape)
         x_shape[0] = 1 # to prevent overflow
 
-        model_stats = measures.model_stats.get_model_stats(
+        model_stats = get_model_stats(
             net_orig,
             input_tensor_shape=x_shape,
             clone_model=True

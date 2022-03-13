@@ -46,7 +46,6 @@ class Predictor:
         or hyperparameters of the architecture
         """
         reqs = {
-            "requires_partial_lc": False,
             "metric": None,
             "requires_hyperparameters": False,
             "hyperparams": {},
