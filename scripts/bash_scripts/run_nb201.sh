@@ -8,7 +8,7 @@ fi
 
 # folders:
 base_file=scripts
-s3_folder=p201_im
+s3_folder=p201_c10
 out_dir=$s3_folder\_$start_seed
 
 # search space / data:
