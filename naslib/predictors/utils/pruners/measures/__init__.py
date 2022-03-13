@@ -59,6 +59,5 @@ def load_all():
     from . import plain
     from . import synflow
 
-
 # TODO: should we do that by default?
 load_all()

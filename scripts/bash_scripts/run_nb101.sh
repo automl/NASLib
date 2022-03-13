@@ -1,4 +1,4 @@
-predictors=(fisher grad_norm grasp jacov snip synflow)
+predictors=(fisher grad_norm grasp jacov snip synflow params flops)
 
 start_seed=$1
 if [ -z "$start_seed" ]
