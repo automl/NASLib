@@ -8,7 +8,7 @@ search:
   seed: 0
   checkpoint_freq: 10 # 1000
   fidelity: 200 #max fidelity of the benchmark fix 
-  budgets: 400 #budget inseconds the hole algorithm have
+  budgets: 400000 #budget inseconds the hole algorithm have
   eta: 2    #times the number of archiekteurs is decreased and the fiedleity is increased (train 1 to 5)
   max_budget: 200    #maximal budget that we want to reach (train 100 to 200)
   min_budget: 1      #minimum budget for the last fidelity (train 1 to 10)
