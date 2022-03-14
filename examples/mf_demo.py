@@ -11,7 +11,6 @@ from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.optimizers import RandomSearch as RS
 from naslib.optimizers import RegularizedEvolution as RE
 from naslib.optimizers import SuccessiveHalving as SH
-from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers import HB
 from naslib.optimizers import BOHB 
 from naslib.optimizers import DEHB
