@@ -15,7 +15,7 @@ search:
   min_budget: 12
   epsilon: 1e-6
   predictor_type: var_sparse_gp
-  min_bandwith: 0.001
-  top_n_percent: 0.1
-  min_points_in_model: 7
+  min_bandwith: 0.001  #bandwidth is done by algorithm, but we want also a minimum bandwidth at the end train 0 to 0.01
+  top_n_percent: 0.1   #number of archiekteurs that are consider as good train 0.05 to 0.6 but I think log scale 
+  min_points_in_model: 7  #number of points where we start to train a model min dimesnsions + 1, here 7. Can be trained or fix. 
   n_process: 1

@@ -6,7 +6,6 @@ out_dir: run
 search:
   seed: 0
   checkpoint_freq: 10 # 1000
-  min_fidelity: 1
   fidelity: 200
   budgets: 4000
   eta: 3

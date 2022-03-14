@@ -50,11 +50,12 @@ class  SuccessiveHalving(MetaOptimizer):
         self.max_budget = self.config.search.max_budget
         self.min_budget = self.config.search.min_budget
         self.eta = self.config.search.eta 
+        self._epsilon = float(self.config.search.epsilon) 
         
-        times_of_split  = math.floor(math.log(self.max_budget / self.min_budget, self.eta) )
+        times_of_split  = math.floor(math.log(self.max_budget / self.min_budget, self.eta)  + self._epsilon )
         # set up round sizes, fidelities, and list of arches
         
-        n = math.ceil((times_of_split + 1) * self.eta ** times_of_split / (times_of_split + 1)) # initial number of configurations
+        n = math.ceil((times_of_split + 1) * self.eta ** times_of_split / (times_of_split + 1) + self._epsilon) # initial number of configurations
         r = self.max_budget / self.eta**times_of_split # initial number of iterations to run configurations for
         for i in range(times_of_split):
            
@@ -86,7 +87,14 @@ class  SuccessiveHalving(MetaOptimizer):
         return [self.round_sizes], [0]
 
     def new_epoch(self, epoch, round, i):
+        
         if self.process < i: # re-init for each new process
+            del self.current_round
+            del  self.next_round
+            del self.round_number
+            del self.prev_round
+            del self.process
+            self.clean_history()
             self.current_round = []
             self.next_round = []
             self.round_number = 0
@@ -104,7 +112,7 @@ class  SuccessiveHalving(MetaOptimizer):
                                               self.dataset, 
                                               epoch=model.epoch, 
                                               dataset_api=self.dataset_api)
-            print(model.epoch)
+            
             self._update_history(model)
             self.next_round.append(model)
 
@@ -115,6 +123,7 @@ class  SuccessiveHalving(MetaOptimizer):
                 self.round_number += 1
                 cutoff = self.round_sizes[self.round_number]
                 self.current_round = sorted(self.next_round, key=lambda x: -x.accuracy)[:cutoff]
+                del self.next_round
                 self.next_round = []
 
 
@@ -130,12 +139,17 @@ class  SuccessiveHalving(MetaOptimizer):
                                               self.dataset, 
                                               epoch=model.epoch, 
                                               dataset_api=self.dataset_api)
-            print(model.epoch)
             self._update_history(model)
             self.next_round.append(model)
+        logger.info("fidelity: {}".format(self.fidelities[self.round_number]))
 
     def _update_history(self, child):
         self.history.append(child)
+
+    def clean_history(self):
+        best_arch = max(self.history, key=lambda x: x.accuracy)
+        self.history = torch.nn.ModuleList()
+        self.history.append(best_arch)
 
     def get_final_architecture(self):
         
@@ -153,7 +167,7 @@ class  SuccessiveHalving(MetaOptimizer):
     def train_statistics(self):
         best_arch, best_arch_epoch = self.get_final_architecture()
         latest_arch, latest_arch_epoch = self.get_latest_architecture()
-        models = [x for x in self.history if convert_naslib_to_str(x.arch) == convert_naslib_to_str(latest_arch)]
+        models = [x for x in self.history if convert_naslib_to_str(x.arch) == convert_naslib_to_str(latest_arch) and x.epoch < self.history[-1].epoch]
         train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch)
         train_time_scaled = train_time * latest_arch_epoch
         if len(models) > 1:
