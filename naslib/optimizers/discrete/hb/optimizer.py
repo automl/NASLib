@@ -81,7 +81,7 @@ class HB(MetaOptimizer):
             self.round_number = 0
             self.prev_round = 0
             self.process = i
-            #self.clean_history()
+            self.clean_history()
 
         if self.prev_round < round:  # reset round_number for each new round
             self.prev_round = round
@@ -127,10 +127,10 @@ class HB(MetaOptimizer):
     def _update_history(self, child):
         self.history.append(child)
     
-    #def clean_history(self):
-    #    best_arch = max(self.history, key=lambda x: x.accuracy)
-    #    self.history = []
-    #    self.history.append(best_arch)
+    def clean_history(self):
+        best_arch = max(self.history, key=lambda x: x.accuracy)
+        self.history = torch.nn.ModuleList()
+        self.history.append(best_arch)
 
 
     def get_final_architecture(self):

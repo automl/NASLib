@@ -94,7 +94,7 @@ class  SuccessiveHalving(MetaOptimizer):
             del self.round_number
             del self.prev_round
             del self.process
-            #self.clean_history()
+            self.clean_history()
             self.current_round = []
             self.next_round = []
             self.round_number = 0
@@ -146,10 +146,10 @@ class  SuccessiveHalving(MetaOptimizer):
     def _update_history(self, child):
         self.history.append(child)
 
-    #def clean_history(self):
-    #    best_arch = max(self.history, key=lambda x: x.accuracy)
-    #    self.history = []
-    #    self.history.append(best_arch)
+    def clean_history(self):
+        best_arch = max(self.history, key=lambda x: x.accuracy)
+        self.history = torch.nn.ModuleList()
+        self.history.append(best_arch)
 
     def get_final_architecture(self):
         
