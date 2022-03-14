@@ -65,13 +65,14 @@ def default_argument_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config-file", default=None, metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file", default=None, metavar="FILE", help="Path to config file")
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
         default=None,
         nargs=argparse.REMAINDER,
     )
+    parser.add_argument("--test-data-file", default=None, metavar="FILE", help="Path to test data file")
     return parser
 
 
@@ -144,6 +145,8 @@ def get_config_from_args(args=None):
     except AttributeError:
         for arg, value in pairwise(args):
             config[arg] = value
+
+    config.test_data_file = args.test_data_file
 
     # prepare the output directories
     config.save = "{}/{}/{}/{}/{}".format(

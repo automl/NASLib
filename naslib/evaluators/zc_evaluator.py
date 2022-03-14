@@ -30,6 +30,7 @@ class PredictorEvaluator(object):
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results = [config]
+        self.test_data_file = config.test_data_file
 
     def adapt_search_space(
         self, search_space, load_labeled, scope=None, dataset_api=None
@@ -55,6 +56,31 @@ class PredictorEvaluator(object):
             dataset_api=self.dataset_api
         )
         return accuracy, train_time, info_dict
+
+    def load_dataset_from_file(self, datapath):
+        with open(datapath) as f:
+            data = json.load(f)
+
+        arch_hash_map = {}
+        xdata = []
+        ydata = []
+
+        for i, x in enumerate(data):
+            arch = x['arch']
+            acc = x['accuracy']
+            model = self.search_space.clone()
+            model.set_spec(arch)
+            model.prepare_evaluation()
+            model.parse()
+
+            xdata.append(model)
+            ydata.append(acc)
+
+            if i >= self.test_size:
+                break
+
+        return [xdata, ydata, None, None], arch_hash_map
+
 
     def load_dataset(self, load_labeled=False, data_size=10, arch_hash_map={}):
         """
@@ -151,9 +177,13 @@ class PredictorEvaluator(object):
         self.predictor.pre_process()
 
         logger.info("Load the test set")
-        test_data, arch_hash_map = self.load_dataset(
-            load_labeled=self.load_labeled, data_size=self.test_size
-        )
+
+        if self.test_data_file is not None:
+            test_data, arch_hash_map = self.load_dataset_from_file(self.test_data_file)
+        else:
+            test_data, arch_hash_map = self.load_dataset(
+                load_labeled=self.load_labeled, data_size=self.test_size
+            )
 
         logger.info("Load the training set")
         full_train_data, _ = self.load_dataset(
