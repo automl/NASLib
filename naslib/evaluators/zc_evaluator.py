@@ -29,6 +29,8 @@ class PredictorEvaluator(object):
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results = [config]
+
+        self.train_data_file = config.train_data_file
         self.test_data_file = config.test_data_file
 
     def adapt_search_space(
@@ -56,7 +58,7 @@ class PredictorEvaluator(object):
         )
         return accuracy, train_time, info_dict
 
-    def load_dataset_from_file(self, datapath):
+    def load_dataset_from_file(self, datapath, size):
         with open(datapath) as f:
             data = json.load(f)
 
@@ -74,7 +76,7 @@ class PredictorEvaluator(object):
             xdata.append(model)
             ydata.append(acc)
 
-            if i >= self.test_size:
+            if i >= size:
                 break
 
         return [xdata, ydata, None, None]
@@ -145,7 +147,7 @@ class PredictorEvaluator(object):
 
         logger.info("Compute evaluation metrics")
         results_dict = self.compare(ytest, test_pred)
-        results_dict["train_time"] = np.sum(train_times)
+        results_dict["train_time"] = -1 if train_times is None else np.sum(train_times)
         results_dict["fit_time"] = fit_time_end - fit_time_start
         results_dict["query_time"] = (query_time_end - fit_time_end) / len(xtest)
 
@@ -168,25 +170,34 @@ class PredictorEvaluator(object):
         self.results.append(results_dict)
 
 
-    def evaluate(self):
-        self.predictor.pre_process()
-
-        logger.info("Load the test set")
+    def load_train_test_data(self):
+        logger.info("Loading the test set")
 
         if self.test_data_file is not None:
-            test_data = self.load_dataset_from_file(self.test_data_file)
+            print('Loading from file')
+            test_data = self.load_dataset_from_file(self.test_data_file, self.test_size)
         else:
             test_data = self.load_dataset(
                 load_labeled=self.load_labeled, data_size=self.test_size
             )
 
-        logger.info("Load the training set")
-        full_train_data = self.load_dataset(
-            load_labeled=self.load_labeled,
-            data_size=self.train_size
-        )
+        logger.info("Loading the training set")
 
-        self.single_evaluate(full_train_data, test_data)
+        if self.train_data_file is not None:
+            print('Loading from file')
+            train_data = self.load_dataset_from_file(self.train_data_file, self.train_size)
+        else:
+            train_data = self.load_dataset(
+                load_labeled=self.load_labeled,
+                data_size=self.train_size
+            )
+
+        return train_data, test_data
+
+    def evaluate(self):
+        self.predictor.pre_process()
+        train_data, test_data = self.load_train_test_data()
+        self.single_evaluate(train_data, test_data)
         self._log_to_json()
 
         return self.results
@@ -236,8 +247,8 @@ class PredictorEvaluator(object):
                 metrics_dict["precision_{}".format(k)] = (
                     sum(top_ytest & top_test_pred) / k
                 )
-            metrics_dict["full_ytest"] = list(ytest)
-            metrics_dict["full_testpred"] = list(test_pred)
+            metrics_dict["full_ytest"] = ytest.tolist()
+            metrics_dict["full_testpred"] = test_pred.tolist()
 
         except:
             for metric in METRICS:
