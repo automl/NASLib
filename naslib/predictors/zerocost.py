@@ -49,11 +49,4 @@ class ZeroCost(Predictor):
         if math.isnan(score):
             score = -1e8
 
-        # TODO: Flip scores?
-        # flip_scores(score)
-
         return score
-
-    def flip_scores(self, score):
-        # TODO: Complete if scores must be flipped for some zc methods
-        pass

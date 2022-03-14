@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import numpy as np
-import copy
 import torch
 from scipy import stats
 from sklearn import metrics
@@ -61,7 +60,6 @@ class PredictorEvaluator(object):
         with open(datapath) as f:
             data = json.load(f)
 
-        arch_hash_map = {}
         xdata = []
         ydata = []
 
@@ -79,10 +77,10 @@ class PredictorEvaluator(object):
             if i >= self.test_size:
                 break
 
-        return [xdata, ydata, None, None], arch_hash_map
+        return [xdata, ydata, None, None]
 
 
-    def load_dataset(self, load_labeled=False, data_size=10, arch_hash_map={}):
+    def load_dataset(self, load_labeled=False, data_size=10):
         """
         There are two ways to load an architecture.
         load_labeled=False: sample a random architecture from the search space.
@@ -109,16 +107,13 @@ class PredictorEvaluator(object):
             arch.prepare_evaluation()
             arch.parse()
 
-            arch_hash = arch.get_hash()
-            arch_hash_map[arch_hash] = True
-
             accuracy, train_time, info_dict = self.get_full_arch_info(arch)
             xdata.append(arch)
             ydata.append(accuracy)
             info.append(info_dict)
             train_times.append(train_time)
 
-        return [xdata, ydata, info, train_times], arch_hash_map
+        return [xdata, ydata, info, train_times]
 
     def single_evaluate(self, train_data, test_data):
         """
@@ -179,17 +174,16 @@ class PredictorEvaluator(object):
         logger.info("Load the test set")
 
         if self.test_data_file is not None:
-            test_data, arch_hash_map = self.load_dataset_from_file(self.test_data_file)
+            test_data = self.load_dataset_from_file(self.test_data_file)
         else:
-            test_data, arch_hash_map = self.load_dataset(
+            test_data = self.load_dataset(
                 load_labeled=self.load_labeled, data_size=self.test_size
             )
 
         logger.info("Load the training set")
-        full_train_data, _ = self.load_dataset(
+        full_train_data = self.load_dataset(
             load_labeled=self.load_labeled,
-            data_size=self.train_size,
-            arch_hash_map=arch_hash_map,
+            data_size=self.train_size
         )
 
         self.single_evaluate(full_train_data, test_data)
