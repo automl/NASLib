@@ -75,6 +75,7 @@ class DartsSearchSpace(Graph):
         self.num_classes = n_classes
         self.max_epoch = 97
         self.space_name = "darts"
+        self.auxiliary_output = False
 
         """
         Build the search space with the parameters specified in __init__.
@@ -303,23 +304,24 @@ class DartsSearchSpace(Graph):
 
         # Taken from DARTS implementation
         # assuming input size 8x8
-        self.edges[23, 24].set(
-            "op",
-            ops.Sequential(
-                nn.ReLU(inplace=True),
-                nn.AvgPool2d(
-                    5, stride=3, padding=0, count_include_pad=False
-                ),  # image size = 2 x 2
-                nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
-                nn.BatchNorm2d(128),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(128, 768, 2, bias=False),
-                nn.BatchNorm2d(768),
-                nn.ReLU(inplace=True),
-                nn.Flatten(),
-                nn.Linear(768, self.num_classes),
-            ),
-        )
+        if self.auxiliary_output:
+            self.edges[23, 24].set(
+                "op",
+                ops.Sequential(
+                    nn.ReLU(inplace=True),
+                    nn.AvgPool2d(
+                        5, stride=3, padding=0, count_include_pad=False
+                    ),  # image size = 2 x 2
+                    nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
+                    nn.BatchNorm2d(128),
+                    nn.ReLU(inplace=True),
+                    nn.Conv2d(128, 768, 2, bias=False),
+                    nn.BatchNorm2d(768),
+                    nn.ReLU(inplace=True),
+                    nn.Flatten(),
+                    nn.Linear(768, self.num_classes),
+                ),
+            )
 
         self.update_edges(
             update_func=DartsSearchSpace._double_channels,
@@ -366,7 +368,7 @@ class DartsSearchSpace(Graph):
                 else:
                     cell.input_node_idxs = [i - 2, i - 1]
 
-    def auxilary_logits(self):
+    def auxiliary_logits(self):
         return self.graph["out_from_24"]
 
     def load_labeled_architecture(self, dataset_api=None):
