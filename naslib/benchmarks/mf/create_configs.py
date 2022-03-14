@@ -147,7 +147,7 @@ def create_configs(
                 eta = int(np.random.choice(range(2, 5)))
                 fidelity_range = [2**i for i in range(0, 9)]
                 # max_fidelity = int(np.random.choice(fidelity_range))
-                max_fidelity = int(np.random.choice(100, 200))
+                max_fidelity = int(np.random.choice(range(100, 200)))
                 # min fidelity has to be lower/equal to max_fidelity
                 min_fidelity = int(np.random.choice(range(1, 10)))
                 # min_fidelity = int(np.random.choice(
