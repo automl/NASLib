@@ -670,7 +670,8 @@ class DartsSearchSpace(Graph):
     def get_type(self):
         return "darts"
 
-
+    def get_loss_fn(self):
+        return F.cross_entropy
 
 
 def channel_concat(tensors):

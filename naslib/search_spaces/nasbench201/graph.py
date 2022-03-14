@@ -5,6 +5,7 @@ import random
 import itertools
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
@@ -249,5 +250,8 @@ class NasBench201SearchSpace(Graph):
 
     def get_type(self):
         return "nasbench201"
+
+    def get_loss_fn(self):
+        return F.cross_entropy
 
 

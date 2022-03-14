@@ -80,6 +80,9 @@ class PredictorEvaluator(object):
                 arch = self.search_space.clone()
                 arch.load_labeled_architecture(dataset_api=self.dataset_api)
 
+            arch.prepare_evaluation()
+            arch.parse()
+
             arch_hash = arch.get_hash()
             arch_hash_map[arch_hash] = True
 
@@ -106,7 +109,13 @@ class PredictorEvaluator(object):
         self.predictor.fit(xtrain, ytrain, train_info)
         fit_time_end = time.time()
 
-        test_pred = self.predictor.query(xtest, test_info)
+        test_pred = []
+
+        for graph in xtest:
+            pred = self.predictor.query(graph, test_info)
+            test_pred.append(pred)
+        test_pred = np.array(test_pred)
+
         query_time_end = time.time()
 
         # If the predictor is an ensemble, take the mean

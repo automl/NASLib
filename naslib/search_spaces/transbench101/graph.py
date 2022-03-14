@@ -3,6 +3,7 @@ import random
 import itertools
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.darts.primitives import FactorizedReduce
@@ -15,6 +16,7 @@ from naslib.search_spaces.transbench101.conversions import (
     convert_naslib_to_transbench101_micro,
     convert_naslib_to_transbench101_macro
 )
+from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
         
@@ -346,7 +348,15 @@ class TransBench101SearchSpaceMicro(Graph):
     def get_type(self):
         return 'transbench101'
 
+    def get_loss_fn(self):
+        if self.config.dataset in ['class_object', 'class_scene']:
+            loss_fn = SoftmaxCrossEntropyWithLogits()
+        elif self.config.dataset == 'autoencoder':
+            loss_fn = nn.L1Loss()
+        else:
+            loss_fn = F.cross_entropy
 
+        return loss_fn
 
 
 class TransBench101SearchSpaceMacro(Graph):
@@ -572,6 +582,16 @@ class TransBench101SearchSpaceMacro(Graph):
 
     def get_type(self):
         return 'transbench101'
+
+    def get_loss_fn(self):
+        if self.config.dataset in ['class_object', 'class_scene']:
+            loss_fn = SoftmaxCrossEntropyWithLogits()
+        elif self.config.dataset == 'autoencoder':
+            loss_fn = nn.L1Loss()
+        else:
+            loss_fn = F.cross_entropy
+
+        return loss_fn
 
 def _set_op(edge, C_in, downsample):
 
