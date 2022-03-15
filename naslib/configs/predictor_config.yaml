@@ -4,17 +4,16 @@ search_space: nasbench201
 # nasbench201 datasets: cifar10, cifar100, ImageNet16-120
 # transbench101 datasets: class_scene, class_object,
 # jigsaw, room_layout, segmentsemantic, normal, autoencoder
-dataset: ImageNet16-120
+dataset: cifar10
 
 # one of the predictors in runners/runner.py
-#"fisher", "flops", "grad_norm", "grasp", "jacov", "params", "snip", "synflow",
-predictor: fisher
+predictor: synflow
 
 # test set size
-test_size: 100
+test_size: 2
 
 # size of the training set
-train_size: 100
+train_size: 3
 
 # output results to this directory
 out_dir: run
@@ -23,7 +22,7 @@ out_dir: run
 seed: 1000
 
 # these are used by the zero-cost methods
-batch_size: 16
+batch_size: 256
 data_size: 25000
 cutout: False
 cutout_length: 16
