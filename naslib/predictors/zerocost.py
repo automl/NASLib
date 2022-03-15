@@ -9,7 +9,7 @@ import math
 
 from naslib.predictors.predictor import Predictor
 from naslib.utils.utils import get_project_root, get_train_val_loaders
-from naslib.predictors.utils.pruners import predictive
+from naslib.predictors.pruners import predictive
 
 logger = logging.getLogger(__name__)
 

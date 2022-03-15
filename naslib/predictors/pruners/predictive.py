@@ -16,13 +16,12 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import types
+import copy
 
 from .p_utils import *
 from . import measures
 from .measures.model_stats import get_model_stats
-
-import types
-import copy
 
 
 def no_op(self, x):

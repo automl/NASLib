@@ -9,10 +9,12 @@ import torch.nn as nn
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
-from naslib.search_spaces.nasbenchnlp.conversions import convert_recipe_to_compact, \
-make_compact_mutable, convert_compact_to_recipe
+from naslib.search_spaces.nasbenchnlp.conversions import \
+        convert_recipe_to_compact, \
+        make_compact_mutable, \
+        convert_compact_to_recipe, \
+        encode_nlp
 from naslib.utils.utils import get_project_root
-from naslib.predictors.utils.encodings_nlp import encode_nlp
 
 
 HIDDEN_TUPLE_SIZE = 2
