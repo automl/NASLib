@@ -145,7 +145,7 @@ def find_measures(
         )
 
         if measure_names[0] == 'flops':
-            measure_score = float(model_stats.flops)/1e6 # megaflops
+            measure_score = float(model_stats.Flops)/1e6 # megaflops
         else:
             measure_score = float(model_stats.parameters)/1e6 # megaparams
         return measure_score
