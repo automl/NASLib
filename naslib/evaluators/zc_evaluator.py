@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from scipy import stats
 from sklearn import metrics
+from tqdm import tqdm
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -70,8 +71,6 @@ class PredictorEvaluator(object):
             acc = x['accuracy']
             model = self.search_space.clone()
             model.set_spec(arch)
-            model.prepare_evaluation()
-            model.parse()
 
             xdata.append(model)
             ydata.append(acc)
@@ -106,9 +105,6 @@ class PredictorEvaluator(object):
                 arch = self.search_space.clone()
                 arch.load_labeled_architecture(dataset_api=self.dataset_api)
 
-            arch.prepare_evaluation()
-            arch.parse()
-
             accuracy, train_time, info_dict = self.get_full_arch_info(arch)
             xdata.append(arch)
             ydata.append(accuracy)
@@ -134,7 +130,10 @@ class PredictorEvaluator(object):
 
         test_pred = []
 
-        for graph in xtest:
+        for graph in tqdm(xtest):
+            graph.prepare_evaluation()
+            graph.parse()
+
             pred = self.predictor.query(graph, test_info)
             test_pred.append(pred)
         test_pred = np.array(test_pred)

@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="cifar10", help="Which dataset")
     parser.add_argument("--out_dir", type=str, default="run", help="Output directory")
     parser.add_argument("--search_space", type=str, default="nasbench201", help="nasbench201 or darts?")
-    parser.add_argument("--batch_size", type=int, default=256, help="Mini-batch size")
+    parser.add_argument("--batch_size", type=int, default=64, help="Mini-batch size")
     parser.add_argument("--train_portion", type=float, default=0.7, help="Size of training set")
     parser.add_argument("--cutout", action='store_true', default=False, help="Apply Cutout")
     parser.add_argument("--cutout_length", type=int, default=16, help="Cutout size")
