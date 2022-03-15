@@ -4,6 +4,8 @@ Your predictor class must be in a file named `predictor.py` with the name `ZeroC
 
 See `sample_submission.zip` for an example of a submission that you must upload to CodaLab.
 
+Your submission *must* contain an empty `metadata` file, as seen in `sample_submission.zip`.
+
 ## Evaluation
 `evaluate_predictor.py` and `data` are provided here as a rough example of the code which shall be run to evaluate your submission. These should not be a part of your submission.
 
