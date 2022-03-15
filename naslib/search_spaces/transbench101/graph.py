@@ -349,9 +349,9 @@ class TransBench101SearchSpaceMicro(Graph):
         return 'transbench101'
 
     def get_loss_fn(self):
-        if self.config.dataset in ['class_object', 'class_scene']:
+        if self.dataset in ['class_object', 'class_scene']:
             loss_fn = SoftmaxCrossEntropyWithLogits()
-        elif self.config.dataset == 'autoencoder':
+        elif self.dataset == 'autoencoder':
             loss_fn = nn.L1Loss()
         else:
             loss_fn = F.cross_entropy
@@ -584,9 +584,9 @@ class TransBench101SearchSpaceMacro(Graph):
         return 'transbench101'
 
     def get_loss_fn(self):
-        if self.config.dataset in ['class_object', 'class_scene']:
+        if self.dataset in ['class_object', 'class_scene']:
             loss_fn = SoftmaxCrossEntropyWithLogits()
-        elif self.config.dataset == 'autoencoder':
+        elif self.dataset == 'autoencoder':
             loss_fn = nn.L1Loss()
         else:
             loss_fn = F.cross_entropy
