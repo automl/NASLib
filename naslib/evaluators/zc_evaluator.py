@@ -69,10 +69,8 @@ class PredictorEvaluator(object):
         for i, x in enumerate(data):
             arch = x['arch']
             acc = x['accuracy']
-            model = self.search_space.clone()
-            model.set_spec(arch)
 
-            xdata.append(model)
+            xdata.append(arch)
             ydata.append(acc)
 
             if i >= size:
@@ -99,14 +97,15 @@ class PredictorEvaluator(object):
         train_times = []
         while len(xdata) < data_size:
             if not load_labeled:
-                arch = self.search_space.clone()
-                arch.sample_random_architecture(dataset_api=self.dataset_api)
+                graph = self.search_space.clone()
+                graph.sample_random_architecture(dataset_api=self.dataset_api)
             else:
-                arch = self.search_space.clone()
-                arch.load_labeled_architecture(dataset_api=self.dataset_api)
+                graph = self.search_space.clone()
+                graph.load_labeled_architecture(dataset_api=self.dataset_api)
 
-            accuracy, train_time, info_dict = self.get_full_arch_info(arch)
-            xdata.append(arch)
+            accuracy, train_time, info_dict = self.get_full_arch_info(graph)
+
+            xdata.append(graph.get_hash())
             ydata.append(accuracy)
             info.append(info_dict)
             train_times.append(train_time)
@@ -130,12 +129,17 @@ class PredictorEvaluator(object):
 
         test_pred = []
 
-        for graph in tqdm(xtest):
+        for arch in tqdm(xtest):
+            graph = self.search_space.clone()
+            graph.set_spec(arch)
+
+            # Expand and parse the graph
             graph.prepare_evaluation()
             graph.parse()
 
             pred = self.predictor.query(graph, test_info)
             test_pred.append(pred)
+
         test_pred = np.array(test_pred)
 
         query_time_end = time.time()
