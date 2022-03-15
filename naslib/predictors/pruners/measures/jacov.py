@@ -33,7 +33,7 @@ def get_batch_jacobian(net, x, target):
 
     x.requires_grad_(True)
 
-    _, y = net(x)
+    y = net(x)
 
     y.backward(torch.ones_like(y))
     jacob = x.grad.detach()
