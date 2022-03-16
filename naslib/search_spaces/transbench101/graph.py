@@ -46,6 +46,8 @@ class TransBench101SearchSpaceMicro(Graph):
             self.num_classes = 100
         elif dataset == "class_scene":
             self.num_classes = 63
+        else:
+            self.num_classes = -1 
         self.op_indices = None
 
         self.max_epoch = 199
