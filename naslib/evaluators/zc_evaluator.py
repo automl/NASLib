@@ -68,14 +68,14 @@ class PredictorEvaluator(object):
         ydata = []
 
         for i, x in enumerate(data):
+            if i >= size:
+                break
+
             arch = x['arch']
             acc = x['accuracy']
 
             xdata.append(arch)
             ydata.append(acc)
-
-            if i >= size:
-                break
 
         return [xdata, ydata, None, None]
 
