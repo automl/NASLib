@@ -1,6 +1,6 @@
 dataset: cifar10
 seed: 1
-search_space: darts
+search_space: nasbench201
 out_dir: run
 optimizer: gsparsity
 
@@ -12,7 +12,7 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 2
+  epochs: 1
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -45,15 +45,17 @@ search:
   seed: 50
   grad_clip: 0
   threshold: 0.000001
-  weight_decay: 0.0001
-  learning_rate: 0.025
-  momentum: 0.9
+  weight_decay: 120
+  learning_rate: 0.01
+  momentum: 0.8
   normalization: div
   normalization_exponent: 0.5
+  batch_size: 256
   learning_rate_min: 0.0001
-  epochs: 50
+  epochs: 100
   warm_start_epochs: 0
   train_portion: 0.9
+  data_size: 25000
 
   
   # BANANAS
@@ -77,7 +79,7 @@ evaluation:
   learning_rate_min: 0.00
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 5
+  epochs: 600
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 1.

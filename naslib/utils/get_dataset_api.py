@@ -63,8 +63,8 @@ def get_nasbench201_api(dataset=None):
 
 
 def get_darts_api(dataset=None, 
-                  nb301_model_path='~/nb_models/xgb_v1.0', 
-                  nb301_runtime_path='~/nb_models/lgb_runtime_v1.0'):
+                  nb301_model_path='/work/dlclarge2/agnihotr-ml/nasbench301/nasbench301/nb_models_1.0/xgb_v1.0', 
+                  nb301_runtime_path='/work/dlclarge2/agnihotr-ml/nasbench301/nasbench301/nb_models_1.0/lgb_runtime_v1.0'):
     # Load the nb301 training data (which contains full learning curves)
     
     data_path = os.path.join(get_project_root(), "data/nb301_full_training.pickle")

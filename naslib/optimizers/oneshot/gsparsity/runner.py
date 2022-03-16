@@ -16,8 +16,8 @@ from naslib.optimizers import (
     GSparseOptimizer
 )
 
-from naslib.search_spaces import DartsSearchSpace, NasBench101SearchSpace
-from naslib.utils import utils, setup_logger
+from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
+from naslib.utils import utils, setup_logger, get_dataset_api
 
 config = utils.get_config_from_args()
 utils.set_seed(config.seed)
@@ -40,24 +40,19 @@ supported_optimizers = {
     "gsparsity": GSparseOptimizer(config)
 }
 
-if config.dataset == "cifar100":
-    DartsSearchSpace.NUM_CLASSES = 100
-search_space = DartsSearchSpace()
-#search_space = NasBench101SearchSpace()
+supported_search_space ={
+    "nasbench201" : NasBench201SearchSpace(),
+    "darts" : DartsSearchSpace()
+}
+
+#search_space = NasBench201SearchSpace()
+search_space = supported_search_space[config.search_space]
+#dataset_api = get_dataset_api("nasbench201", config.dataset)
+print(search_space)
+dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
-
-trainer = Trainer(optimizer, config)
-# trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
-
-# if config.eval_only:
-# trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
-# else:
-#trainer.search(resume_from=utils.get_last_checkpoint(config) if config.resume else "")
-#trainer.evaluate(resume_from=utils.get_last_checkpoint(config, search=False) if config.resume else "")
-#trainer.evaluate(search_model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/benchmarks/darts/run/darts/cifar10/gsparsity/2252403/search/model_final.pth", best_arch="/work/dlclarge2/agnihotr-ml/NASLib/naslib/benchmarks/darts/run/darts/cifar10/gsparsity/2252403/search/model_final.pth")
-
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 trainer.search()
@@ -69,4 +64,3 @@ trainer.search()
 #checkpoint = utils.get_last_checkpoint(config, search_model=True) if config.resume else ""
 #trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
 trainer.evaluate(dataset_api=dataset_api)
-

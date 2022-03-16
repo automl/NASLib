@@ -12,9 +12,7 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
 
-import naslib.search_spaces.core.primitives as ops
 from naslib.optimizers.oneshot.gsparsity.ProxSGD_for_groups import ProxSGD
-import naslib.optimizers.oneshot.gsparsity.operations as weighted_operations
 import naslib.search_spaces.core.primitives as primitives
 
 import numpy as np
@@ -66,6 +64,7 @@ class GSparseOptimizer(MetaOptimizer):
         self.threshold = config.search.threshold
         self.normalization = config.search.normalization
         self.normalization_exponent = config.search.normalization_exponent
+        self.operation_weights = torch.nn.ParameterList()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     @staticmethod
@@ -86,13 +85,13 @@ class GSparseOptimizer(MetaOptimizer):
         """
         len_primitives = len(edge.data.op)
         alpha = torch.nn.Parameter(
-           torch.ones(size=[len_primitives], requires_grad=False), requires_grad=False
+           torch.zeros(size=[len_primitives], requires_grad=False), requires_grad=False
         )
         weights = torch.nn.Parameter(
            torch.FloatTensor(len_primitives*[0.0]), requires_grad=False
         )
         edge.data.set("alpha", alpha, shared=True)
-        edge.data.set("weights", weights, shared=True)        
+        edge.data.set("weights", weights, shared=True)            
 
     @staticmethod
     def add_weights(edge):
@@ -110,7 +109,7 @@ class GSparseOptimizer(MetaOptimizer):
             try:                
                 len(edge.data.op[i].op)                
             except AttributeError:
-                weight = torch.nn.Parameter(torch.FloatTensor([1.0]), requires_grad=True)
+                weight = torch.nn.Parameter(torch.FloatTensor([0.0]), requires_grad=True)
                 edge.data.op[i].register_parameter("weight", weight)
     
 
@@ -144,6 +143,9 @@ class GSparseOptimizer(MetaOptimizer):
         graph.update_edges(
             self.__class__.update_ops, scope=scope, private_edge_data=True
         )
+
+        for alpha in graph.get_all_edge_data("weights"):
+            self.operation_weights.append(alpha)    
 
         graph.parse()
 
@@ -224,7 +226,14 @@ class GSparseOptimizer(MetaOptimizer):
                                     size*=shape
                                 weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight,2)**2).item()/size
                             except AttributeError:
-                                continue                            
+                                try:
+                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):
+                                        size=1
+                                        for shape in edge.data.op.primitives[i].op[j].op[k].weight.shape:
+                                            size*=shape
+                                        weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight,2)**2).item()/size
+                                except AttributeError:
+                                    continue
                         edge.data.weights[i]+=weight                            
                         weight=0.0
                     except AttributeError:                        
@@ -241,7 +250,7 @@ class GSparseOptimizer(MetaOptimizer):
             if edge.data.has("alpha"):                
                 for i in range(len(edge.data.weights)):
                     if torch.sqrt(edge.data.weights[i]) < self.threshold:
-                        edge.data.alpha[i]=0
+                        edge.data.alpha[i]=0 
         
         def reinitialize_l2_weights(edge):
             if edge.data.has("alpha"):                
@@ -252,6 +261,13 @@ class GSparseOptimizer(MetaOptimizer):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
+                """
+                The next 2 lines of code is just to make sure only 1 operation is chosen per edge
+                so that the resulting architecture is comparable to other optimizers and 
+                queryable from the benchmark.
+                """
+                weights= edge.data.weights.detach().cpu()
+                alphas[torch.argmax(weights)]=1
                 """
                 Only the operations whose alpha are non-zero are retained,
                 others are pruned away. If on an edge, more than 1 operations 
@@ -265,16 +281,18 @@ class GSparseOptimizer(MetaOptimizer):
                         operations.append(primitives[pos])
                     edge.data.set("op", GSparseMixedOp(operations))
                 else:
+                    #import ipdb;ipdb.set_trace()
                     edge.data.set("op", primitives[positions.item()])
 
         # Detailed description of the operations are provided in the functions.
         graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
-        graph.update_edges(prune_weights, scope=self.scope, private_edge_data=True)
-        graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
+        #graph.update_edges(prune_weights, scope=self.scope, private_edge_data=True)
+        
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
+        graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
         graph.prepare_evaluation()
         graph.parse()
-        graph.QUERYABLE=False
+        #graph.QUERYABLE=False
         graph = graph.to(self.device)
         return graph
 
@@ -300,6 +318,76 @@ class GSparseOptimizer(MetaOptimizer):
         Move the graph into cuda memory if available.
         """
         self.graph = self.graph.to(self.device)
+        self.operation_weights = self.operation_weights.to(self.device)
+
+    def new_epoch(self, epoch):
+        """
+        Just log the l2 norms of operation weights.
+        """
+        def update_l2_weights(edge):
+            """
+            For operations like SepConv etc that contain suboperations like Conv2d() etc. the square of 
+            l2 norm of the weights is stored in the corresponding weights shared attribute.
+            Suboperations like ReLU are ignored as they have no weights of their own.
+            For operations (not suboperations) like Identity() etc. that do not have weights,
+            the weights attached to them are used.
+            """
+            if edge.data.has("alpha"):
+                weight=0.0
+                for i in range(len(edge.data.op.primitives)):
+                    try:
+                        for j in range(len(edge.data.op.primitives[i].op)):
+                            try:
+                                size=1
+                                for shape in edge.data.op.primitives[i].op[j].weight.shape:
+                                    size*=shape
+                                weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight,2)**2).item()/size
+                            except AttributeError:
+                                try:
+                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):
+                                        size=1
+                                        for shape in edge.data.op.primitives[i].op[j].op[k].weight.shape:
+                                            size*=shape
+                                        weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight,2)**2).item()/size
+                                except AttributeError:
+                                    continue
+                        edge.data.weights[i]+=weight                            
+                        weight=0.0
+                    except AttributeError:                        
+                        edge.data.weights[i]+=(edge.data.op.primitives[i].weight.item())**2
+        
+        def reinitialize_l2_weights(edge):
+            if edge.data.has("alpha"):                
+                for i in range(len(edge.data.weights)):
+                    #print(edge.data.weights)
+                    edge.data.weights[i]=0
+
+        self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
+
+        for alpha in self.graph.get_all_edge_data("weights"):
+            #print(alpha)
+            #import ipdb;ipdb.set_trace()
+            self.operation_weights.append(alpha)
+        
+        #import ipdb;ipdb.set_trace()        
+
+        weights_str = [
+            ", ".join(["{:+.06f}".format(x) for x in a])
+            + ", {}".format(np.max(torch.sqrt(a).detach().cpu().numpy()))
+            for a in self.operation_weights
+        ]
+        logger.info(
+            "Arch weights (alphas, last column argmax): \n{}".format(
+                "\n".join(weights_str)
+            )
+        )
+        self.graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
+        super().new_epoch(epoch)
+
+    def after_training(self):
+        print("save path: ", self.config.save)
+        best_arch = self.get_final_architecture()
+        logger.info("Final architecture after search:\n" + best_arch.modules_str())
 
 
     def get_op_optimizer(self):
