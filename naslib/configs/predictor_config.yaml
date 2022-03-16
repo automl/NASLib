@@ -10,7 +10,7 @@ dataset: cifar10
 predictor: synflow
 
 # test set size
-test_size: 2
+test_size: 20
 
 # size of the training set
 train_size: 3
