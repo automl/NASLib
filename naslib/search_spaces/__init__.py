@@ -1,9 +1,6 @@
 from .darts.graph import DartsSearchSpace
 from .nasbench101.graph import NasBench101SearchSpace
 from .nasbench201.graph import NasBench201SearchSpace
-from .nasbenchnlp.graph import NasBenchNLPSearchSpace
-from .nasbenchasr.graph import NasBenchASRSearchSpace
-from .natsbenchsize.graph import NATSBenchSizeSearchSpace
 from .transbench101.graph import TransBench101SearchSpaceMicro
 from .transbench101.graph import TransBench101SearchSpaceMacro
 
@@ -14,9 +11,6 @@ supported_search_spaces = {
     "darts": DartsSearchSpace,
     "nasbench101": NasBench101SearchSpace,
     "nasbench201": NasBench201SearchSpace,
-    "nlp": NasBenchNLPSearchSpace,
-    "asr": NasBenchASRSearchSpace,
-    "nastbenchsize": NATSBenchSizeSearchSpace,
     'transbench101_micro': TransBench101SearchSpaceMicro,
     'transbench101_macro': TransBench101SearchSpaceMacro,
 }
