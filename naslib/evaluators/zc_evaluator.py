@@ -130,6 +130,7 @@ class PredictorEvaluator(object):
 
         test_pred = []
 
+        logger.info("Querying the predictor")
         for arch in tqdm(xtest):
             graph = self.search_space.clone()
             graph.set_spec(arch)
@@ -178,7 +179,7 @@ class PredictorEvaluator(object):
         logger.info("Loading the test set")
 
         if self.test_data_file is not None:
-            print('Loading from file')
+            logger.info('Loading from file')
             test_data = self.load_dataset_from_file(self.test_data_file, self.test_size)
         else:
             test_data = self.load_dataset(
@@ -188,7 +189,7 @@ class PredictorEvaluator(object):
         logger.info("Loading the training set")
 
         if self.train_data_file is not None:
-            print('Loading from file')
+            logger.info('Loading from file')
             train_data = self.load_dataset_from_file(self.train_data_file, self.train_size)
         else:
             train_data = self.load_dataset(
