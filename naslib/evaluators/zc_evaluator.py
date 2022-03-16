@@ -123,14 +123,14 @@ class PredictorEvaluator(object):
 
         data_reqs = self.predictor.get_data_reqs()
 
-        logger.info("Fit the predictor")
+        logger.info("Fitting the predictor...")
         fit_time_start = time.time()
         self.predictor.fit(xtrain, ytrain, train_info)
         fit_time_end = time.time()
 
         test_pred = []
 
-        logger.info("Querying the predictor")
+        logger.info("Querying the predictor...")
         for arch in tqdm(xtest):
             graph = self.search_space.clone()
             graph.set_spec(arch)
@@ -176,10 +176,10 @@ class PredictorEvaluator(object):
 
 
     def load_train_test_data(self):
-        logger.info("Loading the test set")
+        logger.info("Loading the test set...")
 
         if self.test_data_file is not None:
-            logger.info('Loading from file')
+            logger.info('Loading from json file...')
             test_data = self.load_dataset_from_file(self.test_data_file, self.test_size)
         else:
             test_data = self.load_dataset(
@@ -189,7 +189,7 @@ class PredictorEvaluator(object):
         logger.info("Loading the training set")
 
         if self.train_data_file is not None:
-            logger.info('Loading from file')
+            logger.info('Loading from json file...')
             train_data = self.load_dataset_from_file(self.train_data_file, self.train_size)
         else:
             train_data = self.load_dataset(
