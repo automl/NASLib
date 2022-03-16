@@ -2,7 +2,6 @@ import os
 import pickle
 
 from naslib.utils.utils import get_project_root
-from naslib.utils.utils_asr import from_folder
 
 """
 This file loads any dataset files or api's needed by the Trainer or PredictorEvaluator object.
