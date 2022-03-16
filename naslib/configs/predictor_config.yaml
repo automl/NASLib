@@ -22,8 +22,7 @@ out_dir: run
 seed: 1000
 
 # these are used by the zero-cost methods
-batch_size: 256
-data_size: 25000
+batch_size: 64
 cutout: False
 cutout_length: 16
 cutout_prob: 1.0
