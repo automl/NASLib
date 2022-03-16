@@ -6,7 +6,7 @@ from naslib.defaults.trainer import Trainer
 from naslib.defaults.trainer_multifidelity import Trainer as Trainer_MF
 
 from naslib.optimizers import RandomSearch, Npenas, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor, SuccessiveHalving, HyperBand
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
@@ -30,8 +30,6 @@ supported_optimizers = {
     'bananas': Bananas(config),
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
-    'sh': SuccessiveHalving(config),
-    'hb': HyperBand(config),
 }
 
 supported_search_spaces = {
