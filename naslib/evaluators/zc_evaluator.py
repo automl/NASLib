@@ -21,7 +21,7 @@ class PredictorEvaluator(object):
     initialization times and query times.
     """
 
-    def __init__(self, predictor, config=None):
+    def __init__(self, predictor, config=None, log_results=True):
         self.predictor = predictor
         self.config = config
         self.test_size = config.test_size
@@ -33,6 +33,7 @@ class PredictorEvaluator(object):
 
         self.train_data_file = config.train_data_file
         self.test_data_file = config.test_data_file
+        self.log_results_to_json = log_results
 
     def adapt_search_space(
         self, search_space, load_labeled, scope=None, dataset_api=None
@@ -201,7 +202,9 @@ class PredictorEvaluator(object):
         self.predictor.pre_process()
         train_data, test_data = self.load_train_test_data()
         self.single_evaluate(train_data, test_data)
-        self._log_to_json()
+
+        if self.log_results_to_json:
+            self._log_to_json()
 
         return self.results
 
