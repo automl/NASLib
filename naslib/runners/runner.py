@@ -14,7 +14,7 @@ utils.log_args(config)
 
 #If the API did not evaluate *all* architectures in the search space,
 #set load_labeled=True
-load_labeled = True if config.search_space in ["darts", "nlp"] else False
+load_labeled = True if config.search_space in ["darts"] else False
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 # initialize the search space and predictor

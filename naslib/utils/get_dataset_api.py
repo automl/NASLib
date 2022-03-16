@@ -92,52 +92,6 @@ https://figshare.com/articles/software/nasbench301_models_v1_0_zip/13061510"
     }
 
 
-def get_nlp_api(dataset=None):
-    nb_model_path = os.path.join(get_project_root(), "data", "nbnlp_v01")
-    nb_nlp_data_path = os.path.join(get_project_root(), "data", "nb_nlp.pickle")
-
-    data_not_found_msg = "Please download the files from https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa"
-
-    assert os.path.exists(nb_model_path), f"Could not find {nb_model_path}. {data_not_found_msg}"
-    assert os.path.exists(nb_nlp_data_path), f"Could not find {nb_nlp_data_path}. {data_not_found_msg}"
-
-    # Load the NAS-Bench-NLP data
-    with open(nb_nlp_data_path, "rb") as f:
-        nlp_data = pickle.load(f)
-    nlp_arches = list(nlp_data.keys())
-
-    # Load the NAS-Bench-NLP11 performance model
-    try:
-        import nasbench301
-    except ModuleNotFoundError as e:
-        raise ModuleNotFoundError('No module named \'nasbench301\'. \
-            Please install nasbench301 from https://github.com/crwhite14/nasbench301')
-
-    performance_model = nasbench301.load_ensemble(nb_model_path)
-
-    return {
-        "nlp_data": nlp_data,
-        "nlp_arches": nlp_arches,
-        "nlp_model":performance_model,
-    }
-
-
-def get_asr_api(dataset=None):
-    # Load the NAS-Bench-ASR data
-    d = from_folder(os.path.join(get_project_root(), 'data'),
-                    include_static_info=True)
-
-    return {
-        'asr_data': d,
-    }
-
-def get_natsbenchsize_api(dataset=None):
-    from nats_bench import create
-
-    # Create the API for size search space
-    api = create(None, 'sss', fast_mode=True, verbose=True)
-    return api
-
 def get_dataset_api(search_space=None, dataset=None):
 
     if search_space == "nasbench101":
@@ -149,17 +103,8 @@ def get_dataset_api(search_space=None, dataset=None):
     elif search_space == "darts":
         return get_darts_api(dataset=dataset)
 
-    elif search_space == "nlp":
-        return get_nlp_api(dataset=dataset)
-
     elif search_space in ['transbench101', 'transbench101_micro', 'transbench101_macro']:
         return get_transbench101_api(dataset=dataset)
-
-    elif search_space == "asr":
-        return get_asr_api(dataset=dataset)
-
-    elif search_space == 'natsbenchsize':
-        return get_natsbenchsize_api(dataset=dataset)
 
     elif search_space == "test":
         return None
