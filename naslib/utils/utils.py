@@ -147,8 +147,8 @@ def get_config_from_args(args=None):
             config[arg] = value
 
     if args.datapath is not None:
-        config.train_data_file = os.path.join(args.datapath, 'train', 'data.json')
-        config.test_data_file = os.path.join(args.datapath, 'test', 'data.json')
+        config.train_data_file = os.path.join(args.datapath, 'train.json')
+        config.test_data_file = os.path.join(args.datapath, 'test.json')
     else:
         config.train_data_file = None
         config.test_data_file = None
