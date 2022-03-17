@@ -245,8 +245,7 @@ class NasBench201SearchSpace(Graph):
         naslib object accordingly.
         """
         def is_valid_arch(op_indices):
-            return not (op_indices[0] == op_indices[1] == op_indices[2] == 0) \
-                and not (op_indices[3] == op_indices[4] == op_indices[5] == 0)
+            return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or (op_indices[2] == op_indices[4] == op_indices[5] == 1))
 
         while True:
             op_indices = np.random.randint(NUM_OPS, size=(NUM_EDGES))
