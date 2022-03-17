@@ -7,8 +7,8 @@ search_space: nasbench201
 datasets: 
   - cifar10
 optimizers: # sh, rs, ls, ...
-  - rs
-fidelity: -1
+  - sh
+fidelity: 200
 
 HPO: True
 # only relevant if HPO is enabled

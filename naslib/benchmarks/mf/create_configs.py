@@ -113,7 +113,11 @@ def create_configs(
                     "budget_type": "epoch",
                     "budget_max": 128,
                     "method": "random",
-                    "eta": 3,
+                    "eta": 2,
+                    "max_budget": 200,
+                    "min_budget": 1,
+                    "n_process": 1000,
+                    "epsilon": 1e-6,
                     "num_ensemble": 3,
                     "acq_fn_type": "its",
                     "acq_fn_optimization": acq_fn_optimization,
@@ -142,12 +146,14 @@ def create_configs(
                 # TODO: max_fidelity should be dependent on eta and min_fidelity
                 eta = int(np.random.choice(range(2, 5)))
                 fidelity_range = [2**i for i in range(0, 9)]
-                max_fidelity = int(np.random.choice(fidelity_range))
+                # max_fidelity = int(np.random.choice(fidelity_range))
+                max_fidelity = int(np.random.choice(range(100, 200)))
                 # min fidelity has to be lower/equal to max_fidelity
-                min_fidelity = int(np.random.choice(
-                    list(
-                        filter(
-                            lambda n: n <= max_fidelity, fidelity_range))))
+                min_fidelity = int(np.random.choice(range(1, 10)))
+                # min_fidelity = int(np.random.choice(
+                #     list(
+                #         filter(
+                #             lambda n: n <= max_fidelity, fidelity_range))))
                 config = {
                     "seed": seed,
                     "search_space": search_space,
@@ -180,6 +186,7 @@ def create_configs(
                         "n_process": 1_000_000,
                         "budgets": 360_000, 
                         "eta": eta,
+                        "epsilon": 1e-6,
                         # config section for BOHB
                         "tpe_bandwidth": float(np.random.choice(np.arange(0.01, 1.0, 0.01))), # TODO: what is a good range for tpe??
                     },

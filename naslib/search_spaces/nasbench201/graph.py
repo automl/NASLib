@@ -269,7 +269,7 @@ class NasBench201SearchSpace(Graph):
         target_indices = np.array(convert_naslib_to_op_indices(parent))
         mutant_indices = np.array(convert_naslib_to_op_indices(mutant))
         cross_points = np.random.rand(dim) < prob
-        if not np.any(cross_points):
+        if not np.any(cross_points):  #at leat one gen is a crosspoint
             cross_points[np.random.randint(0, dim)] = True
 
         offspring = np.where(cross_points, mutant_indices, target_indices)

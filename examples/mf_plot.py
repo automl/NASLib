@@ -25,7 +25,6 @@ def plot_sh(predictor):
     folder = os.path.expanduser('./run/cifar10/nas_predictors/nasbench201')
     predictor = predictor
     results = get_results(predictor, folder, 'sh_stats.json', metric='test_acc')
-
     for arch, stats in results.items():
         x = stats['fidelity']
         values = stats['val_acc']

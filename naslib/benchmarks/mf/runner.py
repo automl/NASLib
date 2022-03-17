@@ -61,7 +61,7 @@ multi_fidelity_optimizers = {'sh', 'hb'}
 if config.optimizer in multi_fidelity_optimizers:
     trainer = Trainer_MF(optimizer, config, lightweight_output=True)
 # trainer.search(resume_from="", summary_writer=writer, report_incumbent=False)
-trainer.search(resume_from="", report_incumbent=False)
-trainer.evaluate(resume_from="", dataset_api=dataset_api, metric=metric)
+trainer.search(resume_from="")
+trainer.evaluate(resume_from="", dataset_api=dataset_api)
 
 # error: FileNotFoundError: [Errno 2] No such file or directory: '/Users/lars/Projects/NASLib/naslib/data/nasbench_only108.pkl'

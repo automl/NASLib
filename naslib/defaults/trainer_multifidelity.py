@@ -6,7 +6,7 @@ import os
 import copy
 import torch
 import numpy as np
-
+import gc
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -241,6 +241,7 @@ class Trainer(object):
                 self._log_to_json()
                 self._log_and_reset_accuracies(e)
                 if self.search_time > self.budgets:
+                    gc.collect() 
                     return
 
             self.optimizer.after_training()
