@@ -21,7 +21,7 @@ from naslib.utils.utils import get_project_root
 
 from .primitives import ResNetBasicblock
 
-NUM_VERTICES = 6
+NUM_EDGES = 6
 NUM_OPS = 5
 
 OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
@@ -228,7 +228,7 @@ class NasBench201SearchSpace(Graph):
         return tuple(self.get_op_indices())
 
     def get_arch_iterator(self, dataset_api=None):
-        return itertools.product(range(NUM_OPS), repeat=NUM_VERTICES)
+        return itertools.product(range(NUM_OPS), repeat=NUM_EDGES)
 
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
@@ -245,8 +245,18 @@ class NasBench201SearchSpace(Graph):
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
-        op_indices = np.random.randint(NUM_OPS, size=(NUM_VERTICES))
-        self.set_op_indices(op_indices)
+        def is_valid_arch(op_indices):
+            return not (op_indices[0] == op_indices[1] == op_indices[2] == 0) \
+                and not (op_indices[3] == op_indices[4] == op_indices[5] == 0)
+
+        while True:
+            op_indices = np.random.randint(NUM_OPS, size=(NUM_EDGES))
+
+            if not is_valid_arch(op_indices):
+                continue
+
+            self.set_op_indices(op_indices)
+            break
 
     def get_type(self):
         return "nasbench201"
