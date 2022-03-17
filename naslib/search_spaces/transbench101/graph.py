@@ -312,7 +312,6 @@ class TransBench101SearchSpaceMicro(Graph):
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
-        #op_indices = np.random.randint(4, size=(6))
         def is_valid_arch(op_indices):
             return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or  (op_indices[2] == op_indices[4] == op_indices[5] == 1))
 
