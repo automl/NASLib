@@ -292,9 +292,11 @@ class TransBench101SearchSpaceMicro(Graph):
     
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
+	#@@ -245,8 +245,18 @@ def sample_random_architecture(self, dataset_api=None):
+        #This will sample a random architecture and update the edges in the
+        #naslib object accordingly.
         self.op_indices = op_indices
         convert_op_indices_to_naslib(op_indices, self)
-
 
     def get_arch_iterator(self, dataset_api=None):
         return itertools.product(range(4), repeat=6)
@@ -310,8 +312,18 @@ class TransBench101SearchSpaceMicro(Graph):
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
-        op_indices = np.random.randint(4, size=(6))
-        self.set_op_indices(op_indices)
+        #op_indices = np.random.randint(4, size=(6))
+        def is_valid_arch(op_indices):
+            return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or  (op_indices[2] == op_indices[4] == op_indices[5] == 1))
+
+        while True:
+            op_indices = np.random.randint(4, size=(6))
+
+            if not is_valid_arch(op_indices):
+                continue
+
+            self.set_op_indices(op_indices)
+            break
 
 
     def mutate(self, parent, dataset_api=None):
