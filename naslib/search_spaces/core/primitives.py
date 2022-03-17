@@ -77,132 +77,6 @@ class EdgeNormalizationCombOp(AbstractCombOp):
         weighted_tensors = [t*w for t, w in zip(tensors, torch.softmax(torch.Tensor(weights), dim=-1))]
         return super(EdgeNormalizationCombOp, self).__call__(weighted_tensors)
 
-class MixedOp(AbstractPrimitive):
-    """
-    Continous relaxation of the discrete search space.
-    """
-
-    def __init__(self, primitives):
-        super().__init__(locals())
-        self.primitives = primitives
-        self._add_primitive_modules()
-        self.pre_process_hook = None
-        self.post_process_hook = None
-
-    def _add_primitive_modules(self):
-        for i, primitive in enumerate(self.primitives):
-            self.add_module("primitive-{}".format(i), primitive)
-
-    def set_pre_process_hook(self, fn):
-        self.set_pre_process_hook = fn
-
-    def set_post_process_hook(self, fn):
-        self.post_process_hook = fn
-
-    @abstractmethod
-    def get_weights(self, edge_data):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def process_weights(self, weights):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def apply_weights(self, x, weights):
-        raise NotImplementedError()
-
-    def forward(self, x, edge_data):
-        weights = self.get_weights(edge_data)
-
-        if self.pre_process_hook:
-            weights = self.pre_process_hook(weights, edge_data)
-
-        weights = self.process_weights(weights)
-
-        if self.post_process_hook:
-            weights = self.post_process_hook(weights, edge_data)
-
-        return self.apply_weights(x, weights)
-
-    def get_embedded_ops(self):
-        return self.primitives
-
-    def set_embedded_ops(self, primitives):
-        self.primitives = primitives
-        self._add_primitive_modules()
-
-
-class PartialConnectionOp(AbstractPrimitive):
-    """
-    Partial Connection Operation.
-
-    This class takes a MixedOp and replaces its primitives with the fewer channel version of those primitives.
-    """
-
-    def __init__(self, mixed_op: MixedOp, k: int):
-        super().__init__(locals())
-        self.k = k
-        self.mixed_op = mixed_op
-
-        pc_primitives = []
-        for primitive in mixed_op.get_embedded_ops():
-            pc_primitives.append(self._create_pc_primitive(primitive))
-
-        self.mixed_op.set_embedded_ops(pc_primitives)
-
-    def _create_pc_primitive(self, primitive: AbstractPrimitive) -> AbstractPrimitive:
-        """
-        Creates primitives with fewer channels for Partial Connection operation.
-        """
-        init_params = primitive.init_params
-        self.mp = torch.nn.MaxPool2d(2,2)
-
-        try:
-            #TODO: Force all AbstractPrimitives with convolutions to use 'C_in' and 'C_out' in the initializer
-            init_params['C_in'] = init_params['C_in']//self.k
-
-            if 'C_out' in init_params:
-                init_params['C_out'] = init_params['C_out']//self.k
-            elif 'C' in init_params:
-                init_params['C'] = init_params['C']//self.k
-        except KeyError:
-            return primitive
-
-        pc_primitive = primitive.__class__(**init_params)
-        return pc_primitive
-
-    def _shuffle_channels(self, x):
-        batchsize, num_channels, height, width = x.data.size()
-        channels_per_group = num_channels // self.k
-
-        # reshape
-        x = x.view(batchsize, self.k, channels_per_group, height, width)
-        x = torch.transpose(x, 1, 2).contiguous()
-
-        # flatten
-        x = x.view(batchsize, -1, height, width)
-
-        return x
-
-    def forward(self, x, edge_data):
-        dim_2 = x.shape[1]
-        xtemp = x[ : , :  dim_2//self.k, :, :]
-        xtemp2 = x[ : ,  dim_2//self.k:, :, :]
-
-        temp1 = self.mixed_op(xtemp, edge_data)
-
-        if temp1.shape[2] == x.shape[2]:
-            result = torch.cat([temp1, xtemp2],dim=1)
-        else:
-            # TODO: Verify that downsampling in every graph reduces the size in exactly half
-            result = torch.cat([temp1, self.mp(xtemp2)], dim=1)
-
-        result = self._shuffle_channels(result)
-        return result
-
-    def get_embedded_ops(self):
-        return self.mixed_op.get_embedded_ops()
-
 
 class Identity(AbstractPrimitive):
     """
@@ -273,7 +147,7 @@ class Zero1x1(AbstractPrimitive):
             return x.mul(0.0)
         else:
             x = x[:, :, :: self.stride, :: self.stride].mul(0.0)
-            return torch.cat([x, x], dim=1)  # double the channels TODO: ugly as hell
+            return torch.cat([x, x], dim=1)  # double the channels
 
     def get_embedded_ops(self):
         return None
@@ -513,6 +387,7 @@ class AvgPool1x1(AbstractPrimitive):
     def get_embedded_ops(self):
         return None
 
+
 class GlobalAveragePooling(AbstractPrimitive):
     """
     Just a wrapper class for averaging the input across the height and width dimensions
@@ -554,6 +429,7 @@ class ReLUConvBN(AbstractPrimitive):
         op_name = super().get_op_name
         op_name += "{}x{}".format(self.kernel_size, self.kernel_size)
         return op_name
+
 
 class ConvBnReLU(AbstractPrimitive):
     """
@@ -636,7 +512,7 @@ class Concat1x1(nn.Module):
         x = self.bn(x)
         return x
 
-    
+
 class StemJigsaw(AbstractPrimitive):
     """
     This is used as an initial layer directly after the
@@ -657,7 +533,7 @@ class StemJigsaw(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return None
-    
+
 
 class SequentialJigsaw(AbstractPrimitive):
     """
@@ -681,54 +557,54 @@ class SequentialJigsaw(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return list(self.primitives)
-    
-    
+
+
 class GenerativeDecoder(AbstractPrimitive):
     def __init__(self, in_dim, target_dim, target_num_channel=3, norm=nn.BatchNorm2d):
         super(GenerativeDecoder, self).__init__(locals())
-        
+
         in_channel, in_width = in_dim[0], in_dim[1]
         out_width = target_dim[0]
         num_upsample = int(math.log2(out_width / in_width))
         assert num_upsample in [2, 3, 4, 5, 6], f'invalid num_upsample: {num_upsample}'
-        
+
         self.conv1 = ConvLayer(in_channel, 1024, 3, 1, 1, nn.LeakyReLU(0.2), norm)
         self.conv2 = ConvLayer(1024, 1024, 3, 2, 1, nn.LeakyReLU(0.2), norm)
-        
+
         if num_upsample == 6:
             self.conv3 = DeconvLayer(1024, 512, 3, 2, 1, nn.LeakyReLU(0.2), norm)
         else:
             self.conv3 = ConvLayer(1024, 512, 3, 1, 1, nn.LeakyReLU(0.2), norm)
-            
+
         self.conv4 = ConvLayer(512, 512, 3, 1, 1, nn.LeakyReLU(0.2), norm)
-        
+
         if num_upsample >= 5:
             self.conv5 = DeconvLayer(512, 256, 3, 2, 1, nn.LeakyReLU(0.2), norm)
         else:
             self.conv5 = ConvLayer(512, 256, 3, 1, 1, nn.LeakyReLU(0.2), norm)
-            
+
         self.conv6 = ConvLayer(256, 128, 3, 1, 1, nn.LeakyReLU(0.2), norm)
-        
+
         if num_upsample >= 4:
             self.conv7 = DeconvLayer(128, 64, 3, 2, 1, nn.LeakyReLU(0.2), norm)
         else:
             self.conv7 = ConvLayer(128, 64, 3, 1, 1, nn.LeakyReLU(0.2), norm)
-            
+
         self.conv8 = ConvLayer(64, 64, 3, 1, 1, nn.LeakyReLU(0.2), norm)
-        
+
         if num_upsample >= 3:
             self.conv9 = DeconvLayer(64, 32, 3, 2, 1, nn.LeakyReLU(0.2), norm)
         else:
             self.conv9 = ConvLayer(64, 32, 3, 1, 1, nn.LeakyReLU(0.2), norm)
-            
+
         self.conv10 = ConvLayer(32, 32, 3, 1, 1, nn.LeakyReLU(0.2), norm)
         self.conv11 = DeconvLayer(32, 16, 3, 2, 1, nn.LeakyReLU(0.2), norm)
-        
+
         self.conv12 = ConvLayer(16, 32, 3, 1, 1, nn.LeakyReLU(0.2), norm)
         self.conv13 = DeconvLayer(32, 16, 3, 2, 1, nn.LeakyReLU(0.2), norm)
-        
+
         self.conv14 = ConvLayer(16, target_num_channel, 3, 1, 1, nn.Tanh(), norm)
-        
+
     def forward(self, x, edge_data):
         x = self.conv1(x)
         x = self.conv2(x)
@@ -745,15 +621,15 @@ class GenerativeDecoder(AbstractPrimitive):
         x = self.conv13(x)
         x = self.conv14(x)
         return x
-    
+
     def get_embedded_ops(self):
         return None
-          
+
 
 class ConvLayer(nn.Module):
     def __init__(self, in_channel, out_channel, kernel, stride, padding, activation, norm):
         super(ConvLayer, self).__init__()
-        
+
         self.conv = nn.Conv2d(in_channel, out_channel, kernel, stride=stride, padding=padding)
         self.activation = activation
         if norm:
@@ -764,7 +640,7 @@ class ConvLayer(nn.Module):
                 self.conv = norm(self.conv)
         else:
             self.norm = None
-        
+
     def forward(self, x):
         x = self.conv(x)
         if self.norm and isinstance(self.norm, nn.BatchNorm2d):
@@ -777,14 +653,14 @@ class ConvLayer(nn.Module):
 class DeconvLayer(nn.Module):
     def __init__(self, in_channel, out_channel, kernel, stride, padding, activation, norm):
         super(DeconvLayer, self).__init__()
-        
+
         self.conv = nn.ConvTranspose2d(in_channel, out_channel, kernel, stride=stride, padding=padding, output_padding=1)
         self.activation = activation
         if norm == nn.BatchNorm2d:
                 self.norm = norm(out_channel)
         else:
             self.norm = norm
-        
+
     def forward(self, x):
         x = self.conv(x)
         if self.norm and isinstance(self.norm, nn.BatchNorm2d):
@@ -794,7 +670,3 @@ class DeconvLayer(nn.Module):
         return x
 
 
-           
-
-
-           

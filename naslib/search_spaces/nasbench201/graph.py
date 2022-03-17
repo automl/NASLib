@@ -9,7 +9,6 @@ import torch.nn.functional as F
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.conversions import (
     convert_op_indices_to_naslib,
