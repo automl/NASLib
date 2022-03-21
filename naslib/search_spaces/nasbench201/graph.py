@@ -91,7 +91,7 @@ class NasBench201SearchSpace(Graph):
         #
 
         # preprocessing
-        self.edges[1, 2].set("op", ops.Stem(self.channels[0]))
+        self.edges[1, 2].set("op", ops.Stem(C_out=self.channels[0]))
 
         # stage 1
         for i in range(2, 7):

@@ -203,7 +203,7 @@ class DartsSearchSpace(Graph):
         # pre-processing
         # In darts there is a hardcoded multiplier of 3 for the output of the stem
         stem_multiplier = 3
-        self.edges[1, 2].set("op", ops.Stem(self.channels[0] * stem_multiplier))
+        self.edges[1, 2].set("op", ops.Stem(C_out=self.channels[0] * stem_multiplier))
 
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
