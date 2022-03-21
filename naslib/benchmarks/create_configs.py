@@ -19,8 +19,8 @@ def main(args):
         os.makedirs(folder, exist_ok=True)       
             
         for seed in range(args.start_seed, args.start_seed + args.trials):
-            np.random.seed(seed)
-            random.seed(seed)
+            # np.random.seed(seed)
+            # random.seed(seed)
 
             config = {
                 "seed": seed,
@@ -63,8 +63,8 @@ def main(args):
             
             
             for seed in range(args.start_seed, args.start_seed + args.trials):
-                np.random.seed(seed)
-                random.seed(seed)
+                # np.random.seed(seed)
+                # random.seed(seed)
 
                 config = {
                     "seed": seed,

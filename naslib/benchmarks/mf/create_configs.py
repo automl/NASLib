@@ -75,7 +75,6 @@ def create_configs(
     if config_type == 'bbo-bs':
         start_seed = int(start_seed)
         trials = int(trials)
-        num_config = 100 
         
         # first generate the default config at config 0
         config_id = 0
@@ -85,8 +84,8 @@ def create_configs(
         os.makedirs(folder, exist_ok=True)       
             
         for seed in range(start_seed, start_seed + trials):
-            np.random.seed(seed)
-            random.seed(seed)
+            # np.random.seed(seed)
+            # random.seed(seed)
 
             config = {
                 "seed": seed,
@@ -141,8 +140,8 @@ def create_configs(
             os.makedirs(folder, exist_ok=True)
             
             for seed in range(start_seed, start_seed + trials):
-                np.random.seed(seed)
-                random.seed(seed)
+                # np.random.seed(seed)
+                # random.seed(seed)
                 # TODO: max_fidelity should be dependent on eta and min_fidelity
                 eta = int(np.random.choice(range(2, 5)))
                 fidelity_range = [2**i for i in range(0, 9)]
