@@ -249,7 +249,7 @@ class NasBench201SearchSpace(Graph):
                         (op_indices[2] == op_indices[4] == op_indices[5] == 1))
 
         while True:
-            op_indices = np.random.randint(NUM_OPS, size=(NUM_EDGES))
+            op_indices = np.random.randint(NUM_OPS, size=(NUM_EDGES)).tolist()
 
             if not is_valid_arch(op_indices):
                 continue
