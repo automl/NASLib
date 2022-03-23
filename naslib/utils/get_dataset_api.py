@@ -51,7 +51,7 @@ https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
     return {"nb201_data": data}
 
 
-def get_darts_api(dataset=None):
+def get_nasbench301_api(dataset=None):
     # Paths to v1.0 model files and data file.
     nb_models_path = os.path.join(get_project_root(), "data", "nb_models")
     nb301_model_path=os.path.join(nb_models_path, "xgb_v1.0")
@@ -99,8 +99,8 @@ def get_dataset_api(search_space=None, dataset=None):
     elif search_space == "nasbench201":
         return get_nasbench201_api(dataset=dataset)
 
-    elif search_space == "darts":
-        return get_darts_api(dataset=dataset)
+    elif search_space == "nasbench301":
+        return get_nasbench301_api(dataset=dataset)
 
     elif search_space in ['transbench101', 'transbench101_micro', 'transbench101_macro']:
         return get_transbench101_api(dataset=dataset)

@@ -14,7 +14,7 @@ from ConfigSpace.read_and_write import json as config_space_json_r_w
 from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.darts.conversions import (
+from naslib.search_spaces.nasbench301.conversions import (
     convert_compact_to_naslib,
     convert_naslib_to_compact,
     convert_naslib_to_genotype,
@@ -32,7 +32,7 @@ NUM_VERTICES = 4
 NUM_OPS = 7
 
 
-class DartsSearchSpace(Graph):
+class NasBench301SearchSpace(Graph):
     """
     The search space for CIFAR-10 as defined in
 
@@ -69,13 +69,13 @@ class DartsSearchSpace(Graph):
         """
         super().__init__()
 
-        self.channels = [16, 32, 64]
+        self.channels = [32, 64, 128]
         self.compact = None
         self.load_labeled = None
         self.num_classes = n_classes
         self.max_epoch = 97
         self.space_name = "darts"
-        self.auxiliary_output = False
+        self.auxiliary_output = True
 
         """
         Build the search space with the parameters specified in __init__.
@@ -161,16 +161,29 @@ class DartsSearchSpace(Graph):
             11, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([9, 10])
         )
 
-        # output
+        # auxiliary
         self.add_node(12)
 
+        # output
+        self.add_node(13)
+
         # chain connections
-        self.add_edges_from([(i, i + 1) for i in range(1, 12)])
+        self.add_edges_from([(i, i + 1) for i in range(1, 11)])
 
         # skip connections
         self.add_edges_from([(i, i + 2) for i in range(4, 10)])
         self.add_edge(2, 4)
         self.add_edge(2, 5)
+
+        if self.auxiliary_output:
+            # auxiliary
+            self.add_edge(11, 12)
+
+            # final output
+            self.add_edge(11, 13)
+        else:
+            # final output
+            self.add_edge(11, 12)
 
         #
         # Operations at the makrograph edges
@@ -187,7 +200,7 @@ class DartsSearchSpace(Graph):
             channel_map_to,
             reduction_cell_indices,
             max_index=12,
-            affine=False,
+            affine=True,
         )
 
         self._set_cell_ops(reduction_cell_indices)
@@ -246,7 +259,7 @@ class DartsSearchSpace(Graph):
 
         for scope, c in zip(stages, self.channels):
             self.update_edges(
-                update_func=lambda edge: DartsSearchSpace._set_ops(edge, c, stride=1),
+                update_func=lambda edge: NasBench301SearchSpace._set_ops(edge, c, stride=1),
                 scope=scope,
                 private_edge_data=True,
             )
@@ -259,7 +272,7 @@ class DartsSearchSpace(Graph):
                 stride = 2 if u in (1, 2) else 1
                 if not data.is_final():
                     edge = AttrDict(data=data)
-                    DartsSearchSpace._set_ops(edge, c, stride)
+                    NasBench301SearchSpace._set_ops(edge, c, stride)
 
         #
         # Combining operations
@@ -268,6 +281,41 @@ class DartsSearchSpace(Graph):
             if cell:
                 cell.nodes[7]["comb_op"] = channel_concat
 
+    @staticmethod
+    def _set_ops(edge, C, stride):
+        """
+        Replace the 'op' at the edges with the ones defined here.
+        This function is called by the framework for every edge in
+        the defined scope.
+        Args:
+            current_egde_data (EdgeData): The data that currently sits
+                at the edge.
+            C (int): convolutional channels
+            stride (int): stride for the operation
+
+        Returns:
+            EdgeData: the updated EdgeData object.
+        """
+        edge.data.set(
+            "op",
+            [
+                ops.Identity()
+                if stride == 1
+                else FactorizedReduce(C, C, stride, affine=False),
+                ops.Zero(stride=stride),
+                ops.MaxPool(C, 3, stride, use_bn=True),
+                ops.AvgPool(C, 3, stride, use_bn=True),
+                ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
+                ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
+                ops.DilConv(
+                    C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False
+                ),
+                ops.DilConv(
+                    C, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False
+                ),
+            ],
+        )
+
     def prepare_discretization(self):
         """
         In DARTS a node can have a maximum of two incoming edges.
@@ -275,7 +323,7 @@ class DartsSearchSpace(Graph):
         """
 
         self.update_nodes(
-            DartsSearchSpace._truncate_input_edges, scope=self.OPTIMIZER_SCOPE,
+            NasBench301SearchSpace._truncate_input_edges, scope=self.OPTIMIZER_SCOPE,
             single_instances=True
         )
 
@@ -284,28 +332,11 @@ class DartsSearchSpace(Graph):
         In DARTS the evaluation model has 32 channels after the Stem
         and 3 normal cells at each stage.
         """
-        # this is called after the optimizer has discretized the graph
-        self._expand()
-
-        # Operations at the edges
-        self.channels = [36, 72, 144]
-        reduction_cell_indices = [10, 17]
-
-        channel_map_from, channel_map_to = channel_maps(
-            reduction_cell_indices, max_index=24
-        )
-        self._set_makrograph_ops(
-            channel_map_from,
-            channel_map_to,
-            reduction_cell_indices,
-            max_index=24,
-            affine=True,
-        )
 
         # Taken from DARTS implementation
         # assuming input size 8x8
         if self.auxiliary_output:
-            self.edges[23, 24].set(
+            self.edges[11, 12].set(
                 "op",
                 ops.Sequential(
                     nn.ReLU(inplace=True),
@@ -323,57 +354,12 @@ class DartsSearchSpace(Graph):
                 ),
             )
 
-        self.update_edges(
-            update_func=DartsSearchSpace._double_channels,
-            scope=self.OPTIMIZER_SCOPE,
-            private_edge_data=True,
-        )
-
-    def _expand(self):
-        # shift the node indices to make space for 4 more nodes at each stage
-        # and the auxiliary logits
-        mapping = {
-            6: 10,
-            7: 11,
-            8: 12,
-            9: 17,
-            10: 18,
-            11: 19,
-            12: 25,  # 24 is auxiliary
-        }
-        nx.relabel_nodes(self, mapping, copy=False)
-
-        # fix edges
-        self.remove_edges_from(list(self.edges()))
-        self.add_edges_from([(i, i + 1) for i in range(1, 23)])
-        self.add_edges_from([(i, i + 2) for i in range(4, 22)])
-        self.add_edges_from([(2, 4), (2, 5)])
-        self.add_edge(23, 24)  # auxiliary output
-        self.add_edge(23, 25)  # final output
-
-        to_insert = [] + list(range(6, 10)) + list(range(13, 17)) + list(range(20, 24))
-        for i in to_insert:
-            normal_cell = self.nodes[i - 1]["subgraph"]
-            self.add_node(
-                i,
-                subgraph=normal_cell.copy()
-                .set_scope(normal_cell.scope)
-                .set_input([i - 2, i - 1]),
-            )
-
-        for i, cell in sorted(self.nodes(data="subgraph")):
-            if cell:
-                if i == 5:
-                    cell.input_node_idxs = [2, 4]
-                else:
-                    cell.input_node_idxs = [i - 2, i - 1]
-
     def auxiliary_logits(self):
-        return self.graph["out_from_24"]
+        return self.graph["out_from_12"]
 
     def load_labeled_architecture(self, dataset_api=None):
         """
-        This is meant to be called by a new DartsSearchSpace() object
+        This is meant to be called by a new NasBench301SearchSpace() object
         (one that has not already been discretized).
         It samples a random architecture from the nasbench301 training data,
         and updates the graph object to match the architecture.
@@ -453,41 +439,6 @@ class DartsSearchSpace(Graph):
                 return -1
 
     @staticmethod
-    def _set_ops(edge, C, stride):
-        """
-        Replace the 'op' at the edges with the ones defined here.
-        This function is called by the framework for every edge in
-        the defined scope.
-        Args:
-            current_egde_data (EdgeData): The data that currently sits
-                at the edge.
-            C (int): convolutional channels
-            stride (int): stride for the operation
-
-        Returns:
-            EdgeData: the updated EdgeData object.
-        """
-        edge.data.set(
-            "op",
-            [
-                ops.Identity()
-                if stride == 1
-                else FactorizedReduce(C, C, stride, affine=False),
-                ops.Zero(stride=stride),
-                ops.MaxPool(C, 3, stride, use_bn=True),
-                ops.AvgPool(C, 3, stride, use_bn=True),
-                ops.SepConv(C, C, kernel_size=3, stride=stride, padding=1, affine=False),
-                ops.SepConv(C, C, kernel_size=5, stride=stride, padding=2, affine=False),
-                ops.DilConv(
-                    C, C, kernel_size=3, stride=stride, padding=2, dilation=2, affine=False
-                ),
-                ops.DilConv(
-                    C, C, kernel_size=5, stride=stride, padding=4, dilation=2, affine=False
-                ),
-            ],
-        )
-
-    @staticmethod
     def _truncate_input_edges(node, in_edges, out_edges):
         """
         Removes input edges if there are more than k.
@@ -528,17 +479,6 @@ class DartsSearchSpace(Graph):
                 else:
                     for _ in range(len(in_edges) - k):
                         in_edges[random.randint(0, len(in_edges) - 1)][1].delete()
-
-    @staticmethod
-    def _double_channels(edge):
-        init_params = edge.data.op.init_params
-        if "C_in" in init_params:
-            init_params["C_in"] = int(init_params["C_in"] * 2.25)
-        if "C_out" in init_params:
-            init_params["C_out"] = int(init_params["C_out"] * 2.25)
-        if "affine" in init_params:
-            init_params["affine"] = True
-        edge.data.set("op", edge.data.op.__class__(**init_params))
 
     def get_compact(self):
         if self.compact is None:
@@ -584,70 +524,6 @@ class DartsSearchSpace(Graph):
             )
 
         self.set_compact(compact)
-
-    def mutate(self, parent, mutation_rate=1, dataset_api=None):
-        """
-        This will mutate one op from the parent op indices, and then
-        update the naslib object and op_indices
-        """
-        parent_compact = parent.get_compact()
-        parent_compact = make_compact_mutable(parent_compact)
-        compact = parent_compact
-
-        for _ in range(int(mutation_rate)):
-            cell = np.random.choice(2)
-            pair = np.random.choice(8)
-            num = np.random.choice(2)
-            if num == 1:
-                compact[cell][pair][num] = np.random.choice(NUM_OPS)
-            else:
-                inputs = pair // 2 + 2
-                choice = np.random.choice(inputs)
-                if pair % 2 == 0 and compact[cell][pair + 1][num] != choice:
-                    compact[cell][pair][num] = choice
-                elif pair % 2 != 0 and compact[cell][pair - 1][num] != choice:
-                    compact[cell][pair][num] = choice
-
-        self.set_compact(compact)
-
-    def get_nbhd(self, dataset_api=None):
-        # return all neighbors of the architecture
-        self.get_compact()
-        nbrs = []
-
-        for i, cell in enumerate(self.compact):
-            for j, pair in enumerate(cell):
-
-                # mutate the op
-                available = [op for op in range(NUM_OPS) if op != pair[1]]
-                for op in available:
-                    nbr_compact = make_compact_mutable(self.compact)
-                    nbr_compact[i][j][1] = op
-                    nbr = DartsSearchSpace()
-                    nbr.set_compact(nbr_compact)
-                    nbr_model = torch.nn.Module()
-                    nbr_model.arch = nbr
-                    nbrs.append(nbr_model)
-
-                # mutate the edge
-                other = j + 1 - 2 * (j % 2)
-                available = [
-                    edge
-                    for edge in range(j // 2 + 2)
-                    if edge not in [cell[other][0], pair[0]]
-                ]
-
-                for edge in available:
-                    nbr_compact = make_compact_mutable(self.compact)
-                    nbr_compact[i][j][0] = edge
-                    nbr = DartsSearchSpace()
-                    nbr.set_compact(nbr_compact)
-                    nbr_model = torch.nn.Module()
-                    nbr_model.arch = nbr
-                    nbrs.append(nbr_model)
-
-        random.shuffle(nbrs)
-        return nbrs
 
     @staticmethod
     def get_configspace(
