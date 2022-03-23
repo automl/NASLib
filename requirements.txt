@@ -1,3 +1,4 @@
+git+https://github.com/automl/nasbench301.git@no_gin
 ConfigSpace==0.4.19
 cython==0.29.23
 numpy==1.21.5; python_version <= '3.7'
