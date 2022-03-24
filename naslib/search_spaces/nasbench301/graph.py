@@ -73,8 +73,8 @@ class NasBench301SearchSpace(Graph):
         self.compact = None
         self.load_labeled = None
         self.num_classes = n_classes
-        self.max_epoch = 97
-        self.space_name = "darts"
+        self.max_epoch = 100
+        self.space_name = "nasbench301"
         self.auxiliary_output = True
 
         """
@@ -357,18 +357,6 @@ class NasBench301SearchSpace(Graph):
     def auxiliary_logits(self):
         return self.graph["out_from_12"]
 
-    def load_labeled_architecture(self, dataset_api=None):
-        """
-        This is meant to be called by a new NasBench301SearchSpace() object
-        (one that has not already been discretized).
-        It samples a random architecture from the nasbench301 training data,
-        and updates the graph object to match the architecture.
-        """
-        index = np.random.choice(len(dataset_api["nb301_arches"]))
-        compact = dataset_api["nb301_arches"][index]
-        self.load_labeled = True
-        self.set_compact(compact)
-
     def query(
         self,
         metric=None,
@@ -388,55 +376,21 @@ class NasBench301SearchSpace(Graph):
             Metric.TRAIN_TIME: "runtime",
         }
 
-        if self.load_labeled:
-            """
-            If we loaded the architecture from the nasbench301 training data (using
-            load_labeled_architecture()), then self.compact will contain the architecture spec,
-            and we can query the train loss or val accuracy at a specific epoch
-            (also, querying will give 'real' answers, since these arches were actually trained)
-            """
-            assert metric in [
-                Metric.VAL_ACCURACY,
-                Metric.TEST_ACCURACY,
-                Metric.TRAIN_LOSS,
-                Metric.TRAIN_TIME,
-                Metric.HP,
-            ]
-            query_results = dataset_api["nb301_data"][self.compact]
-
-            if metric == Metric.TRAIN_TIME:
-                return query_results[metric_to_nb301[metric]]
-            elif metric == Metric.HP:
-                # todo: compute flops/params/latency for each arch. These are placeholders
-                return {"flops": 15, "params": 0.1, "latency": 0.01}
-            elif full_lc and epoch == -1:
-                return query_results[metric_to_nb301[metric]]
-            elif full_lc and epoch != -1:
-                return query_results[metric_to_nb301[metric]][:epoch]
-            else:
-                # return the value of the metric only at the specified epoch
-                return query_results[metric_to_nb301[metric]][epoch]
-
+        assert not epoch or epoch in [-1, 100]
+        # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]
+        genotype = convert_naslib_to_genotype(self)
+        if metric == Metric.VAL_ACCURACY:
+            val_acc = dataset_api["nb301_model"][0].predict(
+                config=genotype, representation="genotype"
+            )
+            return val_acc
+        elif metric == Metric.TRAIN_TIME:
+            runtime = dataset_api["nb301_model"][1].predict(
+                config=genotype, representation="genotype"
+            )
+            return runtime
         else:
-            """
-            If we did not load the architecture using load_labeled_architecture(), then we can
-            only query the validation accuracy at epoch 100 by using nasbench301.
-            """
-            assert not epoch or epoch in [-1, 100]
-            # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]
-            genotype = convert_naslib_to_genotype(self)
-            if metric == Metric.VAL_ACCURACY:
-                val_acc = dataset_api["nb301_model"][0].predict(
-                    config=genotype, representation="genotype"
-                )
-                return val_acc
-            elif metric == Metric.TRAIN_TIME:
-                runtime = dataset_api["nb301_model"][1].predict(
-                    config=genotype, representation="genotype"
-                )
-                return runtime
-            else:
-                return -1
+            return -1
 
     @staticmethod
     def _truncate_input_edges(node, in_edges, out_edges):
@@ -488,12 +442,6 @@ class NasBench301SearchSpace(Graph):
     def get_hash(self):
         return self.get_compact()
 
-    def get_arch_iterator(self, dataset_api=None):
-        # currently set up for nasbench301 data, not surrogate
-        arch_list = np.array(dataset_api["nb301_arches"])
-        random.shuffle(arch_list)
-        return arch_list
-
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact
         self.compact = compact
@@ -528,7 +476,7 @@ class NasBench301SearchSpace(Graph):
     @staticmethod
     def get_configspace(
         path_to_configspace_obj=os.path.join(
-            get_project_root(), "search_spaces/darts/configspace.json"
+            get_project_root(), "search_spaces/nasbench301/configspace.json"
         )
     ):
         """
@@ -546,7 +494,7 @@ class NasBench301SearchSpace(Graph):
         return config_space
 
     def get_type(self):
-        return "darts"
+        return "nasbench301"
 
     def get_loss_fn(self):
         return F.cross_entropy

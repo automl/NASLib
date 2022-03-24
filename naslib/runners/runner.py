@@ -12,10 +12,6 @@ logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 utils.log_args(config)
 
-#If the API did not evaluate *all* architectures in the search space,
-#set load_labeled=True
-#load_labeled = True if config.search_space in ["nasbench301"] else False
-load_labeled = False # NOTE: seems it can sample from a list of 8 ops and not 7
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 # initialize the search space and predictor
@@ -29,7 +25,7 @@ search_space = get_search_space(name=config.search_space, dataset=config.dataset
 # initialize the PredictorEvaluator class
 predictor_evaluator = PredictorEvaluator(predictor, config=config)
 predictor_evaluator.adapt_search_space(
-    search_space, load_labeled=load_labeled, dataset_api=dataset_api
+    search_space, dataset_api=dataset_api
 )
 
 # evaluate the predictor

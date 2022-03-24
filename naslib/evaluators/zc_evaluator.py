@@ -36,7 +36,7 @@ class PredictorEvaluator(object):
         self.log_results_to_json = log_results
 
     def adapt_search_space(
-        self, search_space, load_labeled, scope=None, dataset_api=None
+        self, search_space, load_labeled=False, scope=None, dataset_api=None
     ):
         self.search_space = search_space.clone()
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE

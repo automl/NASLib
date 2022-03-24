@@ -52,11 +52,25 @@ https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
 
 
 def get_nasbench301_api(dataset=None):
+    # Load the nb301 performance and runtime models
+    try:
+        import nasbench301
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError('No module named \'nasbench301\'. \
+            Please install nasbench301 from https://github.com/automl/nasbench301@no_gin')
+
     # Paths to v1.0 model files and data file.
-    nb_models_path = os.path.join(get_project_root(), "data", "nb_models")
+    download_path = os.path.join(get_project_root(), "data")
+    nb_models_path = os.path.join(download_path, "nb_models_1.0")
+    os.makedirs(download_path, exist_ok=True)
+
     nb301_model_path=os.path.join(nb_models_path, "xgb_v1.0")
     nb301_runtime_path=os.path.join(nb_models_path, "lgb_runtime_v1.0")
-    data_path = os.path.join(get_project_root(), "data", "nb301_full_training.pickle")
+
+    if not all(os.path.exists(model) for model in [nb301_model_path,
+                                                   nb301_runtime_path]):
+        nasbench301.download_models(version='1.0', delete_zip=True,
+                                    download_dir=download_path)
 
     models_not_found_msg = "Please download v1.0 models from \
 https://figshare.com/articles/software/nasbench301_models_v1_0_zip/13061510"
@@ -65,28 +79,13 @@ https://figshare.com/articles/software/nasbench301_models_v1_0_zip/13061510"
     assert os.path.exists(nb_models_path), f"Could not find {nb_models_path}. {models_not_found_msg}"
     assert os.path.exists(nb301_model_path), f"Could not find {nb301_model_path}. {models_not_found_msg}"
     assert os.path.exists(nb301_runtime_path), f"Could not find {nb301_runtime_path}. {models_not_found_msg}"
-    assert os.path.isfile(data_path), f"Could not find {data_path}. Please download nb301_full_training.pickle from\
-        https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa?usp=sharing"
-
-    # Load the nb301 performance and runtime models
-    try:
-        import nasbench301
-    except ModuleNotFoundError as e:
-        raise ModuleNotFoundError('No module named \'nasbench301\'. \
-            Please install nasbench301 from https://github.com/crwhite14/nasbench301')
 
     performance_model = nasbench301.load_ensemble(nb301_model_path)
     runtime_model = nasbench301.load_ensemble(nb301_runtime_path)
 
-    with open(data_path, "rb") as f:
-        nb301_data = pickle.load(f)
-        nb301_arches = list(nb301_data.keys())
-
     nb301_model = [performance_model, runtime_model]
 
     return {
-        "nb301_data": nb301_data,
-        "nb301_arches": nb301_arches,
         "nb301_model": nb301_model,
     }
 
