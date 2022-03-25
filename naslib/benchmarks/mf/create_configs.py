@@ -123,12 +123,21 @@ def create_configs(
                     "encoding_type": "path",
                     "predictor": predictor,
                     "debug_predictor": False,
-                    # config secton for successive halving,
+                    # config secton for successive halving/ hyperband,
                     "min_budget": 1,
                     "max_budget": 200,
                     "fidelity": 200,
                     "n_process": 1_000_000,
                     "budgets": 360_000, 
+                    # config section for bohb
+                    "min_bandwith": 0.001,
+                    "top_n_percent": 0.1,
+                    "min_points_in_model": 7,
+                    # config section for dehb
+                    "enc_dim": 6,
+                    "max_mutations": 1,
+                    "crossover_prob": 0.5,
+                    "mutate_prob": 0.1,
                 },
             }
             path = os.path.join(folder, f"seed_{seed}.yaml")
@@ -178,7 +187,7 @@ def create_configs(
                         "predictor": predictor,
                         "debug_predictor": False,
                         # config section for successive halving,
-                        # config secton for successive halving,
+                        # config secton for Hyperband,
                         "min_budget": min_fidelity,
                         "max_budget": max_fidelity,
                         "fidelity": 200,
@@ -187,7 +196,15 @@ def create_configs(
                         "eta": eta,
                         "epsilon": 1e-6,
                         # config section for BOHB
-                        "tpe_bandwidth": float(np.random.choice(np.arange(0.01, 1.0, 0.01))), # TODO: what is a good range for tpe??
+                        "min_bandwith": float(np.random.choice(np.arange(0.0, 0.01, 0.001))),
+                        "top_n_percent": float(np.random.choice(np.arange(0.05, 0.6, 0.01))),
+                        "min_points_in_model": 7,
+                        # config section for DEHB
+                        # config section for dehb
+                        "enc_dim": 6,
+                        "max_mutations": int(np.random.choice(range(1, 5))),
+                        "crossover_prob": float(np.random.choice(np.arange(0.4, 1.0, 0.01))),
+                        "mutate_prob": float(np.random.choice(np.arange(0.05, 0.71, 0.01))),
                     },
                 }
                 print(f"folder: {folder}")
