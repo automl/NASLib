@@ -349,8 +349,6 @@ class NasBench101SearchSpace(Graph):
         return convert_spec_to_tuple(self.get_spec())
 
     def set_spec(self, spec, dataset_api=None):
-        # TODO: convert the naslib object to this spec
-        # convert_spec_to_naslib(spec, self)
 
         if isinstance(spec, str):
             """

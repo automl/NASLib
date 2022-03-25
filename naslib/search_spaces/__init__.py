@@ -27,7 +27,6 @@ def get_search_space(name, dataset):
     if name == 'transbench101_micro':
         return search_space_cls(dataset=dataset)
 
-    # TODO_COMPETITION: Change all search space initializers to have this signature
     n_classes = dataset_n_classes[dataset.lower()]
     return search_space_cls(n_classes=n_classes)
     
