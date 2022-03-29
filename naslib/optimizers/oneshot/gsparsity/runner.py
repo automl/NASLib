@@ -1,6 +1,8 @@
 import logging
+from pyexpat import model
 import sys
 import naslib as nl
+
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import (
@@ -18,6 +20,7 @@ from naslib.optimizers import (
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib.search_spaces.core.query_metrics import Metric
 
 config = utils.get_config_from_args()
 utils.set_seed(config.seed)
@@ -55,7 +58,7 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-trainer.search()
+#trainer.search()
 
 # if not config.eval_only:
 #    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
@@ -63,4 +66,5 @@ trainer.search()
 
 #checkpoint = utils.get_last_checkpoint(config, search_model=True) if config.resume else ""
 #trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
-trainer.evaluate(dataset_api=dataset_api)
+model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/darts/cifar100/gsparsity/9/search/model_final.pth"
+trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY, search_model=model)

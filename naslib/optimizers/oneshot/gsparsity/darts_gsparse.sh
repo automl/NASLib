@@ -5,7 +5,7 @@ echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node w
 
 start=`date +%s`
 
-python runner.py --config-file config.yaml
+python runner.py --config-file darts_config.yaml
 
 end=`date +%s`
 runtime=$((end-start))
