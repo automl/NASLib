@@ -343,7 +343,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 on an edge and receives an EdgeData object which will be ignored
         """
         logger.debug("Graph {} called. Input {}.".format(self.name, log_formats(x)))
-
+        
         # Assign x to the corresponding input nodes
         self._assign_x_to_nodes(x)
 
@@ -407,6 +407,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                         )
 
                         edge_output = edge_data.op.forward(x, edge_data=edge_data)
+                        #import ipdb;ipdb.set_trace()
                     else:
                         raise ValueError(
                             "Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(

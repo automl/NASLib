@@ -1,0 +1,42 @@
+dataset: cifar100
+seed: 20
+search_space: darts
+out_dir: /work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run
+optimizer: gsparsity
+
+search:
+ 
+
+  #GSparsity
+  grad_clip: 0
+  threshold: 0.000001
+  weight_decay: 60
+  learning_rate: 0.01
+  momentum: 0.8
+  normalization: div
+  normalization_exponent: 0.5
+  batch_size: 32
+  learning_rate_min: 0.0001
+  epochs: 50
+  warm_start_epochs: 0
+  train_portion: 0.9
+  data_size: 45000
+
+evaluation:
+  checkpoint_freq: 30
+  batch_size: 96
+  learning_rate: 0.025
+  learning_rate_min: 0.00
+  momentum: 0.9
+  weight_decay: 0.0001
+  epochs: 600
+  warm_start_epochs: 0
+  grad_clip: 5
+  train_portion: 1.
+  data_size: 50000
+
+  cutout: True
+  cutout_length: 16
+  cutout_prob: 1.0
+  drop_path_prob: 0.2
+  auxiliary_weight: 0.4

@@ -500,6 +500,9 @@ class AvgPool1x1(AbstractPrimitive):
         )
         if stride > 1:
             assert C_in is not None and C_out is not None
+            self.affine = affine
+            self.C_in = C_in
+            self.C_out = C_out
             self.conv = nn.Conv2d(C_in, C_out, 1, stride=1, padding=0, bias=False)
             self.bn = nn.BatchNorm2d(C_out, affine=affine)
 

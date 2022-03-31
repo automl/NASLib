@@ -1,5 +1,5 @@
-seed: 99
-optimizer: re
+seed: 1
+optimizer: gsparsity
 dataset: cifar10
 out_dir: run
 
@@ -27,3 +27,20 @@ search:
   num_arches_to_mutate: 2
   max_mutations: 1
   num_candidates: 100
+  
+  # GSparsity
+  seed: 50
+  grad_clip: 0
+  threshold: 0.000001
+  weight_decay: 60
+  learning_rate: 0.001
+  momentum: 0.8
+  normalization: div
+  normalization_exponent: 0.5
+  batch_size: 64
+  learning_rate_min: 0.0001
+  epochs: 100
+  warm_start_epochs: 0
+  train_portion: 1.0
+  data_size: 25000
+
