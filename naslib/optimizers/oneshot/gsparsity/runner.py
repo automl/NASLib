@@ -58,7 +58,7 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-#trainer.search()
+trainer.search()
 
 # if not config.eval_only:
 #    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
@@ -66,5 +66,5 @@ trainer = Trainer(optimizer, config, lightweight_output=True)
 
 #checkpoint = utils.get_last_checkpoint(config, search_model=True) if config.resume else ""
 #trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
-model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/darts/cifar100/gsparsity/9/search/model_final.pth"
+#model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/darts/cifar100/gsparsity/9/search/model_final.pth"
 trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY, search_model=model)

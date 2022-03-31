@@ -50,8 +50,7 @@ class ProxSGD(Optimizer):
             else: # "mul" or "div" normalization
                 dim_group = (torch.zeros(1)).cuda()
                 
-            for x in group['params']:
-                #print(len(x.size()),x.size()[0])
+            for x in group['params']:                
                 if x.grad is None:
                     continue
                 grad = x.grad.data
@@ -119,8 +118,5 @@ class ProxSGD(Optimizer):
                 else: #operations are nonprunable
                     x_hat = b
 
-                #import ipdb;ipdb.set_trace()
-                x.data.add_(lr, x_hat - x)
-                
-        #import ipdb;ipdb.set_trace()
+                x.data.add_(lr, x_hat - x)                        
         return loss

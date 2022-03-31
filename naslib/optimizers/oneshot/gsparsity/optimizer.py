@@ -60,8 +60,7 @@ class GSparseOptimizer(MetaOptimizer):
         self.loss = loss_criteria
         self.dataset = config.dataset
         self.grad_clip = config.search.grad_clip
-        self.mu = config.search.weight_decay
-        mu = self.mu
+        self.mu = config.search.weight_decay        
         self.threshold = config.search.threshold
         self.normalization = config.search.normalization
         self.normalization_exponent = config.search.normalization_exponent
@@ -155,8 +154,7 @@ class GSparseOptimizer(MetaOptimizer):
         graph.parse()
         print(graph)
 
-        # initializing the ProxSGD optmizer for the operation weights
-        #import ipdb;ipdb.set_trace()
+        # initializing the ProxSGD optmizer for the operation weights        
         self.op_optimizer = self.op_optimizer(
             graph.parameters(),
             lr=self.config.search.learning_rate,
@@ -182,7 +180,7 @@ class GSparseOptimizer(MetaOptimizer):
             error_dict
 
         Returns:
-            dict: A dict containing training statistics (TODO)
+            dict: A dict containing training statistics
         """
         input_train, target_train = data_train
         input_val, target_val = data_val
@@ -227,30 +225,22 @@ class GSparseOptimizer(MetaOptimizer):
                 for i in range(len(edge.data.op.primitives)):
                     try:
                         for j in range(len(edge.data.op.primitives[i].op)):
-                            try:
-                                #size=1
-                                #for shape in edge.data.op.primitives[i].op[j].weight.shape:
-                                #    size*=shape
+                            try:                                
                                 group_dim += torch.numel(edge.data.op.primitives[i].op[j].weight)
                                 weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight,2)**2).item()
                             except (AttributeError, TypeError) as e:
                                 try:
-                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):
-                                        #size=1
-                                        #for shape in edge.data.op.primitives[i].op[j].op[k].weight.shape:
-                                        #    size*=shape
+                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):                                
                                         group_dim += torch.numel(edge.data.op.primitives[i].op[j].op[k].weight)
                                         weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight,2)**2).item()
                                 except AttributeError:
-                                    continue 
-                        #edge.data.weights[i]+=weight/torch.pow(group_dim, normalization_exponent).item() 
+                                    continue                         
                         edge.data.weights[i]+=weight
                         edge.data.dimension[i]+=group_dim.item()                          
                         weight=0.0
                         group_dim=torch.zeros(1)
                     except AttributeError:   
-                        size=torch.tensor(torch.numel(edge.data.op.primitives[i].weight))
-                        #edge.data.weights[i]+=(edge.data.op.primitives[i].weight.item())**2/torch.pow(size,normalization_exponent)
+                        size=torch.tensor(torch.numel(edge.data.op.primitives[i].weight))                        
                         edge.data.weights[i]+=(edge.data.op.primitives[i].weight.item())**2
                         edge.data.dimension[i]+=size
         
@@ -296,18 +286,13 @@ class GSparseOptimizer(MetaOptimizer):
                 are to be retained, then the operation of the edge is set to a MixedOp
                 of these operations.
                 """
-                positions = alphas.nonzero()
-                #import ipdb;ipdb.set_trace()
-                #print("\n\n\n\n\n\npostion: ", positions)
-                #print("\n\n\n\n\n\nlen postion: ", len(positions))
-                #positions = positions[-1] if len(positions)>1 else positions
+                positions = alphas.nonzero()                
                 if len(positions)>1:
                     operations=[]
                     for pos in positions:
                         operations.append(primitives[pos])
                     edge.data.set("op", GSparseMixedOp(operations))
-                else:
-                    #import ipdb;ipdb.set_trace()
+                else:                    
                     edge.data.set("op", primitives[positions.item()])
 
         # Detailed description of the operations are provided in the functions.
@@ -367,29 +352,21 @@ class GSparseOptimizer(MetaOptimizer):
                     try:
                         for j in range(len(edge.data.op.primitives[i].op)):
                             try:
-                                #size=1
-                                #for shape in edge.data.op.primitives[i].op[j].weight.shape:
-                                #    size*=shape
                                 group_dim += torch.numel(edge.data.op.primitives[i].op[j].weight)
                                 weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight,2)**2).item()
                             except (AttributeError, TypeError) as e:
                                 try:
                                     for k in range(len(edge.data.op.primitives[i].op[j].op)):
-                                        #size=1
-                                        #for shape in edge.data.op.primitives[i].op[j].op[k].weight.shape:
-                                        #    size*=shape
                                         group_dim += torch.numel(edge.data.op.primitives[i].op[j].op[k].weight)
                                         weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight,2)**2).item()
                                 except AttributeError:
-                                    continue 
-                        #edge.data.weights[i]+=weight/torch.pow(group_dim, normalization_exponent).item() 
+                                    continue                         
                         edge.data.weights[i]+=weight
                         edge.data.dimension[i]+=group_dim.item()                          
                         weight=0.0
                         group_dim=torch.zeros(1)
                     except AttributeError:   
-                        size=torch.tensor(torch.numel(edge.data.op.primitives[i].weight))
-                        #edge.data.weights[i]+=(edge.data.op.primitives[i].weight.item())**2/torch.pow(size,normalization_exponent)
+                        size=torch.tensor(torch.numel(edge.data.op.primitives[i].weight))                        
                         edge.data.weights[i]+=(edge.data.op.primitives[i].weight.item())**2
                         edge.data.dimension[i]+=size
         
@@ -400,21 +377,15 @@ class GSparseOptimizer(MetaOptimizer):
         
         def reinitialize_l2_weights(edge):
             if edge.data.has("alpha"):                
-                for i in range(len(edge.data.weights)):
-                    #print(edge.data.weights)
+                for i in range(len(edge.data.weights)):                    
                     edge.data.weights[i]=0
                     edge.data.dimension[i]=0
 
         self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
         self.graph.update_edges(normalize_weights, scope=self.scope, private_edge_data=True)  
 
-        for alpha in self.graph.get_all_edge_data("weights"):
-            #print(alpha)
-            #import ipdb;ipdb.set_trace()
-            self.operation_weights.append(alpha)
-        
-        #import ipdb;ipdb.set_trace()        
-
+        for alpha in self.graph.get_all_edge_data("weights"):            
+            self.operation_weights.append(alpha)        
         weights_str = [
             ", ".join(["{:+.06f}".format(torch.sqrt(x)) for x in a])
             + ", {}".format(np.max(torch.sqrt(a).detach().cpu().numpy()))
@@ -479,8 +450,7 @@ class GSparseMixedOp(MixedOp):
         Output of operations like Identity(), that do not have weighted suboperations
         like Conv2d(), are multipled with the weight parameter attached to them, so 
         that these weights are optimized as well, during the training phase.
-        """
-        #summed = sum(op(x, None) for op in self.primitives)
+        """        
         summed=0
         for op in self.primitives:
             try:                

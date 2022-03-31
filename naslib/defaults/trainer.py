@@ -281,7 +281,7 @@ class Trainer(object):
                 search_model = os.path.join(
                     self.config.save, "search", "model_final.pth"
                 )
-            self._setup_checkpointers(search_model)  # required to load the architecture
+            self._setup_checkpointers(search_model, search=False)  # required to load the architecture
 
             best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
@@ -290,7 +290,8 @@ class Trainer(object):
             if metric is None:
                 metric = Metric.TEST_ACCURACY
             result = best_arch.query(
-                metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
+                metric=metric, dataset=self.config.dataset, dataset_api=dataset_api,
+                full_lc=True
             )
             logger.info("Queried results ({}): {}".format(metric, result))
         else:
