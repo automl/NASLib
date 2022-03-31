@@ -40,7 +40,7 @@ class NasBench201SearchSpace(Graph):
 
     def __init__(self):
         super().__init__()
-        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 100
+        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
         self.op_indices = None
 
         self.max_epoch = 199
