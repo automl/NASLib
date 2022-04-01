@@ -62,10 +62,6 @@ def main(args):
             folder = f"naslib/benchmarks/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
             os.makedirs(folder, exist_ok=True)
             
-<<<<<<< HEAD
-            
-            
-=======
             sample_size = int(np.random.choice(range(5, 100)))
             population_size = int(np.random.choice(range(5, 100)))
             num_init = int(np.random.choice(range(5, 100)))
@@ -74,7 +70,6 @@ def main(args):
             max_mutations = int(np.random.choice(range(1, 20)))
             num_candidates = int(np.random.choice(range(5, 50)))
 
->>>>>>> 79c7423df37813923c357f5eb7ed02834fe336ed
             for seed in range(args.start_seed, args.start_seed + args.trials):
                 # np.random.seed(seed)
                 # random.seed(seed)
