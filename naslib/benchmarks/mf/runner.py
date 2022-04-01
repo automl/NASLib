@@ -6,7 +6,7 @@ from naslib.defaults.trainer import Trainer
 from naslib.defaults.trainer_multifidelity import Trainer as Trainer_MF
 
 from naslib.optimizers import RandomSearch, Npenas, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor, SuccessiveHalving, HB
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor, SuccessiveHalving, HB, BOHB, DEHB
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
@@ -31,7 +31,9 @@ supported_optimizers = {
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
     'sh': SuccessiveHalving(config),
-    # 'hb': HyperBand(config),
+    'hb': HB(config),
+    'bohb': BOHB(config),
+    'dehb': DEHB(config),
 }
 
 supported_search_spaces = {
@@ -57,11 +59,9 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-multi_fidelity_optimizers = {'sh', 'hb'}
+multi_fidelity_optimizers = {'sh', 'hb', 'bohb', 'dehb'}
 if config.optimizer in multi_fidelity_optimizers:
     trainer = Trainer_MF(optimizer, config, lightweight_output=True)
 # trainer.search(resume_from="", summary_writer=writer, report_incumbent=False)
 trainer.search(resume_from="")
 trainer.evaluate(resume_from="", dataset_api=dataset_api)
-
-# error: FileNotFoundError: [Errno 2] No such file or directory: '/Users/lars/Projects/NASLib/naslib/data/nasbench_only108.pkl'

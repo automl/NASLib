@@ -62,8 +62,19 @@ def main(args):
             folder = f"naslib/benchmarks/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
             os.makedirs(folder, exist_ok=True)
             
+<<<<<<< HEAD
             
             
+=======
+            sample_size = int(np.random.choice(range(5, 100)))
+            population_size = int(np.random.choice(range(5, 100)))
+            num_init = int(np.random.choice(range(5, 100)))
+            k = int(np.random.choice(range(10, 50)))
+            num_arches_to_mutate = int(np.random.choice(range(1, 20)))
+            max_mutations = int(np.random.choice(range(1, 20)))
+            num_candidates = int(np.random.choice(range(5, 50)))
+
+>>>>>>> 79c7423df37813923c357f5eb7ed02834fe336ed
             for seed in range(args.start_seed, args.start_seed + args.trials):
                 # np.random.seed(seed)
                 # random.seed(seed)
@@ -79,17 +90,17 @@ def main(args):
                         "checkpoint_freq": args.checkpoint_freq,
                         "epochs": args.epochs,
                         "fidelity": args.fidelity,
-                        "sample_size": int(np.random.choice(range(5, 100))),
-                        "population_size": int(np.random.choice(range(5, 100))),
-                        "num_init": int(np.random.choice(range(5, 100))),
-                        "k":int(np.random.choice(range(10, 50))),
+                        "sample_size": sample_size,
+                        "population_size": population_size,
+                        "num_init": num_init,
+                        "k": k,
                         "num_ensemble": 3,
                         "acq_fn_type": "its",
                         "acq_fn_optimization": args.acq_fn_optimization,
                         "encoding_type": "path",
-                        "num_arches_to_mutate": int(np.random.choice(range(1, 20))),
-                        "max_mutations": int(np.random.choice(range(1, 20))),
-                        "num_candidates": int(np.random.choice(range(5, 50))),
+                        "num_arches_to_mutate": num_arches_to_mutate,
+                        "max_mutations": max_mutations,
+                        "num_candidates": num_candidates,
                         "predictor": args.predictor,
                         "debug_predictor": False,
                     },
