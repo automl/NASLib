@@ -37,7 +37,6 @@ class Ensemble(Predictor):
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
         self.config = config
-        self.config_tpe = config_tpe
         self.hyperparams = hyperparams
         self.ensemble = None
         

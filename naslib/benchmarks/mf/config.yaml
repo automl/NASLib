@@ -1,5 +1,5 @@
 start_seed: 0
-trials: 10
+trials: 1
 out_dir: run
 out_dir_config: configs
 config_type: bbo-bs
@@ -12,7 +12,7 @@ fidelity: 200
 
 HPO: True
 # only relevant if HPO is enabled
-num_config: 100
+num_config: 10
 
 # for SH: 4
 # for default BBOs: 200

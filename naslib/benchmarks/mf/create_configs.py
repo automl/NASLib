@@ -75,7 +75,6 @@ def create_configs(
     if config_type == 'bbo-bs':
         start_seed = int(start_seed)
         trials = int(trials)
-        num_config = 100 
         
         # first generate the default config at config 0
         config_id = 0
@@ -85,8 +84,8 @@ def create_configs(
         os.makedirs(folder, exist_ok=True)       
             
         for seed in range(start_seed, start_seed + trials):
-            np.random.seed(seed)
-            random.seed(seed)
+            # np.random.seed(seed)
+            # random.seed(seed)
 
             config = {
                 "seed": seed,
@@ -124,12 +123,21 @@ def create_configs(
                     "encoding_type": "path",
                     "predictor": predictor,
                     "debug_predictor": False,
-                    # config secton for successive halving,
+                    # config secton for successive halving/ hyperband,
                     "min_budget": 1,
                     "max_budget": 200,
                     "fidelity": 200,
                     "n_process": 1_000_000,
                     "budgets": 360_000, 
+                    # config section for bohb
+                    "min_bandwith": 0.001,
+                    "top_n_percent": 0.1,
+                    "min_points_in_model": 7,
+                    # config section for dehb
+                    "enc_dim": 6,
+                    "max_mutations": 1,
+                    "crossover_prob": 0.5,
+                    "mutate_prob": 0.5,
                 },
             }
             path = os.path.join(folder, f"seed_{seed}.yaml")
@@ -139,17 +147,26 @@ def create_configs(
         for config_id in range(1, num_config):
             folder = f"./configs/{search_space}/{dataset}/{optimizer}/config_{config_id}"
             os.makedirs(folder, exist_ok=True)
-            
+
+            # SH/HB
+            max_fidelity = 200 # int(np.random.choice(range(100, 200)))
+            min_budget = int(np.random.choice(range(1, 50)))
+            eta = int(np.random.choice(range(2, 5)))
+            # BOHB
+            min_bandwith = float(np.random.choice(np.arange(0.0, 0.011, 0.001)))
+            top_n_percent = float(np.random.choice(np.arange(0.05, 0.31, 0.01)))
+            # DEHB
+            max_mutations = int(np.random.choice(range(1, 5)))
+            crossover_prob = float(np.random.choice(np.arange(0.0, 1.10, 0.1)))
+            mutate_prob = float(np.random.choice(np.arange(0.0, 1.10, 0.01)))
+
             for seed in range(start_seed, start_seed + trials):
-                np.random.seed(seed)
-                random.seed(seed)
+                # np.random.seed(seed)
+                # random.seed(seed)
                 # TODO: max_fidelity should be dependent on eta and min_fidelity
-                eta = int(np.random.choice(range(2, 5)))
-                fidelity_range = [2**i for i in range(0, 9)]
+                # fidelity_range = [2**i for i in range(0, 9)]
                 # max_fidelity = int(np.random.choice(fidelity_range))
-                max_fidelity = int(np.random.choice(range(100, 200)))
                 # min fidelity has to be lower/equal to max_fidelity
-                min_fidelity = int(np.random.choice(range(1, 10)))
                 # min_fidelity = int(np.random.choice(
                 #     list(
                 #         filter(
@@ -179,8 +196,8 @@ def create_configs(
                         "predictor": predictor,
                         "debug_predictor": False,
                         # config section for successive halving,
-                        # config secton for successive halving,
-                        "min_budget": min_fidelity,
+                        # config secton for Hyperband,
+                        "min_budget": min_budget,
                         "max_budget": max_fidelity,
                         "fidelity": 200,
                         "n_process": 1_000_000,
@@ -188,7 +205,15 @@ def create_configs(
                         "eta": eta,
                         "epsilon": 1e-6,
                         # config section for BOHB
-                        "tpe_bandwidth": float(np.random.choice(np.arange(0.01, 1.0, 0.01))), # TODO: what is a good range for tpe??
+                        "min_bandwith": min_bandwith,
+                        "top_n_percent": top_n_percent,
+                        "min_points_in_model": 7,
+                        # config section for DEHB
+                        # config section for dehb
+                        "enc_dim": 6,
+                        "max_mutations": max_mutations,
+                        "crossover_prob": crossover_prob,
+                        "mutate_prob": mutate_prob,
                     },
                 }
                 print(f"folder: {folder}")

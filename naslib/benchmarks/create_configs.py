@@ -11,7 +11,8 @@ def main(args):
     if args.config_type == 'bbo-bs':
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
-        num_config = 100 
+        num_config = int(args.num_config)
+        # num_config = 100 
         
         # first generate the default config at config 0
         config_id = 0
@@ -19,8 +20,8 @@ def main(args):
         os.makedirs(folder, exist_ok=True)       
             
         for seed in range(args.start_seed, args.start_seed + args.trials):
-            np.random.seed(seed)
-            random.seed(seed)
+            # np.random.seed(seed)
+            # random.seed(seed)
 
             config = {
                 "seed": seed,
@@ -63,8 +64,8 @@ def main(args):
             
             
             for seed in range(args.start_seed, args.start_seed + args.trials):
-                np.random.seed(seed)
-                random.seed(seed)
+                # np.random.seed(seed)
+                # random.seed(seed)
 
                 config = {
                     "seed": seed,
