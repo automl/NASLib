@@ -164,6 +164,7 @@ class BOHB(MetaOptimizer):
             del self.current_round
             del self.next_round
             self.current_round_ = []
+            self.current_round = []
             self.next_round = []
             self.round_number = 0
             self.prev_round = 0
