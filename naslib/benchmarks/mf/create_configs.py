@@ -158,7 +158,7 @@ def create_configs(
             # DEHB
             max_mutations = int(np.random.choice(range(1, 5)))
             crossover_prob = float(np.random.choice(np.arange(0.0, 1.10, 0.1)))
-            mutate_prob = float(np.random.choice(np.arange(0.0, 1.10, 0.01)))
+            mutate_prob = float(np.random.choice(np.arange(0.0, 1.10, 0.1)))
 
             for seed in range(start_seed, start_seed + trials):
                 # np.random.seed(seed)
