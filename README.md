@@ -54,7 +54,7 @@ source scripts/bash_scripts/download_data.sh nb201 all
 Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101) and place in the folder `naslib/data/..`
 
 
-# Setup
+# Usage
 To test the setup on different benchmarks you can run
 
 ```bash
