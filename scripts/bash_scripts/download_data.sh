@@ -9,7 +9,7 @@ marstons merom newfields pomaria shelbyville uvalda)
 if [ "$search_space" = "tnb101" ] || [ "$search_space" = "all" ]
 then
    cd taskonomydata_mini	
-   if [ "$dataset" = "jigsaw" ] || [ "$search_space" = "all" ]
+   if [ "$dataset" = "jigsaw" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
    then
       for dataset_base in ${tnb_datasets[@]}
       do
@@ -30,7 +30,7 @@ then
         cd ..
       done
    fi
-   if [ "$dataset" = "class_scene" ] || [ "$search_space" = "all" ]
+   if [ "$dataset" = "class_scene" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
    then 
       for dataset_base in ${tnb_datasets[@]}
       do
@@ -61,7 +61,7 @@ then
        done
        done
    fi
-   if [ "$dataset" = "class_object" ] || [ "$search_space" = "all" ]
+   if [ "$dataset" = "class_object" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
    then
       for dataset_base in ${tnb_datasets[@]}
       do
@@ -112,7 +112,7 @@ then
 fi
 if [ "$search_space" = "nb201" ] || [ "$search_space" = "all" ]
 then
-  if [ "$dataset" = "cifar10" ] || [ "$search_space" = "all" ]
+  if [ "$dataset" = "cifar10" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
   then
      if [ -e nb201_cifar10_full_training.pickle ] 
      then
@@ -121,7 +121,7 @@ then
         gdown 1sh8pEhdrgZ97-VFBVL94rI36gedExVgJ
      fi
   fi
-  if [ "$dataset" = "cifar100" ] || [ "$search_space" = "all" ]
+  if [ "$dataset" = "cifar100" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
   then
      if [ -e nb201_cifar100_full_training.pickle ]
      then
@@ -130,7 +130,7 @@ then
         gdown 1hV6-mCUKInIK1iqZ0jfBkcKaFmftlBtp
      fi
   fi
-  if [ "$dataset" = "Imagenet16-120" ] || [ "$search_space" = "all" ]
+  if [ "$dataset" = "Imagenet16-120" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
   then
      if [ -e nb201_ImageNet16_full_training.pickle ]
      then
