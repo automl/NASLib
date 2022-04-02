@@ -3,6 +3,7 @@
   <img src="images/zcp_competition.png" width="1000" height="200">
 </div>
 
+
 <p align=justify>
 This is the official github repo for the [Zero-Cost NAS Competition](https://sites.google.com/view/zero-cost-nas-competition/home) organized at the [AutoML-Conf 22](https://automl.cc/). This competition shall be hosted on CodaLab. Participants will be required to implement their zero-cost proxies using a lightweight version of [NASLib](https://github.com/automl/NASLib), a library for Neural Architecture Search. NASLib provides users with a range of tabular and surrogate benchmarks, making it easy to sample a random architecture from a supported search space, instantiate it as a PyTorch model, and query its final performance instantly. Once a zero-cost proxy has been implemented, the framework allows users to evaluate its performance across several search spaces and tasks in a matter of minutes.
 </p>
