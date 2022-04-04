@@ -1,8 +1,8 @@
 cd naslib/data
 search_space="$1"
 dataset="$2"
-echo $dataset
-echo $search_space
+echo dataset = $dataset
+echo search_space = $search_space
 tnb_datasets=(wainscott tolstoy klickitat pinesdale stockman beechwood coffeen corozal \
 benevolence eagan forkland hanson hiteman ihlen lakeville lindenwood \
 marstons merom newfields pomaria shelbyville uvalda)

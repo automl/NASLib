@@ -162,8 +162,6 @@ class PredictorEvaluator(object):
                 self.dataset, method_type, np.round(results_dict["spearman"], 4)
             )
         )
-        print("full ytest", results_dict["full_ytest"])
-        print("full testpred", results_dict["full_testpred"])
 
         # print entire results dict:
         print_string = ""
@@ -182,6 +180,7 @@ class PredictorEvaluator(object):
             logger.info('Loading from json file...')
             test_data = self.load_dataset_from_file(self.test_data_file, self.test_size)
         else:
+            logger.info('Sampling from search space...')
             test_data = self.load_dataset(
                 load_labeled=self.load_labeled, data_size=self.test_size
             )
@@ -192,6 +191,7 @@ class PredictorEvaluator(object):
             logger.info('Loading from json file...')
             train_data = self.load_dataset_from_file(self.train_data_file, self.train_size)
         else:
+            logger.info('Sampling from search space...')
             train_data = self.load_dataset(
                 load_labeled=self.load_labeled,
                 data_size=self.train_size
