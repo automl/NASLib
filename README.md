@@ -62,5 +62,10 @@ source scripts/bash_scripts/run_nb201.sh
 source scripts/bash_scripts/run_nb301.sh
 source scripts/bash_scripts/run_tnb101.sh
 ```
+To test a predictor on all search spaces and datasets you can run
 
+```bash
+python naslib/runners/runner_all.py --predictor <predictor>
+python naslib/runners/runner_all.py --predictor synflow
+```
 
