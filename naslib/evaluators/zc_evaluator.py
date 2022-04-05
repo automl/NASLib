@@ -80,7 +80,7 @@ class ZeroCostPredictorEvaluator(object):
         """
         There are two ways to load an architecture.
         load_labeled=False: sample a random architecture from the search space.
-        This works on NAS benchmarks where we can query any architecture (nasbench101/201/301)
+        This works on NAS benchmarks where we can query any architecture (nasbench201/301)
         load_labeled=True: sample a random architecture from a set of evaluated architectures.
         When we only have data on a subset of the search space (e.g., the set of 5k DARTS
         architectures that have the full training info).

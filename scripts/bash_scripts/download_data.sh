@@ -84,15 +84,6 @@ then
    fi
    cd ..
 fi
-if [ "$search_space" = "nb101" ] || [ "$search_space" = "all" ]
-then
-   if [ -e nasbench_only108.pkl ]
-   then
-     echo "nb101 exists"
-   else
-     gdown 1oORtEmzyfG1GcnPHh0ijCs0gCHKEThNx
-   fi
-fi
 if [ "$search_space" = "nb301" ] || [ "$search_space" = "all" ]
 then
   if [ -e nb_models ]

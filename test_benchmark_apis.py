@@ -4,7 +4,6 @@ import argparse
 import contextlib
 
 from naslib.search_spaces import (
-        NasBench101SearchSpace,
         NasBench201SearchSpace,
         NasBench301SearchSpace,
         TransBench101SearchSpaceMacro,
@@ -14,7 +13,6 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils import get_dataset_api
 
 search_spaces = {
-    'nasbench101': NasBench101SearchSpace,
     'nasbench201': NasBench201SearchSpace,
     'nasbench301': NasBench301SearchSpace,
     'transbench101_micro': TransBench101SearchSpaceMicro,
@@ -22,7 +20,6 @@ search_spaces = {
 }
 
 tasks = {
-    'nasbench101': ['cifar10'],
     'nasbench201': ['cifar10', 'cifar100', 'ImageNet16-120'],
     'nasbench301': ['cifar10'],
     'nlp': ['treebank'],

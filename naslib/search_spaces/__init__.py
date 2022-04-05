@@ -1,4 +1,3 @@
-from .nasbench101.graph import NasBench101SearchSpace
 from .nasbench201.graph import NasBench201SearchSpace
 from .nasbench301.graph import NasBench301SearchSpace
 from .transbench101.graph import TransBench101SearchSpaceMicro
@@ -8,7 +7,6 @@ from .transbench101.api import TransNASBenchAPI
 
 
 supported_search_spaces = {
-    "nasbench101": NasBench101SearchSpace,
     "nasbench201": NasBench201SearchSpace,
     "nasbench301": NasBench301SearchSpace,
     'transbench101_micro': TransBench101SearchSpaceMicro,
