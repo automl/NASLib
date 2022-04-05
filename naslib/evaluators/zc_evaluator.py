@@ -145,8 +145,8 @@ class ZeroCostPredictorEvaluator(object):
 
         method_type = self.predictor.method_type
         print(
-            "dataset: {}, predictor: {}, spearman {}".format(
-                self.dataset, method_type, np.round(results_dict["spearman"], 4)
+            "dataset: {}, predictor: {}, kendalltau {}".format(
+                self.dataset, method_type, np.round(results_dict["kendalltau"], 4)
             )
         )
 
