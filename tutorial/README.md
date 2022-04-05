@@ -396,11 +396,11 @@ stats.kendalltau(scores, actual_scores)
 
 
 
-To make the evaluation of predictors more convenient, `PredictorEvaluator` class is provided to you.
+To make the evaluation of predictors more convenient, `ZeroCostPredictorEvaluator` class is provided to you.
 
 
 ```python
-from naslib.evaluators.zc_evaluator import PredictorEvaluator
+from naslib.evaluators.zc_evaluator import ZeroCostPredictorEvaluator
 from naslib.utils import setup_logger
 import logging
 
@@ -411,8 +411,8 @@ logger.setLevel(logging.INFO)
 # Change the default test_size in configs
 config.test_size = 14
 
-# Initialize the PredictorEvaluator class
-predictor_evaluator = PredictorEvaluator(predictor, config=config)
+# Initialize the ZeroCostPredictorEvaluator class
+predictor_evaluator = ZeroCostPredictorEvaluator(predictor, config=config)
 predictor_evaluator.adapt_search_space(search_space, dataset_api=dataset_api)
 
 # Evaluate the predictor

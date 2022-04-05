@@ -1,7 +1,7 @@
 """ Evaluates a ZeroCost predictor for a search space and dataset/task"""
 import logging
 
-from naslib.evaluators.zc_evaluator import PredictorEvaluator
+from naslib.evaluators.zc_evaluator import ZeroCostPredictorEvaluator
 from naslib.predictors import ZeroCost
 from naslib.search_spaces import get_search_space
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -40,8 +40,8 @@ for ss in search_spaces:
         predictor = ZeroCost(config, batch_size=config.batch_size, method_type=config.predictor)
         search_space = get_search_space(name=ss, dataset=ds)
   
-        # Initialize the PredictorEvaluator class
-        predictor_evaluator = PredictorEvaluator(predictor, config=config)
+        # Initialize the ZeroCostPredictorEvaluator class
+        predictor_evaluator = ZeroCostPredictorEvaluator(predictor, config=config)
         predictor_evaluator.adapt_search_space(search_space, dataset_api=dataset_api)
         # Evaluate the predictor
         predictor_evaluator.evaluate()

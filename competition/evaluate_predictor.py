@@ -1,6 +1,6 @@
 import logging
 
-from naslib.evaluators.zc_evaluator import PredictorEvaluator
+from naslib.evaluators.zc_evaluator import ZeroCostPredictorEvaluator
 from naslib.search_spaces import get_search_space
 from naslib.utils import utils, setup_logger
 from predictor import ZeroCostPredictor
@@ -16,8 +16,8 @@ utils.log_args(config)
 predictor = ZeroCostPredictor()
 search_space = get_search_space(name=config.search_space, dataset=config.dataset)
 
-# initialize the PredictorEvaluator class
-predictor_evaluator = PredictorEvaluator(predictor, config=config)
+# initialize the ZeroCostPredictorEvaluator class
+predictor_evaluator = ZeroCostPredictorEvaluator(predictor, config=config)
 predictor_evaluator.adapt_search_space(search_space, load_labeled=False)
 
 # evaluate the predictor

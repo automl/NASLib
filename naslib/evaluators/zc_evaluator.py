@@ -14,7 +14,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 logger = logging.getLogger(__name__)
 
 
-class PredictorEvaluator(object):
+class ZeroCostPredictorEvaluator(object):
     """
     Evaluates a predictor.
     """

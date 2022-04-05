@@ -4,7 +4,7 @@ import pickle
 from naslib.utils.utils import get_project_root
 
 """
-This file loads any dataset files or api's needed by the Trainer or PredictorEvaluator object.
+This file loads any dataset files or api's needed by the Trainer or ZeroCostPredictorEvaluator object.
 They must be loaded outside of the search space object, because search spaces are copied many times
 throughout the discrete NAS algos, which would lead to memory errors.
 """
