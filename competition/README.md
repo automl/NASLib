@@ -11,4 +11,4 @@ Your submission *must* contain an empty `metadata` file, as seen in `sample_subm
 
 To evaluate the `ZeroCostPredictor` in `predictor.py` for NASBench201 search space for the task of classifying CIFAR10, for example, run the following command:
 
-```python evaluate_predictor.py --datapath data/nasbench201/cifar10```
+```python evaluate_predictor.py```
