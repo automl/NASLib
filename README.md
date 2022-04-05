@@ -31,7 +31,7 @@ While installing the repository, creating a new conda environment is recomended.
 ```bash
 git clone -b automl-conf-competition https://github.com/automl/NASLib/
 cd NASLib
-conda create -n automl-competition  python=3.7
+conda create -n automl-competition  python=3.9
 conda activate automl-competition
 ```
 
