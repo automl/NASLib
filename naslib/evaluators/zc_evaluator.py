@@ -16,22 +16,18 @@ logger = logging.getLogger(__name__)
 
 class PredictorEvaluator(object):
     """
-    This class will evaluate a chosen predictor based on
-    correlation and rank correlation metrics, for the given
-    initialization times and query times.
+    Evaluates a predictor.
     """
 
     def __init__(self, predictor, config=None, log_results=True):
         self.predictor = predictor
         self.config = config
         self.test_size = config.test_size
-        self.train_size = config.train_size
         self.dataset = config.dataset
         self.metric = Metric.VAL_ACCURACY
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.results = [config]
 
-        self.train_data_file = config.train_data_file
         self.test_data_file = config.test_data_file
         self.log_results_to_json = log_results
 
@@ -113,24 +109,18 @@ class PredictorEvaluator(object):
 
         return [xdata, ydata, info, train_times]
 
-    def single_evaluate(self, train_data, test_data):
+    def single_evaluate(self, test_data):
         """
         Evaluate the predictor.
         """
-        xtrain, ytrain, train_info, train_times = train_data
         xtest, ytest, test_info, _ = test_data
-        train_size = len(xtrain)
-
-        data_reqs = self.predictor.get_data_reqs()
-
-        logger.info("Fitting the predictor...")
-        fit_time_start = time.time()
-        self.predictor.fit(xtrain, ytrain, train_info)
-        fit_time_end = time.time()
-
         test_pred = []
 
-        logger.info("Querying the predictor...")
+        logger.info("Querying the predictor")
+        query_time_start = time.time()
+
+        # Iterate over the architectures, instantiate a graph with each architecture
+        # and then query the predictor for the performance of that
         for arch in tqdm(xtest):
             graph = self.search_space.clone()
             graph.set_spec(arch)
@@ -143,7 +133,6 @@ class PredictorEvaluator(object):
             test_pred.append(pred)
 
         test_pred = np.array(test_pred)
-
         query_time_end = time.time()
 
         # If the predictor is an ensemble, take the mean
@@ -152,9 +141,7 @@ class PredictorEvaluator(object):
 
         logger.info("Compute evaluation metrics")
         results_dict = self.compare(ytest, test_pred)
-        results_dict["train_time"] = -1 if train_times is None else np.sum(train_times)
-        results_dict["fit_time"] = fit_time_end - fit_time_start
-        results_dict["query_time"] = (query_time_end - fit_time_end) / len(xtest)
+        results_dict["query_time"] = (query_time_end - query_time_start) / len(xtest)
 
         method_type = self.predictor.method_type
         print(
@@ -173,11 +160,9 @@ class PredictorEvaluator(object):
         self.results.append(results_dict)
 
 
-    def load_train_test_data(self):
-        logger.info("Loading the test set...")
-
+    def load_test_data(self):
         if self.test_data_file is not None:
-            logger.info('Loading from json file...')
+            logger.info('Loading the test set from file')
             test_data = self.load_dataset_from_file(self.test_data_file, self.test_size)
         else:
             logger.info('Sampling from search space...')
@@ -185,24 +170,12 @@ class PredictorEvaluator(object):
                 load_labeled=self.load_labeled, data_size=self.test_size
             )
 
-        logger.info("Loading the training set")
-
-        if self.train_data_file is not None:
-            logger.info('Loading from json file...')
-            train_data = self.load_dataset_from_file(self.train_data_file, self.train_size)
-        else:
-            logger.info('Sampling from search space...')
-            train_data = self.load_dataset(
-                load_labeled=self.load_labeled,
-                data_size=self.train_size
-            )
-
-        return train_data, test_data
+        return test_data
 
     def evaluate(self):
         self.predictor.pre_process()
-        train_data, test_data = self.load_train_test_data()
-        self.single_evaluate(train_data, test_data)
+        test_data = self.load_test_data()
+        self.single_evaluate(test_data)
 
         if self.log_results_to_json:
             self._log_to_json()
