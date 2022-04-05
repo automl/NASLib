@@ -65,7 +65,7 @@ source scripts/bash_scripts/run_tnb101.sh
 To evaluate a predictor using the kendalltau coeffficient on all search spaces and datasets combinations run
 
 ```bash
-python naslib/runners/runner_all.py --predictor <predictor>
-python naslib/runners/runner_all.py --predictor synflow
+python naslib/evaluators/test_predictor.py --predictor <predictor>
+python naslib/evaluators/test_predictor.py --predictor synflow
 ```
 
