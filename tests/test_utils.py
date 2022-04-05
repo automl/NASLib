@@ -5,32 +5,23 @@ from naslib.utils import utils
 from fvcore.common.config import CfgNode
 class UtilsTest(unittest.TestCase):
 
-    def test_get_config_from_args_config_file(self):
-        args = utils.parse_args(args=['--config-file', 'assets/config.yaml', '--resume'])
+    def test_get_config_from_args__from_config_file(self):
+        args = utils.parse_args(args=['--config-file', 'assets/config.yaml'])
         config = utils.get_config_from_args(args)
-
-        self.assertTrue(args.resume)
-        self.assertFalse(args.eval_only)
 
         self.assertEqual(config.seed, 12)
         self.assertEqual(config.search.batch_size, 300)
         self.assertEqual(config.evaluation.batch_size, 200)
 
-    def test_get_config_from_args_config_args(self):
-        args = utils.parse_args(args=['seed', '1', 'search.epochs', '42',
-                                      'out_dir', 'tmp/util_test'])
+    def test_get_config_from_args__from_args(self):
+        args = utils.parse_args(args=['seed', '1', 'out_dir', 'tmp/util_test'])
         config = utils.get_config_from_args(args)
 
         self.assertEqual(config.seed, 1)
-        self.assertEqual(config.search.epochs, 42)
+        self.assertEqual(config.out_dir, 'tmp/util_test')
 
-    ####### Tests for get_config_from_args with default args #######
-    def test_get_config_from_args_default_nas(self):
-        self._test_get_config_from_args_default(config_type="nas")
-
-    ####### Tests for get_config_from_args with custom args #######
-    def test_get_config_from_args_nas(self):
-        self._test_get_config_from_args(config_type="nas")
+    def test_get_config_from_args__default(self):
+        self._test_get_config_from_args_default(config_type="predictor")
 
 
     ####### Helper methods #######
@@ -39,27 +30,7 @@ class UtilsTest(unittest.TestCase):
         with open(file=config_filepath) as f:
             config_parent = CfgNode.load_cfg(f)
 
-        config_child = utils.get_config_from_args(config_type=config_type)
-        self.assertTrue(self._verify_child_config_consistent(config_parent, config_child))
-
-    def _test_get_config_from_args(self, config_type):
-
-        args = ['seed', '9001', 'dataset', 'new_dataset']
-        args = utils.parse_args(args=args)
-
-        config_file = self._get_config_path(config_type)
-
-        with open(file=config_file) as f:
-            config_parent = CfgNode.load_cfg(f)
-
-        config_child = utils.get_config_from_args(args=args, config_type=config_type)
-
-        self.assertEqual(config_child.seed, 9001)
-        self.assertEqual(config_child.dataset, 'new_dataset')
-
-        config_child.seed = config_parent.seed
-        config_child.dataset = config_parent.dataset
-
+        config_child = utils.get_config_from_args()
         self.assertTrue(self._verify_child_config_consistent(config_parent, config_child))
 
 
@@ -83,7 +54,8 @@ class UtilsTest(unittest.TestCase):
 
     def _get_config_path(self, config_type):
         config_paths = {
-            "nas": "defaults/darts_defaults.yaml",
+            "nas": "configs/darts_defaults.yaml",
+            "predictor": "configs/predictor_config.yaml"
         }
 
         config_path_full = os.path.join(

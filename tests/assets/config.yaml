@@ -3,6 +3,7 @@ out_dir: "tmp/test/hallo"
 search_space: darts
 optimizer: darts
 dataset: cifar10
+predictor: synflow
 
 search:
   batch_size: 300
