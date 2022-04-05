@@ -156,7 +156,7 @@ class NasBench201SearchSpace(Graph):
                 "ImageNet16-120",
             ], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
-            raise NotImplementedError("Must pass in dataset_api to query nasbench201")
+            raise NotImplementedError("Must pass in dataset_api to query NAS-Bench-201")
 
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: "train_acc1es",

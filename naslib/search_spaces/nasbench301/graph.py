@@ -369,6 +369,9 @@ class NasBench301SearchSpace(Graph):
         """
         Query results from nasbench 301
         """
+        if dataset_api is None:
+            raise NotImplementedError('Must pass in dataset_api to query NAS-Bench-301')
+
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: "train_losses",
             Metric.VAL_ACCURACY: "val_accuracies",

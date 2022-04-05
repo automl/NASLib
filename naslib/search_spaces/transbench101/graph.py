@@ -202,7 +202,7 @@ class TransBench101SearchSpaceMicro(Graph):
         if metric == Metric.ALL:
             raise NotImplementedError()
         if dataset_api is None:
-            raise NotImplementedError('Must pass in dataset_api to query transbench101')
+            raise NotImplementedError('Must pass in dataset_api to query TransNAS-Bench101')
         
         arch_str = convert_naslib_to_transbench101_micro(self) 
           

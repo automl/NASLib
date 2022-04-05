@@ -2,6 +2,7 @@ import os
 import pickle
 
 from naslib.utils.utils import get_project_root
+from naslib.utils.load_ops import TASK_NAMES
 
 """
 This file loads any dataset files or api's needed by the Trainer or ZeroCostPredictorEvaluator object.
@@ -9,7 +10,13 @@ They must be loaded outside of the search space object, because search spaces ar
 throughout the discrete NAS algos, which would lead to memory errors.
 """
 
-def get_transbench101_api(dataset=None):
+def get_transbench101_api(dataset):
+    """
+    Load the TransNAS-Bench-101 data
+    """
+    if dataset not in TASK_NAMES:
+        return None
+
     datafile_path = os.path.join(get_project_root(), "data", "transnas-bench_v10141024.pth")
     assert os.path.exists(datafile_path), f"Could not fine {datafile_path}. Please download transnas-bench_v10141024.pth\
  from https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101"
@@ -19,7 +26,7 @@ def get_transbench101_api(dataset=None):
     return {'api': api, 'task': dataset}
 
 
-def get_nasbench201_api(dataset=None):
+def get_nasbench201_api(dataset):
     """
     Load the NAS-Bench-201 data
     """
@@ -28,6 +35,9 @@ def get_nasbench201_api(dataset=None):
         'cifar100': 'nb201_cifar100_full_training.pickle',
         'ImageNet16-120': 'nb201_ImageNet16_full_training.pickle'
     }
+
+    if dataset not in datafiles.keys():
+        return None
 
     datafile_path = os.path.join(get_project_root(), 'data', datafiles[dataset])
     assert os.path.exists(datafile_path), f'Could not find {datafile_path}. Please download {datafiles[dataset]} from \
@@ -39,7 +49,9 @@ https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
     return {"nb201_data": data}
 
 
-def get_nasbench301_api(dataset=None):
+def get_nasbench301_api(dataset):
+    if dataset != 'cifar10':
+        return None
     # Load the nb301 performance and runtime models
     try:
         import nasbench301
