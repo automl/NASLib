@@ -3,9 +3,7 @@ search_space="$1"
 dataset="$2"
 echo dataset = $dataset
 echo search_space = $search_space
-tnb_datasets=(wainscott tolstoy klickitat pinesdale stockman beechwood coffeen corozal \
-benevolence eagan forkland hanson hiteman ihlen lakeville lindenwood \
-marstons merom newfields pomaria shelbyville uvalda)
+tnb_datasets=(benevolence forkland merom)
 if [ "$search_space" = "tnb101" ] || [ "$search_space" = "all" ]
 then
    cd taskonomydata_mini	
