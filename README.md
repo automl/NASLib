@@ -42,7 +42,7 @@ Run setup.py file with the following command, which will install all the package
 pip install --upgrade pip setuptools wheel
 pip install -e .
 ```
-Download all the datasets and benchmarks
+Download all the datasets and benchmarks ( for mac users, please make sure you have wget installed)
 ```bash
 source scripts/bash_scripts/download_data.sh all 
 ```
