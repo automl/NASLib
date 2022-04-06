@@ -14,7 +14,6 @@ then
         file=$dataset_base\_rgb.tar
         filepath=http://downloads.cs.stanford.edu/downloads/taskonomy_data/rgb/$file
         echo $filepath
-	mkdir $dataset_base
 	cd $dataset_base
         if [ -d "rgb" ]
         then
@@ -35,7 +34,6 @@ then
        file=$dataset_base\_class_scene.tar
        filepath=http://downloads.cs.stanford.edu/downloads/taskonomy_data/class_scene/$file
        echo $filepath
-       mkdir $dataset_base
        cd $dataset_base
        if [ -d "class_scene" ]
        then
@@ -66,7 +64,6 @@ then
        file=$dataset_base\_class_object.tar
        filepath=http://downloads.cs.stanford.edu/downloads/taskonomy_data/class_object/$file
        echo $filepath
-       mkdir $dataset_base
        cd $dataset_base
        if [ -d "class_object" ]
        then
