@@ -1,7 +1,7 @@
 
 <h1> Dataset Preparation</h1>
 
-###We recommend downloading the datasets and benchmarks as follows
+### We recommend downloading the datasets and benchmarks as follows
 Download all the datasets and benchmarks
 ```bash
 source scripts/bash_scripts/download_data.sh all 
