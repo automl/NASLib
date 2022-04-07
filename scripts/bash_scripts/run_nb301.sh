@@ -29,12 +29,12 @@ do
 done
 
 # run experiments
-#for t in $(seq $start_seed $end_seed)
-#do
-    #for predictor in ${predictors[@]}
-    #do
-        #config_file=$out_dir/$dataset/configs/predictors/config\_$predictor\_$t.yaml
-        #echo ================running $predictor trial: $t =====================
-        #python naslib/runners/runner.py --config-file $config_file
-    #done
-#done
+for t in $(seq $start_seed $end_seed)
+do
+    for predictor in ${predictors[@]}
+    do
+        config_file=$out_dir/$dataset/configs/predictors/config\_$predictor\_$t.yaml
+        echo ================running $predictor trial: $t =====================
+        python naslib/runners/runner.py --config-file $config_file
+    done
+done
