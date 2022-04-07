@@ -1,5 +1,5 @@
 predictors=(fisher grad_norm grasp jacov snip synflow params flops)
-experiment_types=(single single single single single single)
+
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -27,7 +27,6 @@ do
  for i in $(seq 0 $((${#predictors[@]}-1)) )
  do
     predictor=${predictors[$i]}
-    experiment_type=${experiment_types[$i]}
     python $base_file/create_configs.py --predictor $predictor --test_size $test_size \
 	    --start_seed $start_seed --trials $trials --out_dir $out_dir --dataset=$dataset \
 	    --search_space $search_space
