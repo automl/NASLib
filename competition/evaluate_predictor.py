@@ -22,7 +22,7 @@ data_files = get_full_paths_of_files_with_name('.', 'test.json')
 for datafile in data_files:
     config.test_data_file = datafile
     components = config.test_data_file.split(os.sep)
-    search_space, dataset = components[2], components[3]
+    search_space, dataset = components[-3], components[-2]
 
     logger.info(f'Evaluating predictor for {search_space} search space for {dataset} task')
     # initialize the search space and predictor

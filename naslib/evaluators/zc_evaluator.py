@@ -121,7 +121,7 @@ class ZeroCostPredictorEvaluator(object):
 
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
-        for arch in tqdm(xtest):
+        for arch in xtest:
             graph = self.search_space.clone()
             graph.set_spec(arch)
 
