@@ -31,5 +31,5 @@ def evaluate_predictor_across_search_spaces(config):
             kendalltau_avg+=kt
             count=count+1
         for x in kendalltau_dict.keys():
-            print("{:15s}||{:15s}||{}".format(x[0],x[1],kendalltau_dict[x]))
+            print("{:25s}||{:25s}||{}".format(x[0],x[1],kendalltau_dict[x]))
         print("KendallTau across all",kendalltau_avg/count)
