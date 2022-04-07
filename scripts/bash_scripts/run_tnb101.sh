@@ -17,9 +17,9 @@ search_space=transbench101_micro
 datasets=(jigsaw class_object class_scene)
 
 # other variables:
-trials=100
+trials=1
 end_seed=$(($start_seed + $trials - 1))
-test_size=100
+test_size=5
 
 # create config files
 for dataset in ${datasets[@]}
