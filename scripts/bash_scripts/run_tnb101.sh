@@ -1,4 +1,4 @@
-predictors=(jacov2 snip synflow fisher grad_norm grasp)
+predictors=(fisher grad_norm grasp jacov snip synflow params flops)
 experiment_types=(single single single single single single)
 
 start_seed=$1
