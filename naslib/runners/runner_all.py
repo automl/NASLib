@@ -1,5 +1,6 @@
 """ Evaluates a ZeroCost predictor for a search space and dataset/task"""
 import logging
+import os
 
 from naslib.evaluators.zc_evaluator import ZeroCostPredictorEvaluator
 from naslib.predictors import ZeroCost
@@ -22,8 +23,10 @@ config = parser.parse_args()
 kendalltau_all=0
 count=0
 config=CfgNode(vars(config))
+config.data = os.path.join(utils.get_project_root(), 'data')
+
 # Set the search spaces and datasets to avergage over
-search_spaces=["nasbench201","nasbench301","transbench101_micro"]
+search_spaces=["nasbench201", "nasbench301", "transbench101_micro"]
 datasets={"nasbench201":["cifar10","cifar100","ImageNet16-120"],"nasbench301":["cifar10"],"transbench101_micro":["jigsaw", "class_object","class_scene"]}
 for ss in search_spaces:
     for ds in datasets[ss]:
@@ -37,7 +40,7 @@ for ss in search_spaces:
         logger.setLevel(logging.INFO)
         # Initialize the search space and predictor
         # Method type can be "fisher", "grasp", "grad_norm", "jacov", "snip", "synflow", "flops" or "params"
-        predictor = ZeroCost(config, batch_size=config.batch_size, method_type=config.predictor)
+        predictor = ZeroCost(method_type=config.predictor)
         search_space = get_search_space(name=ss, dataset=ds)
   
         # Initialize the ZeroCostPredictorEvaluator class

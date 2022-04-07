@@ -9,7 +9,7 @@ from fvcore.common.config import CfgNode
 def evaluate_predictor_across_search_spaces(config):
         kendalltau_avg=0
         count=0
-        search_spaces=["nasbench201","nasbench301","transbench101_micro"]
+        search_spaces=["nasbench201", "nasbench301", "transbench101_micro"]
         datasets={"nasbench201":["cifar10","cifar100","ImageNet16-120"],"nasbench301":["cifar10"],"transbench101_micro":["jigsaw", "class_object","class_scene"]}
         kendalltau_dict={}
         for ss in search_spaces:
@@ -20,7 +20,7 @@ def evaluate_predictor_across_search_spaces(config):
             config.train_data_file = None
             config.test_data_file = None
             config.save = "{}/{}/{}/{}/{}".format(config.out_dir,config.dataset,"predictors",config.predictor,config.seed,)
-            predictor = ZeroCost(config, batch_size=config.batch_size, method_type=config.predictor)
+            predictor = ZeroCost(method_type=config.predictor)
             search_space = get_search_space(name=ss, dataset=ds)
             predictor_evaluator = ZeroCostPredictorEvaluator(predictor, config=config)
             predictor_evaluator.adapt_search_space(search_space, dataset_api=dataset_api)

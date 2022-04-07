@@ -10,6 +10,7 @@ from sklearn import metrics
 from tqdm import tqdm
 
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.utils import utils
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +120,8 @@ class ZeroCostPredictorEvaluator(object):
         logger.info("Querying the predictor")
         query_time_start = time.time()
 
+        _, _, test_loader, _, _ = utils.get_train_val_loaders(self.config, mode='test')
+
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
         for arch in xtest:
@@ -129,7 +132,7 @@ class ZeroCostPredictorEvaluator(object):
             graph.prepare_evaluation()
             graph.parse()
 
-            pred = self.predictor.query(graph, test_info)
+            pred = self.predictor.query(graph, dataloader=test_loader)
             test_pred.append(pred)
 
         test_pred = np.array(test_pred)

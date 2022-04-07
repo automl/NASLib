@@ -20,7 +20,7 @@ dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 # Initialize the search space and predictor
 # Method type can be "fisher", "grasp", "grad_norm", "jacov", "snip", "synflow", "flops" or "params"
-predictor = ZeroCost(config, batch_size=config.batch_size, method_type=config.predictor)
+predictor = ZeroCost(method_type=config.predictor)
 search_space = get_search_space(name=config.search_space, dataset=config.dataset)
 
 # Initialize the ZeroCostPredictorEvaluator class

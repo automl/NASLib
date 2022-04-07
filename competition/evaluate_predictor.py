@@ -5,7 +5,7 @@ from glob import glob as ls
 from naslib.evaluators.zc_evaluator import ZeroCostPredictorEvaluator
 from naslib.search_spaces import get_search_space
 from naslib.utils import utils, setup_logger
-from predictor import ZeroCostPredictor
+from submission import ZeroCostPredictor
 
 def get_full_paths_of_files_with_name(root_folder, filename):
     ''' Get the absolute paths of all files with the given filename '''

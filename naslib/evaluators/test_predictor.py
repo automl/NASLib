@@ -1,5 +1,6 @@
 """ Evaluates a ZeroCost predictor across all search spaces and datasets/tasks"""
 import argparse
+import os
 from naslib.utils import utils, setup_logger, get_dataset_api, utils_predictor
 from fvcore.common.config import CfgNode
 
@@ -16,5 +17,7 @@ parser.add_argument('--cutout_prob', default=1.0, type=float, help='cutout')
 parser.add_argument('--train_portion', default=0.7, type=float, help='train_portion')
 config = parser.parse_args()
 config=CfgNode(vars(config))
+config.data = os.path.join(utils.get_project_root(), 'data')
+
 # Test predictor over all search spaces and datasets
 utils_predictor.evaluate_predictor_across_search_spaces(config)
