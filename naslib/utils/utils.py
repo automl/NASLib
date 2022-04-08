@@ -170,7 +170,7 @@ def get_config_from_args(args=None):
     return config
 
 
-def get_train_val_loaders(config, mode):
+def get_train_val_loaders(config):
     """
     Constructs the dataloaders and transforms for training, validation and test data.
     """
