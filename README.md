@@ -54,5 +54,21 @@ source scripts/bash_scripts/download_data.sh nb201 all
 Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101) and place in the folder `naslib/data/..`
 
 If you face issues downloading the datasets please follow the steps [here](dataset_preparation/).
+
 # Tutorial
 This [tutorial](tutorial/) will help participants get acquainted with NASLib and a sample submission.
+
+# Usage
+To test the setup on different benchmarks you can run
+
+```bash
+source scripts/bash_scripts/run_nb201.sh
+source scripts/bash_scripts/run_nb301.sh
+source scripts/bash_scripts/run_tnb101.sh
+```
+To evaluate a predictor using the kendalltau coeffficient on all search spaces and datasets combinations run
+
+```bash
+python naslib/evaluators/test_predictor.py --predictor <predictor>
+python naslib/evaluators/test_predictor.py --predictor synflow
+```
