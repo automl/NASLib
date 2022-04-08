@@ -36,17 +36,16 @@ conda create -n automl-competition  python=3.9
 conda activate automl-competition
 ```
 
-
-Run setup.py file with the following command, which will install all the packages listed in [`requirements.txt`](requirements.txt)
+Run setup.py file with the following command, which will install all the packages listed in [`requirements.txt`](requirements.txt).
 ```bash
 pip install --upgrade pip setuptools wheel
 pip install -e .
 ```
-Download all the datasets and benchmarks ( for mac users, please make sure you have wget installed)
+Download all the datasets and benchmarks ( for mac users, please make sure you have wget installed).
 ```bash
 source scripts/bash_scripts/download_data.sh all 
 ```
-Alternatively, you can download the benchmark for a specific search space and dataset/task as follows
+Alternatively, you can download the benchmark for a specific search space and dataset/task as follows:
 ```bash
 source scripts/bash_scripts/download_data.sh <search_space> <dataset> 
 source scripts/bash_scripts/download_data.sh nb201 cifar10
@@ -54,22 +53,6 @@ source scripts/bash_scripts/download_data.sh nb201 all
 ```
 Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101) and place in the folder `naslib/data/..`
 
-If you face issues downloading the datasets please follow the steps [here](dataset_preparation/)
-# Docs
-We have put together a tutorial for the participants to get aquainted to NASLib [here](tutorial/)
-
-# Usage
-To test the setup on different benchmarks you can run
-
-```bash
-source scripts/bash_scripts/run_nb201.sh
-source scripts/bash_scripts/run_nb301.sh
-source scripts/bash_scripts/run_tnb101.sh
-```
-To evaluate a predictor using the kendalltau coeffficient on all search spaces and datasets combinations run
-
-```bash
-python naslib/evaluators/test_predictor.py --predictor <predictor>
-python naslib/evaluators/test_predictor.py --predictor synflow
-```
-
+If you face issues downloading the datasets please follow the steps [here](dataset_preparation/).
+# Tutorial
+This [tutorial](tutorial/) will help participants get acquainted with NASLib and a sample submission.
