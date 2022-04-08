@@ -37,7 +37,6 @@ class ZeroCostPredictor(Predictor):
 
         # data, labels = next(iter(dataloader))
         # logits = graph(data)
-        # print(logits.shape)
 
         # In this example, however, we simply count the number of parameters in the model
         # This zero-cost predictor thus gives higher score to larger models.

@@ -1,5 +1,7 @@
 from naslib.search_spaces.core.graph import Graph
 from naslib.predictors.predictor import Predictor
+from torch.utils.data import DataLoader
+
 from compute import count_parameters
 
 class ZeroCostPredictor(Predictor):
@@ -16,7 +18,7 @@ class ZeroCostPredictor(Predictor):
         """ This method is called exactly once before query is called repeatedly with the models to score """
         pass
 
-    def query(self, graph: Graph, dataloader=None) -> float:
+    def query(self, graph: Graph, dataloader:DataLoader=None) -> float:
         """ Predict the score of the given model
 
         Args:
@@ -29,7 +31,9 @@ class ZeroCostPredictor(Predictor):
             Score of the model. Higher the score, higher the model is ranked.
         """
 
-        # You can consume the dataloader and pass the data through the model here
+        # You can consume the dataloader and pass the data through the model here.
+        # Uncomment the following lines to try this
+
         # data, labels = next(iter(dataloader))
         # logits = graph(data)
 
