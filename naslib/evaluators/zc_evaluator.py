@@ -147,7 +147,7 @@ class ZeroCostPredictorEvaluator(object):
         results_dict["query_time"] = (query_time_end - query_time_start) / len(xtest)
 
         method_type = self.predictor.method_type
-        print(
+        logger.info(
             "dataset: {}, predictor: {}, kendalltau {}".format(
                 self.dataset, method_type, np.round(results_dict["kendalltau"], 4)
             )

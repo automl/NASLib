@@ -1,6 +1,7 @@
 import os
 
 from .zc_evaluator import ZeroCostPredictorEvaluator
+from naslib.predictors import Predictor
 from naslib.search_spaces import get_search_space
 from naslib.utils import get_dataset_api, get_config_from_args
 
@@ -16,7 +17,17 @@ DATASETS = {
         "class_scene"]
 	}
 
-def full_evaluate_predictor(predictor, test_size=100, search_spaces=("nasbench201", "nasbench301", "transbench101_micro")):
+def full_evaluate_predictor(predictor:Predictor, test_size:int=100, search_spaces=("nasbench201", "nasbench301", "transbench101_micro")) -> None:
+    """ Evaluate a predictor for all the supported tasks of a given search space
+
+    Args:
+        predictor       : Zero cost predictor to evaluate
+        test_size       : Number of models to sample and rank using the predictor per search-space/task combination
+        search_spaces   : Search space to search
+
+    Return:
+        None
+    """
     # Load the default configs
     config = get_config_from_args(args=None)
 
