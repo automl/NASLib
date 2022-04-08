@@ -46,7 +46,7 @@ Download all the datasets and benchmarks ( for mac users, please make sure you h
 ```bash
 source scripts/bash_scripts/download_data.sh all 
 ```
-Download a specific dataset and benchmark with examples
+Alternatively, you can download the benchmark for a specific search space and dataset/task as follows
 ```bash
 source scripts/bash_scripts/download_data.sh <search_space> <dataset> 
 source scripts/bash_scripts/download_data.sh nb201 cifar10
