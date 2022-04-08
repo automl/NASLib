@@ -247,7 +247,7 @@ class GSparseOptimizer(MetaOptimizer):
         def normalize_weights(edge):
             if edge.data.has("alpha"):
                 for i in range(len(edge.data.op.primitives)):
-                    edge.data.weights[i]=edge.data.weights[i]/torch.pow(edge.data.dimension[i], normalization_exponent).item()
+                    edge.data.weights[i]=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item()
 
                     
         def prune_weights(edge):

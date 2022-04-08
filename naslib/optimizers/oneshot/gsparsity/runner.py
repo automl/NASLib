@@ -7,6 +7,7 @@ import naslib as nl
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import (
     DARTSOptimizer,
+    DARTSOptimizerAugmix,
     GDASOptimizer,
     OneShotNASOptimizer,
     RandomNASOptimizer,
@@ -32,6 +33,7 @@ utils.log_args(config)
 
 supported_optimizers = {
     "darts": DARTSOptimizer(config),
+    "darts_aug" : DARTSOptimizerAugmix(config),
     "gdas": GDASOptimizer(config),
     "oneshot": OneShotNASOptimizer(config),
     "rsws": RandomNASOptimizer(config),
@@ -58,7 +60,7 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
-trainer.search()
+#trainer.search()
 
 # if not config.eval_only:
 #    checkpoint = utils.get_last_checkpoint(config) if config.resume else ""
@@ -67,4 +69,7 @@ trainer.search()
 #checkpoint = utils.get_last_checkpoint(config, search_model=True) if config.resume else ""
 #trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
 #model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/darts/cifar100/gsparsity/9/search/model_final.pth"
-trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY, search_model=model)
+#model = "/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/nasbench201/cifar10/darts_aug/1/search/model_final.pth"
+#checkpoint1="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/augmix/nasbench201/cifar10/darts_aug/20/eval/last_checkpoint"
+models="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/augmix/nasbench201/cifar10/darts_aug/20/eval/model_0000269.pth"
+trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY, search_model=models)
