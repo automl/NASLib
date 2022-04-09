@@ -62,8 +62,8 @@ This [tutorial](tutorial/) will help participants get acquainted with NASLib and
 To test the setup on different benchmarks you can run
 
 ```bash
-source scripts/bash_scripts/run_nb201.sh
-source scripts/bash_scripts/run_nb301.sh
-source scripts/bash_scripts/run_tnb101.sh
+bash scripts/bash_scripts/run_nb201.sh
+bash scripts/bash_scripts/run_nb301.sh
+bash scripts/bash_scripts/run_tnb101.sh
 ```
 
