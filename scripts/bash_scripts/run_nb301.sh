@@ -34,7 +34,7 @@ do
     for predictor in ${predictors[@]}
     do
         config_file=$out_dir/$dataset/configs/predictors/config\_$predictor\_$t.yaml
-        echo ================running $predictor trial: $t =====================
+        echo ================running $predictor trial: $t for cifar10 =====================
         python naslib/runners/runner.py --config-file $config_file
     done
 done
