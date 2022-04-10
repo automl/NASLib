@@ -389,6 +389,8 @@ print('Done.')
     Files already downloaded and verified
     Files already downloaded and verified
     Scoring models with predictor
+    Querying benchmarks for actual scores
+    Done.
 
 
 The Kendall Tau correlation of the predicted and actual scores is the metric of interest in the competition.
@@ -398,6 +400,13 @@ The Kendall Tau correlation of the predicted and actual scores is the metric of 
 from scipy import stats
 stats.kendalltau(scores, actual_scores)
 ```
+
+
+
+
+    KendalltauResult(correlation=0.4666666666666666, pvalue=0.07255015432098766)
+
+
 
 To make the evaluation of predictors more convenient, `ZeroCostPredictorEvaluator` class is provided to you.
 
@@ -422,6 +431,26 @@ predictor_evaluator.adapt_search_space(search_space, dataset_api=dataset_api)
 results = predictor_evaluator.evaluate()
 results[-1]['kendalltau']
 ```
+
+    [32m[04/10 23:24:32 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 23:24:34 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    Files already downloaded and verified
+    Files already downloaded and verified
+    [32m[04/10 23:24:44 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 23:24:44 nl.evaluators.zc_evaluator]: [0mdataset: cifar10, predictor: synflow, kendalltau 0.5604
+    [32m[04/10 23:24:44 nl.evaluators.zc_evaluator]: [0mmae: 2.23975002426838e+40, rmse: 8.3422558200207285e+40, pearson: 0.237, spearman: 0.7451, kendalltau: 0.5604, kt_2dec: 0.5604, kt_1dec: 0.5604, precision_10: 0.9, precision_20: 0.6, full_ytest: [86.77 71.92 85.18 89.47 87.4  84.85 85.19 89.01 85.17 89.89 87.12 84.12
+     89.44 85.69], full_testpred: [2.11520871e+19 2.60599217e+06 3.02382783e+25 2.04968600e+35
+     1.76668117e+31 2.30639752e+32 1.77295665e+23 1.93090746e+26
+     4.81126990e+15 1.42944015e+39 1.97617087e+19 2.50587002e+06
+     3.12135358e+41 1.62475136e+18], query_time: 0.7205, 
+
+
+
+
+
+    0.5604395604395604
+
+
 
 ## Sample Submission
 
@@ -505,7 +534,40 @@ all_benchmarks = {
 full_evaluate_predictor(predictor, test_size=10, search_spaces=["nasbench201"])
 ```
 
-For the submission to be complete, the class `ZeroCostPredictor` must be saved in a file named `predictor.py` and zipped together with an empty `metdata` file.
+    [32m[04/10 23:24:44 nl.utils.utils]: [0mCommand line args: Namespace(config_file=None, opts=[], datapath=None)
+    [32m[04/10 23:24:44 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000
+    [32m[04/10 23:24:44 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000/search
+    [32m[04/10 23:24:44 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000/eval
+    [32m[04/10 23:24:45 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 23:24:48 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    Files already downloaded and verified
+    Files already downloaded and verified
+    [32m[04/10 23:24:51 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 23:24:51 nl.evaluators.zc_evaluator]: [0mdataset: cifar10, predictor: MyZeroCostPredictorName, kendalltau 0.4243
+    [32m[04/10 23:24:51 nl.evaluators.zc_evaluator]: [0mmae: 425572.515, rmse: 518474.3217, pearson: 0.5307, spearman: 0.5124, kendalltau: 0.4243, kt_2dec: 0.4243, kt_1dec: 0.4243, precision_10: 0.9, precision_20: 0.45, full_ytest: [86.77 71.92 85.18 89.47 87.4  84.85 85.19 89.01 85.17 89.89], full_testpred: [ 129306  101306  559386  559386  587386  587386  129306  400346  129306
+     1073466], query_time: 0.3421, 
+    [32m[04/10 23:24:52 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 23:24:54 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    Files already downloaded and verified
+    Files already downloaded and verified
+    [32m[04/10 23:24:58 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 23:24:58 nl.evaluators.zc_evaluator]: [0mdataset: cifar100, predictor: MyZeroCostPredictorName, kendalltau 0.4243
+    [32m[04/10 23:24:58 nl.evaluators.zc_evaluator]: [0mmae: 431444.4, rmse: 523304.2823, pearson: 0.5585, spearman: 0.4939, kendalltau: 0.4243, kt_2dec: 0.4243, kt_1dec: 0.4243, precision_10: 0.9, precision_20: 0.45, full_ytest: [65.32 46.62 62.5  69.1  64.4  63.04 62.52 68.52 63.36 70.62], full_testpred: [ 135156  107156  565236  565236  593236  593236  135156  406196  135156
+     1079316], query_time: 0.3309, 
+    [32m[04/10 23:24:59 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 23:25:01 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    [32m[04/10 23:25:08 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 23:25:08 nl.evaluators.zc_evaluator]: [0mdataset: ImageNet16-120, predictor: MyZeroCostPredictorName, kendalltau 0.5185
+    [32m[04/10 23:25:08 nl.evaluators.zc_evaluator]: [0mmae: 432772.44, rmse: 524398.9466, pearson: 0.6353, spearman: 0.673, kendalltau: 0.5185, kt_2dec: 0.5185, kt_1dec: 0.5185, precision_10: 0.9, precision_20: 0.45, full_ytest: [35.9333 14.9333 35.4    40.7333 39.4333 34.8333 33.9    42.1667 33.5667
+     44.7   ], full_testpred: [ 136456  108456  566536  566536  594536  594536  136456  407496  136456
+     1080616], query_time: 0.7409, 
+    nasbench201              ||cifar10                  ||0.4242640687119285
+    nasbench201              ||cifar100                 ||0.4242640687119285
+    nasbench201              ||ImageNet16-120           ||0.5185449728701348
+    Average Kendall-Tau: 0.4556910367646639
+
+
+For the submission to be complete, the class `ZeroCostPredictor` must be saved in a file named `submission.py` and zipped together with an empty `metdata` file.
 
 
 ```python
@@ -516,6 +578,10 @@ For the submission to be complete, the class `ZeroCostPredictor` must be saved i
 !touch sample_submission/metadata
 !zip sample_submission.zip sample_submission/*
 ```
+
+    updating: sample_submission/metadata (stored 0%)
+    updating: sample_submission/submission.py (deflated 57%)
+
 
 You can use this `sample_submission.zip` as a test submission on CodaLab.
 
