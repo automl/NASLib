@@ -22,7 +22,7 @@ search_space
 
 
 
-    Graph makrograph-0.2920453, scope None, 20 nodes
+    Graph makrograph-0.6049140, scope None, 20 nodes
 
 
 
@@ -38,7 +38,7 @@ search_space
 
 
 
-    Graph makrograph-0.9539973, scope None, 20 nodes
+    Graph makrograph-0.9625943, scope None, 20 nodes
 
 
 
@@ -56,11 +56,11 @@ print('Edges in the graph:', search_space.edges())
     Edges in the graph: [(1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10), (10, 11), (11, 12), (12, 13), (13, 14), (14, 15), (15, 16), (16, 17), (17, 18), (18, 19), (19, 20)]
 
 
-Every node and edge of the `Graph` can hold operations, which could be either a PyTorch `Module` or another `Graph`. 
+Every node and edge of the `Graph` can hold operations, which could be either a concrete implementation of the NASLib `AbstractPrimitive`, or another `Graph`. 
 
 
 ```python
-print('Operation on edge 1-2 of the graph:', search_space.edges[1, 2]['op']) # Pytorch Module as 'op' on the edge
+print('Operation on edge 1-2 of the graph:', search_space.edges[1, 2]['op']) # Concrete implementation of AbstractPrimitive as 'op' on the edge
 print('Operation on edge 2-3 of the graph:', search_space.edges[2, 3]['op']) # NASLib Graph as 'op' on the edge
 ```
 
@@ -73,7 +73,7 @@ print('Operation on edge 2-3 of the graph:', search_space.edges[2, 3]['op']) # N
     Operation on edge 2-3 of the graph: Graph named 'cell' with 4 nodes and 6 edges
 
 
-Here's a closer look at a cell:
+Here's a closer look at a cell, which is itself another `Graph`:
 
 
 ```python
@@ -140,6 +140,8 @@ print('Operation on edge 1-2:', cell.edges[1, 2]['op'])
 graph.sample_random_architecture()
 
 # After sampling, it is replaced by one operation from the list
+# This means you cannot invoke sample_random_architecture()
+# on the same graph twice
 print('\nAfter sampling operation')
 for edge in cell.edges():
     print(f'Operation on edge {edge}:', cell.edges[edge]['op'])
@@ -169,31 +171,23 @@ print('\nArchitecture encoding:', graph.get_hash())
     Operation on edge (1, 2): ReLUConvBN(
       (op): Sequential(
         (0): ReLU()
-        (1): Conv2d(16, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         (2): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       )
     )
-    Operation on edge (1, 3): AvgPool1x1(
-      (avgpool): AvgPool2d(kernel_size=3, stride=1, padding=1)
-    )
-    Operation on edge (1, 4): ReLUConvBN(
+    Operation on edge (1, 3): ReLUConvBN(
       (op): Sequential(
         (0): ReLU()
         (1): Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         (2): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       )
     )
-    Operation on edge (2, 3): ReLUConvBN(
-      (op): Sequential(
-        (0): ReLU()
-        (1): Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
-        (2): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
-      )
-    )
+    Operation on edge (1, 4): Zero (stride=1)
+    Operation on edge (2, 3): Zero (stride=1)
     Operation on edge (2, 4): Identity()
     Operation on edge (3, 4): Zero (stride=1)
     
-    Architecture encoding: (3, 4, 2, 2, 0, 1)
+    Architecture encoding: (2, 2, 1, 1, 0, 1)
 
 
 To create the PyTorch model, one needs only to parse this `Graph` as follows:
@@ -223,7 +217,7 @@ print('\nResult:', result)
         (0): Conv2d(3, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
         (1): BatchNorm2d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
       )
-    ), Graph cell-0.0858676, scope stage_1, 4 nodes, Graph cell-0.6546767, scope stage_1, 4 nodes, Graph cell-0.7771591, scope stage_1, 4 nodes, Graph cell-0.9102248, scope stage_1, 4 nodes, Graph cell-0.2213053, scope stage_1, 4 nodes, ResNetBasicblock(
+    ), Graph cell-0.4770514, scope stage_1, 4 nodes, Graph cell-0.1480686, scope stage_1, 4 nodes, Graph cell-0.2740735, scope stage_1, 4 nodes, Graph cell-0.9642077, scope stage_1, 4 nodes, Graph cell-0.3705807, scope stage_1, 4 nodes, ResNetBasicblock(
       (conv_a): ReLUConvBN(
         (op): Sequential(
           (0): ReLU()
@@ -242,7 +236,7 @@ print('\nResult:', result)
         (0): AvgPool2d(kernel_size=2, stride=2, padding=0)
         (1): Conv2d(16, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
       )
-    ), Graph cell-0.5291396, scope stage_2, 4 nodes, Graph cell-0.7197148, scope stage_2, 4 nodes, Graph cell-0.7579256, scope stage_2, 4 nodes, Graph cell-0.5141768, scope stage_2, 4 nodes, Graph cell-0.8593012, scope stage_2, 4 nodes, ResNetBasicblock(
+    ), Graph cell-0.7973040, scope stage_2, 4 nodes, Graph cell-0.9339413, scope stage_2, 4 nodes, Graph cell-0.6809339, scope stage_2, 4 nodes, Graph cell-0.6993881, scope stage_2, 4 nodes, Graph cell-0.3072075, scope stage_2, 4 nodes, ResNetBasicblock(
       (conv_a): ReLUConvBN(
         (op): Sequential(
           (0): ReLU()
@@ -261,7 +255,7 @@ print('\nResult:', result)
         (0): AvgPool2d(kernel_size=2, stride=2, padding=0)
         (1): Conv2d(32, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
       )
-    ), Graph cell-0.6416078, scope stage_3, 4 nodes, Graph cell-0.4074740, scope stage_3, 4 nodes, Graph cell-0.7312746, scope stage_3, 4 nodes, Graph cell-0.3242168, scope stage_3, 4 nodes, Graph cell-0.1072843, scope stage_3, 4 nodes, Sequential(
+    ), Graph cell-0.9034864, scope stage_3, 4 nodes, Graph cell-0.4150160, scope stage_3, 4 nodes, Graph cell-0.8621790, scope stage_3, 4 nodes, Graph cell-0.4515756, scope stage_3, 4 nodes, Graph cell-0.6540374, scope stage_3, 4 nodes, Sequential(
       (op): Sequential(
         (0): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
         (1): ReLU(inplace=True)
@@ -271,15 +265,18 @@ print('\nResult:', result)
       )
     )]
     
-    Result: tensor([[ 0.1178, -0.2193, -0.1101,  0.0625,  0.5532,  0.3580,  0.0456, -0.0789,
-             -0.5193, -0.5287]], grad_fn=<AddmmBackward>)
+    Result: tensor([[-1.0192e-01,  6.4893e-02, -3.7945e-01, -3.7407e-02, -5.0440e-02,
+             -9.2298e-05,  2.7402e-01,  3.9411e-01,  2.0905e-01,  2.1197e-01]],
+           grad_fn=<AddmmBackward>)
 
 
 ## Querying the performance of a model
 
 NAS-Bench-201 has 15,625 models in its search space, all of which have been evaluated for classification task on three separate datasets - CIFAR10, CIFAR100, and ImageNet-16-120. Given the architecture encoding of a model, one can simply query the benchmark to see its final performance for any one of these tasks.
 
-The first thing to do is to ensure that you have the benchmark data files. For now, we will download and test only the NAS-Bench-201 benchmark for the CIFAR10 task. If you've already downloaded the data and tested the API, you can skip this step.
+The first thing to do is to ensure that you have the benchmark data files. For now, we will download and test only the NAS-Bench-201 benchmark for the CIFAR10 task. 
+
+If you've already downloaded the data and tested the API, you can skip this step. If these scripts do not work for you, please follow the instructions [here](https://github.com/automl/NASLib/tree/automl-conf-competition/dataset_preparation#-dataset-preparation) to get the data.
 
 
 ```python
@@ -338,9 +335,9 @@ val_accuracy = graph.query(
 print(f'Validation accuracy: {val_accuracy}\n')
 ```
 
-    Compact model representation is: (1, 3, 0, 2, 4, 2)
-    NAS-Bench-201 representation is: |none~0|+|nor_conv_1x1~0|nor_conv_3x3~1|+|skip_connect~0|avg_pool_3x3~1|nor_conv_3x3~2|
-    Validation accuracy: 89.54
+    Compact model representation is: (3, 0, 0, 4, 0, 0)
+    NAS-Bench-201 representation is: |nor_conv_1x1~0|+|skip_connect~0|avg_pool_3x3~1|+|skip_connect~0|skip_connect~1|skip_connect~2|
+    Validation accuracy: 83.12
     
 
 
@@ -356,20 +353,19 @@ import numpy as np
 
 # Get the configs from naslib/configs/predictor_config.yaml (and the command line arguments, if any)
 # The configs include the zero-cost method to use, the search space and dataset/task to use, amongst others.
+# For now, we will manually update the config here
 config = utils.get_config_from_args()
 # print(config)
+config.search_space='nasbench201'
+config.dataset='cifar10'
 
 # Initialize the predictor
 # Method type can be "fisher", "grasp", "grad_norm", "jacov", "snip", "synflow", "flops" or "params"
 predictor = ZeroCost(method_type=config.predictor)
 
-# Make the ZeroCost predictor ready for prediction
-# In this case, that involves loading the data loaders for CIFAR10
-predictor.pre_process()
-
 # Create the models to score
 n = 10
-print(f'Sampling {n} models...')
+print(f'Sampling {n} models')
 models = [sample_and_parse_graph() for i in range(n)]
 
 # Get the dataloader for this dataset
@@ -392,7 +388,7 @@ actual_scores = [
 print('Done.')
 ```
 
-    Sampling 10 models...
+    Sampling 10 models
     Files already downloaded and verified
     Files already downloaded and verified
     Scoring models with predictor
@@ -411,7 +407,7 @@ stats.kendalltau(scores, actual_scores)
 
 
 
-    KendalltauResult(correlation=0.24444444444444444, pvalue=0.38071979717813054)
+    KendalltauResult(correlation=0.5555555555555555, pvalue=0.02860945767195767)
 
 
 
@@ -439,23 +435,23 @@ results = predictor_evaluator.evaluate()
 results[-1]['kendalltau']
 ```
 
-    [32m[04/08 18:46:48 nl.evaluators.zc_evaluator]: [0mSampling from search space...
-    [32m[04/08 18:46:51 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    [32m[04/10 17:28:23 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 17:28:25 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
     Files already downloaded and verified
     Files already downloaded and verified
-    [32m[04/08 18:47:01 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
-    [32m[04/08 18:47:01 nl.evaluators.zc_evaluator]: [0mdataset: cifar10, predictor: synflow, kendalltau 0.5604
-    [32m[04/08 18:47:01 nl.evaluators.zc_evaluator]: [0mmae: 2.206067624976992e+40, rmse: 8.216277294585932e+40, pearson: 0.2371, spearman: 0.7451, kendalltau: 0.5604, kt_2dec: 0.5604, kt_1dec: 0.5604, precision_10: 0.9, precision_20: 0.6, full_ytest: [86.77 71.92 85.18 89.47 87.4  84.85 85.19 89.01 85.17 89.89 87.12 84.12
-     89.44 85.69], full_testpred: [2.18334211e+19 2.59003231e+06 3.05247471e+25 2.04032740e+35
-     1.58890848e+31 2.89380016e+32 1.83624359e+23 1.77984056e+26
-     4.19256329e+15 1.42763171e+39 1.92160448e+19 2.49116392e+06
-     3.07421631e+41 1.64578654e+18], query_time: 0.7158, 
+    [32m[04/10 17:28:37 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 17:28:37 nl.evaluators.zc_evaluator]: [0mdataset: cifar10, predictor: synflow, kendalltau 0.5824
+    [32m[04/10 17:28:37 nl.evaluators.zc_evaluator]: [0mmae: 2.5176158291042667e+40, rmse: 9.378829596584097e+40, pearson: 0.237, spearman: 0.7495, kendalltau: 0.5824, kt_2dec: 0.5824, kt_1dec: 0.5824, precision_10: 0.9, precision_20: 0.6, full_ytest: [86.77 71.92 85.18 89.47 87.4  84.85 85.19 89.01 85.17 89.89 87.12 84.12
+     89.44 85.69], full_testpred: [1.85604874e+19 2.72268623e+06 3.03142405e+25 2.17619681e+35
+     1.75451136e+31 2.62143752e+32 1.71332658e+23 2.04087638e+26
+     4.49221072e+15 1.54573208e+39 1.89958258e+19 2.61880708e+06
+     3.50920266e+41 1.93028187e+18], query_time: 0.8254, 
 
 
 
 
 
-    0.5604395604395604
+    0.5824175824175825
 
 
 
@@ -514,43 +510,50 @@ class ZeroCostPredictor(Predictor):
 
 ```
 
-You can evaluate the performance of this predictor across all the benchmarks (search-space/dataset combination) available in NASLib as follows:
+You can evaluate the performance of this predictor across all the benchmarks (search-space/dataset combination) available in NASLib as follows. 
+
+*Make sure you set up the data for NAS-Bench-201 with CIFAR100 and ImageNet16-120 before you run the next cell. Manual download instructions [here](https://github.com/automl/NASLib/tree/automl-conf-competition/dataset_preparation#-dataset-preparation)*.
 
 
 ```python
 from naslib.evaluators import full_evaluate_predictor
 
+predictor = ZeroCostPredictor()
 # search_spaces = ["nasbench201", "nasbench301", "transbench101_micro"]
-full_evaluate_predictor(predictor, test_size=3, search_spaces=["nasbench201"])
+full_evaluate_predictor(predictor, test_size=10, search_spaces=["nasbench201"])
 ```
 
-    [32m[04/08 18:48:10 nl.utils.utils]: [0mCommand line args: Namespace(config_file=None, opts=[], datapath=None)
-    [32m[04/08 18:48:10 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000
-    [32m[04/08 18:48:10 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000/search
-    [32m[04/08 18:48:10 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000/eval
-    [32m[04/08 18:48:11 nl.evaluators.zc_evaluator]: [0mSampling from search space...
-    [32m[04/08 18:48:12 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    [32m[04/10 17:49:44 nl.utils.utils]: [0mCommand line args: Namespace(config_file=None, opts=[], datapath=None)
+    [32m[04/10 17:49:44 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000
+    [32m[04/10 17:49:44 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000/search
+    [32m[04/10 17:49:44 nl.utils.utils]: [0mExperiment dir : run/cifar10/predictors/synflow/1000/eval
+    [32m[04/10 17:49:45 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 17:49:47 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
     Files already downloaded and verified
     Files already downloaded and verified
-    [32m[04/08 18:48:16 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
-    [32m[04/08 18:48:16 nl.evaluators.zc_evaluator]: [0mdataset: cifar10, predictor: synflow, kendalltau 0.3333
-    [32m[04/08 18:48:16 nl.evaluators.zc_evaluator]: [0mmae: 9.540646655587877e+24, rmse: 1.6524873310324667e+25, pearson: 0.4132, spearman: 0.5, kendalltau: 0.3333, kt_2dec: 0.3333, kt_1dec: 0.3333, precision_10: 0.2, precision_20: 0.1, full_ytest: [86.77 71.92 85.18], full_testpred: [1.98046492e+19 2.51917981e+06 2.86219202e+25], query_time: 1.3738, 
-    [32m[04/08 18:48:17 nl.evaluators.zc_evaluator]: [0mSampling from search space...
-    [32m[04/08 18:48:18 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    [32m[04/10 17:49:51 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 17:49:51 nl.evaluators.zc_evaluator]: [0mdataset: cifar10, predictor: MyZeroCostPredictorName, kendalltau 0.4243
+    [32m[04/10 17:49:51 nl.evaluators.zc_evaluator]: [0mmae: 425572.515, rmse: 518474.3217, pearson: 0.5307, spearman: 0.5124, kendalltau: 0.4243, kt_2dec: 0.4243, kt_1dec: 0.4243, precision_10: 0.9, precision_20: 0.45, full_ytest: [86.77 71.92 85.18 89.47 87.4  84.85 85.19 89.01 85.17 89.89], full_testpred: [ 129306  101306  559386  559386  587386  587386  129306  400346  129306
+     1073466], query_time: 0.3574, 
+    [32m[04/10 17:49:52 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 17:49:54 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
     Files already downloaded and verified
     Files already downloaded and verified
-    [32m[04/08 18:48:23 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
-    [32m[04/08 18:48:23 nl.evaluators.zc_evaluator]: [0mdataset: cifar100, predictor: synflow, kendalltau 0.3333
-    [32m[04/08 18:48:23 nl.evaluators.zc_evaluator]: [0mmae: 9.95255236892361e+25, rmse: 1.7238315334191156e+26, pearson: 0.374, spearman: 0.5, kendalltau: 0.3333, kt_2dec: 0.3333, kt_1dec: 0.3333, precision_10: 0.2, precision_20: 0.1, full_ytest: [65.32 46.62 62.5 ], full_testpred: [1.91110642e+20 2.61382718e+07 2.98576380e+26], query_time: 1.4205, 
-    [32m[04/08 18:48:24 nl.evaluators.zc_evaluator]: [0mSampling from search space...
-    [32m[04/08 18:48:24 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
-    [32m[04/08 18:48:32 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
-    [32m[04/08 18:48:32 nl.evaluators.zc_evaluator]: [0mdataset: ImageNet16-120, predictor: synflow, kendalltau 0.3333
-    [32m[04/08 18:48:32 nl.evaluators.zc_evaluator]: [0mmae: 2.5610117896669017e+25, rmse: 4.435792192458528e+25, pearson: 0.4806, spearman: 0.5, kendalltau: 0.3333, kt_2dec: 0.3333, kt_1dec: 0.3333, precision_10: 0.2, precision_20: 0.1, full_ytest: [35.9333 14.9333 35.4   ], full_testpred: [1.79198661e+20 2.31759638e+07 7.68301745e+25], query_time: 2.6186, 
-    nasbench201              ||cifar10                  ||0.33333333333333337
-    nasbench201              ||cifar100                 ||0.33333333333333337
-    nasbench201              ||ImageNet16-120           ||0.33333333333333337
-    Average Kendall-Tau: 0.3333333333333333
+    [32m[04/10 17:49:58 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 17:49:58 nl.evaluators.zc_evaluator]: [0mdataset: cifar100, predictor: MyZeroCostPredictorName, kendalltau 0.4243
+    [32m[04/10 17:49:58 nl.evaluators.zc_evaluator]: [0mmae: 431444.4, rmse: 523304.2823, pearson: 0.5585, spearman: 0.4939, kendalltau: 0.4243, kt_2dec: 0.4243, kt_1dec: 0.4243, precision_10: 0.9, precision_20: 0.45, full_ytest: [65.32 46.62 62.5  69.1  64.4  63.04 62.52 68.52 63.36 70.62], full_testpred: [ 135156  107156  565236  565236  593236  593236  135156  406196  135156
+     1079316], query_time: 0.3692, 
+    [32m[04/10 17:50:00 nl.evaluators.zc_evaluator]: [0mSampling from search space...
+    [32m[04/10 17:50:01 nl.evaluators.zc_evaluator]: [0mQuerying the predictor
+    [32m[04/10 17:50:11 nl.evaluators.zc_evaluator]: [0mCompute evaluation metrics
+    [32m[04/10 17:50:11 nl.evaluators.zc_evaluator]: [0mdataset: ImageNet16-120, predictor: MyZeroCostPredictorName, kendalltau 0.5185
+    [32m[04/10 17:50:11 nl.evaluators.zc_evaluator]: [0mmae: 432772.44, rmse: 524398.9466, pearson: 0.6353, spearman: 0.673, kendalltau: 0.5185, kt_2dec: 0.5185, kt_1dec: 0.5185, precision_10: 0.9, precision_20: 0.45, full_ytest: [35.9333 14.9333 35.4    40.7333 39.4333 34.8333 33.9    42.1667 33.5667
+     44.7   ], full_testpred: [ 136456  108456  566536  566536  594536  594536  136456  407496  136456
+     1080616], query_time: 0.9758, 
+    nasbench201              ||cifar10                  ||0.4242640687119285
+    nasbench201              ||cifar100                 ||0.4242640687119285
+    nasbench201              ||ImageNet16-120           ||0.5185449728701348
+    Average Kendall-Tau: 0.4556910367646639
 
 
 For the submission to be complete, the class `ZeroCostPredictor` must be saved in a file named `predictor.py` and zipped together with an empty `metdata` file.
@@ -563,19 +566,10 @@ For the submission to be complete, the class `ZeroCostPredictor` must be saved i
 # |__ submission.py   # File with zero-cost predictor code
 !touch sample_submission/metadata
 !zip sample_submission.zip sample_submission/*
-!ls -l
 ```
 
     updating: sample_submission/metadata (stored 0%)
     updating: sample_submission/submission.py (deflated 57%)
-    total 120
-    -rw-r--r--  1 blackheart  staff  18344  5 Apr 13:33 README.md
-    -rw-r--r--  1 blackheart  staff  29472  8 Apr 18:47 Tutorial.ipynb
-    -rw-r--r--  1 blackheart  staff   4086  8 Apr 17:27 Untitled.ipynb
-    drwxr-xr-x  3 blackheart  staff     96  4 Apr 21:22 [1m[36mimages[m[m
-    drwxr-xr-x  5 blackheart  staff    160  8 Apr 16:46 [1m[36mrun[m[m
-    drwxr-xr-x  4 blackheart  staff    128  8 Apr 15:06 [1m[36msample_submission[m[m
-    -rw-r--r--  1 blackheart  staff   1606  8 Apr 18:47 sample_submission.zip
 
 
 You can use this `sample_submission.zip` as a test submission on CodaLab.
