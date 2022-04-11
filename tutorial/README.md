@@ -1,6 +1,6 @@
 # Tutorial
 
-This tutorial assumes that you are completely new to NASLib, and will introduce you to the core ideas and APIs of the library. By the end of it, you will know everything you need to know to make a submission to the [Zero-Cost NAS Competition](link here).
+This tutorial assumes that you are completely new to NASLib, and will introduce you to the core ideas and APIs of the library. By the end of it, you will know everything you need to know to make a submission to the [Zero-Cost NAS Competition](https://codalab.lisn.upsaclay.fr/competitions/3932).
 
 ## Introduction to Search Spaces
 
