@@ -21,7 +21,7 @@ The challenge is as follows: Given N models from a search space, such as [NASBen
 
 
 [**Setup**](#setup)
-| [**Docs**](#tutorial)
+| [**Tutorial**](#tutorial)
 | [**Usage**](#usage)
 
 
