@@ -570,7 +570,7 @@ full_evaluate_predictor(predictor, test_size=10, search_spaces=["nasbench201"])
     Average Kendall-Tau: 0.4556910367646639
 
 
-For the submission to be complete, the class `ZeroCostPredictor` must be saved in a file named `submission.py` and zipped together with an empty `metdata` file.
+For the submission to be complete, the class `ZeroCostPredictor` must be saved in a file named `submission.py` and zipped together with an empty `metadata` file.
 
 
 ```python
