@@ -51,7 +51,7 @@ source scripts/bash_scripts/download_data.sh <search_space> <dataset>
 source scripts/bash_scripts/download_data.sh nb201 cifar10
 source scripts/bash_scripts/download_data.sh nb201 all 
 ```
-Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101) and place in the folder `naslib/data/..`
+Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101) usnzip the folder and place the benchmark `transnas-bench_v10141024.pth` from this folder in `naslib/data/..`
 
 If you face issues downloading the datasets please follow the steps [here](dataset_preparation/).
 
