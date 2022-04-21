@@ -7,7 +7,7 @@ search_space: nasbench201
 dataset: cifar10
 
 # one of the predictors in runners/runner.py
-predictor: synflow
+predictor: epe_nas
 
 # test set size
 test_size: 20
