@@ -26,6 +26,7 @@ with open("requirements.txt", "r") as f:
         requirements.append(line.strip())
 
 git_nb301 = "git+https://github.com/automl/nasbench301.git@no_gin"
+git_archai = "git+https://github.com/microsoft/archai.git"
 
 try:
     import nasbench301
@@ -33,10 +34,13 @@ except ImportError:
     if '--user' in sys.argv:
         subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
             '--user', git_nb301], check=False)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            '--user', git_archai], check=False)
     else:
         subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
             git_nb301], check=False)
-
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            git_archai], check=False)
 
 print('-- Building version ' + version)
 print('-- Note: by default installs pytorch-cpu version (1.9.0), update to torch-gpu by following instructions from: https://pytorch.org/get-started/locally/')
