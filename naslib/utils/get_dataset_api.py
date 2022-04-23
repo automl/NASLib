@@ -26,6 +26,16 @@ def get_transbench101_api(dataset):
     return {'api': api, 'task': dataset}
 
 
+def get_nasbench101_api(dataset=None):
+    import naslib.utils.nb101_api as api
+
+    nb101_datapath = os.path.join(get_project_root(), "data", "nasbench_only108.pkl")
+    assert os.path.exists(nb101_datapath), f"Could not find {nb101_datapath}. Please download nasbench_only108.pk \
+from https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa"
+
+    nb101_data = api.NASBench(nb101_datapath)
+    return {"api": api, "nb101_data": nb101_data}
+
 def get_nasbench201_api(dataset):
     """
     Load the NAS-Bench-201 data
@@ -92,7 +102,10 @@ https://figshare.com/articles/software/nasbench301_models_v1_0_zip/13061510"
 
 def get_dataset_api(search_space=None, dataset=None):
 
-    if search_space == "nasbench201":
+    if search_space == "nasbench101":
+        return get_nasbench101_api(dataset=dataset)
+
+    elif search_space == "nasbench201":
         return get_nasbench201_api(dataset=dataset)
 
     elif search_space == "nasbench301":
