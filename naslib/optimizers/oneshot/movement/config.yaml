@@ -1,5 +1,5 @@
 dataset: cifar10
-seed: 9
+seed: 4
 search_space: nasbench201
 out_dir: /work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run
 optimizer: movement
@@ -7,7 +7,7 @@ optimizer: movement
 search:
  
   # MOVEMENT
-  instantenous: True
+  instantenous: False
   
   # BANANAS
   k: 10
