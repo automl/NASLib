@@ -11,7 +11,7 @@ fi
 
 # folders:
 base_file=naslib
-config_folder=${base_file}/benchmarks/predictors/configs/${search_space}
+config_folder=configs/predictors/${search_space}
 config_root=$config_folder-$start_seed
 out_dir=run
 
@@ -27,7 +27,7 @@ test_size=200
 for i in $(seq 0 $((${#predictors[@]}-1)) )
 do
     predictor=${predictors[$i]}
-    python $base_file/benchmarks/create_configs.py --predictor $predictor \
+    python scripts/create_configs.py --predictor $predictor \
     --test_size $test_size --start_seed $start_seed --trials $trials --out_dir $out_dir \
     --dataset=$dataset --config_type predictor --search_space $search_space \
     --config_root=$config_root
