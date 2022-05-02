@@ -10,7 +10,7 @@ else
 fi
 
 searchspace=nasbench201
-datasets=(cifar10) # cifar100 ImageNet16-120)
+datasets=(cifar10 cifar100 ImageNet16-120)
 
 for dataset in "${datasets[@]}"
 do
