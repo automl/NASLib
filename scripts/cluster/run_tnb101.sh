@@ -9,8 +9,8 @@ else
     predictors=($predictor)
 fi
 
-searchspace=transnasbench101
-datasets=(jigsaw class_object class_scene)
+searchspace=transbench101_micro
+datasets=(jigsaw class_object class_scene autoencoder)
 
 for dataset in "${datasets[@]}"
 do
