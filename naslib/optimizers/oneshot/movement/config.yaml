@@ -1,5 +1,5 @@
 dataset: cifar10
-seed: 4
+seed: 10
 search_space: nasbench201
 out_dir: /work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run
 optimizer: movement
@@ -60,8 +60,8 @@ search:
   normalization_exponent: 0.5
   batch_size: 128
   learning_rate_min: 0.0001
-  epochs: 11
-  warm_start_epochs: 5
+  epochs: 12
+  warm_start_epochs: 3
   train_portion: 0.1
   data_size: 5000
 

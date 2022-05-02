@@ -69,6 +69,9 @@ class MovementOptimizer(MetaOptimizer):
         self.score = torch.nn.ParameterList()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.warm_start_epochs = config.search.warm_start_epochs if hasattr(config.search, "warm_start_epochs") else 1
+        self.k_initialized = False
+        self.count_masking=0
+        self.k=1
 
     @staticmethod
     def update_ops(edge):
@@ -92,6 +95,8 @@ class MovementOptimizer(MetaOptimizer):
         mask = torch.nn.Parameter(
            torch.ones(size=[len_primitives], requires_grad=False), requires_grad=False
         )
+        operations_to_mask = torch.nn.Parameter(torch.tensor(1), requires_grad=False
+        )
         score = torch.nn.Parameter(
            torch.zeros(size=[len_primitives], requires_grad=False), requires_grad=False
         )
@@ -102,6 +107,7 @@ class MovementOptimizer(MetaOptimizer):
            torch.FloatTensor(len_primitives*[0.0]), requires_grad=False
         )
         edge.data.set("mask", mask, shared=True)
+        edge.data.set("operations_to_mask", operations_to_mask, shared=True)
         edge.data.set("score", score, shared=True)
         edge.data.set("weights", weights, shared=True)
         edge.data.set("dimension", dimension, shared=True)
@@ -293,10 +299,10 @@ class MovementOptimizer(MetaOptimizer):
                         #edge.data.score[i]+=0.1
                         if instantenous:
                             #edge.data.score[i]=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                            edge.data.score[i]=edge.data.weights[i]
+                            edge.data.score[i]=edge.data.weights[i]#/edge.data.dimension[i]
                         else:
                             #edge.data.score[i]+=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                            edge.data.score[i]+=edge.data.weights[i]
+                            edge.data.score[i]+=edge.data.weights[i]#/edge.data.dimension[i]
                     #print(edge.data.score.requires_grad)
                 #print(edge.data.weights)
         
@@ -366,6 +372,9 @@ class MovementOptimizer(MetaOptimizer):
         """
         normalization_exponent=self.normalization_exponent
         instantenous = self.instantenous
+        k_changed_this_epoch = False
+
+        
         def update_l2_weights(edge):            
             """
             For operations like SepConv etc that contain suboperations like Conv2d() etc. the square of 
@@ -389,7 +398,8 @@ class MovementOptimizer(MetaOptimizer):
                                 #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].op[j].weight.grad,2), torch.norm(edge.data.op.primitives[i].op[j].weight,2)))
                                 ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight,2)**2).to(device=edge.data.weights.device)
                                 #weight.append(torch.max(torch.abs(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight)).to(device=edge.data.weights.device))
-                                weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
+                                #weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
+                                weight+= torch.mean(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
                             except (AttributeError, TypeError) as e:
                                 try:
                                     for k in range(len(edge.data.op.primitives[i].op[j].op)):
@@ -398,7 +408,8 @@ class MovementOptimizer(MetaOptimizer):
                                         #weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad,2)**2).item()
                                         ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight,2)**2).to(device=edge.data.weights.device)
                                         #weight.append(torch.max(torch.abs(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight)).to(device=edge.data.weights.device))
-                                        weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
+                                        #weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
+                                        weight+= torch.mean(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
                                 except AttributeError:
                                     continue                         
                         edge.data.weights[i]+=weight#.to(device=edge.data.weights.device)
@@ -417,9 +428,11 @@ class MovementOptimizer(MetaOptimizer):
                         #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].weight.grad,2), torch.norm(edge.data.op.primitives[i].weight,2)))
                         ### edge.data.weights[i]+=(torch.norm(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight,2)**2).to(device=edge.data.weights.device)
                         #edge.data.weights[i]+=torch.max(torch.abs(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight)).to(device=edge.data.weights.device)
-                        edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
+                        #edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
+                        edge.data.weights[i]+=torch.mean(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
                         edge.data.dimension[i]+=size
         
+        #count = [[]]
         def calculate_scores(edge):
             if edge.data.has("score"):
                 for i in range(len(edge.data.op.primitives)):
@@ -428,31 +441,60 @@ class MovementOptimizer(MetaOptimizer):
                     #print(edge.data.score.requires_grad)
                     with torch.no_grad():
                         #edge.data.score[i]+=0.1
-                        if instantenous:
-                            #edge.data.score[i]=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                            edge.data.score[i]=edge.data.weights[i]
-                        else:
-                            #edge.data.score[i]+=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                            edge.data.score[i]+=edge.data.weights[i]
+                        #edge.data.score[i]+=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
+                        edge.data.score[i]+=edge.data.weights[i]#/edge.data.dimension[i]
+                        #count[i].append(1)
                     #print(edge.data.score.requires_grad)
                 #print(edge.data.weights)
         
+        def normalize_scores(edge):
+            if edge.data.has("score"):
+                for i in range(len(edge.data.op.primitives)):
+                    with torch.no_grad():
+                        edge.data.score[i] += edge.data.score[i]#/len(count)                        
+
+        k_initialized = self.k_initialized
+        k = self.k
         def masking(edge):
+            nonlocal k_changed_this_epoch
+            nonlocal epoch     
+            nonlocal k_initialized
+            nonlocal k
+            #k = 1 if not k_initialized else k
+            #if not k_initialized:
+            #    k = 1
+            k_initialized = True
             if edge.data.has("score"):
                 scores = torch.clone(edge.data.score).detach().cpu()
                 #mask = torch.nn.Parameter(torch.zeros(size=[len(scores)], requires_grad=False), requires_grad=False)
-                for i in range(len(edge.data.mask)):
-                    edge.data.mask[i]=0
-                edge.data.mask[torch.argmax(torch.abs(scores))]=1
+                #for i in range(len(edge.data.mask)):
+                #    edge.data.mask[i]=0
+                #edge.data.mask[torch.argmax(torch.abs(scores))]=1
+                #edge.data.mask[torch.argmin(torch.abs(scores))]=0
+                #import ipdb;ipdb.set_trace()
+                edge.data.mask[torch.topk(torch.abs(scores), k=k, largest=False, sorted=False)[1]]=0
+                #if edge.data.operations_to_mask < len(edge.data.op.primitives)-1:
+                #    edge.data.set("operations_to_mask", edge.data.operations_to_mask+1, shared=True)
+                if k < len(edge.data.op.primitives)-1 and not k_changed_this_epoch:
+                    k += 1
+                    print('k: ', k)                    
+                    k_changed_this_epoch = True
                 #logger.info("Mask: {}".format(edge.data.mask))
                 #edge.data.set("mask", mask)
 
+
+        def reinitialize_scores(edge):
+            if edge.data.has("score"):                
+                for i in range(len(edge.data.weights)):                            
+                    edge.data.score[i]=0
 
         def reinitialize_l2_weights(edge):
             if edge.data.has("score"):                
                 for i in range(len(edge.data.weights)):                    
                     edge.data.weights[i]=0
-                    edge.data.dimension[i]=0
+                    edge.data.dimension[i]=0                    
+                    if instantenous:
+                        edge.data.score[i]=0
 
         #import ipdb;ipdb.set_trace()        
         def debuging(edge):
@@ -461,8 +503,11 @@ class MovementOptimizer(MetaOptimizer):
         if epoch > 0:
             self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
             self.graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)  
+            self.graph.update_edges(normalize_scores, scope=self.scope, private_edge_data=False)
         if epoch >= self.warm_start_epochs:
             self.graph.update_edges(masking, scope=self.scope, private_edge_data=True)
+            self.k_initialized = k_initialized
+            self.k = k
             #self.graph.update_edges(debuging, scope=self.scope, private_edge_data=True)                
 
         for score in self.graph.get_all_edge_data("score"):            
@@ -486,9 +531,12 @@ class MovementOptimizer(MetaOptimizer):
         
         self.score = torch.nn.ParameterList()
         if epoch > 0:
-            self.graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
-        if epoch >= self.warm_start_epochs:
+            self.graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=True)
+            count = []
+        if epoch >= self.warm_start_epochs and self.count_masking%3==0:
             self.mask = torch.nn.ParameterList()
+            self.graph.update_edges(reinitialize_scores, scope=self.scope, private_edge_data=True)
+            self.count_masking += 1
             
             for mask in self.graph.get_all_edge_data("mask"):
                 self.mask.append(mask)
