@@ -250,7 +250,7 @@ class ZeroCostPredictorEvaluator(object):
         if not os.path.exists(self.config.save):
             os.makedirs(self.config.save)
         with codecs.open(
-            os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
+            os.path.join(self.config.save, "scores.json"), "w", encoding="utf-8"
         ) as file:
             for res in self.results:
                 for key, value in res.items():

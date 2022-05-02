@@ -154,10 +154,11 @@ def get_config_from_args(args=None):
         config.test_data_file = None
 
     # prepare the output directories
-    config.save = "{}/{}/{}/{}/{}".format(
+    config.save = "{}/{}/{}/{}/{}/{}".format(
         config.out_dir,
-        config.dataset,
         "predictors",
+        config.search_space,
+        config.dataset,
         config.predictor,
         config.seed,
     )
