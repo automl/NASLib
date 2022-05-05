@@ -156,7 +156,7 @@ def get_config_from_args(args=None):
     # prepare the output directories
     config.save = "{}/{}/{}/{}/{}/{}".format(
         config.out_dir,
-        "predictors",
+        config.config_type,
         config.search_space,
         config.dataset,
         config.predictor,
@@ -299,7 +299,7 @@ def _data_transforms_cifar10(args):
             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
         ]
     )
-    if args.cutout:
+    if hasattr(args, 'cutout') and args.cutout == True: # ZC_TODO: Fix this
         train_transform.transforms.append(Cutout(args.cutout_length, args.cutout_prob))
 
     valid_transform = transforms.Compose(
