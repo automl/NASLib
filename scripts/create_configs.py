@@ -2,6 +2,7 @@ import argparse
 import os
 import yaml
 
+from naslib.utils.utils import get_project_root
 
 def main(args):
     if args.config_type == 'predictor':
@@ -50,7 +51,7 @@ if __name__ == "__main__":
     parser.add_argument("--cutout_length", type=int, default=16, help="Cutout length")
     parser.add_argument("--cutout_prob", type=float, default=1.0, help="Cutout probability")
     parser.add_argument("--train_portion", type=float, default=0.7, help="Train portion")
-    parser.add_argument("--config_root", type=str, default='', help="Root config directory")
+    parser.add_argument("--config_root", type=str, default=get_project_root(), help="Root config directory")
 
     args = parser.parse_args()
 
