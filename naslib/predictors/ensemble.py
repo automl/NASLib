@@ -14,6 +14,7 @@ class Ensemble(Predictor):
                  zc=True,
                  ss_type=None,
                  hpo_wrapper=True,
+                 zc_only=False,
                  config=None):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
@@ -23,13 +24,14 @@ class Ensemble(Predictor):
         self.config = config
         self.hyperparams = None
         self.ensemble = None
-        self.zc=zc
+        self.zc = zc
+        self.zc_only = zc_only
 
     def get_ensemble(self):
 
         trainable_predictors = {
             "xgb": XGBoost(
-                ss_type=self.ss_type, zc=self.zc, encoding_type="adjacency_one_hot"
+                ss_type=self.ss_type, zc=self.zc, encoding_type="adjacency_one_hot", zc_only=self.zc_only
             )
         }
 

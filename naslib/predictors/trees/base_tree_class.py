@@ -7,12 +7,13 @@ from naslib.predictors.predictor import Predictor
 
 class BaseTree(Predictor):
 
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', zc=False, hpo_wrapper=False):
+    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', zc=False, zc_only=False, hpo_wrapper=False):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
         self.ss_type = ss_type
         self.zc = zc
         self.zc_names = None
+        self.zc_only = zc_only
         self.hyperparams = None
         self.hpo_wrapper = hpo_wrapper
 
@@ -44,7 +45,10 @@ class BaseTree(Predictor):
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
                 # xtrain = [[*x, (train_info[i]-mean)/std] for i, x in enumerate(xtrain)]
-                xtrain = [[*x, *zc_scores] for x, zc_scores in zip (xtrain, self.zc_features)]
+                if self.zc_only:
+                    xtrain = self.zc_features
+                else:
+                    xtrain = [[*x, *zc_scores] for x, zc_scores in zip (xtrain, self.zc_features)]
             xtrain = np.array(xtrain)
             ytrain = np.array(ytrain)
 
@@ -75,7 +79,10 @@ class BaseTree(Predictor):
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
                 zc_scores = [self.create_zc_feature_vector(data['zero_cost_scores']) for data in info]
-                xtest = [[*x, *zc] for x, zc in zip(xtest, zc_scores)]
+                if self.zc_only:
+                    xtest = zc_scores
+                else:
+                    xtest = [[*x, *zc] for x, zc in zip(xtest, zc_scores)]
             xtest = np.array(xtest)
 
         else:
