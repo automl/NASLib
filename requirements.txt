@@ -20,3 +20,4 @@ xgboost
 emcee==2.2.1
 pybnn
 pyro-ppl==1.4.0
+gdown
