@@ -45,7 +45,7 @@ def main(args):
 
         config['search'] = search_config
 
-        with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
+        with open(folder + f'/config_{i}.yaml', 'w') as fh:
             yaml.dump(config, fh)
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ fi
 
 
 out_dir=run
-trials=5
+trials=10
 end_seed=$(($start_seed + $trials - 1))
 test_size=200
 config_root=configs
