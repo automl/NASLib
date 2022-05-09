@@ -1,6 +1,4 @@
 # NASLib
-[![Build Status](https://travis-ci.com/automl/NASLib.svg?branch=master)](https://travis-ci.com/automl/NASLib)
-[![codecov](https://codecov.io/gh/automl/NASLib/branch/master/graph/badge.svg?token=RNqATqVvnV)](https://codecov.io/gh/automl/NASLib)
 
 NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilitate NAS research for the community by providing interfaces to several state-of-the-art NAS search spaces.
 
@@ -34,18 +32,6 @@ and our paper: <a href="https://arxiv.org/abs/2104.01177">How Powerful are Perfo
   <img src="images/predictors.png" alt="predictors" width="75%">
 </p>
 
-# Requirements
-
-Make sure you use the latest version of pip. It makes sense to set up a virtual environment, too.
-
-```
-python3 -m venv naslib
-source naslib/bin/activate
-
-pip install --upgrade pip setuptools wheel
-pip install cython pytest
-```
-
 # Installation
 
 Clone and install.
@@ -53,12 +39,18 @@ Clone and install.
 If you plan to modify naslib consider adding the `-e` option for `pip install`.
 
 ```
-git clone https://github.com/automl/NASLib.git
-cd naslib
-python setup.py develop 
+conda create -n naslib_exercises python=3.7
+conda activate naslib_exercises
+pip install --upgrade pip setuptools wheel
+pip install -e .
 
-pip install torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+```
 
+# Download data 
+ To download the tabular benchmark and setup the data folder run
+
+```
+source scripts/download_data.sh nb201 cifar10
 
 ```
 
