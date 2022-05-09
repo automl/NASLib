@@ -42,7 +42,7 @@ start=`date +%s`
 
 for i in $(seq 0 $(($n_seeds - 1)));
 do
-    python naslib/runners/bbo/runner.py --config-file configs/zc_ensembles/${searchspace}-${start_seed}/${dataset}/config_${predictor}_$(($start_seed + $i)).yaml
+    python naslib/runners/bbo/runner.py --config-file configs/zc_ensembles/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
 done
 
 end=`date +%s`
