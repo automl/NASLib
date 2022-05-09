@@ -59,6 +59,7 @@ def load_all():
     from . import plain
     from . import synflow
     from . import epe_nas
+    from . import zen
 
 # TODO: should we do that by default?
 load_all()
