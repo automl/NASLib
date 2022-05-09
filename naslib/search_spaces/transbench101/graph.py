@@ -361,7 +361,7 @@ class TransBench101SearchSpaceMicro(Graph):
     
 
     def get_type(self):
-        return 'transbench101'
+        return 'transbench101_micro'
 
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:
@@ -596,7 +596,7 @@ class TransBench101SearchSpaceMacro(Graph):
         return nbrs    
 
     def get_type(self):
-        return 'transbench101'
+        return 'transbench101_macro'
 
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:
