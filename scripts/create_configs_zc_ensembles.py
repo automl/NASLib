@@ -2,57 +2,51 @@ import argparse
 import os
 import yaml
 
-# from naslib.utils.utils import get_project_root
-
 
 def main(args):
-    if args.config_type == 'zc_ensemble':
-        folder = os.path.join(
-            args.config_root,
-            args.config_type,
-            args.optimizer,
-            f'{args.search_space}-{args.start_seed}',
-            args.dataset
-        )
-        print(folder)
-        os.makedirs(folder, exist_ok=True)
-        args.start_seed = int(args.start_seed)
-        args.trials = int(args.trials)
+    folder = os.path.join(
+        args.config_root,
+        args.config_type,
+        args.optimizer,
+        f'{args.search_space}-{args.start_seed}',
+        args.dataset
+    )
+    print(folder)
+    os.makedirs(folder, exist_ok=True)
+    args.start_seed = int(args.start_seed)
+    args.trials = int(args.trials)
 
-        for i in range(args.start_seed, args.start_seed + args.trials):
-            config = {
-                'seed': i,
-                'search_space': args.search_space,
-                'dataset': args.dataset,
-                'optimizer': args.optimizer,
-                'config_type': args.config_type,
-                'predictor': args.predictor,
-                'out_dir': args.out_dir,
-                'test_size': args.test_size,
-                'train_portion': args.train_portion,
-                'batch_size': args.batch_size,
-                'cutout': args.cutout,
-                'cutout_length': args.cutout_length,
-                'cutout_prob': args.cutout_prob,
-            }
+    for i in range(args.start_seed, args.start_seed + args.trials):
+        config = {
+            'seed': i,
+            'search_space': args.search_space,
+            'dataset': args.dataset,
+            'optimizer': args.optimizer,
+            'config_type': args.config_type,
+            'predictor': args.predictor,
+            'out_dir': args.out_dir,
+            'test_size': args.test_size,
+            'train_portion': args.train_portion,
+            'batch_size': args.batch_size,
+            'cutout': args.cutout,
+            'cutout_length': args.cutout_length,
+            'cutout_prob': args.cutout_prob,
+        }
 
-            config_keys = set(config.keys())
-            args_keys = set([arg for arg in vars(args)])
-            search_args = args_keys.difference(config_keys)
-            
-            search_config = {arg:getattr(args, arg) for arg in search_args}
-            del(search_config['config_root'])
-            del(search_config['trials'])
-            del(search_config['start_seed'])
-            search_config['seed'] = i
+        config_keys = set(config.keys())
+        args_keys = set([arg for arg in vars(args)])
+        search_args = args_keys.difference(config_keys)
 
-            config['search'] = search_config
+        search_config = {arg:getattr(args, arg) for arg in search_args}
+        del(search_config['config_root'])
+        del(search_config['trials'])
+        del(search_config['start_seed'])
+        search_config['seed'] = i
 
-            with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
-                yaml.dump(config, fh)
-    else:
-        print('Invalid config type in create_configs.py')
+        config['search'] = search_config
 
+        with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
+            yaml.dump(config, fh)
 
 if __name__ == "__main__":
     """ This is executed when run from the command line """
@@ -77,10 +71,10 @@ if __name__ == "__main__":
     parser.add_argument("--config_root", type=str, default='configs', help="Root config directory")
 
     # Search options
-    parser.add_argument("--epochs", type=int, default=50, help="How many search epochs")
+    parser.add_argument("--epochs", type=int, default=200, help="Number of search epochs")
     parser.add_argument("--checkpoint_freq", type=int, default='5', help="Checkpoint frequency")
     parser.add_argument("--zc_ensemble", type=bool, default=True, help="True to use ensemble of ZC predictors")
-    parser.add_argument("--zc_names", nargs='+', default=['params', 'flops', 'jacov'], help="Names of ZC predictors to use")
+    parser.add_argument("--zc_names", nargs='+', default=['params', 'flops', 'jacov', 'plain', 'grasp', 'snip', 'fisher', 'grad_norm', 'epe_nas'], help="Names of ZC predictors to use")
     parser.add_argument("--k", type=int, default=10, help="Top k candidates to choose in each batch")
     parser.add_argument("--num_init", type=int, default=10, help="Root config directory")
     parser.add_argument("--num_ensemble", type=int, default=1, help="Root config directory")
