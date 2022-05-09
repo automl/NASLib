@@ -1,8 +1,8 @@
 #!/bin/bash
-searchspace=nasbench301
-datasets=(cifar10)
+searchspace=transbench101_micro
+datasets=(jigsaw class_object class_scene autoencoder)
 start_seed=9000
-n_seeds=5
+n_seeds=10
 
 for dataset in "${datasets[@]}"
 do

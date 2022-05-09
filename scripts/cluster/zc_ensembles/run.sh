@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -p alldlc_gpu-rtx3080 #,ml_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
+#SBATCH -p bosch_cpu-cascadelake #,ml_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -a 1 # array size
@@ -12,7 +12,7 @@ echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node w
 searchspace=$1
 dataset=$2
 start_seed=$3
-n_seeds=$4
+seed=$4
 
 if [ -z "$searchspace" ]
 then
@@ -32,18 +32,15 @@ then
     exit 1
 fi
 
-if [ -z "$n_seeds" ]
+if [ -z "$seed" ]
 then
-    echo "n_seeds argument not provided"
+    echo "seed not provided"
     exit 1
 fi
 
 start=`date +%s`
 
-for i in $(seq 0 $(($n_seeds - 1)));
-do
-    python naslib/runners/bbo/runner.py --config-file configs/zc_ensembles/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
-done
+python naslib/runners/bbo/runner.py --config-file configs/zc_ensemble/bananas/${searchspace}-${start_seed}/${dataset}/config_zc_${seed}.yaml
 
 end=`date +%s`
 runtime=$((end-start))
