@@ -15,7 +15,8 @@ convert_naslib_to_op_indices, convert_naslib_to_str
 from naslib.utils.utils import get_project_root
 
 from .primitives import ResNetBasicblock
-
+NUM_EDGES = 6
+NUM_OPS = 5
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1', 'AvgPool1x1']
 
@@ -87,11 +88,11 @@ class NasBench201SearchSpace(Graph):
 
         # preprocessing
         self.edges[1, 2].set('op', ops.Stem(channels[0]))
-        
+
         # stage 1
         for i in range(2, 7):
             self.edges[i, i+1].set('op', cell.copy().set_scope('stage_1'))
-        
+
         # stage 2
         self.edges[7, 8].set('op', ResNetBasicblock(C_in=channels[0], C_out=channels[1], stride=2))
         for i in range(8, 13):
@@ -108,7 +109,7 @@ class NasBench201SearchSpace(Graph):
             nn.Flatten(),
             nn.Linear(channels[-1], self.num_classes)
         ))
-        
+
         # set the ops at the cells (channel dependent)
         for c, scope in zip(channels, self.OPTIMIZER_SCOPE):
             self.update_edges(
@@ -116,7 +117,7 @@ class NasBench201SearchSpace(Graph):
                 scope=scope,
                 private_edge_data=True
             )
-        
+
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
         Query results from nasbench 201
@@ -180,7 +181,7 @@ class NasBench201SearchSpace(Graph):
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
-    
+
     def get_hash(self):
         return tuple(self.get_op_indices())
 
@@ -194,9 +195,18 @@ class NasBench201SearchSpace(Graph):
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
-        op_indices = np.random.randint(5, size=(6))
-        self.set_op_indices(op_indices)
+        def is_valid_arch(op_indices):
+            return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or \
+                        (op_indices[2] == op_indices[4] == op_indices[5] == 1))
 
+        while True:
+            op_indices = np.random.randint(NUM_OPS, size=(NUM_EDGES)).tolist()
+
+            if not is_valid_arch(op_indices):
+                continue
+
+            self.set_op_indices(op_indices)
+            break
     def mutate(self, parent, dataset_api=None):
         """
         This will mutate one op from the parent op indices, and then
@@ -217,7 +227,7 @@ class NasBench201SearchSpace(Graph):
         nbrs = []
         for edge in range(len(self.op_indices)):
             available = [o for o in range(len(OP_NAMES)) if o != self.op_indices[edge]]
-            
+
             for op_index in available:
                 nbr_op_indices = self.op_indices.copy()
                 nbr_op_indices[edge] = op_index
@@ -226,13 +236,13 @@ class NasBench201SearchSpace(Graph):
                 nbr_model = torch.nn.Module()
                 nbr_model.arch = nbr
                 nbrs.append(nbr_model)
-        
+
         random.shuffle(nbrs)
         return nbrs
 
     def get_type(self):
         return 'nasbench201'
-    
+
 def _set_cell_ops(edge, C):
     edge.data.set('op', [
         ops.Identity(),
@@ -241,6 +251,5 @@ def _set_cell_ops(edge, C):
         ops.ReLUConvBN(C, C, kernel_size=1),
         ops.AvgPool1x1(kernel_size=3, stride=1),
     ])
-    
-    
+
 
