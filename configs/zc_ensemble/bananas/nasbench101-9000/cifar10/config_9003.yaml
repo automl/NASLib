@@ -1,0 +1,39 @@
+batch_size: 64
+config_type: zc_ensemble
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: cifar10
+optimizer: bananas
+out_dir: run
+predictor: zc
+search:
+  acq_fn_optimization: random_sampling
+  acq_fn_type: its
+  checkpoint_freq: 200
+  encoding_type: path
+  epochs: 200
+  k: 10
+  max_mutations: 1
+  num_arches_to_mutate: 2
+  num_candidates: 10
+  num_ensemble: 1
+  num_init: 10
+  predictor_type: xgb
+  seed: 9003
+  zc_ensemble: true
+  zc_names:
+  - flops
+  - params
+  - snip
+  - jacov
+  - grad_norm
+  - plain
+  - epe_nas
+  - fisher
+  - grasp
+  zc_only: false
+search_space: nasbench101
+seed: 9003
+test_size: 200
+train_portion: 0.7
