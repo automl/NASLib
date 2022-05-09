@@ -13,6 +13,8 @@ searchspace=$1
 dataset=$2
 start_seed=$3
 seed=$4
+experiment=$5
+optimizer=bananas
 
 if [ -z "$searchspace" ]
 then
@@ -38,9 +40,15 @@ then
     exit 1
 fi
 
+if [ -z "$experiment" ]
+then
+    echo "experiment not provided"
+    exit 1
+fi
+
 start=`date +%s`
 
-python naslib/runners/bbo/runner.py --config-file configs/zc_ensemble/bananas/${searchspace}-${start_seed}/${dataset}/config_zc_${seed}.yaml
+python naslib/runners/bbo/runner.py --config-file configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
 
 end=`date +%s`
 runtime=$((end-start))
