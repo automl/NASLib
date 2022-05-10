@@ -1,4 +1,4 @@
-batch_size: 64
+batch_size: 32
 config_type: zc_ensemble
 cutout: false
 cutout_length: 16

@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--test_size", type=int, default=200, help="Test set size for predictor")
     parser.add_argument("--train_portion", type=float, default=0.7, help="Train portion")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--cutout", type=bool, default=False, help="Cutout")
     parser.add_argument("--cutout_length", type=int, default=16, help="Cutout length")
     parser.add_argument("--cutout_prob", type=float, default=1.0, help="Cutout probability")
