@@ -29,11 +29,7 @@ def convert_naslib_to_op_indices(naslib_object):
 
     return [OP_NAMES.index(name) for name in ops]
 
-
-def convert_op_indices_to_model(op_indices, task):
-    arch_str = convert_naslib_to_transbench101_macro(op_indices)
-    model = create_model(arch_str, task)
-
+def _wrap_model(model):
     all_leaf_modules = get_children(model)
     inplace_relus = [module for module in all_leaf_modules if (isinstance(module, nn.ReLU) and module.inplace == True) ]
 
@@ -43,6 +39,18 @@ def convert_op_indices_to_model(op_indices, task):
     model_wrapper = ModelWrapper(model)
 
     return model_wrapper
+
+def convert_op_indices_macro_to_model(op_indices, task):
+    arch_str = convert_op_indices_macro_to_str(op_indices)
+    model = create_model(arch_str, task)
+
+    return _wrap_model(model)
+
+def convert_op_indices_micro_to_model(op_indices, task):
+    arch_str = convert_op_indices_micro_to_str(op_indices)
+    model = create_model(arch_str, task)
+
+    return _wrap_model(model)
 
 def convert_op_indices_to_naslib(op_indices, naslib_object):
     """
@@ -118,7 +126,6 @@ def convert_naslib_to_str(naslib_object):
 
     return '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
 
-
 def convert_naslib_to_transbench101_micro(naslib_object):
     """
     Converts naslib object to string representation.
@@ -145,16 +152,13 @@ def convert_naslib_to_transbench101_micro(naslib_object):
 
     return '64-41414-{}_{}{}_{}{}{}'.format(*op_edge_list)
 
+def convert_op_indices_micro_to_str(op_indices):
+    """
+    Converts naslib object to string representation.
+    """
+    return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
 
-# def convert_naslib_to_transbench101_micro(op_indices):
-#     """
-#     Converts naslib object to string representation.
-#     """
-#     return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
-
-
-
-def convert_naslib_to_transbench101_macro(op_indices):
+def convert_op_indices_macro_to_str(op_indices):
     """
     Converts naslib object to string representation.
     """

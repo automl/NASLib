@@ -31,11 +31,20 @@ one_hot_transnasbench201 = [[1,0,0,0],
 TRANS_OPS = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
 TRANS_NUM_OPS = len(TRANS_OPS)
 
-def encode_adjacency_one_hot_transbench(arch):
+def encode_adjacency_one_hot_transbench_micro(arch):
     encoding = arch.get_op_indices()
     one_hot = []
     for e in encoding:
         one_hot = [*one_hot, *one_hot_transnasbench201[e]]
+    return one_hot
+
+def encode_adjacency_one_hot_transbench_macro(arch):
+    encoding = arch.get_op_indices()
+    one_hot = []
+    one_hot_mapping = np.eye(5)
+
+    for e in encoding:
+        one_hot = [*one_hot, *one_hot_mapping[e]]
     return one_hot
 
 def encode_adjacency_one_hot(arch):
@@ -198,9 +207,16 @@ def encode_seminas_nasbench201(arch):
 
     return dic
 
-def encode_transnasbench101(arch, encoding_type='adjacency_one_hot'):
+def encode_transnasbench101_micro(arch, encoding_type='adjacency_one_hot'):
     if encoding_type == 'adjacency_one_hot':
-        return encode_adjacency_one_hot_transbench(arch)
+        return encode_adjacency_one_hot_transbench_micro(arch)
+    else:
+        logger.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
+        raise NotImplementedError()
+
+def encode_transnasbench101_macro(arch, encoding_type='adjacency_one_hot'):
+    if encoding_type == 'adjacency_one_hot':
+        return encode_adjacency_one_hot_transbench_macro(arch)
     else:
         logger.info('{} is not yet supported as a predictor encoding'.format(encoding_type))
         raise NotImplementedError()
@@ -237,6 +253,8 @@ def encode(arch, encoding_type='adjacency_one_hot', ss_type=None):
     elif ss_type == 'nasbench301':
         return encode_darts(arch, encoding_type=encoding_type)
     elif ss_type == 'transbench101_micro':
-        return encode_transnasbench101(arch, encoding_type=encoding_type)
+        return encode_transnasbench101_micro(arch, encoding_type=encoding_type)
+    elif ss_type == 'transbench101_macro':
+        return encode_transnasbench101_macro(arch, encoding_type=encoding_type)
     else:
         raise NotImplementedError('{} is not yet supported for encodings'.format(ss_type))

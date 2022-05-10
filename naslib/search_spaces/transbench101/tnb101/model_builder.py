@@ -53,11 +53,11 @@ def _create_model_segmentsemantic(cfg):
     return cfg['model']
 
 def _create_model_class_object(cfg):
-    cfg['target_dim'] = 75 # ORIG CODE 100
+    cfg['target_dim'] = 100 # ORIG CODE 100
     return _create_feed_forward_net(cfg)
 
 def _create_model_class_scene(cfg):
-    cfg['target_dim'] = 47 # ORIG CODE 63
+    cfg['target_dim'] = 63 # ORIG CODE 63
     return _create_feed_forward_net(cfg)
 
 def _create_model_jigsaw(cfg):
