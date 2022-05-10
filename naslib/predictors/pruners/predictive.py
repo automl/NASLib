@@ -161,7 +161,7 @@ def find_measures(
         )
 
     for k, v in measures_arr.items():
-        if k == "jacov" or k == 'epe_nas':
+        if k == "jacov" or k == 'epe_nas' or k=='nwot':
             measure_score = v
         else:
             measure_score = sum_arr(v)
