@@ -7,7 +7,7 @@ NASLib is a Neural Architecture Search (NAS) library. Its purpose is to facilita
 
 It is designed to be modular, extensible and easy to use.
 
-![naslib-overview](images/naslib-overview.png)
+![naslib-overview](images/naslib-overall.png)
 
 # Usage
 
