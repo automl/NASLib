@@ -1,4 +1,4 @@
-d naslib/data
+cd naslib/data
 search_space="$1"
 dataset="$2"
 echo dataset = $dataset
