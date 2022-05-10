@@ -72,7 +72,7 @@ if __name__ == "__main__":
 
     # Search options
     parser.add_argument("--epochs", type=int, default=200, help="Number of search epochs")
-    parser.add_argument("--checkpoint_freq", type=int, default='5', help="Checkpoint frequency")
+    parser.add_argument("--checkpoint_freq", type=int, default=200, help="Checkpoint frequency")
     parser.add_argument("--zc_ensemble", type=bool, default=True, help="True to use ensemble of ZC predictors")
     parser.add_argument("--zc_names", nargs='+', default=['params', 'flops', 'jacov', 'plain', 'grasp', 'snip', 'fisher', 'grad_norm', 'epe_nas'], help="Names of ZC predictors to use")
     parser.add_argument("--k", type=int, default=10, help="Top k candidates to choose in each batch")
