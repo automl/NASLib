@@ -67,7 +67,7 @@ source scripts/download_data.sh nb201 cifar10
 ```
 # Tutorial
 
-Please refer to `naslib_tutorial.ipynb` for instructions on the tutorial and exercises
+Please refer to `docs/naslib_tutorial.ipynb` for instructions on the tutorial and exercises
 
 
 
