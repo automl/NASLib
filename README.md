@@ -39,6 +39,8 @@ Clone and install.
 If you plan to modify naslib consider adding the `-e` option for `pip install`.
 
 ```
+git clone -b dllab22 https://github.com/automl/NASLib/
+cd NASLib
 conda create -n naslib_exercises python=3.7
 conda activate naslib_exercises
 pip install --upgrade pip setuptools wheel
