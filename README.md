@@ -43,6 +43,7 @@ conda create -n naslib_exercises python=3.7
 conda activate naslib_exercises
 pip install --upgrade pip setuptools wheel
 pip install -e .
+pip install gdown
 
 ```
 
