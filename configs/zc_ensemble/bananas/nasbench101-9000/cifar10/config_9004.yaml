@@ -32,6 +32,8 @@ search:
   - epe_nas
   - fisher
   - grasp
+  - l2_norm
+  - synflow
   zc_only: false
 search_space: nasbench101
 seed: 9004
