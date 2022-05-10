@@ -525,10 +525,16 @@ class TransBench101SearchSpaceMacro(Graph):
         q = random.randint(1, 3)
         u = [2*int(i<p) for i in range(r+4)]
         v = [int(i<q) for i in range(r+4)]
+
+        random.shuffle(u)
+        random.shuffle(v)
+
         w = [1+sum(x) for x in zip(u, v)]
-        op_indices = np.random.permutation(w)
+        op_indices = np.array(w)
+
         while len(op_indices)<6:
             op_indices = np.append(op_indices, 0)
+
         self.set_op_indices(op_indices)
 
     def mutate(self, parent, dataset_api=None):
