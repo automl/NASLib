@@ -49,14 +49,6 @@ pip install gdown jupyter
 
 ```
 
-# Download data 
- To download the tabular benchmark and setup the data folder run
-
-```
-source scripts/download_data.sh nb201 cifar10
-
-```
-
 To validate the installation, you can run tests:
 
 ```
@@ -65,6 +57,18 @@ coverage run -m unittest discover
 ```
 
 The test coverage can be seen with `coverage report`.
+
+# Download data 
+ To download the tabular benchmark and setup the data folder run
+
+```
+source scripts/download_data.sh nb201 cifar10
+
+```
+# Tutorial
+
+Please refer to `naslib_tutorial.ipynb` for instructions on the tutorial and exercises
+
 
 
 ## Cite
