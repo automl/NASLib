@@ -1,4 +1,8 @@
+import torch.nn as nn
 from naslib.search_spaces.core.graph import Graph
+from naslib.search_spaces.nasbench101.conversions import get_children
+from naslib.search_spaces.nasbench101.primitives import ModelWrapper
+from naslib.search_spaces.transbench101.tnb101.model_builder import create_model
 
 """
 There are three representations
@@ -25,6 +29,20 @@ def convert_naslib_to_op_indices(naslib_object):
 
     return [OP_NAMES.index(name) for name in ops]
 
+
+def convert_op_indices_to_model(op_indices, task):
+    arch_str = convert_naslib_to_transbench101_macro(op_indices)
+    model = create_model(arch_str, task)
+
+    all_leaf_modules = get_children(model)
+    inplace_relus = [module for module in all_leaf_modules if (isinstance(module, nn.ReLU) and module.inplace == True) ]
+
+    for relu in inplace_relus:
+        relu.inplace = False
+
+    model_wrapper = ModelWrapper(model)
+
+    return model_wrapper
 
 def convert_op_indices_to_naslib(op_indices, naslib_object):
     """

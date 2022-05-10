@@ -11,6 +11,7 @@ from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.core.primitives import Sequential
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.transbench101.conversions import (
+    convert_op_indices_to_model,
     convert_op_indices_to_naslib,
     convert_naslib_to_op_indices,
     convert_naslib_to_transbench101_micro,
@@ -389,13 +390,24 @@ class TransBench101SearchSpaceMacro(Graph):
     QUERYABLE = True
 
 
-    def __init__(self):
+    def __init__(self, dataset='jigsaw'):
         super().__init__()
-        self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
+        if dataset == "jigsaw":
+            self.num_classes = 1000
+        elif dataset == "class_object":
+            self.num_classes = 100
+        elif dataset == "class_scene":
+            self.num_classes = 63
+        else:
+            self.num_classes = -1
+        
+        self.dataset = dataset
         self.op_indices = None
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
+
+        self.add_edge(1, 2)
         
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
@@ -497,8 +509,12 @@ class TransBench101SearchSpaceMacro(Graph):
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
+        model = convert_op_indices_to_model(op_indices, self.dataset)
+        self.edges[1, 2].set('op', model)
 
-        
+    def set_spec(self, op_indices, dataset_api=None):
+        self.set_op_indices(op_indices)
+
     def sample_random_architecture(self, dataset_api=None):
         """
         This will sample a random architecture and update the edges in the

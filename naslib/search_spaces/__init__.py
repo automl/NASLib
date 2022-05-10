@@ -23,7 +23,7 @@ dataset_n_classes = {
 def get_search_space(name, dataset):
     search_space_cls = supported_search_spaces[name.lower()]
 
-    if name == 'transbench101_micro':
+    if name == 'transbench101_micro' or name == 'transbench101_macro':
         return search_space_cls(dataset=dataset)
 
     n_classes = dataset_n_classes[dataset.lower()]
