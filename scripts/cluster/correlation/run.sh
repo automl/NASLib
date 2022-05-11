@@ -13,7 +13,7 @@ searchspace=$1
 dataset=$2
 predictor=$3
 start_seed=$4
-#n_seeds=$5
+experiment=$5
 
 if [ -z "$searchspace" ]
 then
@@ -39,15 +39,17 @@ then
     exit 1
 fi
 
-# if [ -z "$n_seeds" ]
-# then
-#     echo "n_seeds argument not provided"
-#     exit 1
-# fi
+if [ -z "$experiment" ]
+then
+    echo "experiment not provided"
+    exit 1
+fi
 
 start=`date +%s`
 
-python naslib/runners/runner.py --config-file configs/predictors/${searchspace}-${start_seed}/${dataset}/config_${predictor}_$(($start_seed + ${SLURM_ARRAY_TASK_ID})).yaml
+seed=$(($start_seed + ${SLURM_ARRAY_TASK_ID}))
+echo seed
+python naslib/runners/bbo/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
 
 end=`date +%s`
 runtime=$((end-start))

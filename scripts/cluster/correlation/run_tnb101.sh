@@ -1,6 +1,14 @@
 #!/bin/bash
 
-predictor=$1
+experiment=$1
+predictor=$2
+start_seed=9000
+
+if [ -z "$experiment" ]
+then
+    echo "Experiment argument not provided"
+    exit 1
+fi
 
 if [ -z "$predictor" ];
 then
@@ -19,7 +27,7 @@ do
     do
         for pred in "${predictors[@]}"
         do
-            sbatch ./scripts/cluster/correlation/run.sh $searchspace $dataset $pred 9000
+            sbatch ./scripts/cluster/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment
         done
 
         echo ""
