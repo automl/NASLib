@@ -5,5 +5,5 @@ datasets=(cifar10 cifar100 ImageNet16-120)
 
 for dataset in "${datasets[@]}"
 do
-    scripts/bash_scripts/create_configs.sh $searchspace $dataset 9000
+    scripts/bash_scripts/correlation/create_configs.sh $searchspace $dataset 9000
 done
