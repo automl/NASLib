@@ -19,6 +19,7 @@ def main(args):
 
     for i in range(args.start_seed, args.start_seed + args.trials):
         config = {
+            'config_type': args.experiment,
             'seed': i,
             'search_space': args.search_space,
             'dataset': args.dataset,

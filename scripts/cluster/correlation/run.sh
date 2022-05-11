@@ -3,6 +3,7 @@
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -a 5 # array size
+#SBATCH --mem=16G
 #SBATCH --job-name="ZC_CORRELATION"
 
 echo "Workingdir: $PWD";
@@ -48,8 +49,7 @@ fi
 start=`date +%s`
 
 seed=$(($start_seed + ${SLURM_ARRAY_TASK_ID}))
-echo seed
-python naslib/runners/bbo/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
+python naslib/runners/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
 
 end=`date +%s`
 runtime=$((end-start))
