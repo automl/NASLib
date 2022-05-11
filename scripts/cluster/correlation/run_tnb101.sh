@@ -27,7 +27,7 @@ do
     do
         for pred in "${predictors[@]}"
         do
-            sbatch ./scripts/cluster/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment
+            sbatch ./scripts/cluster/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment <<< "y"
         done
 
         echo ""

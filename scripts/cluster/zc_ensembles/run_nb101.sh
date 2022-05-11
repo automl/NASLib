@@ -17,7 +17,7 @@ for dataset in "${datasets[@]}"
 do
     for i in $(seq 0 $(($n_seeds - 1)))
     do
-        sbatch ./scripts/cluster/zc_ensembles/run.sh $searchspace $dataset $start_seed $(($start_seed + $i)) $experiment
+        sbatch ./scripts/cluster/zc_ensembles/run.sh $searchspace $dataset $start_seed $(($start_seed + $i)) $experiment <<< "y"
     done
 
     echo ""
