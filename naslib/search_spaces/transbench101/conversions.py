@@ -162,5 +162,5 @@ def convert_op_indices_macro_to_str(op_indices):
     """
     Converts naslib object to string representation.
     """
-    ops_string = ''.join([str(e) for e in op_indices.tolist() if e!=0])
+    ops_string = ''.join([str(e) for e in op_indices if e!=0])
     return '64-{}-basic'.format(ops_string)
