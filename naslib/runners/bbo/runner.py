@@ -34,3 +34,5 @@ optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
 trainer.search(resume_from="", summary_writer=writer, report_incumbent=False)
+
+logger('Ensemble experiment complete.')
