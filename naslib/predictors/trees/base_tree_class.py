@@ -57,6 +57,7 @@ class BaseTree(Predictor):
             xtrain = xtrain
             ytrain = ytrain
 
+        self.zc_to_features_map = self._get_zc_to_feature_mapping(self.zc_names, xtrain)
 
         # convert to the right representation
         train_data = self.get_dataset(xtrain, ytrain)
@@ -116,3 +117,18 @@ class BaseTree(Predictor):
 
     def set_hyperparams(self, params):
         self.hyperparams = params
+
+    def _get_zc_to_feature_mapping(self, zc_names, xtrain):
+        x = xtrain[0] # Consider one datapoint
+
+        n_zc = len(zc_names)
+        n_arch_features = len(x[:-n_zc])
+        mapping = {}
+
+        for zc_name, feature_index in zip(zc_names, range(n_arch_features, n_arch_features+n_zc)):
+            mapping[zc_name] = f'f{feature_index}'
+
+        return mapping
+
+
+
