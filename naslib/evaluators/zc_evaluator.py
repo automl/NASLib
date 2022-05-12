@@ -5,8 +5,6 @@ import logging
 import os
 import numpy as np
 import torch
-from scipy import stats
-from sklearn import metrics
 from tqdm import tqdm
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -143,7 +141,7 @@ class ZeroCostPredictorEvaluator(object):
             test_pred = np.mean(test_pred, axis=0)
 
         logger.info("Compute evaluation metrics")
-        results_dict = self.compare(ytest, test_pred)
+        results_dict = utils.compute_scores(ytest, test_pred)
         results_dict["query_time"] = (query_time_end - query_time_start) / len(xtest)
 
         method_type = self.predictor.method_type
@@ -184,66 +182,6 @@ class ZeroCostPredictorEvaluator(object):
             self._log_to_json()
 
         return self.results
-
-    def compare(self, ytest, test_pred):
-        ytest = np.array(ytest)
-        test_pred = np.array(test_pred)
-        METRICS = [
-            "mae",
-            "rmse",
-            "pearson",
-            "spearman",
-            "kendalltau",
-            "kt_2dec",
-            "kt_1dec",
-            "precision_10",
-            "precision_20",
-            "full_ytest",
-            "full_testpred",
-        ]
-        metrics_dict = {}
-
-        try:
-            metrics_dict["mae"] = np.mean(abs(test_pred - ytest))
-            metrics_dict["rmse"] = metrics.mean_squared_error(
-                ytest, test_pred, squared=False
-            )
-            metrics_dict["pearson"] = np.abs(np.corrcoef(ytest, test_pred)[1, 0])
-            metrics_dict["spearman"] = stats.spearmanr(ytest, test_pred)[0]
-            metrics_dict["kendalltau"] = stats.kendalltau(ytest, test_pred)[0]
-            metrics_dict["kt_2dec"] = stats.kendalltau(
-                ytest, np.round(test_pred, decimals=2)
-            )[0]
-            metrics_dict["kt_1dec"] = stats.kendalltau(
-                ytest, np.round(test_pred, decimals=1)
-            )[0]
-            for k in [10, 20]:
-                top_ytest = np.array(
-                    [y > sorted(ytest)[max(-len(ytest), -k - 1)] for y in ytest]
-                )
-                top_test_pred = np.array(
-                    [
-                        y > sorted(test_pred)[max(-len(test_pred), -k - 1)]
-                        for y in test_pred
-                    ]
-                )
-                metrics_dict["precision_{}".format(k)] = (
-                    sum(top_ytest & top_test_pred) / k
-                )
-            metrics_dict["full_ytest"] = ytest.tolist()
-            metrics_dict["full_testpred"] = test_pred.tolist()
-
-        except:
-            for metric in METRICS:
-                metrics_dict[metric] = float("nan")
-        if np.isnan(metrics_dict["pearson"]) or not np.isfinite(
-            metrics_dict["pearson"]
-        ):
-            logger.info("Error when computing metrics. ytest and test_pred are:")
-            logger.info(ytest)
-            logger.info(test_pred)
-
-        return metrics_dict
 
     def _log_to_json(self):
         """log statistics to json file"""
