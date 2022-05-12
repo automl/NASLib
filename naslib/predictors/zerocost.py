@@ -41,7 +41,6 @@ class ZeroCost(Predictor):
             score = -1e8
 
         if self.method_type == 'synflow':
-            logger.info(f'SCORE IS {score}')
             if score == 0.:
                 return score
 
