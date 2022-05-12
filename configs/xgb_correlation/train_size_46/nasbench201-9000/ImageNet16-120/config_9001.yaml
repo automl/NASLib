@@ -1,0 +1,27 @@
+batch_size: 32
+config_type: xgb_correlation
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: ImageNet16-120
+out_dir: run
+predictor: xgb
+search_space: nasbench201
+seed: 9001
+test_size: 200
+train_portion: 0.7
+train_size: 46
+zc_ensemble: true
+zc_names:
+- flops
+- params
+- snip
+- jacov
+- grad_norm
+- plain
+- epe_nas
+- fisher
+- grasp
+- l2_norm
+- synflow
+zc_only: false
