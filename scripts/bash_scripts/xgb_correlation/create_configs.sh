@@ -25,7 +25,7 @@ fi
 out_dir=run
 trials=5
 end_seed=$(($start_seed + $trials - 1))
-train_sizes=(10 12 16 20 26 33 42 54 69 88 112 143 183 233 297 379 483 615 784 1000)
+train_sizes=(10 16 27 46 77 129 215 359 599 1000)
 test_size=200
 config_root=configs
 
