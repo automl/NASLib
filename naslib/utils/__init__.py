@@ -6,6 +6,7 @@ from .utils import (
     log_args,
     generate_kfold,
     cross_validation,
+    compute_scores
 )
 from .logging import setup_logger
 from .get_dataset_api import get_dataset_api

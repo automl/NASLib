@@ -6,15 +6,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from naslib.search_spaces.core import primitives as ops
+from naslib.search_spaces.nasbench101.primitives import ModelWrapper
 from naslib.search_spaces.nasbench301.primitives import FactorizedReduce
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.core.primitives import Sequential
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.transbench101.conversions import (
+    convert_op_indices_macro_to_model,
+    convert_op_indices_macro_to_str,
+    convert_op_indices_micro_to_model,
+    convert_op_indices_micro_to_str,
     convert_op_indices_to_naslib,
     convert_naslib_to_op_indices,
-    convert_naslib_to_transbench101_micro,
-    convert_naslib_to_transbench101_macro
+
 )
 from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
 
@@ -38,7 +42,7 @@ class TransBench101SearchSpaceMicro(Graph):
     QUERYABLE = True
 
 
-    def __init__(self, dataset='jigsaw', use_small_model=True):
+    def __init__(self, dataset='jigsaw', use_small_model=True, create_graph=False):
         super().__init__()
         if dataset == "jigsaw":
             self.num_classes = 1000
@@ -54,9 +58,15 @@ class TransBench101SearchSpaceMicro(Graph):
         self.max_epoch = 199
         self.space_name = 'transbench101'
         self.dataset=dataset
-        #
+        self.create_graph = create_graph
+
+        if self.create_graph == True:
+            self._create_graph()
+        else:
+            self.add_edge(1, 2)
+
+    def _create_graph(self):
         # Cell definition
-        #
         cell = Graph()
         cell.name = "cell"    # Use the same name for all cells with shared attributes
 
@@ -203,9 +213,9 @@ class TransBench101SearchSpaceMicro(Graph):
             raise NotImplementedError()
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query TransNAS-Bench101')
-        
-        arch_str = convert_naslib_to_transbench101_micro(self) 
-          
+
+        arch_str = convert_op_indices_micro_to_str(self.op_indices)
+
         query_results = dataset_api['api']
         task = dataset_api['task']
                 
@@ -282,7 +292,15 @@ class TransBench101SearchSpaceMicro(Graph):
         
     def get_op_indices(self):
         if self.op_indices is None:
-            self.op_indices = convert_naslib_to_op_indices(self)
+            if self.create_graph == True:
+                self.op_indices = convert_naslib_to_op_indices(self)
+            else:
+                # if there is a model, but it's simply the original implementation of the model put on edge 1-2
+                if isinstance(self.edges[1, 2]['op'], ModelWrapper):
+                    raise NotImplementedError('Conversion from original model to op_indices is not implemented')
+                # if there's no op indices set, and no model on edge 1-2 either
+                else:
+                    raise NotImplementedError('Neither op_indices nor the model is set')
         return self.op_indices
  
 
@@ -292,11 +310,13 @@ class TransBench101SearchSpaceMicro(Graph):
     
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
-	#@@ -245,8 +245,18 @@ def sample_random_architecture(self, dataset_api=None):
-        #This will sample a random architecture and update the edges in the
-        #naslib object accordingly.
         self.op_indices = op_indices
-        convert_op_indices_to_naslib(op_indices, self)
+
+        if self.create_graph == True:
+            convert_op_indices_to_naslib(op_indices, self)
+        else:
+            model = convert_op_indices_micro_to_model(self.op_indices, self.dataset)
+            self.edges[1, 2].set('op', model)
 
     def get_arch_iterator(self, dataset_api=None):
         return itertools.product(range(4), repeat=6)
@@ -361,7 +381,7 @@ class TransBench101SearchSpaceMicro(Graph):
     
 
     def get_type(self):
-        return 'transbench101'
+        return 'transbench101_micro'
 
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:
@@ -389,13 +409,24 @@ class TransBench101SearchSpaceMacro(Graph):
     QUERYABLE = True
 
 
-    def __init__(self):
+    def __init__(self, dataset='jigsaw'):
         super().__init__()
-        self.num_classes = self.NUM_CLASSES if hasattr(self, 'NUM_CLASSES') else 10
+        if dataset == "jigsaw":
+            self.num_classes = 1000
+        elif dataset == "class_object":
+            self.num_classes = 100
+        elif dataset == "class_scene":
+            self.num_classes = 63
+        else:
+            self.num_classes = -1
+        
+        self.dataset = dataset
         self.op_indices = None
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
+
+        self.add_edge(1, 2)
         
     def query(self, metric=None, dataset=None, path=None, epoch=-1, full_lc=False, dataset_api=None):
         """
@@ -406,9 +437,8 @@ class TransBench101SearchSpaceMacro(Graph):
             raise NotImplementedError()
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
-            
-            
-        arch_str = convert_naslib_to_transbench101_macro(self.op_indices) 
+
+        arch_str = convert_op_indices_macro_to_str(self.op_indices)
           
         query_results = dataset_api['api']
         task = dataset_api['task']
@@ -486,7 +516,7 @@ class TransBench101SearchSpaceMacro(Graph):
         
     def get_op_indices(self):
         if self.op_indices is None:
-            self.op_indices = convert_naslib_to_op_indices(self)
+            raise ValueError('op_indices not set')
         return self.op_indices
  
 
@@ -497,8 +527,12 @@ class TransBench101SearchSpaceMacro(Graph):
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
+        model = convert_op_indices_macro_to_model(op_indices, self.dataset)
+        self.edges[1, 2].set('op', model)
 
-        
+    def set_spec(self, op_indices, dataset_api=None):
+        self.set_op_indices(op_indices)
+
     def sample_random_architecture(self, dataset_api=None):
         """
         This will sample a random architecture and update the edges in the
@@ -509,10 +543,16 @@ class TransBench101SearchSpaceMacro(Graph):
         q = random.randint(1, 3)
         u = [2*int(i<p) for i in range(r+4)]
         v = [int(i<q) for i in range(r+4)]
+
+        random.shuffle(u)
+        random.shuffle(v)
+
         w = [1+sum(x) for x in zip(u, v)]
-        op_indices = np.random.permutation(w)
+        op_indices = np.array(w)
+
         while len(op_indices)<6:
             op_indices = np.append(op_indices, 0)
+
         self.set_op_indices(op_indices)
 
     def mutate(self, parent, dataset_api=None):
@@ -596,7 +636,7 @@ class TransBench101SearchSpaceMacro(Graph):
         return nbrs    
 
     def get_type(self):
-        return 'transbench101'
+        return 'transbench101_macro'
 
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:

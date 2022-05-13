@@ -1,0 +1,27 @@
+batch_size: 32
+config_type: xgb_correlation
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: cifar10
+out_dir: run
+predictor: 10
+search_space: nasbench101
+seed: 9001
+test_size: 200
+train_portion: 0.7
+train_size: 10
+zc_ensemble: true
+zc_names:
+- flops
+- params
+- snip
+- jacov
+- grad_norm
+- plain
+- epe_nas
+- fisher
+- grasp
+- l2_norm
+- synflow
+zc_only: false

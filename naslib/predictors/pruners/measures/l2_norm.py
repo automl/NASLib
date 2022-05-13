@@ -18,5 +18,5 @@ from ..p_utils import get_layer_metric_array
 
 
 @measure("l2_norm", copy_net=False, mode="param")
-def get_l2_norm_array(net, inputs, targets, mode, split_data=1):
+def get_l2_norm_array(net, inputs, targets, mode, split_data=1, **kwargs):
     return get_layer_metric_array(net, lambda l: l.weight.norm(), mode=mode)

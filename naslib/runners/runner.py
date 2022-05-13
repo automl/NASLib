@@ -29,3 +29,5 @@ predictor_evaluator.adapt_search_space(search_space, dataset_api=dataset_api)
 
 # Evaluate the predictor
 predictor_evaluator.evaluate()
+
+logger.info('Correlation experiment complete.')

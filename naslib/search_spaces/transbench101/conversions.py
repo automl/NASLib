@@ -1,4 +1,8 @@
+import torch.nn as nn
 from naslib.search_spaces.core.graph import Graph
+from naslib.search_spaces.nasbench101.conversions import get_children
+from naslib.search_spaces.nasbench101.primitives import ModelWrapper
+from naslib.search_spaces.transbench101.tnb101.model_builder import create_model
 
 """
 There are three representations
@@ -25,6 +29,28 @@ def convert_naslib_to_op_indices(naslib_object):
 
     return [OP_NAMES.index(name) for name in ops]
 
+def _wrap_model(model):
+    all_leaf_modules = get_children(model)
+    inplace_relus = [module for module in all_leaf_modules if (isinstance(module, nn.ReLU) and module.inplace == True) ]
+
+    for relu in inplace_relus:
+        relu.inplace = False
+
+    model_wrapper = ModelWrapper(model)
+
+    return model_wrapper
+
+def convert_op_indices_macro_to_model(op_indices, task):
+    arch_str = convert_op_indices_macro_to_str(op_indices)
+    model = create_model(arch_str, task)
+
+    return _wrap_model(model)
+
+def convert_op_indices_micro_to_model(op_indices, task):
+    arch_str = convert_op_indices_micro_to_str(op_indices)
+    model = create_model(arch_str, task)
+
+    return _wrap_model(model)
 
 def convert_op_indices_to_naslib(op_indices, naslib_object):
     """
@@ -100,7 +126,6 @@ def convert_naslib_to_str(naslib_object):
 
     return '|{}|+|{}|{}|+|{}|{}|{}|'.format(*op_edge_list)
 
-
 def convert_naslib_to_transbench101_micro(naslib_object):
     """
     Converts naslib object to string representation.
@@ -127,18 +152,15 @@ def convert_naslib_to_transbench101_micro(naslib_object):
 
     return '64-41414-{}_{}{}_{}{}{}'.format(*op_edge_list)
 
-
-# def convert_naslib_to_transbench101_micro(op_indices):
-#     """
-#     Converts naslib object to string representation.
-#     """
-#     return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
-
-
-
-def convert_naslib_to_transbench101_macro(op_indices):
+def convert_op_indices_micro_to_str(op_indices):
     """
     Converts naslib object to string representation.
     """
-    ops_string = ''.join([str(e) for e in op_indices.tolist() if e!=0])
+    return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
+
+def convert_op_indices_macro_to_str(op_indices):
+    """
+    Converts naslib object to string representation.
+    """
+    ops_string = ''.join([str(e) for e in op_indices if e!=0])
     return '64-{}-basic'.format(ops_string)

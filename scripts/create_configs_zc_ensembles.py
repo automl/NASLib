@@ -45,7 +45,7 @@ def main(args):
 
         config['search'] = search_config
 
-        with open(folder + f'/config_{args.predictor}_{i}.yaml', 'w') as fh:
+        with open(folder + f'/config_{i}.yaml', 'w') as fh:
             yaml.dump(config, fh)
 
 if __name__ == "__main__":
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--test_size", type=int, default=200, help="Test set size for predictor")
     parser.add_argument("--train_portion", type=float, default=0.7, help="Train portion")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size")
     parser.add_argument("--cutout", type=bool, default=False, help="Cutout")
     parser.add_argument("--cutout_length", type=int, default=16, help="Cutout length")
     parser.add_argument("--cutout_prob", type=float, default=1.0, help="Cutout probability")
@@ -72,9 +72,9 @@ if __name__ == "__main__":
 
     # Search options
     parser.add_argument("--epochs", type=int, default=200, help="Number of search epochs")
-    parser.add_argument("--checkpoint_freq", type=int, default='5', help="Checkpoint frequency")
+    parser.add_argument("--checkpoint_freq", type=int, default=200, help="Checkpoint frequency")
     parser.add_argument("--zc_ensemble", type=bool, default=True, help="True to use ensemble of ZC predictors")
-    parser.add_argument("--zc_names", nargs='+', default=['params', 'flops', 'jacov', 'plain', 'grasp', 'snip', 'fisher', 'grad_norm', 'epe_nas'], help="Names of ZC predictors to use")
+    parser.add_argument("--zc_names", nargs='+', default=['params', 'flops', 'jacov', 'plain', 'grasp', 'snip', 'fisher', 'grad_norm', 'epe_nas', 'synflow', 'l2_norm'], help="Names of ZC predictors to use")
     parser.add_argument("--k", type=int, default=10, help="Top k candidates to choose in each batch")
     parser.add_argument("--num_init", type=int, default=10, help="Root config directory")
     parser.add_argument("--num_ensemble", type=int, default=1, help="Root config directory")

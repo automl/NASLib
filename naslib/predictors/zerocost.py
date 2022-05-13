@@ -40,4 +40,10 @@ class ZeroCost(Predictor):
         if math.isnan(score):
             score = -1e8
 
+        if self.method_type == 'synflow':
+            if score == 0.:
+                return score
+
+            score = math.log(score) if score > 0 else -math.log(-score)
+
         return score

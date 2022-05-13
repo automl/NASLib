@@ -1,9 +1,11 @@
+import logging
 import numpy as np
 import copy
 
 from naslib.predictors import Predictor
 from naslib.predictors.trees import XGBoost
 
+logger = logging.getLogger(__name__)
 
 class Ensemble(Predictor):
 
@@ -52,6 +54,7 @@ class Ensemble(Predictor):
 
         train_errors = []
         for i in range(self.num_ensemble):
+            logger.info(f'Training ensemble model {i+1} of {self.num_ensemble} ({self.ensemble[i]}) with {len(ytrain)} datapoints')
             train_error = self.ensemble[i].fit(xtrain, ytrain, train_info)
             train_errors.append(train_error)
 
