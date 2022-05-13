@@ -5,7 +5,7 @@ cutout_length: 16
 cutout_prob: 1.0
 dataset: ImageNet16-120
 out_dir: run
-predictor: xgb
+predictor: 10
 search_space: nasbench201
 seed: 9000
 test_size: 200

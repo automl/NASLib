@@ -1,6 +1,6 @@
 #!/bin/bash
 
-train_sizes=(10 16 27 46 77 129 215 359 599 1000)
+train_sizes=(10 15 23 36 56 87 135 209 323 500)
 searchspace=nasbench101
 datasets=(cifar10)
 start_seed=9000
@@ -16,7 +16,7 @@ fi
 
 for dataset in "${datasets[@]}"
 do
-    for i in "${train_sizes[@]}"
+    for size in "${train_sizes[@]}"
     do
         sbatch ./scripts/cluster/xgb_correlation/run.sh $searchspace $dataset $size $start_seed $experiment <<< "y"
     done
