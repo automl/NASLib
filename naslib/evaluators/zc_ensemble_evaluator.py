@@ -1,9 +1,13 @@
 import codecs
 import os
 import json
+import tracemalloc
 import torch
 import numpy as np
 import logging
+import timeit
+
+from guppy import hpy
 from naslib.predictors.zerocost import ZeroCost
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -20,9 +24,15 @@ class ZCEnsembleEvaluator(object):
 
     def _compute_zc_scores(self, model, predictors, train_loader):
         zc_scores = {}
+        zc_times = {}
         for predictor in predictors:
+            starttime = timeit.default_timer()
             score = predictor.query(model, train_loader)
+            endtime = timeit.default_timer()
+            zc_times[predictor.method_type] = endtime - starttime
             zc_scores[predictor.method_type] = score
+
+        logger.info(zc_times)
 
         return zc_scores
 
@@ -32,6 +42,7 @@ class ZCEnsembleEvaluator(object):
         model.arch.sample_random_architecture(dataset_api=self.dataset_api)
         model.arch.parse()
         model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
+
         return model
 
     def _log_to_json(self, results, filepath):
@@ -57,7 +68,11 @@ class ZCEnsembleEvaluator(object):
         self.config = config
 
     def sample_random_models(self, n):
+        tracemalloc.start()
         models = [self._sample_new_model() for _ in range(n)]
+        current, peak = tracemalloc.get_traced_memory()
+        logger.info(f"sample_random_models:: Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
+        tracemalloc.stop()
         return models
 
     def compute_zc_scores(self, models, zc_predictors, train_loader):
@@ -66,11 +81,24 @@ class ZCEnsembleEvaluator(object):
 
     def evaluate(self, ensemble, train_loader):
         # Load models to train
+        starttime = timeit.default_timer()
         train_models = self.sample_random_models(self.n_train)
+        endtime = timeit.default_timer()
+        logger.info(f'Time to sample and query train models: {endtime - starttime}s')
 
         # Get their ZC scores
         zc_predictors = [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
+
+        starttime = timeit.default_timer()
+
+        tracemalloc.start()
         self.compute_zc_scores(train_models, zc_predictors, train_loader)
+        current, peak = tracemalloc.get_traced_memory()
+        logger.info(f"compute_zc_scores:: Current memory usage is {current / 10**6}MB; Peak was {peak / 10**6}MB")
+        tracemalloc.stop()
+
+        endtime = timeit.default_timer()
+        logger.info(f'Time to compute zc scores of train models: {endtime - starttime}s')
 
         # Set ZC results as precomputations and fit the ensemble
         train_info = {'zero_cost_scores': [m.zc_scores for m in train_models]}
@@ -79,14 +107,24 @@ class ZCEnsembleEvaluator(object):
         xtrain = [m.arch for m in train_models]
         ytrain = [m.accuracy for m in train_models]
 
+        starttime = timeit.default_timer()
         ensemble.fit(xtrain, ytrain)
+        endtime = timeit.default_timer()
+        logger.info(f'Time to fit xgboost: {endtime - starttime}s')
 
         # Get the feature importance
         # self.ensemble[0].feature_importance
 
         # Sample test models, query zc scores
+        starttime = timeit.default_timer()
         test_models = self.sample_random_models(self.n_test)
+        endtime = timeit.default_timer()
+        logger.info(f'Time to sample and query test models: {endtime - starttime}s')
+
+        starttime = timeit.default_timer()
         self.compute_zc_scores(test_models, zc_predictors, train_loader)
+        endtime = timeit.default_timer()
+        logger.info(f'Time to compute zc scores of test models: {endtime - starttime}s')
 
         # Query the ensemble for the predicted accuracy
         x_test = [m.arch for m in test_models]
