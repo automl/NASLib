@@ -1,0 +1,20 @@
+[05/13 16:25:25] nl.utils.utils INFO: batch_size......................................32
+[05/13 16:25:25] nl.utils.utils INFO: config_type........................xgb_correlation
+[05/13 16:25:25] nl.utils.utils INFO: cutout.......................................False
+[05/13 16:25:25] nl.utils.utils INFO: cutout_length...................................16
+[05/13 16:25:25] nl.utils.utils INFO: cutout_prob....................................1.0
+[05/13 16:25:25] nl.utils.utils INFO: dataset....................................cifar10
+[05/13 16:25:25] nl.utils.utils INFO: out_dir........................................run
+[05/13 16:25:25] nl.utils.utils INFO: predictor......................................323
+[05/13 16:25:25] nl.utils.utils INFO: search_space...........................nasbench301
+[05/13 16:25:25] nl.utils.utils INFO: seed..........................................9000
+[05/13 16:25:25] nl.utils.utils INFO: test_size......................................200
+[05/13 16:25:25] nl.utils.utils INFO: train_portion..................................0.7
+[05/13 16:25:25] nl.utils.utils INFO: train_size.....................................323
+[05/13 16:25:25] nl.utils.utils INFO: zc_ensemble...................................True
+[05/13 16:25:25] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
+[05/13 16:25:25] nl.utils.utils INFO: zc_only......................................False
+[05/13 16:25:25] nl.utils.utils INFO: train_data_file...............................None
+[05/13 16:25:25] nl.utils.utils INFO: test_data_file................................None
+[05/13 16:25:25] nl.utils.utils INFO: saverun/xgb_correlation/nasbench301/cifar10/323/9000
+[05/13 16:25:25] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
