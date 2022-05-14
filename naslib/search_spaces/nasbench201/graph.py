@@ -116,7 +116,7 @@ class NasBench201SearchSpace(Graph):
             "op",
             ops.Sequential(
                 nn.BatchNorm2d(self.channels[-1]),
-                nn.ReLU(inplace=True),
+                nn.ReLU(inplace=False),
                 nn.AdaptiveAvgPool2d(1),
                 nn.Flatten(),
                 nn.Linear(self.channels[-1], self.num_classes),

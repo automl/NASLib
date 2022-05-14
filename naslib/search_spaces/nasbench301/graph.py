@@ -339,16 +339,16 @@ class NasBench301SearchSpace(Graph):
             self.edges[11, 12].set(
                 "op",
                 ops.Sequential(
-                    nn.ReLU(inplace=True),
+                    nn.ReLU(inplace=False),
                     nn.AvgPool2d(
                         5, stride=3, padding=0, count_include_pad=False
                     ),  # image size = 2 x 2
                     nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
                     nn.BatchNorm2d(128),
-                    nn.ReLU(inplace=True),
+                    nn.ReLU(inplace=False),
                     nn.Conv2d(128, 768, 2, bias=False),
                     nn.BatchNorm2d(768),
-                    nn.ReLU(inplace=True),
+                    nn.ReLU(inplace=False),
                     nn.Flatten(),
                     nn.Linear(768, self.num_classes),
                 ),
