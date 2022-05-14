@@ -39,8 +39,8 @@ class BaseTree(Predictor):
 
         if type(xtrain) is list:
             # when used in itself, we use
-            xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                      ss_type=self.ss_type) for arch in xtrain])
+            #xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
+            #                          ss_type=self.ss_type) for arch in xtrain])
 
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
