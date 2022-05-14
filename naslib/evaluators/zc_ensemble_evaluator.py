@@ -110,7 +110,7 @@ class ZCEnsembleEvaluator(object):
         for m in test_models:
             g = self.search_space.clone()
             g.set_spec(m.arch)
-            x_test.append(encode(g, encoding_type='one_hot_adjacency', ss_type=g.get_type()))
+            x_test.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
             del(g)
 
         test_info = [{'zero_cost_scores': m.zc_scores} for m in test_models]
