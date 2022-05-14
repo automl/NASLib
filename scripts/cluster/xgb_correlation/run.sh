@@ -3,8 +3,8 @@
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -a 0-4 # array size
-#SBATCH --mem=16G
-#SBATCH --job-name="XGB_ZC_CORRELATION"
+#SBATCH --mem=12G
+#SBATCH --job-name="CREATE_BENCHMARK"
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
