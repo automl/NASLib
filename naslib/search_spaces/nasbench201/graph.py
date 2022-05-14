@@ -47,6 +47,7 @@ class NasBench201SearchSpace(Graph):
 
         self.max_epoch = 199
         self.space_name = "nasbench201"
+        self.labeled_archs = None
         #
         # Cell definition
         #
@@ -237,11 +238,21 @@ class NasBench201SearchSpace(Graph):
     def set_spec(self, op_indices, dataset_api=None):
         self.set_op_indices(op_indices)
 
-    def sample_random_architecture(self, dataset_api=None):
+    def sample_random_labeled_architecture(self):
+        assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
+
+        op_indices = eval(np.random.choice(self.labeled_archs))
+        self.set_spec(op_indices)
+
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
+
+        if load_labeled == True:
+            return self.sample_random_labeled_architecture()
+
         def is_valid_arch(op_indices):
             return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or \
                         (op_indices[2] == op_indices[4] == op_indices[5] == 1))

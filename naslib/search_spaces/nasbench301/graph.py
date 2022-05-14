@@ -76,6 +76,7 @@ class NasBench301SearchSpace(Graph):
         self.max_epoch = 100
         self.space_name = "nasbench301"
         self.auxiliary_output = True
+        self.labeled_archs = None
 
         """
         Build the search space with the parameters specified in __init__.
@@ -453,11 +454,21 @@ class NasBench301SearchSpace(Graph):
     def set_spec(self, compact, dataset_api=None):
         self.set_compact(make_compact_immutable(compact))
 
-    def sample_random_architecture(self, dataset_api=None):
+    def sample_random_labeled_architecture(self):
+        assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
+
+        op_indices = eval(np.random.choice(self.labeled_archs))
+        self.set_spec(op_indices)
+
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
+
+        if load_labeled == True:
+            return self.sample_random_labeled_architecture()
+
         compact = [[], []]
         for i in range(NUM_VERTICES):
             ops = np.random.choice(range(NUM_OPS), NUM_VERTICES)

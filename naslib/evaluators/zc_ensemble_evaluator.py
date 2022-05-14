@@ -13,11 +13,12 @@ from naslib.utils import compute_scores
 logger = logging.getLogger(__name__)
 
 class ZCEnsembleEvaluator(object):
-    def __init__(self, n_train, n_test, zc_names):
+    def __init__(self, n_train, n_test, zc_names, zc_api=False):
         self.n_train = n_train
         self.n_test = n_test
         self.zc_names = zc_names
         self.performance_metric = Metric.VAL_ACCURACY
+        self.zc_api = zc_api
 
     def _compute_zc_scores(self, encoding, predictors, train_loader):
         zc_scores = {}
@@ -25,8 +26,15 @@ class ZCEnsembleEvaluator(object):
         graph.set_spec(encoding)
         graph.parse()
 
+        if self.zc_api is not None:
+            zc_results = self.zc_api[str(encoding)]
+
         for predictor in predictors:
-            score = predictor.query(graph, train_loader)
+            zc_name = predictor.method_type
+            if self.zc_api is not None and zc_name in zc_results:
+                score = zc_results[zc_name]
+            else:
+                score = predictor.query(graph, train_loader)
             zc_scores[predictor.method_type] = score
 
         del(graph)
@@ -36,7 +44,7 @@ class ZCEnsembleEvaluator(object):
     def _sample_new_model(self):
         model = torch.nn.Module()
         graph = self.search_space.clone()
-        graph.sample_random_architecture(dataset_api=self.dataset_api)
+        graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
         model.accuracy = graph.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
         model.arch = graph.get_hash()
 
@@ -74,11 +82,14 @@ class ZCEnsembleEvaluator(object):
             model.zc_scores = self._compute_zc_scores(model.arch, zc_predictors, train_loader)
 
     def evaluate(self, ensemble, train_loader):
+        logger.info(f'Sampling {self.n_train} train models')
         # Load models to train
         train_models = self.sample_random_models(self.n_train)
 
         # Get their ZC scores
         zc_predictors = [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
+
+        logger.info('Computing ZC scores')
         self.compute_zc_scores(train_models, zc_predictors, train_loader)
 
         # Set ZC results as precomputations and fit the ensemble
@@ -95,18 +106,23 @@ class ZCEnsembleEvaluator(object):
 
         ytrain = [m.accuracy for m in train_models]
 
+        logger.info('Fitting XGBoost')
         ensemble.fit(xtrain, ytrain)
 
         # Get the feature importance
         # self.ensemble[0].feature_importance
 
         # Sample test models, query zc scores
+        logger.info(f'Sampling {self.n_test} test models')
         test_models = self.sample_random_models(self.n_test)
+
+        logger.info('Computing ZC scores')
         self.compute_zc_scores(test_models, zc_predictors, train_loader)
 
         # Query the ensemble for the predicted accuracy
         x_test = []
 
+        logger.info('Preparing test data')
         for m in test_models:
             g = self.search_space.clone()
             g.set_spec(m.arch)
