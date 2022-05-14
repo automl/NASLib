@@ -75,8 +75,8 @@ class BaseTree(Predictor):
 
         if type(xtest) is list:
             #  when used in itself, we use
-            xtest = np.array([encode(arch, encoding_type=self.encoding_type,
-                                 ss_type=self.ss_type) for arch in xtest])
+            # xtest = np.array([encode(arch, encoding_type=self.encoding_type,
+            #                      ss_type=self.ss_type) for arch in xtest])
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
                 zc_scores = [self.create_zc_feature_vector(data['zero_cost_scores']) for data in info]
