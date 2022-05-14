@@ -1,6 +1,7 @@
 from typing import Dict, List, Union
 import numpy as np
 
+import torch.nn as nn
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
@@ -38,9 +39,11 @@ class BaseTree(Predictor):
         self.std = np.std(ytrain)
 
         if type(xtrain) is list:
-            # when used in itself, we use
-            #xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-            #                          ss_type=self.ss_type) for arch in xtrain])
+
+            # TODO: Fix. Hacky way to make XGBoost accept both encodings as well as NASLib Graphs as xtrain
+            if isinstance(xtrain[0], nn.Module):
+                xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
+                                    ss_type=self.ss_type) for arch in xtrain])
 
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
@@ -74,9 +77,11 @@ class BaseTree(Predictor):
     def query(self, xtest, info=None):
 
         if type(xtest) is list:
-            #  when used in itself, we use
-            # xtest = np.array([encode(arch, encoding_type=self.encoding_type,
-            #                      ss_type=self.ss_type) for arch in xtest])
+
+            # TODO: Fix. Hacky way to make XGBoost accept both encodings as well as NASLib Graphs as xtrain
+            if isinstance(xtest[0], nn.Module):
+                xtest = np.array([encode(arch, encoding_type=self.encoding_type,
+                                    ss_type=self.ss_type) for arch in xtest])
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
                 zc_scores = [self.create_zc_feature_vector(data['zero_cost_scores']) for data in info]
