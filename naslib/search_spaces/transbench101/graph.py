@@ -367,7 +367,6 @@ class TransBench101SearchSpaceMicro(Graph):
         available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
         op_index = np.random.choice(available)
         op_indices[edge] = op_index
-        print('op_indices mu =', op_indices)
         self.set_op_indices(op_indices)
 
         
@@ -397,8 +396,10 @@ class TransBench101SearchSpaceMicro(Graph):
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:
             loss_fn = SoftmaxCrossEntropyWithLogits()
-        elif self.dataset == 'autoencoder':
+        elif self.dataset in ['autoencoder', 'normal']:
             loss_fn = nn.L1Loss()
+        elif self.dataset == 'room_layout':
+            loss_fn = nn.MSELoss()        
         else:
             loss_fn = F.cross_entropy
 
@@ -663,8 +664,10 @@ class TransBench101SearchSpaceMacro(Graph):
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:
             loss_fn = SoftmaxCrossEntropyWithLogits()
-        elif self.dataset == 'autoencoder':
+        elif self.dataset in ['autoencoder', 'normal']:
             loss_fn = nn.L1Loss()
+        elif self.dataset == 'room_layout':
+            loss_fn = nn.MSELoss()
         else:
             loss_fn = F.cross_entropy
 

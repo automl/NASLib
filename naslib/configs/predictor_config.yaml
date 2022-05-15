@@ -1,19 +1,20 @@
 # nasbench101, nasbench201, darts, nlp, transbench101_micro
-search_space: nasbench201
+search_space: transbench101_micro
 
 # nasbench201 datasets: cifar10, cifar100, ImageNet16-120
 # transbench101 datasets: class_scene, class_object,
 # jigsaw, room_layout, segmentsemantic, normal, autoencoder
-dataset: cifar10
+dataset: autoencoder
 
 # one of the predictors in runners/runner.py
-predictor: epe_nas
+predictor: fisher
 
 # test set size
 test_size: 20
 
 # output results to this directory
 out_dir: run
+config_type: None
 
 # random seed
 seed: 1000
