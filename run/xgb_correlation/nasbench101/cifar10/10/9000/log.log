@@ -1,125 +1,23 @@
-[05/13 16:25:06] nl.utils.utils INFO: batch_size......................................32
-[05/13 16:25:06] nl.utils.utils INFO: config_type........................xgb_correlation
-[05/13 16:25:06] nl.utils.utils INFO: cutout.......................................False
-[05/13 16:25:06] nl.utils.utils INFO: cutout_length...................................16
-[05/13 16:25:06] nl.utils.utils INFO: cutout_prob....................................1.0
-[05/13 16:25:06] nl.utils.utils INFO: dataset....................................cifar10
-[05/13 16:25:06] nl.utils.utils INFO: out_dir........................................run
-[05/13 16:25:06] nl.utils.utils INFO: predictor.......................................10
-[05/13 16:25:06] nl.utils.utils INFO: search_space...........................nasbench101
-[05/13 16:25:06] nl.utils.utils INFO: seed..........................................9000
-[05/13 16:25:06] nl.utils.utils INFO: test_size......................................200
-[05/13 16:25:06] nl.utils.utils INFO: train_portion..................................0.7
-[05/13 16:25:06] nl.utils.utils INFO: train_size......................................10
-[05/13 16:25:06] nl.utils.utils INFO: zc_ensemble...................................True
-[05/13 16:25:06] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
-[05/13 16:25:06] nl.utils.utils INFO: zc_only......................................False
-[05/13 16:25:06] nl.utils.utils INFO: train_data_file...............................None
-[05/13 16:25:06] nl.utils.utils INFO: test_data_file................................None
-[05/13 16:25:06] nl.utils.utils INFO: saverun/xgb_correlation/nasbench101/cifar10/10/9000
-[05/13 16:25:06] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
-[05/13 16:28:31] nl.predictors.ensemble INFO: Training ensemble model 1 of 1 (<naslib.predictors.trees.xgb.XGBoost object at 0x7f228f90d220>) with 10 datapoints
-[05/13 17:46:08] nl.evaluators.zc_ensemble_evaluator INFO: ZC feature importances: {'flops': 0, 'params': 6.0, 'snip': 0, 'jacov': 0, 'grad_norm': 0, 'plain': 0, 'epe_nas': 42.0, 'fisher': 0, 'grasp': 0, 'l2_norm': 0, 'synflow': 16.0}
-[05/13 17:46:08] naslib INFO: Done.
-[05/13 20:49:49] nl.utils.utils INFO: batch_size......................................32
-[05/13 20:49:49] nl.utils.utils INFO: config_type........................xgb_correlation
-[05/13 20:49:49] nl.utils.utils INFO: cutout.......................................False
-[05/13 20:49:49] nl.utils.utils INFO: cutout_length...................................16
-[05/13 20:49:49] nl.utils.utils INFO: cutout_prob....................................1.0
-[05/13 20:49:49] nl.utils.utils INFO: dataset....................................cifar10
-[05/13 20:49:49] nl.utils.utils INFO: out_dir........................................run
-[05/13 20:49:49] nl.utils.utils INFO: predictor.......................................10
-[05/13 20:49:49] nl.utils.utils INFO: search_space...........................nasbench101
-[05/13 20:49:49] nl.utils.utils INFO: seed..........................................9000
-[05/13 20:49:49] nl.utils.utils INFO: test_size......................................200
-[05/13 20:49:49] nl.utils.utils INFO: train_portion..................................0.7
-[05/13 20:49:49] nl.utils.utils INFO: train_size......................................10
-[05/13 20:49:49] nl.utils.utils INFO: zc_ensemble...................................True
-[05/13 20:49:49] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
-[05/13 20:49:49] nl.utils.utils INFO: zc_only......................................False
-[05/13 20:49:49] nl.utils.utils INFO: train_data_file...............................None
-[05/13 20:49:49] nl.utils.utils INFO: test_data_file................................None
-[05/13 20:49:49] nl.utils.utils INFO: saverun/xgb_correlation/nasbench101/cifar10/10/9000
-[05/13 20:49:49] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
-[05/13 20:56:56] nl.utils.utils INFO: batch_size......................................32
-[05/13 20:56:56] nl.utils.utils INFO: config_type........................xgb_correlation
-[05/13 20:56:56] nl.utils.utils INFO: cutout.......................................False
-[05/13 20:56:56] nl.utils.utils INFO: cutout_length...................................16
-[05/13 20:56:56] nl.utils.utils INFO: cutout_prob....................................1.0
-[05/13 20:56:56] nl.utils.utils INFO: dataset....................................cifar10
-[05/13 20:56:56] nl.utils.utils INFO: out_dir........................................run
-[05/13 20:56:56] nl.utils.utils INFO: predictor.......................................10
-[05/13 20:56:56] nl.utils.utils INFO: search_space...........................nasbench101
-[05/13 20:56:56] nl.utils.utils INFO: seed..........................................9000
-[05/13 20:56:56] nl.utils.utils INFO: test_size......................................200
-[05/13 20:56:56] nl.utils.utils INFO: train_portion..................................0.7
-[05/13 20:56:56] nl.utils.utils INFO: train_size......................................10
-[05/13 20:56:56] nl.utils.utils INFO: zc_ensemble...................................True
-[05/13 20:56:56] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
-[05/13 20:56:56] nl.utils.utils INFO: zc_only......................................False
-[05/13 20:56:56] nl.utils.utils INFO: train_data_file...............................None
-[05/13 20:56:56] nl.utils.utils INFO: test_data_file................................None
-[05/13 20:56:56] nl.utils.utils INFO: saverun/xgb_correlation/nasbench101/cifar10/10/9000
-[05/13 20:56:56] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
-[05/13 20:57:05] nl.evaluators.zc_ensemble_evaluator INFO: sample_random_models:: Current memory usage is 7.174205MB; Peak was 7.194836MB
-[05/13 20:57:05] nl.evaluators.zc_ensemble_evaluator INFO: Time to sample and query train models: 0.9369867958594114s
-[05/13 20:57:32] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.4449885240755975, 'params': 0.42685439018532634, 'snip': 2.9688267370220274, 'jacov': 2.65600378299132, 'grad_norm': 2.697632165858522, 'plain': 2.7221664539538324, 'epe_nas': 2.7185428868979216, 'fisher': 2.925866219913587, 'grasp': 7.273820731090382, 'l2_norm': 0.13074796181172132, 'synflow': 1.7135033789090812}
-[05/13 20:57:51] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.3126390299294144, 'params': 0.3178293581586331, 'snip': 2.096677873050794, 'jacov': 2.0537081400398165, 'grad_norm': 2.073444186942652, 'plain': 2.0762296749744564, 'epe_nas': 2.0439927831757814, 'fisher': 2.1586573340464383, 'grasp': 4.138274914817885, 'l2_norm': 0.12485796306282282, 'synflow': 1.535208233864978}
-[05/13 20:58:16] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.3686957710888237, 'params': 0.38094216701574624, 'snip': 2.6756281938869506, 'jacov': 2.6343905630055815, 'grad_norm': 2.625871563097462, 'plain': 2.637952784076333, 'epe_nas': 2.629326774040237, 'fisher': 2.8450780890416354, 'grasp': 6.946193475043401, 'l2_norm': 0.1250094750430435, 'synflow': 1.6271353079937398}
-[05/13 20:58:33] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.17903721588663757, 'params': 0.18380174203775823, 'snip': 1.8844068150501698, 'jacov': 1.8466394029092044, 'grad_norm': 1.8817541738972068, 'plain': 1.8441047728992999, 'epe_nas': 1.886249986011535, 'fisher': 1.9180082099046558, 'grasp': 3.2070658560842276, 'l2_norm': 0.10830927500501275, 'synflow': 1.4015532049816102}
-[05/13 20:58:52] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.2642013479489833, 'params': 0.27161356899887323, 'snip': 2.0400512211490422, 'jacov': 2.033460094127804, 'grad_norm': 2.032301736995578, 'plain': 2.0191310509108007, 'epe_nas': 2.0316856640856713, 'fisher': 2.1508102549705654, 'grasp': 4.26096825604327, 'l2_norm': 0.1181381770875305, 'synflow': 1.5022831580135971}
-[05/13 20:59:06] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16364626516588032, 'params': 0.1664925990626216, 'snip': 1.606314741075039, 'jacov': 1.6059023011475801, 'grad_norm': 1.6019063859712332, 'plain': 1.602191420039162, 'epe_nas': 1.6103835490066558, 'fisher': 1.6728378050029278, 'grasp': 2.678332823794335, 'l2_norm': 0.11339353187941015, 'synflow': 1.4173217208590358}
-[05/13 20:59:20] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16651478013955057, 'params': 0.17016532993875444, 'snip': 1.6065739560872316, 'jacov': 1.651247036876157, 'grad_norm': 1.5964686770457774, 'plain': 1.6442759709898382, 'epe_nas': 1.6069980110041797, 'fisher': 1.716566211078316, 'grasp': 2.6808072850108147, 'l2_norm': 0.11547496495768428, 'synflow': 1.4121615230105817}
-[05/13 20:59:41] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.3697089690249413, 'params': 0.37478601397015154, 'snip': 2.2700127728749067, 'jacov': 2.220067767892033, 'grad_norm': 2.199214736931026, 'plain': 2.2127236910164356, 'epe_nas': 2.199218557914719, 'fisher': 2.3294491949491203, 'grasp': 4.769447048194706, 'l2_norm': 0.13431004993617535, 'synflow': 1.5895778539124876}
-[05/13 21:00:13] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.3557449940126389, 'params': 0.3533697361126542, 'snip': 3.2301921038888395, 'jacov': 3.149391887942329, 'grad_norm': 3.1584501760080457, 'plain': 3.168388740159571, 'epe_nas': 3.160970248049125, 'fisher': 3.4155993601307273, 'grasp': 10.005793356802315, 'l2_norm': 0.14528647297993302, 'synflow': 1.7093517079483718}
-[05/13 21:00:31] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.2999079660512507, 'params': 0.29137062886729836, 'snip': 2.083845122018829, 'jacov': 2.0601107340771705, 'grad_norm': 2.0805552508682013, 'plain': 2.0553697671275586, 'epe_nas': 2.074367915978655, 'fisher': 2.1389013479929417, 'grasp': 3.978533798130229, 'l2_norm': 0.13557112589478493, 'synflow': 1.5212626529391855}
-[05/13 21:00:31] nl.evaluators.zc_ensemble_evaluator INFO: compute_zc_scores:: Current memory usage is 2.002561MB; Peak was 5.959638MB
-[05/13 21:00:31] nl.evaluators.zc_ensemble_evaluator INFO: Time to compute zc scores of train models: 206.03271754295565s
-[05/13 21:00:31] nl.predictors.ensemble INFO: Training ensemble model 1 of 1 (<naslib.predictors.trees.xgb.XGBoost object at 0x7fe2098d8610>) with 10 datapoints
-[05/13 21:00:33] nl.evaluators.zc_ensemble_evaluator INFO: Time to fit xgboost: 1.3120455399621278s
-[05/13 21:00:55] nl.evaluators.zc_ensemble_evaluator INFO: sample_random_models:: Current memory usage is 153.645722MB; Peak was 153.666225MB
-[05/13 21:00:55] nl.evaluators.zc_ensemble_evaluator INFO: Time to sample and query test models: 22.720789345912635s
-[05/13 21:01:18] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.17519339499995112, 'params': 0.15532378712669015, 'snip': 2.425059961155057, 'jacov': 2.312175767030567, 'grad_norm': 2.331591447116807, 'plain': 2.386247613001615, 'epe_nas': 2.29498916096054, 'fisher': 2.4704635010566562, 'grasp': 5.787732415832579, 'l2_norm': 0.10045796586200595, 'synflow': 1.6842478830367327}
-[05/13 21:01:34] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.10493177408352494, 'params': 0.11568447994068265, 'snip': 1.8609011699445546, 'jacov': 1.861566515872255, 'grad_norm': 1.8256718460470438, 'plain': 1.816232044948265, 'epe_nas': 1.8273529568687081, 'fisher': 1.9035890949890018, 'grasp': 3.061798879178241, 'l2_norm': 0.09352537617087364, 'synflow': 1.5754324099980295}
-[05/13 21:02:06] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16911969077773392, 'params': 0.16123770992271602, 'snip': 3.3891417731065303, 'jacov': 3.1826154738664627, 'grad_norm': 3.1506836959160864, 'plain': 3.2801253269426525, 'epe_nas': 3.222687172004953, 'fisher': 3.451274396153167, 'grasp': 9.994415458058938, 'l2_norm': 0.10671229101717472, 'synflow': 1.7260911201592535}
-[05/13 21:02:30] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16633601300418377, 'params': 0.19158662389963865, 'snip': 2.6053034539800137, 'jacov': 2.559535519219935, 'grad_norm': 2.6055800509639084, 'plain': 2.55741522484459, 'epe_nas': 2.5568189609330148, 'fisher': 2.696728008100763, 'grasp': 6.6690930631011724, 'l2_norm': 0.10221136594191194, 'synflow': 1.6487149738240987}
-[05/13 21:02:52] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.1571056400425732, 'params': 0.16034810803830624, 'snip': 2.367390069877729, 'jacov': 2.3227677261456847, 'grad_norm': 2.3196952289436013, 'plain': 2.371849501039833, 'epe_nas': 2.310035364003852, 'fisher': 2.4707802371121943, 'grasp': 6.098741880850866, 'l2_norm': 0.11802603700198233, 'synflow': 1.6454975998494774}
-[05/13 21:03:11] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.13588722608983517, 'params': 0.1385531851556152, 'snip': 2.100169046083465, 'jacov': 2.0364994590636343, 'grad_norm': 2.1210013299714774, 'plain': 2.0901741730049253, 'epe_nas': 2.0565318518783897, 'fisher': 2.171435206197202, 'grasp': 4.344650059938431, 'l2_norm': 0.09669422195293009, 'synflow': 1.631259529851377}
-[05/13 21:03:33] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.19121648091822863, 'params': 0.18790709716267884, 'snip': 2.4231930850073695, 'jacov': 2.2662383960559964, 'grad_norm': 2.2682234530802816, 'plain': 2.270131340948865, 'epe_nas': 2.2918580339755863, 'fisher': 2.411717653973028, 'grasp': 5.8936508651822805, 'l2_norm': 0.10280979704111814, 'synflow': 1.689564635977149}
-[05/13 21:03:53] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.1593583149369806, 'params': 0.16047739889472723, 'snip': 2.1729983440600336, 'jacov': 2.1664603939279914, 'grad_norm': 2.16055090399459, 'plain': 2.159222434973344, 'epe_nas': 2.1305445819161832, 'fisher': 2.1975560269784182, 'grasp': 4.4955888371914625, 'l2_norm': 0.09817918902263045, 'synflow': 1.611882422119379}
-[05/13 21:04:08] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.10877486108802259, 'params': 0.10578763694502413, 'snip': 1.769951761001721, 'jacov': 1.7809315021149814, 'grad_norm': 1.764753427123651, 'plain': 1.765395333059132, 'epe_nas': 1.7675483110360801, 'fisher': 1.8128867659252137, 'grasp': 2.8931237938813865, 'l2_norm': 0.09256909205578268, 'synflow': 1.5481907869689167}
-[05/13 21:04:35] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16258378000929952, 'params': 0.16447849292308092, 'snip': 2.726385310990736, 'jacov': 2.704877467127517, 'grad_norm': 2.7108859152067453, 'plain': 2.7044774279929698, 'epe_nas': 2.7004183537792414, 'fisher': 2.883223536191508, 'grasp': 8.408845143858343, 'l2_norm': 0.09555170312523842, 'synflow': 1.6519170189276338}
-[05/13 21:04:59] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16305462014861405, 'params': 0.16361606284044683, 'snip': 2.633505637990311, 'jacov': 2.6211594690103084, 'grad_norm': 2.6151297329925, 'plain': 2.5976150890346617, 'epe_nas': 2.5961092710494995, 'fisher': 2.688971444964409, 'grasp': 6.573285066988319, 'l2_norm': 0.09894388215616345, 'synflow': 1.6295281781349331}
-[05/13 21:05:20] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.13504632306285203, 'params': 0.13409489789046347, 'snip': 2.2585769961588085, 'jacov': 2.251317034009844, 'grad_norm': 2.253914549946785, 'plain': 2.254745085025206, 'epe_nas': 2.2545931169297546, 'fisher': 2.354765041032806, 'grasp': 5.14637542120181, 'l2_norm': 0.09497968899086118, 'synflow': 1.592327166814357}
-[05/13 21:05:45] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16966877598315477, 'params': 0.1715976889245212, 'snip': 2.606129715917632, 'jacov': 2.5504833159502596, 'grad_norm': 2.5620062050875276, 'plain': 2.582114811986685, 'epe_nas': 2.5809234590269625, 'fisher': 2.754231432918459, 'grasp': 7.315022946102545, 'l2_norm': 0.10245755803771317, 'synflow': 1.672963229008019}
-[05/13 21:06:10] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.15104219992645085, 'params': 0.15063091204501688, 'snip': 2.477034332929179, 'jacov': 2.465624595992267, 'grad_norm': 2.450886571081355, 'plain': 2.4776854070369154, 'epe_nas': 2.4802804831415415, 'fisher': 2.6290335960220546, 'grasp': 7.742909507127479, 'l2_norm': 0.10115816490724683, 'synflow': 1.629023317946121}
-[05/13 21:06:54] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.20730182994157076, 'params': 0.20047960500232875, 'snip': 4.330064481124282, 'jacov': 4.298981331055984, 'grad_norm': 4.286194510990754, 'plain': 4.303534350823611, 'epe_nas': 4.275408603949472, 'fisher': 4.551425460027531, 'grasp': 15.913091263035312, 'l2_norm': 0.12194331595674157, 'synflow': 1.8389028231613338}
-[05/13 21:07:17] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16695058206096292, 'params': 0.1669844868592918, 'snip': 2.3946914789266884, 'jacov': 2.40106576285325, 'grad_norm': 2.397843347163871, 'plain': 2.382749031065032, 'epe_nas': 2.3896643659099936, 'fisher': 2.5290553790982813, 'grasp': 6.359797309851274, 'l2_norm': 0.09999102307483554, 'synflow': 1.6447628361638635}
-[05/13 21:07:36] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.14003234100528061, 'params': 0.14179847505874932, 'snip': 2.0811030559707433, 'jacov': 2.063418466830626, 'grad_norm': 2.0737450139131397, 'plain': 2.125436658039689, 'epe_nas': 2.0936923888511956, 'fisher': 2.1673988131806254, 'grasp': 4.1001609119120985, 'l2_norm': 0.09611872094683349, 'synflow': 1.596635852009058}
-[05/13 21:07:58] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.1380709579680115, 'params': 0.13847348908893764, 'snip': 2.2642115510534495, 'jacov': 2.2604298240039498, 'grad_norm': 2.2432113389950246, 'plain': 2.25133740901947, 'epe_nas': 2.2588711879216135, 'fisher': 2.4056952649261802, 'grasp': 6.057382815983146, 'l2_norm': 0.09620813489891589, 'synflow': 1.579702294897288}
-[05/13 21:08:19] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.15259249811060727, 'params': 0.15112356399185956, 'snip': 2.2640870441682637, 'jacov': 2.2461218391545117, 'grad_norm': 2.2434115109499544, 'plain': 2.276526390109211, 'epe_nas': 2.278875295072794, 'fisher': 2.370800427859649, 'grasp': 5.586457075085491, 'l2_norm': 0.09655727003701031, 'synflow': 1.5895155628677458}
-[05/13 21:08:39] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.14653619891032577, 'params': 0.14722528820857406, 'snip': 2.215605206787586, 'jacov': 2.2145597480703145, 'grad_norm': 2.2219543310347944, 'plain': 2.2233807661104947, 'epe_nas': 2.206534604076296, 'fisher': 2.301329239970073, 'grasp': 5.145771031966433, 'l2_norm': 0.09958200110122561, 'synflow': 1.6379875461570919}
-[05/13 21:09:03] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.16909511084668338, 'params': 0.1696826999541372, 'snip': 2.473887027008459, 'jacov': 2.472434375900775, 'grad_norm': 2.470601836917922, 'plain': 2.467470390954986, 'epe_nas': 2.4704251061193645, 'fisher': 2.5774421668611467, 'grasp': 6.470233853906393, 'l2_norm': 0.1023316599894315, 'synflow': 1.6569356750696898}
-[05/13 21:09:31] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.1880799860227853, 'params': 0.18404670315794647, 'snip': 2.80942447995767, 'jacov': 2.7972565891686827, 'grad_norm': 2.8302322619128972, 'plain': 2.8310039050411433, 'epe_nas': 2.8202662251424044, 'fisher': 2.968336364021525, 'grasp': 8.991766340099275, 'l2_norm': 0.10750170308165252, 'synflow': 1.7813349289353937}
-[05/13 21:09:58] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.1776617111172527, 'params': 0.17482956685125828, 'snip': 2.79980327305384, 'jacov': 2.746958581963554, 'grad_norm': 2.7146309099625796, 'plain': 2.720441787969321, 'epe_nas': 2.713866677833721, 'fisher': 2.8743683798238635, 'grasp': 7.689842988038436, 'l2_norm': 0.11207703105174005, 'synflow': 1.657941373065114}
-[05/13 21:10:19] nl.evaluators.zc_ensemble_evaluator INFO: {'flops': 0.1687779959756881, 'params': 0.1698561660014093, 'snip': 2.3404518549796194, 'jacov': 2.3369274570140988, 'grad_norm': 2.327763537876308, 'plain': 2.3376311380416155, 'epe_nas': 2.3270753661636263, 'fisher': 2.4149555990006775, 'grasp': 5.370420164894313, 'l2_norm': 0.10043335217051208, 'synflow': 1.6438972889445722}
-[05/13 21:57:15] nl.utils.utils INFO: batch_size......................................32
-[05/13 21:57:15] nl.utils.utils INFO: config_type........................xgb_correlation
-[05/13 21:57:15] nl.utils.utils INFO: cutout.......................................False
-[05/13 21:57:15] nl.utils.utils INFO: cutout_length...................................16
-[05/13 21:57:15] nl.utils.utils INFO: cutout_prob....................................1.0
-[05/13 21:57:15] nl.utils.utils INFO: dataset....................................cifar10
-[05/13 21:57:15] nl.utils.utils INFO: out_dir........................................run
-[05/13 21:57:15] nl.utils.utils INFO: predictor.......................................10
-[05/13 21:57:15] nl.utils.utils INFO: search_space...........................nasbench101
-[05/13 21:57:15] nl.utils.utils INFO: seed..........................................9000
-[05/13 21:57:15] nl.utils.utils INFO: test_size......................................200
-[05/13 21:57:15] nl.utils.utils INFO: train_portion..................................0.7
-[05/13 21:57:15] nl.utils.utils INFO: train_size......................................10
-[05/13 21:57:15] nl.utils.utils INFO: zc_ensemble...................................True
-[05/13 21:57:15] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
-[05/13 21:57:15] nl.utils.utils INFO: zc_only......................................False
-[05/13 21:57:15] nl.utils.utils INFO: train_data_file...............................None
-[05/13 21:57:15] nl.utils.utils INFO: test_data_file................................None
-[05/13 21:57:15] nl.utils.utils INFO: saverun/xgb_correlation/nasbench101/cifar10/10/9000
-[05/13 21:57:15] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
+[05/14 15:28:54] nl.utils.utils INFO: batch_size......................................32
+[05/14 15:28:54] nl.utils.utils INFO: config_type........................xgb_correlation
+[05/14 15:28:54] nl.utils.utils INFO: cutout.......................................False
+[05/14 15:28:54] nl.utils.utils INFO: cutout_length...................................16
+[05/14 15:28:54] nl.utils.utils INFO: cutout_prob....................................1.0
+[05/14 15:28:54] nl.utils.utils INFO: dataset....................................cifar10
+[05/14 15:28:54] nl.utils.utils INFO: out_dir........................................run
+[05/14 15:28:54] nl.utils.utils INFO: predictor.......................................10
+[05/14 15:28:54] nl.utils.utils INFO: search_space...........................nasbench101
+[05/14 15:28:54] nl.utils.utils INFO: seed..........................................9000
+[05/14 15:28:54] nl.utils.utils INFO: test_size......................................200
+[05/14 15:28:54] nl.utils.utils INFO: train_portion..................................0.7
+[05/14 15:28:54] nl.utils.utils INFO: train_size......................................10
+[05/14 15:28:54] nl.utils.utils INFO: zc_ensemble...................................True
+[05/14 15:28:54] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
+[05/14 15:28:54] nl.utils.utils INFO: zc_only......................................False
+[05/14 15:28:54] nl.utils.utils INFO: train_data_file...............................None
+[05/14 15:28:54] nl.utils.utils INFO: test_data_file................................None
+[05/14 15:28:54] nl.utils.utils INFO: saverun/xgb_correlation/nasbench101/cifar10/10/9000
+[05/14 15:28:54] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
+[05/14 15:32:28] nl.predictors.ensemble INFO: Training ensemble model 1 of 1 (<naslib.predictors.trees.xgb.XGBoost object at 0x7f3f73d8cd60>) with 10 datapoints
+[05/14 16:44:37] nl.evaluators.zc_ensemble_evaluator INFO: ZC feature importances: {'flops': 0, 'params': 12.0, 'snip': 0, 'jacov': 0, 'grad_norm': 12.0, 'plain': 0, 'epe_nas': 13.0, 'fisher': 24.0, 'grasp': 0, 'l2_norm': 0, 'synflow': 3.0}
+[05/14 16:44:37] naslib INFO: Done.
