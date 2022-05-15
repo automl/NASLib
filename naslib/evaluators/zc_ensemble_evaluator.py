@@ -37,7 +37,7 @@ class ZCEnsembleEvaluator(object):
                 score = predictor.query(graph, train_loader)
             zc_scores[predictor.method_type] = score
 
-        del(graph)
+        del graph
 
         return zc_scores
 
@@ -48,7 +48,7 @@ class ZCEnsembleEvaluator(object):
         model.accuracy = graph.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
         model.arch = graph.get_hash()
 
-        del(graph)
+        del graph
         return model
 
     def _log_to_json(self, results, filepath):
@@ -102,7 +102,7 @@ class ZCEnsembleEvaluator(object):
             g.set_spec(m.arch)
             g.parse()
             xtrain.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-            del(g)
+            del g
 
         ytrain = [m.accuracy for m in train_models]
 
@@ -127,7 +127,7 @@ class ZCEnsembleEvaluator(object):
             g = self.search_space.clone()
             g.set_spec(m.arch)
             x_test.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-            del(g)
+            del g
 
         test_info = [{'zero_cost_scores': m.zc_scores} for m in test_models]
         preds = np.mean(ensemble.query(x_test, test_info), axis=0)
