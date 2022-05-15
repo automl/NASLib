@@ -76,6 +76,7 @@ class NasBench301SearchSpace(Graph):
         self.max_epoch = 100
         self.space_name = "nasbench301"
         self.auxiliary_output = True
+        self.labeled_archs = None
 
         """
         Build the search space with the parameters specified in __init__.
@@ -339,16 +340,16 @@ class NasBench301SearchSpace(Graph):
             self.edges[11, 12].set(
                 "op",
                 ops.Sequential(
-                    nn.ReLU(inplace=True),
+                    nn.ReLU(inplace=False),
                     nn.AvgPool2d(
                         5, stride=3, padding=0, count_include_pad=False
                     ),  # image size = 2 x 2
                     nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
                     nn.BatchNorm2d(128),
-                    nn.ReLU(inplace=True),
+                    nn.ReLU(inplace=False),
                     nn.Conv2d(128, 768, 2, bias=False),
                     nn.BatchNorm2d(768),
-                    nn.ReLU(inplace=True),
+                    nn.ReLU(inplace=False),
                     nn.Flatten(),
                     nn.Linear(768, self.num_classes),
                 ),
@@ -453,11 +454,21 @@ class NasBench301SearchSpace(Graph):
     def set_spec(self, compact, dataset_api=None):
         self.set_compact(make_compact_immutable(compact))
 
-    def sample_random_architecture(self, dataset_api=None):
+    def sample_random_labeled_architecture(self):
+        assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
+
+        op_indices = eval(np.random.choice(self.labeled_archs))
+        self.set_spec(op_indices)
+
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
+
+        if load_labeled == True:
+            return self.sample_random_labeled_architecture()
+
         compact = [[], []]
         for i in range(NUM_VERTICES):
             ops = np.random.choice(range(NUM_OPS), NUM_VERTICES)

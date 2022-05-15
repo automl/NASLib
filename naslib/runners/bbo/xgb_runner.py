@@ -2,7 +2,7 @@ import logging
 from naslib.evaluators.zc_ensemble_evaluator import ZCEnsembleEvaluator
 from naslib.predictors.ensemble import Ensemble
 from naslib.search_spaces import get_search_space
-from naslib.utils.get_dataset_api import get_dataset_api
+from naslib.utils.get_dataset_api import get_dataset_api, get_zc_benchmark_api
 from naslib.utils.logging import setup_logger
 from naslib.utils import utils
 
@@ -15,12 +15,16 @@ utils.log_args(config)
 
 search_space = get_search_space(config.search_space, config.dataset)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
+zc_benchmark_api = get_zc_benchmark_api(config.search_space, config.dataset)
+search_space.labeled_archs = list(zc_benchmark_api.keys())
+
 utils.set_seed(config.seed)
 
 evaluator = ZCEnsembleEvaluator(
     n_train=config.train_size,
     n_test=config.test_size,
-    zc_names=config.zc_names
+    zc_names=config.zc_names,
+    zc_api=zc_benchmark_api
 )
 
 evaluator.adapt_search_space(search_space, config.dataset, dataset_api, config)

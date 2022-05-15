@@ -1,0 +1,23 @@
+[05/14 15:28:45] nl.utils.utils INFO: batch_size......................................32
+[05/14 15:28:45] nl.utils.utils INFO: config_type........................xgb_correlation
+[05/14 15:28:45] nl.utils.utils INFO: cutout.......................................False
+[05/14 15:28:45] nl.utils.utils INFO: cutout_length...................................16
+[05/14 15:28:45] nl.utils.utils INFO: cutout_prob....................................1.0
+[05/14 15:28:45] nl.utils.utils INFO: dataset....................................cifar10
+[05/14 15:28:45] nl.utils.utils INFO: out_dir........................................run
+[05/14 15:28:45] nl.utils.utils INFO: predictor......................................500
+[05/14 15:28:45] nl.utils.utils INFO: search_space...........................nasbench301
+[05/14 15:28:45] nl.utils.utils INFO: seed..........................................9004
+[05/14 15:28:45] nl.utils.utils INFO: test_size......................................200
+[05/14 15:28:45] nl.utils.utils INFO: train_portion..................................0.7
+[05/14 15:28:45] nl.utils.utils INFO: train_size.....................................500
+[05/14 15:28:45] nl.utils.utils INFO: zc_ensemble...................................True
+[05/14 15:28:45] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
+[05/14 15:28:45] nl.utils.utils INFO: zc_only......................................False
+[05/14 15:28:45] nl.utils.utils INFO: train_data_file...............................None
+[05/14 15:28:45] nl.utils.utils INFO: test_data_file................................None
+[05/14 15:28:45] nl.utils.utils INFO: saverun/xgb_correlation/nasbench301/cifar10/500/9004
+[05/14 15:28:45] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
+[05/14 18:30:27] nl.predictors.ensemble INFO: Training ensemble model 1 of 1 (<naslib.predictors.trees.xgb.XGBoost object at 0x7f760ed09ee0>) with 500 datapoints
+[05/14 19:42:48] nl.evaluators.zc_ensemble_evaluator INFO: ZC feature importances: {'flops': 114.0, 'params': 60.0, 'snip': 72.0, 'jacov': 122.0, 'grad_norm': 90.0, 'plain': 141.0, 'epe_nas': 137.0, 'fisher': 142.0, 'grasp': 124.0, 'l2_norm': 76.0, 'synflow': 102.0}
+[05/14 19:42:48] naslib INFO: Done.

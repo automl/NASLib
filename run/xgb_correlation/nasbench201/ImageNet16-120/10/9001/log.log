@@ -1,0 +1,23 @@
+[05/13 14:46:32] nl.utils.utils INFO: batch_size......................................32
+[05/13 14:46:32] nl.utils.utils INFO: config_type........................xgb_correlation
+[05/13 14:46:32] nl.utils.utils INFO: cutout.......................................False
+[05/13 14:46:32] nl.utils.utils INFO: cutout_length...................................16
+[05/13 14:46:32] nl.utils.utils INFO: cutout_prob....................................1.0
+[05/13 14:46:32] nl.utils.utils INFO: dataset.............................ImageNet16-120
+[05/13 14:46:32] nl.utils.utils INFO: out_dir........................................run
+[05/13 14:46:32] nl.utils.utils INFO: predictor.......................................10
+[05/13 14:46:32] nl.utils.utils INFO: search_space...........................nasbench201
+[05/13 14:46:32] nl.utils.utils INFO: seed..........................................9001
+[05/13 14:46:32] nl.utils.utils INFO: test_size......................................200
+[05/13 14:46:32] nl.utils.utils INFO: train_portion..................................0.7
+[05/13 14:46:32] nl.utils.utils INFO: train_size......................................10
+[05/13 14:46:32] nl.utils.utils INFO: zc_ensemble...................................True
+[05/13 14:46:32] nl.utils.utils INFO: zc_names['flops', 'params', 'snip', 'jacov', 'grad_norm', 'plain', 'epe_nas', 'fisher', 'grasp', 'l2_norm', 'synflow']
+[05/13 14:46:32] nl.utils.utils INFO: zc_only......................................False
+[05/13 14:46:32] nl.utils.utils INFO: train_data_file...............................None
+[05/13 14:46:32] nl.utils.utils INFO: test_data_file................................None
+[05/13 14:46:32] nl.utils.utils INFO: saverun/xgb_correlation/nasbench201/ImageNet16-120/10/9001
+[05/13 14:46:32] nl.utils.utils INFO: data....../home/krishnan/naslib/NASLib/naslib/data
+[05/13 14:47:51] nl.predictors.ensemble INFO: Training ensemble model 1 of 1 (<naslib.predictors.trees.xgb.XGBoost object at 0x7fd34e497850>) with 10 datapoints
+[05/13 15:44:16] nl.evaluators.zc_ensemble_evaluator INFO: ZC feature importances: {'flops': 0, 'params': 0, 'snip': 0, 'jacov': 34.0, 'grad_norm': 0, 'plain': 0, 'epe_nas': 23.0, 'fisher': 22.0, 'grasp': 12.0, 'l2_norm': 12.0, 'synflow': 11.0}
+[05/13 15:44:16] naslib INFO: Done.
