@@ -22,22 +22,21 @@ class ZCEnsembleEvaluator(object):
 
     def _compute_zc_scores(self, encoding, predictors, train_loader):
         zc_scores = {}
-        graph = self.search_space.clone()
-        graph.set_spec(encoding)
-        graph.parse()
 
         if self.zc_api is not None:
             zc_results = self.zc_api[str(encoding)]
 
-        for predictor in predictors:
+        for idx, predictor in enumerate(predictors):
             zc_name = predictor.method_type
             if self.zc_api is not None and zc_name in zc_results:
                 score = zc_results[zc_name]
             else:
+                graph = self.search_space.clone()
+                graph.set_spec(encoding)
+                graph.parse()
                 score = predictor.query(graph, train_loader)
-            zc_scores[predictor.method_type] = score
-
-        del graph
+                del graph
+            zc_scores[zc_name] = score
 
         return zc_scores
 
@@ -78,7 +77,8 @@ class ZCEnsembleEvaluator(object):
         return models
 
     def compute_zc_scores(self, models, zc_predictors, train_loader):
-        for model in models:
+        for idx, model in models:
+            logger.info(f'Computing ZC scores for model {idx+1}/{len(models)} with encoding {model}')
             model.zc_scores = self._compute_zc_scores(model.arch, zc_predictors, train_loader)
 
     def evaluate(self, ensemble, train_loader):
