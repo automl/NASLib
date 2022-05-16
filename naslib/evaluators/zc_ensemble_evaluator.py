@@ -4,6 +4,7 @@ import json
 import torch
 import numpy as np
 import logging
+import timeit
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.zerocost import ZeroCost
 from naslib.search_spaces.core.query_metrics import Metric
@@ -34,8 +35,10 @@ class ZCEnsembleEvaluator(object):
             if self.zc_api is not None and zc_name in zc_results:
                 score = zc_results[zc_name]
             else:
+                start_time = timeit.default_timer()
                 score = predictor.query(graph, train_loader)
-            zc_scores[predictor.method_type] = score
+                end_time = timeit.default_timer()
+            zc_scores[predictor.method_type] = {'score': score, 'time': end_time-start_time}
 
         del graph
 
