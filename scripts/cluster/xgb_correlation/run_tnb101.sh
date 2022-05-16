@@ -2,7 +2,8 @@
 
 train_sizes=(100)
 searchspaces=(transbench101_micro transbench101_macro)
-datasets=(jigsaw class_object class_scene autoencoder normal room_layout segmentsemantic)
+datasets=(class_object class_scene room_layout)
+# datasets=(autoencoder normal segmentsemantic)
 start_seed=9000
 n_seeds=10
 

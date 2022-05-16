@@ -4,7 +4,7 @@
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -a 0-7 # array size
 #SBATCH --mem=16G
-#SBATCH --job-name="CREATE_BENCHMARK"
+#SBATCH --job-name="CREATE_BENCHMARK_TNB_CLASS"
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
