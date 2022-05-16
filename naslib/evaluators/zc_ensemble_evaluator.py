@@ -19,6 +19,7 @@ class ZCEnsembleEvaluator(object):
         self.zc_names = zc_names
         self.performance_metric = Metric.VAL_ACCURACY
         self.zc_api = zc_api
+        self.load_labeled = self.zc_api is not None
 
     def _compute_zc_scores(self, encoding, predictors, train_loader):
         zc_scores = {}
@@ -43,7 +44,7 @@ class ZCEnsembleEvaluator(object):
     def _sample_new_model(self):
         model = torch.nn.Module()
         graph = self.search_space.clone()
-        graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
+        graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled)
         model.accuracy = graph.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
         model.arch = graph.get_hash()
 
@@ -77,8 +78,8 @@ class ZCEnsembleEvaluator(object):
         return models
 
     def compute_zc_scores(self, models, zc_predictors, train_loader):
-        for idx, model in models:
-            logger.info(f'Computing ZC scores for model {idx+1}/{len(models)} with encoding {model}')
+        for idx, model in enumerate(models):
+            logger.info(f'Computing ZC scores for model {idx+1}/{len(models)} with encoding {model.arch}')
             model.zc_scores = self._compute_zc_scores(model.arch, zc_predictors, train_loader)
 
     def evaluate(self, ensemble, train_loader):
