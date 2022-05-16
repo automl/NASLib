@@ -15,8 +15,8 @@ utils.log_args(config)
 
 search_space = get_search_space(config.search_space, config.dataset)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
-zc_benchmark_api = get_zc_benchmark_api(config.search_space, config.dataset)
-search_space.labeled_archs = list(zc_benchmark_api.keys())
+zc_benchmark_api = None# get_zc_benchmark_api(config.search_space, config.dataset)
+#search_space.labeled_archs = list(zc_benchmark_api.keys())
 
 utils.set_seed(config.seed)
 

@@ -50,8 +50,8 @@ class ZCEnsembleEvaluator(object):
 
         zc_predictors = [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
 
-        zc_scores = self._compute_zc_scores(model.arch, zc_predictors, train_loader)
         encoding = model.arch.get_hash()
+        zc_scores = self._compute_zc_scores(encoding, zc_predictors, train_loader)
 
         zc_scores['val_accuracy'] = model.accuracy
         self.benchmarks[str(encoding)] = zc_scores
