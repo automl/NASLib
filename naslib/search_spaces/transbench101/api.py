@@ -66,8 +66,6 @@ class TransNASBenchAPI(object):
         Returns:
             metric value or values according to mode of querying
         """
-#         print('metric ----->', metric)
-#         print('metrics_dict ----->', self.metrics_dict[task])
         assert metric in self.metrics_dict[task], \
             f"metric {metric} is not available for task {task}! Must in {self.metrics_dict[task]}!"
         arch_result = self.get_arch_result(arch)

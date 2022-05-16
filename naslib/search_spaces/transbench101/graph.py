@@ -59,6 +59,7 @@ class TransBench101SearchSpaceMicro(Graph):
         self.space_name = 'transbench101'
         self.dataset=dataset
         self.create_graph = create_graph
+        self.labeled_archs = None
 
         if self.create_graph == True:
             self._create_graph()
@@ -325,11 +326,21 @@ class TransBench101SearchSpaceMicro(Graph):
     def set_spec(self, op_indices, dataset_api=None):
         self.set_op_indices(op_indices)
 
-    def sample_random_architecture(self, dataset_api=None):
+    def sample_random_labeled_architecture(self):
+        assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
+
+        op_indices = eval(np.random.choice(self.labeled_archs))
+        self.set_spec(op_indices)
+
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
+
+        if load_labeled == True:
+            return self.sample_random_labeled_architecture()
+
         def is_valid_arch(op_indices):
             return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or \
 			(op_indices[2] == op_indices[4] == op_indices[5] == 1))
@@ -356,7 +367,6 @@ class TransBench101SearchSpaceMicro(Graph):
         available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
         op_index = np.random.choice(available)
         op_indices[edge] = op_index
-        print('op_indices mu =', op_indices)
         self.set_op_indices(op_indices)
 
         
@@ -386,8 +396,10 @@ class TransBench101SearchSpaceMicro(Graph):
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:
             loss_fn = SoftmaxCrossEntropyWithLogits()
-        elif self.dataset == 'autoencoder':
+        elif self.dataset in ['autoencoder', 'normal']:
             loss_fn = nn.L1Loss()
+        elif self.dataset == 'room_layout':
+            loss_fn = nn.MSELoss()        
         else:
             loss_fn = F.cross_entropy
 
@@ -425,6 +437,7 @@ class TransBench101SearchSpaceMacro(Graph):
 
         self.max_epoch = 199
         self.space_name = 'transbench101'
+        self.labeled_archs = None
 
         self.add_edge(1, 2)
         
@@ -533,11 +546,21 @@ class TransBench101SearchSpaceMacro(Graph):
     def set_spec(self, op_indices, dataset_api=None):
         self.set_op_indices(op_indices)
 
-    def sample_random_architecture(self, dataset_api=None):
+    def sample_random_labeled_architecture(self):
+        assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
+
+        op_indices = eval(np.random.choice(self.labeled_archs))
+        self.set_spec(op_indices)
+
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
+
+        if load_labeled == True:
+            return self.sample_random_labeled_architecture()
+
         r = random.randint(0, 2)
         p = random.randint(1, 4)
         q = random.randint(1, 3)
@@ -641,8 +664,10 @@ class TransBench101SearchSpaceMacro(Graph):
     def get_loss_fn(self):
         if self.dataset in ['class_object', 'class_scene']:
             loss_fn = SoftmaxCrossEntropyWithLogits()
-        elif self.dataset == 'autoencoder':
+        elif self.dataset in ['autoencoder', 'normal']:
             loss_fn = nn.L1Loss()
+        elif self.dataset == 'room_layout':
+            loss_fn = nn.MSELoss()
         else:
             loss_fn = F.cross_entropy
 

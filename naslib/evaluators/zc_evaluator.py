@@ -106,6 +106,8 @@ class ZeroCostPredictorEvaluator(object):
             info.append(info_dict)
             train_times.append(train_time)
 
+            del graph
+
         return [xdata, ydata, info, train_times]
 
     def single_evaluate(self, test_data):
@@ -132,6 +134,8 @@ class ZeroCostPredictorEvaluator(object):
 
             pred = self.predictor.query(graph, dataloader=test_loader)
             test_pred.append(pred)
+
+            del graph
 
         test_pred = np.array(test_pred)
         query_time_end = time.time()

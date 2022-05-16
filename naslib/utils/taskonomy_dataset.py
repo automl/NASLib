@@ -14,7 +14,8 @@ DOMAIN_DATA_SOURCE = {
     'class_object': ('class_object', 'npy'),
     'class_scene': ('class_scene', 'npy'),
     'normal': ('normal', 'png'),
-    'room_layout': ('room_layout', 'npy'),
+    'room_layout': ('point_info', 'json'),
+    # 'room_layout': ('room_layout', 'npy'),
     'segmentsemantic': ('segmentsemantic', 'png'),
     'jigsaw': ('rgb', 'png'),
 }
@@ -74,7 +75,9 @@ def get_all_templates(dataset_dir, filenames_path):
         dataset_dir (string): Directory with all the images.
         filenames_path (string): /path/to/json_file for train/val/test_filenames (specify which buildings to include)
     """
+    print('filenames_path =', filenames_path)
     building_lists = load_ops.read_json(filenames_path)['filename_list']
+    print('building_lists', building_lists)
     all_template_paths = []
     for building in building_lists:
         all_template_paths += load_ops.read_json(osp.join(dataset_dir, building))

@@ -1,3 +1,4 @@
+import json
 import os
 import pickle
 
@@ -120,3 +121,11 @@ def get_dataset_api(search_space=None, dataset=None):
     else:
         raise NotImplementedError()
 
+
+def get_zc_benchmark_api(search_space, dataset):
+
+    datafile_path = os.path.join(get_project_root(), "data", f"zc_{search_space}.json")
+    with open(datafile_path) as f:
+        data = json.load(f)
+
+    return data[search_space][dataset]

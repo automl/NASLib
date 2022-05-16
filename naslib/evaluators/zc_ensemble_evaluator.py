@@ -4,6 +4,7 @@ import json
 import torch
 import numpy as np
 import logging
+from naslib.predictors.utils.encodings import encode
 from naslib.predictors.zerocost import ZeroCost
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -11,19 +12,32 @@ from naslib.search_spaces.core.query_metrics import Metric
 logger = logging.getLogger(__name__)
 
 class ZCEnsembleEvaluator(object):
-    def __init__(self, n_train, n_test, zc_names):
+    def __init__(self, n_train, n_test, zc_names, zc_api=False):
         self.n_train = n_train
         self.n_test = n_test
         self.zc_names = zc_names
         self.performance_metric = Metric.VAL_ACCURACY
-
+        self.zc_api = zc_api
         self.benchmarks = {}
 
-    def _compute_zc_scores(self, model, predictors, train_loader):
+    def _compute_zc_scores(self, encoding, predictors, train_loader):
         zc_scores = {}
+        graph = self.search_space.clone()
+        graph.set_spec(encoding)
+        graph.parse()
+
+        if self.zc_api is not None:
+            zc_results = self.zc_api[str(encoding)]
+
         for predictor in predictors:
-            score = predictor.query(model, train_loader)
+            zc_name = predictor.method_type
+            if self.zc_api is not None and zc_name in zc_results:
+                score = zc_results[zc_name]
+            else:
+                score = predictor.query(graph, train_loader)
             zc_scores[predictor.method_type] = score
+
+        del graph
 
         return zc_scores
 
@@ -75,8 +89,8 @@ class ZCEnsembleEvaluator(object):
         return models
 
     def evaluate(self, ensemble, train_loader):
+        logger.info(f'Sampling {self.n_train} train models')
         # Load models to train
         self.sample_random_models(self.n_train, train_loader)
         self._log_to_json([self.benchmarks], self.config.save, 'benchmark.json')
         logger.info('Benchmark creation complete.')
-
