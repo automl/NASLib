@@ -631,8 +631,8 @@ def get_segmentsemantic_configs():
     cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
         load_ops.ToPILImage(),
         load_ops.Resize(list(cfg['input_dim'])),
-        # load_ops.RandomHorizontalFlip(0.5),
-        # load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
         load_ops.ToTensor(),
         load_ops.Normalize(**cfg['normal_params']),
     ])
@@ -679,8 +679,8 @@ def get_normal_configs():
     cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
         load_ops.ToPILImage(),
         load_ops.Resize(list(cfg['input_dim'])),
-        load_ops.RandomHorizontalFlip(0.5),
-        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        # load_ops.RandomHorizontalFlip(0.5),
+        # load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
         load_ops.ToTensor(),
         load_ops.Normalize(**cfg['normal_params']),
     ])
