@@ -23,24 +23,21 @@ class ZCEnsembleEvaluator(object):
 
     def _compute_zc_scores(self, encoding, predictors, train_loader):
         zc_scores = {}
-        graph = self.search_space.clone()
-        graph.set_spec(encoding)
-        graph.parse()
 
         if self.zc_api is not None:
             zc_results = self.zc_api[str(encoding)]
 
-        for predictor in predictors:
+        for idx, predictor in enumerate(predictors):
             zc_name = predictor.method_type
             if self.zc_api is not None and zc_name in zc_results:
                 score = zc_results[zc_name]
             else:
-                start_time = timeit.default_timer()
+                graph = self.search_space.clone()
+                graph.set_spec(encoding)
+                graph.parse()
                 score = predictor.query(graph, train_loader)
-                end_time = timeit.default_timer()
-            zc_scores[predictor.method_type] = {'score': score, 'time': end_time-start_time}
-
-        del graph
+                del graph
+            zc_scores[zc_name] = score
 
         return zc_scores
 
@@ -54,6 +51,8 @@ class ZCEnsembleEvaluator(object):
         zc_predictors = [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
 
         encoding = model.arch.get_hash()
+
+        logger.info(f'Computing scores for model {encoding}')
         zc_scores = self._compute_zc_scores(encoding, zc_predictors, train_loader)
 
         zc_scores['val_accuracy'] = model.accuracy
