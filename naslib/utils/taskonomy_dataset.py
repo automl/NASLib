@@ -75,9 +75,13 @@ def get_all_templates(dataset_dir, filenames_path):
         dataset_dir (string): Directory with all the images.
         filenames_path (string): /path/to/json_file for train/val/test_filenames (specify which buildings to include)
     """
+<<<<<<< HEAD
+    building_lists = load_ops.read_json(filenames_path)['filename_list']
+=======
     # print('filenames_path =', filenames_path)
     building_lists = load_ops.read_json(filenames_path)['filename_list']
     # print('building_lists', building_lists)
+>>>>>>> 3a9438552c7fbf57fc11ada63aeb9d362f6b067d
     all_template_paths = []
     for building in building_lists:
         all_template_paths += load_ops.read_json(osp.join(dataset_dir, building))
