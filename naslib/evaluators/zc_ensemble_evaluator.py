@@ -30,39 +30,46 @@ class ZCEnsembleEvaluator(object):
         for idx, predictor in enumerate(predictors):
             zc_name = predictor.method_type
             if self.zc_api is not None and zc_name in zc_results:
-                score = zc_results[zc_name]
+                score = zc_results[zc_name]['score']
+                total_time = zc_results[zc_name]['time']
             else:
+                logger.info(predictor.method_type)
                 graph = self.search_space.clone()
                 graph.set_spec(encoding)
                 graph.parse()
+                start_time = timeit.default_timer()
                 score = predictor.query(graph, train_loader)
+                end_time = timeit.default_timer()
+                total_time = end_time - start_time
                 del graph
-            zc_scores[zc_name] = score
+
+            zc_scores[zc_name] = {'score': score, 'time': total_time}
 
         return zc_scores
 
-    def _sample_new_model(self, train_loader):
-        model = torch.nn.Module()
-        model.arch = self.search_space.clone()
-        model.arch.sample_random_architecture(dataset_api=self.dataset_api)
-        model.arch.parse()
-        model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
+    def _sample_new_arch(self, train_loader):
+        graph = self.search_space.clone()
+        graph.sample_random_architecture(dataset_api=self.dataset_api)
+        encoding = graph.get_hash()
+        del graph
 
-        zc_predictors = [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
+        return encoding
 
-        encoding = model.arch.get_hash()
+    def compute_scores(self, archs, zc_predictors, train_loader):
+        for arch in archs:
+            logger.info(f'Computing zero-cost scores for model {arch}')
+            zc_scores = self._compute_zc_scores(arch, zc_predictors, train_loader)
 
-        logger.info(f'Computing scores for model {encoding}')
-        zc_scores = self._compute_zc_scores(encoding, zc_predictors, train_loader)
+            # Query validation accuracy from benchmark
+            graph = self.search_space.clone()
+            graph.set_spec(arch)
+            graph.parse()
+            accuracy = graph.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
 
-        zc_scores['val_accuracy'] = model.accuracy
-        self.benchmarks[str(encoding)] = zc_scores
+            zc_scores['val_accuracy'] = accuracy
+            self.benchmarks[str(arch)] = zc_scores
 
-        self._log_to_json([self.benchmarks], self.config.save, 'intermediate_benchmark.json')
-
-        del(model)
-
-        return None
+            self._log_to_json([self.benchmarks], self.config.save, 'intermediate_benchmark.json')
 
     def _log_to_json(self, results, filepath, filename):
         """log statistics to json file"""
@@ -86,13 +93,18 @@ class ZCEnsembleEvaluator(object):
         self.dataset_api = dataset_api
         self.config = config
 
-    def sample_random_models(self, n, train_loader):
-        models = [self._sample_new_model(train_loader) for _ in range(n)]
-        return models
+    def sample_random_archs(self, n, train_loader):
+        archs = [self._sample_new_arch(train_loader) for _ in range(n)]
+        return archs
 
     def evaluate(self, ensemble, train_loader):
         logger.info(f'Sampling {self.n_train} train models')
+
         # Load models to train
-        self.sample_random_models(self.n_train, train_loader)
-        self._log_to_json([self.benchmarks], self.config.save, 'benchmark.json')
+        archs = self.sample_random_archs(self.n_train, train_loader)
+        zc_predictors = [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
+
+        self.compute_scores(archs, zc_predictors, train_loader)
+        archs_hash = hash(str(sorted(list(self.benchmarks.keys()))))
+        self._log_to_json([self.benchmarks, {'hash': archs_hash}], self.config.save, 'benchmark.json')
         logger.info('Benchmark creation complete.')
