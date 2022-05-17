@@ -2,6 +2,7 @@ import numpy as np
 import torch.nn as nn
 
 from archai.algos.nasbench101 import model_builder
+# from . import model_builder
 from naslib.search_spaces.nasbench101.primitives import ModelWrapper
 
 INPUT = 'input'
