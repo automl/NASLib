@@ -49,14 +49,6 @@ pip install gdown jupyter
 
 ```
 
-To validate the installation, you can run tests:
-
-```
-cd tests
-coverage run -m unittest discover
-```
-
-The test coverage can be seen with `coverage report`.
 
 # Download data 
  To download the tabular benchmark and setup the data folder run
