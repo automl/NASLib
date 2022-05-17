@@ -1,0 +1,12 @@
+batch_size: 32
+config_type: benchmarks
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: cifar10
+out_dir: run
+predictor: epe_nas
+search_space: nasbench101
+seed: 9003
+train_portion: 0.7
+train_size: 100
