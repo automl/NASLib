@@ -39,5 +39,7 @@ class FactorizedReduce(AbstractPrimitive):
             out = self.bn(out)
             return out
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None

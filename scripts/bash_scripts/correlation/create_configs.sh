@@ -14,7 +14,7 @@ config_root=configs
 out_dir=run
 
 # predictors
-predictors=(fisher grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
+predictors=(fisher grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot zen)
 
 # other variables:
 trials=10

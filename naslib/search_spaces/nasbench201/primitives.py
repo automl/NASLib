@@ -35,5 +35,7 @@ class ResNetBasicblock(AbstractPrimitive):
         residual = self.downsample(x) if self.downsample is not None else x
         return residual + basicblock
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
