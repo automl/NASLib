@@ -2,7 +2,7 @@
 #SBATCH -p bosch_cpu-cascadelake #,ml_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -a 0-4 # array size
+#SBATCH -a 0-700:100 # array size
 #SBATCH --mem=16G
 #SBATCH --job-name="ZC_CORRELATION"
 
@@ -49,7 +49,7 @@ fi
 start=`date +%s`
 
 seed=$(($start_seed + ${SLURM_ARRAY_TASK_ID}))
-python naslib/runners/benchmarks/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
+python naslib/runners/benchmarks/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml start_idx ${SLURM_ARRAY_TASK_ID} n_models 100
 
 end=`date +%s`
 runtime=$((end-start))

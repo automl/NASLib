@@ -129,3 +129,10 @@ def get_zc_benchmark_api(search_space, dataset):
         data = json.load(f)
 
     return data[search_space][dataset]
+
+def load_sampled_architectures(search_space, dataset):
+    datafile_path = os.path.join(get_project_root(), "data", "zc_samples", f"samples_{search_space}-{dataset}.json")
+    with open(datafile_path) as f:
+        data = json.load(f)
+
+    return data
