@@ -250,6 +250,31 @@ def get_train_val_loaders(config):
 
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
+    
+    elif dataset == 'segmentsemantic':
+        cfg = get_segmentsemantic_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+
+    elif dataset == 'normal':
+        cfg = get_normal_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+    
+    elif dataset == 'room_layout':
+        cfg = get_room_layout_configs()
+
+        train_data, val_data, test_data = get_datasets(cfg)
+
+        train_transform = cfg['train_transform_fn']
+        valid_transform = cfg['val_transform_fn']
+
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
 
@@ -559,6 +584,150 @@ def get_autoencoder_configs():
         load_ops.ToPILImage(),
         load_ops.Resize(list(cfg['input_dim'])),
         load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+def get_segmentsemantic_configs():
+    
+    cfg = {}
+    
+    cfg['task_name'] = 'segmentsemantic'
+    
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3 
+    
+    cfg['target_dim'] = (256, 256)
+    cfg['target_num_channel'] = 17
+
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+   
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_load_fn'] = load_ops.semantic_segment_label
+    cfg['target_load_kwargs'] = {}
+    
+    cfg['normal_params'] = {'mean': [0.5, 0.5, 0.5], 'std': [0.5, 0.5, 0.5]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.RandomHorizontalFlip(0.5),
+        load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+def get_normal_configs():
+    
+    cfg = {}
+    
+    cfg['task_name'] = 'normal'
+    
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3 
+    
+    cfg['target_dim'] = (256, 256)
+    cfg['target_channel'] = 3
+
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+   
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_load_fn'] = load_ops.load_raw_img_label
+    cfg['target_load_kwargs'] = {}
+    
+    cfg['normal_params'] = {'mean': [0.5, 0.5, 0.5], 'std': [0.5, 0.5, 0.5]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        # load_ops.RandomHorizontalFlip(0.5),
+        # load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['val_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    
+    cfg['test_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        load_ops.ToTensor(),
+        load_ops.Normalize(**cfg['normal_params']),
+    ])
+    return cfg
+
+def get_room_layout_configs():
+    
+    cfg = {}
+    
+    cfg['task_name'] = 'room_layout'
+    
+    cfg['input_dim'] = (256, 256)
+    cfg['input_num_channels'] = 3 
+    
+    cfg['target_dim'] = 9
+
+    cfg['dataset_dir'] = os.path.join(get_project_root(), "data", "taskonomydata_mini")
+    cfg['data_split_dir'] = os.path.join(get_project_root(), "data", "final5K_splits")
+   
+    cfg['train_filenames'] = 'train_filenames_final5k.json'
+    cfg['val_filenames'] = 'val_filenames_final5k.json'
+    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    
+    cfg['target_load_fn'] = load_ops.point_info2room_layout
+    # cfg['target_load_fn'] = load_ops.room_layout
+    cfg['target_load_kwargs'] = {}
+    
+    cfg['normal_params'] = {'mean': [0.5224, 0.5222, 0.5221], 'std': [0.2234, 0.2235, 0.2236]}
+    
+    cfg['train_transform_fn'] = load_ops.Compose(cfg['task_name'], [
+        load_ops.ToPILImage(),
+        load_ops.Resize(list(cfg['input_dim'])),
+        # load_ops.RandomHorizontalFlip(0.5),
         load_ops.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
         load_ops.ToTensor(),
         load_ops.Normalize(**cfg['normal_params']),

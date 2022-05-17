@@ -50,11 +50,10 @@ def eval_score(jacob, labels=None):
 
 @measure("jacov", bn=True)
 def compute_jacob_cov(net, inputs, targets, split_data=1, loss_fn=None):
-    # Compute gradients (but don't apply them)
-    jacobs, labels = get_batch_jacobian(net, inputs, targets)
-    jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
-
     try:
+        # Compute gradients (but don't apply them)
+        jacobs, labels = get_batch_jacobian(net, inputs, targets)
+        jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
         jc = eval_score(jacobs, labels)
     except Exception as e:
         print(e)
