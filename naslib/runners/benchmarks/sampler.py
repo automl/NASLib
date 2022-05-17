@@ -31,7 +31,9 @@ evaluator.adapt_search_space(search_space, config.dataset, dataset_api, config)
 archs = set()
 
 while len(archs) < 800:
-    archs.update(evaluator.sample_random_archs(5, None))
+    encodings = evaluator.sample_random_archs(5, None)
+    str_encodings = [str(enc) for enc in encodings]
+    archs.update(str_encodings)
     logger.info(f'Sampled {len(archs)} unique models so far')
 
 archs_dict = {idx: str(arch) for idx, arch in enumerate(archs)}
