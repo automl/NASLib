@@ -8,5 +8,5 @@ out_dir: run
 predictor: grasp
 search_space: transbench101_micro
 seed: 9000
-test_size: 5
+test_size: 200
 train_portion: 0.7
