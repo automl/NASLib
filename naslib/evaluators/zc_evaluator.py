@@ -126,6 +126,12 @@ class ZeroCostPredictorEvaluator(object):
         # and then query the predictor for the performance of that
         for arch in xtest:
             pred = zc_api[self.get_arch_as_string(arch)][self.predictor.method_type]['score']
+
+            if float("-inf") == pred:
+                pred = -1e9
+            elif float("inf") == pred:
+                pred = 1e9
+
             test_pred.append(pred)
 
         test_pred = np.array(test_pred)
