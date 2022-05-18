@@ -1,0 +1,12 @@
+batch_size: 32
+config_type: correlation
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: jigsaw
+out_dir: run
+predictor: jacov
+search_space: transbench101_macro
+seed: 9008
+test_size: 200
+train_portion: 0.7
