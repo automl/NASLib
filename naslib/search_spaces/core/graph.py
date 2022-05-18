@@ -4,6 +4,7 @@ import logging
 import torch
 import random
 import inspect
+import naslib as nl
 
 from networkx.algorithms.dag import lexicographical_topological_sort
 
@@ -507,8 +508,10 @@ class Graph(torch.nn.Module, nx.DiGraph):
                                         return x
                                     else:
                                         return torch.nn.Sequential(*ops)(x)
-                        elif isinstance(edge_data.op, torch.nn.Linear):
-                            return x
+                        # case for the nb101 graph
+                        elif isinstance(edge_data.op,
+                                        nl.search_spaces.nasbench101.primitives.ModelWrapper):
+                            return torch.nn.Sequential(*edge_data.op.model.layers)(x)
 
                         edge_output = edge_data.op.forward_beforeGP(x, edge_data=edge_data)
                     else:
