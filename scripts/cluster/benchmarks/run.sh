@@ -2,9 +2,9 @@
 #SBATCH -p bosch_cpu-cascadelake #,ml_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -a 0-700:100 # array size
-#SBATCH --mem=16G
-#SBATCH --job-name="ZC_CORRELATION"
+#SBATCH -a 0-700:25 # array size
+#SBATCH --mem=32G
+#SBATCH --job-name="JIGSAW_FISHER"
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
@@ -15,6 +15,7 @@ dataset=$2
 predictor=$3
 start_seed=$4
 experiment=$5
+N_MODELS=25
 
 if [ -z "$searchspace" ]
 then
@@ -48,8 +49,7 @@ fi
 
 start=`date +%s`
 
-seed=$(($start_seed + ${SLURM_ARRAY_TASK_ID}))
-python naslib/runners/benchmarks/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml start_idx ${SLURM_ARRAY_TASK_ID} n_models 100
+python naslib/runners/benchmarks/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${start_seed}.yaml start_idx ${SLURM_ARRAY_TASK_ID} n_models $N_MODELS
 
 end=`date +%s`
 runtime=$((end-start))
