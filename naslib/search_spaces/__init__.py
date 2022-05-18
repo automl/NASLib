@@ -18,14 +18,38 @@ dataset_n_classes = {
     "cifar10": 10,
     "cifar100": 100,
     "imagenet16-120": 120,
+    "svhn": 10,
+    "ninapro": 18,
+    "scifar100": 100,
+}
+
+dataset_to_channels = {
+    "cifar10": 3,
+    "cifar100": 3,
+    "imagenet16-120": 3,
+    "svhn": 3,
+    "ninapro": 1,
+    "scifar100": 3,
 }
 
 def get_search_space(name, dataset):
     search_space_cls = supported_search_spaces[name.lower()]
 
-    if name == 'transbench101_micro' or name == 'transbench101_macro':
-        return search_space_cls(dataset=dataset)
-
+    in_channels = dataset_to_channels[dataset.lower()]
     n_classes = dataset_n_classes[dataset.lower()]
-    return search_space_cls(n_classes=n_classes)
-    
+    auxiliary = True if dataset.lower() == "cifar10" else False
+    create_graph = True if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else False
+    use_small_model = False if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else True
+
+    if name == 'transbench101_micro' or name == 'transbench101_macro':
+        return search_space_cls(dataset=dataset,
+                                use_small_model=use_small_model,
+                                create_graph=create_graph,
+                                n_classes=n_classes,
+                                in_channels=in_channels)
+    elif name == 'nasbench301':
+        return search_space_cls(n_classes=n_classes, in_channels=in_channels,
+                                auxiliary=auxiliary)
+    else:
+        return search_space_cls(n_classes=n_classes, in_channels=in_channels)
+

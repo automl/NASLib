@@ -1,7 +1,7 @@
 #!/bin/bash
 
 searchspace=nasbench301
-datasets=(cifar10)
+datasets=(cifar10 svhn scifar100 ninapro)
 
 for dataset in "${datasets[@]}"
 do

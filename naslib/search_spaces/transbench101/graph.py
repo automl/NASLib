@@ -42,7 +42,8 @@ class TransBench101SearchSpaceMicro(Graph):
     QUERYABLE = True
 
 
-    def __init__(self, dataset='jigsaw', use_small_model=True, create_graph=False):
+    def __init__(self, dataset='jigsaw', use_small_model=True,
+                 create_graph=False, n_classes=10, in_channels=3):
         super().__init__()
         if dataset == "jigsaw":
             self.num_classes = 1000
@@ -51,11 +52,12 @@ class TransBench101SearchSpaceMicro(Graph):
         elif dataset == "class_scene":
             self.num_classes = 63
         else:
-            self.num_classes = -1 
+            self.num_classes = n_classes
         self.op_indices = None
 
         self.use_small_model = use_small_model
         self.max_epoch = 199
+        self.in_channels = in_channels
         self.space_name = 'transbench101'
         self.dataset=dataset
         self.create_graph = create_graph
@@ -136,7 +138,7 @@ class TransBench101SearchSpaceMicro(Graph):
         elif task == "autoencoder":
             return ops.Stem(C_out=self.base_channels)
         else:
-            return None # TODO: handle other tasks
+            return ops.Stem(C_in=self.in_channels, C_out=self.base_channels)
 
 
     def _get_decoder_for_task(self, task, n_channels): #TODO: Remove harcoding
@@ -159,7 +161,11 @@ class TransBench101SearchSpaceMicro(Graph):
                 return ops.GenerativeDecoder((512, 32), (512, 2048)) # Full TNB
 
         else:
-            return None # TODO: handle other tasks
+            return ops.Sequential(
+                        nn.AdaptiveAvgPool2d(1),
+                        nn.Flatten(),
+                        nn.Linear(n_channels, self.num_classes)
+                    )
 
     def _get_module_n_output_channels(self, module):
         last_cell_in_module = module.edges[1, 2]['op'].op[-1]
@@ -354,6 +360,7 @@ class TransBench101SearchSpaceMicro(Graph):
             self.set_op_indices(op_indices)
             break
 
+        self.compact = self.get_op_indices()
 
     def mutate(self, parent, dataset_api=None):
         """
