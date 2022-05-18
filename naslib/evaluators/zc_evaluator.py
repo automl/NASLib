@@ -125,7 +125,7 @@ class ZeroCostPredictorEvaluator(object):
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
         for arch in xtest:
-            pred = zc_api[str(arch)][self.predictor.method_type]['score']
+            pred = zc_api[self.get_arch_as_string(arch)][self.predictor.method_type]['score']
             test_pred.append(pred)
 
         test_pred = np.array(test_pred)
@@ -193,3 +193,9 @@ class ZeroCostPredictorEvaluator(object):
                         res[key] = float(value)
 
             json.dump(self.results, file, separators=(",", ":"))
+
+    def get_arch_as_string(self, arch):
+        if self.search_space.get_type() == 'nasbench301':
+            str_arch = str(list((list(arch[0]), list(arch[1]))))
+
+        return str_arch
