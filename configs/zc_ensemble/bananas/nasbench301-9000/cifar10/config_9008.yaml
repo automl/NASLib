@@ -16,7 +16,7 @@ search:
   k: 10
   max_mutations: 1
   num_arches_to_mutate: 2
-  num_candidates: 10
+  num_candidates: 100
   num_ensemble: 1
   num_init: 10
   predictor_type: xgb
@@ -34,6 +34,7 @@ search:
   - grasp
   - l2_norm
   - synflow
+  - nwot
   zc_only: false
 search_space: nasbench301
 seed: 9008

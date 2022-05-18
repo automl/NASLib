@@ -83,7 +83,7 @@ if __name__ == "__main__":
     parser.add_argument("--encoding_type", type=str, default='path', help="Root config directory")
     parser.add_argument("--num_arches_to_mutate", type=int, default=2, help="Root config directory")
     parser.add_argument("--max_mutations", type=int, default=1, help="Root config directory")
-    parser.add_argument("--num_candidates", type=int, default=10, help="Root config directory")
+    parser.add_argument("--num_candidates", type=int, default=100, help="Root config directory")
     parser.add_argument("--predictor_type", type=str, default='xgb', help="Root config directory")
     parser.add_argument("--zc_only", default=False, action='store_true', help="Root config directory")
 
