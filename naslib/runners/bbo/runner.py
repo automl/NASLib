@@ -1,3 +1,4 @@
+import os
 import logging
 
 from naslib.defaults.trainer import Trainer
@@ -16,6 +17,14 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 writer = SummaryWriter(config.save)
+
+zc_params = sorted(config.search.zc_names)
+out_dir = '-'.join(zc_params)
+
+config.save = os.path.join(config.save, out_dir)
+
+if not os.path.exists(config.save):
+    os.makedirs(config.save)
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
