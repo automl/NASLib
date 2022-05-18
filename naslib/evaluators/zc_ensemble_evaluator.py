@@ -30,7 +30,7 @@ class ZCEnsembleEvaluator(object):
         for idx, predictor in enumerate(predictors):
             zc_name = predictor.method_type
             if self.zc_api is not None and zc_name in zc_results:
-                score = zc_results[zc_name]
+                score = zc_results[zc_name]['score']
             else:
                 graph = self.search_space.clone()
                 graph.set_spec(encoding)
