@@ -179,7 +179,7 @@ class Trainer(object):
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
-            self.periodic_checkpointer.step(e)
+            # self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
@@ -408,7 +408,7 @@ class Trainer(object):
                                 )
 
                     scheduler.step()
-                    self.periodic_checkpointer.step(e)
+                    # self.periodic_checkpointer.step(e)
                     self._log_and_reset_accuracies(e)
 
             # Disable drop path
