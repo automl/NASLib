@@ -28,34 +28,37 @@ train_loader, _, _, _, _ = utils.get_train_val_loaders(config)
 predictor = ZeroCost(method_type=config.predictor)
 
 for idx, arch in archs_to_evaluate.items():
-    logger.info(f'Computing ZC score for model {idx} with encoding {arch}')
-    zc_score = {}
-    graph = search_space.clone()
-    graph.set_spec(arch)
-    graph.parse()
-    accuracy = graph.query(Metric.VAL_ACCURACY, config.dataset, dataset_api=dataset_api)
+    try:
+        logger.info(f'Computing ZC score for model {idx} with encoding {arch}')
+        zc_score = {}
+        graph = search_space.clone()
+        graph.set_spec(arch)
+        graph.parse()
+        accuracy = graph.query(Metric.VAL_ACCURACY, config.dataset, dataset_api=dataset_api)
 
-    # Query predictor
-    start_time = timeit.default_timer()
-    score = predictor.query(graph, train_loader)
-    end_time = timeit.default_timer()
+        # Query predictor
+        start_time = timeit.default_timer()
+        score = predictor.query(graph, train_loader)
+        end_time = timeit.default_timer()
 
-    zc_score['idx'] = str(idx)
-    zc_score['arch'] = str(arch)
-    zc_score[predictor.method_type] = {
-        'score': score,
-        'time': end_time - start_time
-    }
-    zc_score['val_accuracy'] = accuracy
+        zc_score['idx'] = str(idx)
+        zc_score['arch'] = str(arch)
+        zc_score[predictor.method_type] = {
+            'score': score,
+            'time': end_time - start_time
+        }
+        zc_score['val_accuracy'] = accuracy
 
-    output_dir = os.path.join(config.data, 'zc_benchmarks', config.search_space, config.dataset)
+        output_dir = os.path.join(config.data, 'zc_benchmarks', config.search_space, config.dataset, config.predictor)
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
-    output_file = os.path.join(output_dir, f'benchmark_{idx}.json')
+        output_file = os.path.join(output_dir, f'benchmark_{idx}.json')
 
-    with open(output_file, 'w') as f:
-        json.dump(zc_score, f)
+        with open(output_file, 'w') as f:
+            json.dump(zc_score, f)
+    except Exception as e:
+        logger.info(f'FAILED to compute score for model with arch {arch}!')
 
 logger.info('Done.')
