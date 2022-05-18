@@ -1,0 +1,23 @@
+dataset: scifar100
+seed: 1
+search_space: transbench101_micro
+out_dir: test_tnb01
+
+checkpoint_freq: 1
+batch_size: 128
+learning_rate: 0.025
+learning_rate_min: 0.00
+momentum: 0.9
+weight_decay: 0.0003
+epochs: 100
+grad_clip: 5
+train_portion: 0.9
+data_size: 50000
+nesterov: 0
+
+cutout: 0
+cutout_length: 16
+cutout_prob: 1.0
+drop_path_prob: 0.2
+auxiliary_weight: 0.4
+

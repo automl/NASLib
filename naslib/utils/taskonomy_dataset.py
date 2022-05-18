@@ -14,7 +14,8 @@ DOMAIN_DATA_SOURCE = {
     'class_object': ('class_object', 'npy'),
     'class_scene': ('class_scene', 'npy'),
     'normal': ('normal', 'png'),
-    'room_layout': ('room_layout', 'npy'),
+    'room_layout': ('point_info', 'json'),
+    # 'room_layout': ('room_layout', 'npy'),
     'segmentsemantic': ('segmentsemantic', 'png'),
     'jigsaw': ('rgb', 'png'),
 }

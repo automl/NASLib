@@ -19,36 +19,36 @@ class ZCEnsembleEvaluator(object):
         self.zc_names = zc_names
         self.performance_metric = Metric.VAL_ACCURACY
         self.zc_api = zc_api
+        self.load_labeled = self.zc_api is not None
 
     def _compute_zc_scores(self, encoding, predictors, train_loader):
         zc_scores = {}
-        graph = self.search_space.clone()
-        graph.set_spec(encoding)
-        graph.parse()
 
         if self.zc_api is not None:
             zc_results = self.zc_api[str(encoding)]
 
-        for predictor in predictors:
+        for idx, predictor in enumerate(predictors):
             zc_name = predictor.method_type
             if self.zc_api is not None and zc_name in zc_results:
-                score = zc_results[zc_name]
+                score = zc_results[zc_name]['score']
             else:
+                graph = self.search_space.clone()
+                graph.set_spec(encoding)
+                graph.parse()
                 score = predictor.query(graph, train_loader)
-            zc_scores[predictor.method_type] = score
-
-        del(graph)
+                del graph
+            zc_scores[zc_name] = score
 
         return zc_scores
 
     def _sample_new_model(self):
         model = torch.nn.Module()
         graph = self.search_space.clone()
-        graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
+        graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled)
         model.accuracy = graph.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
         model.arch = graph.get_hash()
 
-        del(graph)
+        del graph
         return model
 
     def _log_to_json(self, results, filepath):
@@ -78,7 +78,8 @@ class ZCEnsembleEvaluator(object):
         return models
 
     def compute_zc_scores(self, models, zc_predictors, train_loader):
-        for model in models:
+        for idx, model in enumerate(models):
+            logger.info(f'Computing ZC scores for model {idx+1}/{len(models)} with encoding {model.arch}')
             model.zc_scores = self._compute_zc_scores(model.arch, zc_predictors, train_loader)
 
     def evaluate(self, ensemble, train_loader):
@@ -102,7 +103,7 @@ class ZCEnsembleEvaluator(object):
             g.set_spec(m.arch)
             g.parse()
             xtrain.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-            del(g)
+            del g
 
         ytrain = [m.accuracy for m in train_models]
 
@@ -127,7 +128,7 @@ class ZCEnsembleEvaluator(object):
             g = self.search_space.clone()
             g.set_spec(m.arch)
             x_test.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-            del(g)
+            del g
 
         test_info = [{'zero_cost_scores': m.zc_scores} for m in test_models]
         preds = np.mean(ensemble.query(x_test, test_info), axis=0)

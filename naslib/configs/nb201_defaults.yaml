@@ -1,0 +1,23 @@
+dataset: ninapro
+seed: 1
+search_space: nasbench201
+out_dir: test_nb201
+
+checkpoint_freq: 1
+batch_size: 256
+learning_rate: 0.1
+learning_rate_min: 0.00
+momentum: 0.9
+weight_decay: 0.0005
+epochs: 200
+grad_clip: 0
+train_portion: 0.9
+data_size: 50000
+nesterov: 1
+
+cutout: True
+cutout_length: 16
+cutout_prob: 1.0
+drop_path_prob: 0.2
+auxiliary_weight: 0.4
+

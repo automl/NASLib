@@ -59,7 +59,7 @@ class NasBench301SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self, n_classes=10):
+    def __init__(self, n_classes=10, in_channels=3, auxiliary=True):
         """
         Initialize a new instance of the DARTS search space.
         Note:
@@ -74,8 +74,9 @@ class NasBench301SearchSpace(Graph):
         self.load_labeled = None
         self.num_classes = n_classes
         self.max_epoch = 100
+        self.in_channels = in_channels
         self.space_name = "nasbench301"
-        self.auxiliary_output = True
+        self.auxiliary_output = auxiliary
         self.labeled_archs = None
 
         """
@@ -162,11 +163,8 @@ class NasBench301SearchSpace(Graph):
             11, subgraph=normal_cell.copy().set_scope("n_stage_3").set_input([9, 10])
         )
 
-        # auxiliary
-        self.add_node(12)
-
         # output
-        self.add_node(13)
+        self.add_node(12)
 
         # chain connections
         self.add_edges_from([(i, i + 1) for i in range(1, 11)])
@@ -177,6 +175,9 @@ class NasBench301SearchSpace(Graph):
         self.add_edge(2, 5)
 
         if self.auxiliary_output:
+            # node 12 becomes aux head
+            self.add_node(13)
+
             # auxiliary
             self.add_edge(11, 12)
 
@@ -217,7 +218,8 @@ class NasBench301SearchSpace(Graph):
         # pre-processing
         # In darts there is a hardcoded multiplier of 3 for the output of the stem
         stem_multiplier = 3
-        self.edges[1, 2].set("op", ops.Stem(C_out=self.channels[0] * stem_multiplier))
+        self.edges[1, 2].set("op", ops.Stem(C_in=self.in_channels,
+                                            C_out=self.channels[0] * stem_multiplier))
 
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
@@ -457,7 +459,7 @@ class NasBench301SearchSpace(Graph):
     def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        op_indices = eval(np.random.choice(self.labeled_archs))
+        op_indices = random.choice(self.labeled_archs)
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):

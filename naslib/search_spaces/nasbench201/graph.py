@@ -40,12 +40,13 @@ class NasBench201SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self, n_classes=10):
+    def __init__(self, n_classes=10, in_channels=3):
         super().__init__()
         self.num_classes = n_classes
         self.op_indices = None
 
         self.max_epoch = 199
+        self.in_channels = in_channels
         self.space_name = "nasbench201"
         self.labeled_archs = None
         #
@@ -92,7 +93,8 @@ class NasBench201SearchSpace(Graph):
         #
 
         # preprocessing
-        self.edges[1, 2].set("op", ops.Stem(C_out=self.channels[0]))
+        self.edges[1, 2].set("op", ops.Stem(C_in=self.in_channels,
+                                            C_out=self.channels[0]))
 
         # stage 1
         for i in range(2, 7):
@@ -241,7 +243,7 @@ class NasBench201SearchSpace(Graph):
     def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        op_indices = eval(np.random.choice(self.labeled_archs))
+        op_indices = random.choice(self.labeled_archs)
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):
@@ -265,6 +267,7 @@ class NasBench201SearchSpace(Graph):
 
             self.set_op_indices(op_indices)
             break
+        self.compact = self.get_op_indices()
 
     def get_type(self):
         return "nasbench201"

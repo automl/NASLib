@@ -97,7 +97,7 @@ class ZeroCostPredictorEvaluator(object):
                 graph.sample_random_architecture(dataset_api=self.dataset_api)
             else:
                 graph = self.search_space.clone()
-                graph.load_labeled_architecture(dataset_api=self.dataset_api)
+                graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
 
             accuracy, train_time, info_dict = self.get_full_arch_info(graph)
 
@@ -106,9 +106,11 @@ class ZeroCostPredictorEvaluator(object):
             info.append(info_dict)
             train_times.append(train_time)
 
+            del graph
+
         return [xdata, ydata, info, train_times]
 
-    def single_evaluate(self, test_data):
+    def single_evaluate(self, test_data, zc_api):
         """
         Evaluate the predictor.
         """
@@ -123,14 +125,13 @@ class ZeroCostPredictorEvaluator(object):
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
         for arch in xtest:
-            graph = self.search_space.clone()
-            graph.set_spec(arch)
+            pred = zc_api[self.get_arch_as_string(arch)][self.predictor.method_type]['score']
 
-            # Expand and parse the graph
-            graph.prepare_evaluation()
-            graph.parse()
+            if float("-inf") == pred:
+                pred = -1e9
+            elif float("inf") == pred:
+                pred = 1e9
 
-            pred = self.predictor.query(graph, dataloader=test_loader)
             test_pred.append(pred)
 
         test_pred = np.array(test_pred)
@@ -173,10 +174,10 @@ class ZeroCostPredictorEvaluator(object):
 
         return test_data
 
-    def evaluate(self):
+    def evaluate(self, zc_api):
         self.predictor.pre_process()
         test_data = self.load_test_data()
-        self.single_evaluate(test_data)
+        self.single_evaluate(test_data, zc_api)
 
         if self.log_results_to_json:
             self._log_to_json()
@@ -198,3 +199,10 @@ class ZeroCostPredictorEvaluator(object):
                         res[key] = float(value)
 
             json.dump(self.results, file, separators=(",", ":"))
+
+    def get_arch_as_string(self, arch):
+        if self.search_space.get_type() == 'nasbench301':
+            str_arch = str(list((list(arch[0]), list(arch[1]))))
+        else:
+            str_arch = str(arch)
+        return str_arch

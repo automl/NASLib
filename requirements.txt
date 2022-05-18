@@ -9,6 +9,7 @@ pytest==6.2.4
 pytorch-msssim==0.2.1
 pandas==1.3.5
 tensorwatch==0.9.1
+transforms3d
 scikit-learn==1.0.2
 tqdm==4.50.2
 gdown
