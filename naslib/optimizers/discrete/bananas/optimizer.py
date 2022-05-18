@@ -21,7 +21,7 @@ class Bananas(MetaOptimizer):
     # training the models is not implemented
     using_step_function = False
 
-    def __init__(self, config):
+    def __init__(self, config, zc_api):
         super().__init__()
         self.config = config
         self.epochs = config.search.epochs
@@ -48,6 +48,9 @@ class Bananas(MetaOptimizer):
         self.zc = config.search.zc_ensemble
         self.zc_names = config.search.zc_names
 
+        self.sample_from_zc_api = zc_api is not None
+        self.zc_api = zc_api
+
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert search_space.QUERYABLE, "Bananas is currently only implemented for benchmarks."
 
@@ -61,25 +64,23 @@ class Bananas(MetaOptimizer):
     def get_zero_cost_predictors(self):
         return [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
 
-    def _compute_zc_scores(self, model, predictors, train_loader):
+    def query_zc_scores(self, arch, predictors, zc_api):
         zc_scores = {}
+
         for predictor in predictors:
-            score = predictor.query(model, train_loader)
-            zc_scores[predictor.method_type] = score
+            score = zc_api[self.get_arch_as_string(arch)][predictor]['score']
+            zc_scores[predictor] = score
 
         return zc_scores
 
     def _sample_new_model(self):
-        # randomly sample initial architectures
-        model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
+        model = torch.nn.Module()
         model.arch = self.search_space.clone()
-        model.arch.sample_random_architecture(dataset_api=self.dataset_api)
-        model.arch.parse()
+        model.arch.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
         model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
 
-        if self.zc and len(self.train_data) <= self.max_zerocost:
-            zc_predictors = self.get_zero_cost_predictors()
-            model.zc_scores = self._compute_zc_scores(model.arch, zc_predictors, self.train_loader)
+        if self.zc:
+            model.zc_scores = self.query_zc_scores(model.arch.get_hash(), self.zc_names, self.zc_api)
 
         self.train_data.append(model)
         self._update_history(model)
@@ -112,10 +113,8 @@ class Bananas(MetaOptimizer):
 
             for _ in range(self.num_candidates):
                 model = torch.nn.Module()
-                arch = self.search_space.clone()
-                arch.sample_random_architecture(dataset_api=self.dataset_api)
-                arch.parse()
-                model.arch = arch
+                model.arch = self.search_space.clone()
+                model.arch.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
                 candidates.append(model)
 
         elif self.acq_fn_optimization == 'mutation':
@@ -139,11 +138,9 @@ class Bananas(MetaOptimizer):
         return candidates
 
     def _get_best_candidates(self, candidates, acq_fn):
-        if self.zc and len(self.train_data) <= self.max_zerocost:
-            zc_predictors = self.get_zero_cost_predictors()
-
+        if self.zc:
             for model in candidates:
-                model.zc_scores = self._compute_zc_scores(model.arch, zc_predictors, self.train_loader)
+                model.zc_scores = self.query_zc_scores(model.arch.get_hash(), self.zc_names, self.zc_api)
 
             values = [acq_fn(model.arch, [{'zero_cost_scores' : model.zc_scores}]) for model in candidates]
         else:
@@ -178,8 +175,7 @@ class Bananas(MetaOptimizer):
             model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
 
             if self.zc and len(self.train_data) <= self.max_zerocost:
-                zc_predictors = self.get_zero_cost_predictors()
-                model.zc_scores = self._compute_zc_scores(model.arch, zc_predictors, self.train_loader)
+                model.zc_scores = self.query_zc_scores(model.arch.get_hash(), self.zc_names, self.zc_api)
 
             self._update_history(model)
             self.train_data.append(model)
@@ -217,3 +213,10 @@ class Bananas(MetaOptimizer):
 
     def get_model_size(self):
         return count_parameters_in_MB(self.history)
+
+    def get_arch_as_string(self, arch):
+        if self.search_space.get_type() == 'nasbench301':
+            str_arch = str(list((list(arch[0]), list(arch[1]))))
+        else:
+            str_arch = str(arch)
+        return str_arch
