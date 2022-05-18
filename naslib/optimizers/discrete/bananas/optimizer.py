@@ -70,10 +70,10 @@ class Bananas(MetaOptimizer):
         for predictor in predictors:
             score = zc_api[self.get_arch_as_string(arch)][predictor]['score']
 
-            if float("-inf") == pred:
-                pred = -1e9
-            elif float("inf") == pred:
-                pred = 1e9
+            if float("-inf") == score:
+                score = -1e9
+            elif float("inf") == score:
+                score = 1e9
 
             zc_scores[predictor] = score
 
