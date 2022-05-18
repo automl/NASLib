@@ -97,7 +97,7 @@ class ZeroCostPredictorEvaluator(object):
                 graph.sample_random_architecture(dataset_api=self.dataset_api)
             else:
                 graph = self.search_space.clone()
-                graph.load_labeled_architecture(dataset_api=self.dataset_api)
+                graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
 
             accuracy, train_time, info_dict = self.get_full_arch_info(graph)
 
@@ -110,7 +110,7 @@ class ZeroCostPredictorEvaluator(object):
 
         return [xdata, ydata, info, train_times]
 
-    def single_evaluate(self, test_data):
+    def single_evaluate(self, test_data, zc_api):
         """
         Evaluate the predictor.
         """
@@ -125,17 +125,8 @@ class ZeroCostPredictorEvaluator(object):
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
         for arch in xtest:
-            graph = self.search_space.clone()
-            graph.set_spec(arch)
-
-            # Expand and parse the graph
-            graph.prepare_evaluation()
-            graph.parse()
-
-            pred = self.predictor.query(graph, dataloader=test_loader)
+            pred = zc_api[str(arch)][self.predictor.method_type]['score']
             test_pred.append(pred)
-
-            del graph
 
         test_pred = np.array(test_pred)
         query_time_end = time.time()
@@ -177,10 +168,10 @@ class ZeroCostPredictorEvaluator(object):
 
         return test_data
 
-    def evaluate(self):
+    def evaluate(self, zc_api):
         self.predictor.pre_process()
         test_data = self.load_test_data()
-        self.single_evaluate(test_data)
+        self.single_evaluate(test_data, zc_api)
 
         if self.log_results_to_json:
             self._log_to_json()

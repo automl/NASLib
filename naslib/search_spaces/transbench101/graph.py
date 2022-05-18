@@ -335,7 +335,7 @@ class TransBench101SearchSpaceMicro(Graph):
     def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        op_indices = eval(np.random.choice(self.labeled_archs))
+        op_indices = random.choice(self.labeled_archs)
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):
@@ -556,7 +556,7 @@ class TransBench101SearchSpaceMacro(Graph):
     def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        op_indices = eval(np.random.choice(self.labeled_archs))
+        op_indices = eval(random.choice(self.labeled_archs))
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):
