@@ -197,5 +197,6 @@ class ZeroCostPredictorEvaluator(object):
     def get_arch_as_string(self, arch):
         if self.search_space.get_type() == 'nasbench301':
             str_arch = str(list((list(arch[0]), list(arch[1]))))
-
+        else:
+            str_arch = str(arch)
         return str_arch

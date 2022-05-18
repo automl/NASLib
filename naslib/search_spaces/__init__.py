@@ -35,8 +35,16 @@ dataset_to_channels = {
 def get_search_space(name, dataset):
     search_space_cls = supported_search_spaces[name.lower()]
 
-    in_channels = dataset_to_channels[dataset.lower()]
-    n_classes = dataset_n_classes[dataset.lower()]
+    try:
+        in_channels = dataset_to_channels[dataset.lower()]
+    except KeyError:
+        in_channels = 3
+
+    try:
+        n_classes = dataset_n_classes[dataset.lower()]
+    except KeyError:
+        n_classes = -1
+
     auxiliary = True if dataset.lower() == "cifar10" else False
     create_graph = True if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else False
     use_small_model = False if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else True
