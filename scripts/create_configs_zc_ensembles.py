@@ -55,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench101/201/301/tnb101")
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")
     parser.add_argument("--optimizer", type=str, default='bananas', help="Blackbox optimizer to use")
-    parser.add_argument("--config_type", type=str, default='zc_ensemble', help="Type of experiment")
+    parser.add_argument("--config_type", type=str, default='only_zc', help="Type of experiment")
     parser.add_argument("--predictor", type=str, default='zc', help="which predictor")
 
     parser.add_argument("--out_dir", type=str, default='run', help="Output directory")
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_mutations", type=int, default=1, help="Root config directory")
     parser.add_argument("--num_candidates", type=int, default=100, help="Root config directory")
     parser.add_argument("--predictor_type", type=str, default='xgb', help="Root config directory")
-    parser.add_argument("--zc_only", default=False, action='store_true', help="Root config directory")
+    parser.add_argument("--zc_only", default=True, action='store_true', help="Root config directory")
 
     args = parser.parse_args()
 
