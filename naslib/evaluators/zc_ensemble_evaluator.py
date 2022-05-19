@@ -34,6 +34,10 @@ class ZCEnsembleEvaluator(object):
             zc_name = predictor.method_type
             if self.zc_api is not None and zc_name in zc_results:
                 score = zc_results[zc_name]['score']
+                if float("-inf") == score:
+                    score = -1e9
+                elif float("inf") == score:
+                    score = 1e9
             else:
                 raise KeyError(f"key not found")
                 graph = self.search_space.clone()
