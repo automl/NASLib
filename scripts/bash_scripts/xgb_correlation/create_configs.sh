@@ -33,7 +33,7 @@ for train_size in "${train_sizes[@]}"
 do
 
 python scripts/create_configs_xgb_correlation.py --start_seed $start_seed --trials $trials --out_dir $out_dir \
-    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names flops params snip jacov grad_norm plain epe_nas fisher grasp l2_norm nwot synflow\
+    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names flops params snip jacov grad_norm plain fisher grasp l2_norm nwot\
     --train_size $train_size
 
 done
