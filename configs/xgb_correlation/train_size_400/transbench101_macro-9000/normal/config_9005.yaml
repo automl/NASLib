@@ -19,8 +19,8 @@ zc_names:
 - jacov
 - grad_norm
 - plain
-- epe_nas
 - fisher
 - grasp
 - l2_norm
+- nwot
 zc_only: true
