@@ -166,8 +166,8 @@ class NasBench101SearchSpace(Graph):
 
         self.spec = spec
         
-        model = convert_spec_to_model(self.spec)
-        self.edges[1, 2].set('op', model)
+        # model = convert_spec_to_model(self.spec)
+        # self.edges[1, 2].set('op', model)
 
     def get_arch_iterator(self, dataset_api=None):        
         return dataset_api["nb101_data"].hash_iterator()

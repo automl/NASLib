@@ -1,10 +1,11 @@
+import os
 import logging
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import Bananas
 
 from naslib.search_spaces import get_search_space
-from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib.utils import utils, setup_logger, get_dataset_api, get_zc_benchmark_api
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -15,14 +16,26 @@ logger.setLevel(logging.INFO)
 
 utils.log_args(config)
 
+zc_params = sorted(config.search.zc_names)
+out_dir = '-'.join(zc_params)
+
+config.save = os.path.join(config.save, out_dir)
+
+if not os.path.exists(config.save):
+    os.makedirs(config.save)
+
 writer = SummaryWriter(config.save)
 
-supported_optimizers = {
-    'bananas': Bananas(config)
-}
+dataset_api = get_dataset_api(config.search_space, config.dataset)
+zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
 
 search_space = get_search_space(config.search_space, config.dataset)
-dataset_api = get_dataset_api(config.search_space, config.dataset)
+search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
+
+supported_optimizers = {
+    'bananas': Bananas(config, zc_api=zc_api)
+}
+
 utils.set_seed(config.seed)
 
 optimizer = supported_optimizers[config.optimizer]
