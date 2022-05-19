@@ -456,21 +456,20 @@ class NasBench301SearchSpace(Graph):
     def set_spec(self, compact, dataset_api=None):
         self.set_compact(make_compact_immutable(compact))
 
-    def sample_random_labeled_architecture(self, labeled_archs):
+    def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        chosen_idx = np.random.randint(len(labeled_archs))
-        op_indices = labeled_archs.pop(chosen_idx)
+        op_indices = random.choice(self.labeled_archs)
         self.set_spec(op_indices)
 
-    def sample_random_architecture(self, dataset_api=None, load_labeled=False, labeled_archs=None):
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
 
         if load_labeled == True:
-            return self.sample_random_labeled_architecture(labeled_archs)
+            return self.sample_random_labeled_architecture()
 
         compact = [[], []]
         for i in range(NUM_VERTICES):

@@ -172,14 +172,13 @@ class NasBench101SearchSpace(Graph):
     def get_arch_iterator(self, dataset_api=None):        
         return dataset_api["nb101_data"].hash_iterator()
 
-    def sample_random_labeled_architecture(self, labeled_archs):
+    def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        chosen_idx = np.random.randint(len(labeled_archs))
-        op_indices = labeled_archs.pop(chosen_idx)
+        op_indices = random.choice(self.labeled_archs)
         self.set_spec(op_indices)
 
-    def sample_random_architecture(self, dataset_api, load_labeled=False, labeled_archs=None):
+    def sample_random_architecture(self, dataset_api, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
@@ -189,7 +188,7 @@ class NasBench101SearchSpace(Graph):
         """
 
         if load_labeled == True:
-            return self.sample_random_labeled_architecture(labeled_archs)
+            return self.sample_random_labeled_architecture()
 
         while True:
             matrix = np.random.choice([0, 1], size=(NUM_VERTICES, NUM_VERTICES))
