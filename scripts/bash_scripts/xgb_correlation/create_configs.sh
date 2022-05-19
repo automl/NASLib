@@ -23,9 +23,9 @@ then
 fi
 
 out_dir=run
-trials=5
+trials=10
 end_seed=$(($start_seed + $trials - 1))
-train_sizes=(10 15 23 36 56 87 135 209 323 500)
+train_sizes=(400)
 test_size=200
 config_root=configs
 
@@ -33,7 +33,7 @@ for train_size in "${train_sizes[@]}"
 do
 
 python scripts/create_configs_xgb_correlation.py --start_seed $start_seed --trials $trials --out_dir $out_dir \
-    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names flops params snip jacov grad_norm plain epe_nas fisher grasp l2_norm synflow \
+    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names flops params snip jacov grad_norm plain epe_nas fisher grasp l2_norm nwot synflow\
     --train_size $train_size
 
 done
