@@ -21,11 +21,14 @@ class ZCEnsembleEvaluator(object):
         self.zc_api = zc_api
         self.load_labeled = self.zc_api is not None
 
+        if self.zc_api is not None:
+            self.labeled_archs = [eval(key) for key in self.zc_api.keys()]
+
     def _compute_zc_scores(self, encoding, predictors, train_loader):
         zc_scores = {}
 
         if self.zc_api is not None:
-            zc_results = self.zc_api[str(encoding)]
+            zc_results = self.zc_api[self.get_arch_as_string(encoding)]
 
         for idx, predictor in enumerate(predictors):
             zc_name = predictor.method_type
@@ -45,7 +48,7 @@ class ZCEnsembleEvaluator(object):
     def _sample_new_model(self):
         model = torch.nn.Module()
         graph = self.search_space.clone()
-        graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled)
+        graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled, labeled_archs=self.labeled_archs)
         model.arch = graph.get_hash()
         encoding = self.get_arch_as_string(model.arch)
         model.accuracy = self.zc_api[encoding]['val_accuracy']

@@ -240,20 +240,22 @@ class NasBench201SearchSpace(Graph):
     def set_spec(self, op_indices, dataset_api=None):
         self.set_op_indices(op_indices)
 
-    def sample_random_labeled_architecture(self):
+    def sample_random_labeled_architecture(self, labeled_archs):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        op_indices = random.choice(self.labeled_archs)
+        # op_indices = random.choice(self.labeled_archs)
+        chosen_idx = np.random.randint(len(labeled_archs))
+        op_indices = labeled_archs.pop(chosen_idx)
         self.set_spec(op_indices)
 
-    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False, labeled_archs=None):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
 
         if load_labeled == True:
-            return self.sample_random_labeled_architecture()
+            return self.sample_random_labeled_architecture(labeled_archs)
 
         def is_valid_arch(op_indices):
             return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or \
