@@ -235,7 +235,7 @@ class NasBench201SearchSpace(Graph):
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
-        # convert_op_indices_to_naslib(op_indices, self)
+        convert_op_indices_to_naslib(op_indices, self)
 
     def set_spec(self, op_indices, dataset_api=None):
         self.set_op_indices(op_indices)
