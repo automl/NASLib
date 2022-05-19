@@ -32,6 +32,7 @@ class ZCEnsembleEvaluator(object):
             if self.zc_api is not None and zc_name in zc_results:
                 score = zc_results[zc_name]['score']
             else:
+                raise KeyError(f"key not found")
                 graph = self.search_space.clone()
                 graph.set_spec(encoding)
                 graph.parse()
@@ -45,8 +46,9 @@ class ZCEnsembleEvaluator(object):
         model = torch.nn.Module()
         graph = self.search_space.clone()
         graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled)
-        model.accuracy = graph.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
         model.arch = graph.get_hash()
+        encoding = self.get_arch_as_string(model.arch)
+        model.accuracy = self.zc_api[encoding]['val_accuracy']
 
         del graph
         return model
@@ -151,3 +153,11 @@ class ZCEnsembleEvaluator(object):
 
         logger.info(f'ZC feature importances: {zc_feature_importances}')
         self._log_to_json([self.config, scores], self.config.save)
+
+
+    def get_arch_as_string(self, arch):
+        if self.search_space.get_type() == 'nasbench301':
+            str_arch = str(list((list(arch[0]), list(arch[1]))))
+        else:
+            str_arch = str(arch)
+        return str_arch
