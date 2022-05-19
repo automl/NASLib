@@ -1,7 +1,7 @@
 #!/bin/bash
 
 train_sizes=(400)
-searchspace=(transbench101_micro transbench101_macro)
+searchspaces=(transbench101_micro transbench101_macro)
 datasets=(jigsaw class_object class_scene autoencoder normal room_layout segmentsemantic)
 start_seed=9000
 n_seeds=10
