@@ -41,9 +41,9 @@ class BaseTree(Predictor):
         if type(xtrain) is list:
 
             # TODO: Fix. Hacky way to make XGBoost accept both encodings as well as NASLib Graphs as xtrain
-            if isinstance(xtrain[0], nn.Module):
-                xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                    ss_type=self.ss_type) for arch in xtrain])
+            # if isinstance(xtrain[0], nn.Module):
+            #     xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
+            #                         ss_type=self.ss_type) for arch in xtrain])
 
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
@@ -80,9 +80,9 @@ class BaseTree(Predictor):
         if type(xtest) is list:
 
             # TODO: Fix. Hacky way to make XGBoost accept both encodings as well as NASLib Graphs as xtrain
-            if isinstance(xtest[0], nn.Module):
-                xtest = np.array([encode(arch, encoding_type=self.encoding_type,
-                                    ss_type=self.ss_type) for arch in xtest])
+            # if isinstance(xtest[0], nn.Module):
+            #     xtest = np.array([encode(arch, encoding_type=self.encoding_type,
+            #                         ss_type=self.ss_type) for arch in xtest])
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
                 zc_scores = [self.create_zc_feature_vector(data['zero_cost_scores']) for data in info]

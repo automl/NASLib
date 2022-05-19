@@ -451,7 +451,7 @@ class NasBench301SearchSpace(Graph):
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact
         self.compact = compact
-        convert_compact_to_naslib(compact, self)
+        # convert_compact_to_naslib(compact, self)
 
     def set_spec(self, compact, dataset_api=None):
         self.set_compact(make_compact_immutable(compact))

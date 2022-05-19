@@ -103,12 +103,12 @@ class ZCEnsembleEvaluator(object):
         ensemble.set_pre_computations(xtrain_zc_info=train_info)
 
         xtrain = []
-        for m in train_models:
-            g = self.search_space.clone()
-            g.set_spec(m.arch)
-            g.parse()
-            xtrain.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-            del g
+        # for m in train_models:
+        #     g = self.search_space.clone()
+        #     g.set_spec(m.arch)
+        #     g.parse()
+        #     xtrain.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
+        #     del g
 
         ytrain = [m.accuracy for m in train_models]
 
