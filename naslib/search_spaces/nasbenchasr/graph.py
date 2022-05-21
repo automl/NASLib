@@ -100,6 +100,7 @@ class NasBenchASRSearchSpace(Graph):
         self.set_compact(compact)
         return compact
 
+
     def mutate(self, parent, mutation_rate=1, dataset_api=None):
         """
         This will mutate the cell in one of two ways:
@@ -113,7 +114,7 @@ class NasBenchASRSearchSpace(Graph):
 
         for _ in range(int(mutation_rate)):
             mutation_type = np.random.choice([2])
-
+           
             if mutation_type == 1:
                 # change an edge
                 # first pick up a node
@@ -137,7 +138,29 @@ class NasBenchASRSearchSpace(Graph):
                 compact[node_id][0] = new_op_id
 
         self.set_compact(compact)
+    def crossover_bin(self, parent, mutant, dim, prob, dataset_api=None):
+        '''Performs the binomial crossover of DE
+           this write now only for the things that mutate 
+        '''
+        parent_compact = parent.get_compact()
+        compact = copy.deepcopy(parent_compact)
+        mutant_compact= mutant.get_compact()
+        cross_node = np.random.rand(3) < prob
+        cross_type = np.random.rand(2) < prob
+        for i,node in enumerate(cross_node):
+            if not node:
+                continue
+            if cross_type[0]:
+                cross_edges = np.random.rand(len(compact[i][1:])) 
+                for j,egde in enumerate(cross_edges):
+                    if not egde:
+                        continue
+                    compact[i][j+1] =  mutant_compact[i][j+1]
+            if cross_type[1]:
+                compact[i][0] = mutant_compact[i][0]
+        self.set_compact(compact)
 
+      
 
     def get_nbhd(self, dataset_api=None):
         """
