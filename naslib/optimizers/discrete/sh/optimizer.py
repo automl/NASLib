@@ -1,6 +1,7 @@
 import collections
 import logging
 import math
+from re import I
 import torch
 import copy
 import numpy as np
@@ -41,7 +42,7 @@ class  SuccessiveHalving(MetaOptimizer):
     # training the models is not implemented
     using_step_function = False
     
-    def __init__(self, config):
+    def __init__(self, config, hash_function = convert_naslib_to_str): 
         super().__init__()
         # Hyperband related stuff
         self.config = config
@@ -51,7 +52,7 @@ class  SuccessiveHalving(MetaOptimizer):
         self.min_budget = self.config.search.min_budget
         self.eta = self.config.search.eta 
         self._epsilon = float(self.config.search.epsilon) 
-        
+        self.hash_function = hash_function
         times_of_split  = math.floor(math.log(self.max_budget / self.min_budget, self.eta)  + self._epsilon )
         # set up round sizes, fidelities, and list of arches
         
@@ -167,17 +168,24 @@ class  SuccessiveHalving(MetaOptimizer):
     def train_statistics(self):
         best_arch, best_arch_epoch = self.get_final_architecture()
         latest_arch, latest_arch_epoch = self.get_latest_architecture()
-        models = [x for x in self.history if convert_naslib_to_str(x.arch) == convert_naslib_to_str(latest_arch) and x.epoch < self.history[-1].epoch]
+        #this for for checking if this hash function really works 
+        #for i in range(len(self.history)):
+        #    print(self.history[i].arch.get_hash())
+        models = [x for x in self.history if x.arch.get_hash() == latest_arch.get_hash() and x.epoch < self.history[-1].epoch] 
+        ##for more nasbench to make this possible
         train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch)
         train_time_scaled = train_time * latest_arch_epoch
         if len(models) > 1:
             train_time_scaled = train_time_scaled - train_time * models[-2].epoch
+
+        
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch-1), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
+           best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
             train_time_scaled, 
         )
+        
     
     def test_statistics(self):
         best_arch, epoch = self.get_final_architecture()

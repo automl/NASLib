@@ -147,6 +147,7 @@ class Trainer(object):
                         else:
                             end_time = time.time()
                             train_acc, valid_acc, test_acc, train_time = self.optimizer.train_statistics()
+                            
                             train_loss, valid_loss, test_loss = -1, -1, -1
 
                             self.errors_dict.train_acc.append(train_acc)
@@ -156,12 +157,21 @@ class Trainer(object):
                             self.errors_dict.test_acc.append(test_acc)
                             self.errors_dict.test_loss.append(test_loss)
                             self.errors_dict.runtime.append(end_time - start_time)
-                            self.errors_dict.train_time.append(train_time)
+                           
                             self.train_top1.avg = train_acc
                             self.val_top1.avg = valid_acc
-                            self.search_time += end_time - start_time
-                            self.search_time += train_time
-
+                            if train_time > 0:
+                                self.search_time += end_time - start_time
+                                self.search_time += train_time
+                            else:
+                                #this if we have no time only epochs
+                                #self.fidelities[self.round_number]
+                                #if work proberly has to be check 
+                                #ofcourse now we doesn't factor in runetime of optimizer, but this not hat large comapre to training time normaly
+                                _, latest_arch_epoch  = self.optimizer.get_latest_architecture()
+                                self.search_time += 1 * latest_arch_epoch
+                                train_time = 1 * latest_arch_epoch
+                            self.errors_dict.train_time.append(train_time)
                         self.periodic_checkpointer.step(e)
 
                         anytime_results = self.optimizer.test_statistics()
@@ -223,11 +233,21 @@ class Trainer(object):
                     self.errors_dict.test_acc.append(test_acc)
                     self.errors_dict.test_loss.append(test_loss)
                     self.errors_dict.runtime.append(end_time - start_time)
-                    self.errors_dict.train_time.append(train_time)
+                    
                     self.train_top1.avg = train_acc
                     self.val_top1.avg = valid_acc
-                    self.search_time += end_time - start_time
-                    self.search_time += train_time
+                    if train_time > 0:
+                        self.search_time += end_time - start_time
+                        self.search_time += train_time
+                    else:
+                        #this if we have no time only epochs        
+                        #self.fidelities[self.round_number]
+                        #if work proberly has to be check         
+                        #ofcourse now we doesn't factor in runetime of optimizer, but this not hat large comapre to training time normaly
+                        _, latest_arch_epoch  = self.optimizer.get_latest_architecture()
+                        self.search_time += 1 * latest_arch_epoch
+                        train_time = 1
+                    self.errors_dict.train_time.append(train_time)
 
                 self.periodic_checkpointer.step(e)
 
