@@ -9,14 +9,15 @@ import logging
 #from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.utils import utils, utils_asr ,setup_logger, get_dataset_api
 from naslib.optimizers import RandomSearch as RS
+from naslib.optimizers import Npenas as npenas
 from naslib.optimizers import RegularizedEvolution as RE
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers import HB
 from naslib.optimizers import BOHB 
 from naslib.optimizers import DEHB
 #from naslib.search_spaces.nasbenchasr.conversions as h
-from naslib.defaults.trainer_multifidelity import Trainer
-#from naslib.defaults.trainer import Trainer
+#from naslib.defaults.trainer_multifidelity import Trainer
+from naslib.defaults.trainer import Trainer
 # TODO: rethinking logging is rigth now, completly ingnored 
 import yaml
 from pathlib import Path
@@ -72,6 +73,12 @@ elif config_optimizer == 'BOHB':
     optimizer = BOHB(config)
     plot_func = mf_plot.plot_hb
     predictor = "tpe"
+elif config_optimizer == "NPENAS":
+    #i thin kby save dir is soometihng strange
+    
+    predictor = "var_sparse_gp"
+    optimizer = npenas(config)
+    plot_func = mf_plot.plot_hb
 elif config_optimizer == "DEHB":
     #i thin kby save dir is soometihng strange
     
