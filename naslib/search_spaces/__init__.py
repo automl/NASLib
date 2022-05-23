@@ -45,19 +45,21 @@ def get_search_space(name, dataset):
     except KeyError:
         n_classes = -1
 
-    auxiliary = True if dataset.lower() == "cifar10" else False
-    create_graph = True if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else False
-    use_small_model = False if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else True
-
     if name == 'transbench101_micro' or name == 'transbench101_macro':
+        create_graph = True if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else False
+        use_small_model = False if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else True
         return search_space_cls(dataset=dataset,
                                 use_small_model=use_small_model,
                                 create_graph=create_graph,
                                 n_classes=n_classes,
                                 in_channels=in_channels)
     elif name == 'nasbench301':
+        auxiliary = True if dataset.lower() == "cifar10" else False
         return search_space_cls(n_classes=n_classes, in_channels=in_channels,
                                 auxiliary=auxiliary)
-    else:
+    elif name == 'nasbench201':
         return search_space_cls(n_classes=n_classes, in_channels=in_channels)
-
+    elif name == 'nasbench101':
+        return search_space_cls(n_classes=n_classes)
+    else:
+        raise NotImplementedError(f'{name} search space not implemented')
