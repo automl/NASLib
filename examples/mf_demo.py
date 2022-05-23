@@ -13,10 +13,11 @@ from naslib.optimizers import RegularizedEvolution as RE
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers import HB
 from naslib.optimizers import BOHB 
+from naslib.optimizers import Npenas
 from naslib.optimizers import DEHB
 #from naslib.search_spaces.nasbenchasr.conversions as h
-from naslib.defaults.trainer_multifidelity import Trainer
-#from naslib.defaults.trainer import Trainer
+#from naslib.defaults.trainer_multifidelity import Trainer
+from naslib.defaults.trainer import Trainer
 # TODO: rethinking logging is rigth now, completly ingnored 
 import yaml
 from pathlib import Path
@@ -36,7 +37,7 @@ with open(os.path.join(str(Path(__file__).parent), 'mf_demo.yaml'), "r") as stre
 config_optimizer = demo_config['optimizer']
 config_path_optimizer = os.path.join(
     utils.get_project_root(), "benchmarks", "nas_predictors", "discrete_config"
-) + "_" + "SH" + ".yaml"
+) + "_" + "Npenas" + ".yaml"
 default_config_path = os.path.join(
     utils.get_project_root(), "benchmarks", "nas_predictors", "discrete_config.yaml"
 ) 
@@ -77,6 +78,12 @@ elif config_optimizer == "DEHB":
     
     predictor = "var_sparse_gp"
     optimizer = DEHB(config)
+    plot_func = mf_plot.plot_hb
+elif config_optimizer == "Npenas":
+    #i thin kby save dir is soometihng strange
+    
+    predictor = "var_sparse_gp"
+    optimizer = Npenas(config)
     plot_func = mf_plot.plot_hb
 else:
     raise Exception('invalid config')

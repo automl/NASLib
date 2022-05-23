@@ -1,6 +1,6 @@
 seed: 0
 optimizer: oneshot
-search_space: darts
+search_space: asr
 dataset: cifar10
 out_dir: run
 
