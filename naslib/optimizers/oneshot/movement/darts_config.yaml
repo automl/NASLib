@@ -1,11 +1,14 @@
 dataset: cifar10
-seed: 24
+seed: 20
 search_space: darts
-out_dir: /work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gmovement/run
-optimizer: gmovement
+out_dir: /work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run
+optimizer: movement
 
 search:
  
+  # MOVEMENT
+  instantenous: False
+  
   # BANANAS
   k: 10
   num_ensemble: 3
@@ -50,17 +53,18 @@ search:
   checkpoint_freq: 30
   grad_clip: 0
   threshold: 0.000001
-  weight_decay: 0.01
-  learning_rate: 0.025
+  weight_decay: 0.001
+  learning_rate: 0.01
   momentum: 0.8
   normalization: div
   normalization_exponent: 0.5
   batch_size: 32
   learning_rate_min: 0.0001
-  epochs: 50
-  warm_start_epochs: 5
-  train_portion: 0.95
-  data_size: 45000
+  epochs: 12
+  warm_start_epochs: 3
+  masking_interval: 1
+  train_portion: 0.1
+  data_size: 5000
 
 
 

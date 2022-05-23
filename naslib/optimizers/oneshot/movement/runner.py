@@ -17,10 +17,11 @@ from naslib.optimizers import (
     BasePredictor,
     GSparseOptimizer,
     GMovementOptimizer,
-    MovementOptimizer
+    MovementOptimizer,
+    DrNASOptimizer,
 )
 
-from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
+from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace, NasBench101SearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -44,18 +45,27 @@ supported_optimizers = {
     "bp": BasePredictor(config),
     "gsparsity": GSparseOptimizer(config),
     "gmovement": GMovementOptimizer(config),
-    "movement": MovementOptimizer(config)
+    "movement": MovementOptimizer(config),
+    "drnas": DrNASOptimizer(config)
 }
 
+if config.dataset =='cifar100':
+    num_classes=100
+elif config.dataset=='ImageNet16-120':
+    num_classes=120
+else:
+    num_classes=10
 supported_search_space ={
-    "nasbench201" : NasBench201SearchSpace(),
-    "darts" : DartsSearchSpace()
+    "nasbench201" : NasBench201SearchSpace(num_classes),
+    "darts" : DartsSearchSpace(num_classes),
+    "nasbench101" : NasBench101SearchSpace(num_classes)
 }
 
 #search_space = NasBench201SearchSpace()
 search_space = supported_search_space[config.search_space]
 #dataset_api = get_dataset_api("nasbench201", config.dataset)
-print(search_space)
+#print(search_space)
+#dataset_api = get_dataset_api(config.search_space, config.dataset)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 optimizer = supported_optimizers[config.optimizer]
@@ -70,5 +80,11 @@ trainer.search()
 
 #checkpoint = utils.get_last_checkpoint(config, search_model=True) if config.resume else ""
 #trainer.evaluate(resume_from=checkpoint, dataset_api=dataset_api)
-#model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gsparsity/run/darts/cifar100/gsparsity/9/search/model_final.pth"
+mov_model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run/nasbench201/cifar10/movement/14/search/model_final.pth"
+darts_model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run/nasbench201/cifar10/darts/10/search/model_final.pth"
+gdas_model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run/nasbench201/cifar10/gdas/10/search/model_final.pth"
+drnas_model="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/gmovement/run/nasbench201/cifar10/drnas/10/search/model_final.pth"
+model = drnas_model
+#model = "/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run/darts/cifar10/darts/10/search/model_final.pth"
+#trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY, search_model=model)
 trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY)#, search_model=model)

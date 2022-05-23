@@ -71,6 +71,9 @@ class MovementOptimizer(MetaOptimizer):
         self.warm_start_epochs = config.search.warm_start_epochs if hasattr(config.search, "warm_start_epochs") else 1
         self.k_initialized = False
         self.count_masking=0
+        self.masking_interval = config.search.masking_interval
+        num_classes = 10 if config.dataset=="cifar10" else 100
+        self.num_classes = 120 if config.dataset=="ImageNet16-120" else num_classes
         self.k=1
 
     @staticmethod
@@ -326,7 +329,7 @@ class MovementOptimizer(MetaOptimizer):
         #graph.update_edges(debug, scope=self.scope, private_edge_data=True)        
         #graph = self.graph.clone()#.to(device=self.graph.device)        
         self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
-        graph = self.graph.clone().unparse()
+        graph = self.graph.clone().unparse(num_classes=self.num_classes)
         #graph.update_edges(debug, scope=self.scope, private_edge_data=True)
         graph.prepare_discretization()
         graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)        
@@ -349,7 +352,7 @@ class MovementOptimizer(MetaOptimizer):
         try:
             # record anytime performance
             best_arch = self.get_final_architecture()
-            return best_arch.query(Metric.TEST_ACCURACY, self.dataset)
+            return best_arch.query(Metric.VAL_ACCURACY, self.dataset)
         except:
             return None
 
@@ -392,8 +395,8 @@ class MovementOptimizer(MetaOptimizer):
                     try:
                         for j in range(len(edge.data.op.primitives[i].op)):
                             try:
-                                group_dim += torch.numel(edge.data.op.primitives[i].op[j].weight.grad)
-                                #group_dim += 1
+                                #group_dim += torch.numel(edge.data.op.primitives[i].op[j].weight.grad)
+                                group_dim += 1
                                 #weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.grad,2)**2).item()
                                 #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].op[j].weight.grad,2), torch.norm(edge.data.op.primitives[i].op[j].weight,2)))
                                 ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight,2)**2).to(device=edge.data.weights.device)
@@ -403,8 +406,8 @@ class MovementOptimizer(MetaOptimizer):
                             except (AttributeError, TypeError) as e:
                                 try:
                                     for k in range(len(edge.data.op.primitives[i].op[j].op)):
-                                        group_dim += torch.numel(edge.data.op.primitives[i].op[j].op[k].weight.grad)
-                                        #group_dim += 1
+                                        #group_dim += torch.numel(edge.data.op.primitives[i].op[j].op[k].weight.grad)
+                                        group_dim += 1
                                         #weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad,2)**2).item()
                                         ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight,2)**2).to(device=edge.data.weights.device)
                                         #weight.append(torch.max(torch.abs(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight)).to(device=edge.data.weights.device))
@@ -421,8 +424,8 @@ class MovementOptimizer(MetaOptimizer):
                         group_dim=torch.zeros(1)
                     except AttributeError:   
                         #
-                        size=torch.numel(edge.data.op.primitives[i].weight.grad)                        
-                        #size = 1
+                        #size=torch.numel(edge.data.op.primitives[i].weight.grad)                        
+                        size = 1
                         #edge.data.weights[i]+=(edge.data.op.primitives[i].weight.grad.item())**2
                         #import ipdb;ipdb.set_trace()
                         #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].weight.grad,2), torch.norm(edge.data.op.primitives[i].weight,2)))
@@ -451,7 +454,7 @@ class MovementOptimizer(MetaOptimizer):
             if edge.data.has("score"):
                 for i in range(len(edge.data.op.primitives)):
                     with torch.no_grad():
-                        edge.data.score[i] += edge.data.score[i]#/len(count)                        
+                        edge.data.score[i] = edge.data.score[i]#/len(count)                        
 
         k_initialized = self.k_initialized
         k = self.k
@@ -503,8 +506,8 @@ class MovementOptimizer(MetaOptimizer):
         if epoch > 0:
             self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
             self.graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)  
-            self.graph.update_edges(normalize_scores, scope=self.scope, private_edge_data=False)
-        if epoch >= self.warm_start_epochs:
+            #self.graph.update_edges(normalize_scores, scope=self.scope, private_edge_data=False)
+        if epoch >= self.warm_start_epochs and self.count_masking%self.masking_interval==0:
             self.graph.update_edges(masking, scope=self.scope, private_edge_data=True)
             self.k_initialized = k_initialized
             self.k = k
@@ -533,7 +536,9 @@ class MovementOptimizer(MetaOptimizer):
         if epoch > 0:
             self.graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=True)
             count = []
-        if epoch >= self.warm_start_epochs and self.count_masking%3==0:
+        if epoch >= self.warm_start_epochs and self.instantenous:
+            self.graph.update_edges(reinitialize_scores, scope=self.scope, private_edge_data=True)
+        if epoch >= self.warm_start_epochs and self.count_masking%self.masking_interval==0:
             self.mask = torch.nn.ParameterList()
             self.graph.update_edges(reinitialize_scores, scope=self.scope, private_edge_data=True)
             self.count_masking += 1
