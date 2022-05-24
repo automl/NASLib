@@ -60,7 +60,8 @@ class BaseTree(Predictor):
             xtrain = xtrain
             ytrain = ytrain
 
-        self.zc_to_features_map = self._get_zc_to_feature_mapping(self.zc_names, xtrain)
+        if self.zc:
+            self.zc_to_features_map = self._get_zc_to_feature_mapping(self.zc_names, xtrain)
 
         # convert to the right representation
         train_data = self.get_dataset(xtrain, ytrain)

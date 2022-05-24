@@ -30,8 +30,13 @@ class ZCEnsembleEvaluator(object):
         for idx, predictor in enumerate(predictors):
             zc_name = predictor.method_type
             if self.zc_api is not None and zc_name in zc_results:
-                score = zc_results[zc_name]
+                score = zc_results[zc_name]['score']
+                if float("-inf") == score:
+                    score = -1e9
+                elif float("inf") == score:
+                    score = 1e9
             else:
+                raise KeyError(f"key not found")
                 graph = self.search_space.clone()
                 graph.set_spec(encoding)
                 graph.parse()
@@ -45,8 +50,9 @@ class ZCEnsembleEvaluator(object):
         model = torch.nn.Module()
         graph = self.search_space.clone()
         graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled)
-        model.accuracy = graph.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
         model.arch = graph.get_hash()
+        encoding = self.get_arch_as_string(model.arch)
+        model.accuracy = self.zc_api[encoding]['val_accuracy']
 
         del graph
         return model
@@ -98,12 +104,12 @@ class ZCEnsembleEvaluator(object):
         ensemble.set_pre_computations(xtrain_zc_info=train_info)
 
         xtrain = []
-        for m in train_models:
-            g = self.search_space.clone()
-            g.set_spec(m.arch)
-            g.parse()
-            xtrain.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-            del g
+        # for m in train_models:
+        #     g = self.search_space.clone()
+        #     g.set_spec(m.arch)
+        #     g.parse()
+        #     xtrain.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
+        #     del g
 
         ytrain = [m.accuracy for m in train_models]
 
@@ -151,3 +157,11 @@ class ZCEnsembleEvaluator(object):
 
         logger.info(f'ZC feature importances: {zc_feature_importances}')
         self._log_to_json([self.config, scores], self.config.save)
+
+
+    def get_arch_as_string(self, arch):
+        if self.search_space.get_type() == 'nasbench301':
+            str_arch = str(list((list(arch[0]), list(arch[1]))))
+        else:
+            str_arch = str(arch)
+        return str_arch

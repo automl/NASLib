@@ -128,4 +128,4 @@ def get_zc_benchmark_api(search_space, dataset):
     with open(datafile_path) as f:
         data = json.load(f)
 
-    return data[search_space][dataset]
+    return data[dataset]

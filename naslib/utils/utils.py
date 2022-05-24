@@ -4,7 +4,7 @@ import sys
 import logging
 import argparse
 import torchvision.datasets as dset
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, TensorDataset, ConcatDataset
 from sklearn import metrics
 from scipy import stats
 
@@ -13,6 +13,8 @@ from collections import OrderedDict
 import random
 import os
 import os.path
+import gzip
+import pickle
 from functools import partial
 from pathlib import Path
 
@@ -219,6 +221,32 @@ def get_train_val_loaders(config):
             transform=valid_transform,
             use_num_of_class_only=120,
         )
+    elif dataset == "scifar100":
+        data_file = os.path.join(data, 's2_cifar100.gz')
+        with gzip.open(data_file, 'rb') as f:
+            dataset = pickle.load(f)
+
+        train_img = torch.from_numpy(
+            dataset["train"]["images"][:, :, :, :].astype(np.float32))
+        train_labels = torch.from_numpy(
+            dataset["train"]["labels"].astype(np.int64))
+        train_data = TensorDataset(train_img, train_labels)
+        test_img = torch.from_numpy(
+            dataset["test"]["images"][:, :, :, :].astype(np.float32))
+        test_labels = torch.from_numpy(
+            dataset["test"]["labels"].astype(np.int64))
+        test_data = TensorDataset(test_img, test_labels)
+
+        train_transform, valid_transform = None, None
+    elif dataset == "ninapro":
+        path = os.path.join(data, 'ninapro')
+
+        trainset = load_ninapro(path, 'train')
+        valset = load_ninapro(path, 'val')
+        train_data = ConcatDataset([trainset, valset])
+        test_data = load_ninapro(path, 'test')
+
+        train_transform, valid_transform = None, None
     elif dataset == 'jigsaw':
         cfg = get_jigsaw_configs()
 

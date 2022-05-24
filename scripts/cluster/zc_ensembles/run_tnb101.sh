@@ -1,7 +1,7 @@
 #!/bin/bash
 
-searchspace=transbench101_micro
-datasets=(jigsaw class_object class_scene autoencoder)
+searchspaces=(transbench101_micro transbench101_macro)
+datasets=(autoencoder class_object class_scene normal jigsaw room_layout segmentsemantic)
 start_seed=9000
 n_seeds=10
 
@@ -13,12 +13,15 @@ then
     exit 1
 fi
 
-for dataset in "${datasets[@]}"
+for searchspace in "${searchspaces[@]}"
 do
-    for i in $(seq 0 $(($n_seeds - 1)))
+    for dataset in "${datasets[@]}"
     do
-        sbatch ./scripts/cluster/zc_ensembles/run.sh $searchspace $dataset $start_seed $(($start_seed + $i)) $experiment <<< "y"
-    done
+        for i in $(seq 0 $(($n_seeds - 1)))
+        do
+            sbatch ./scripts/cluster/zc_ensembles/run.sh $searchspace $dataset $start_seed $(($start_seed + $i)) $experiment <<< "y"
+        done
 
-    echo ""
+        echo ""
+    done
 done

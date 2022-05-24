@@ -32,6 +32,8 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
         """
         raise NotImplementedError()
 
+    forward_beforeGP = forward
+
     @abstractmethod
     def get_embedded_ops(self):
         """
@@ -89,6 +91,8 @@ class Identity(AbstractPrimitive):
     def forward(self, x, edge_data=None):
         return x
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -121,6 +125,8 @@ class Zero(AbstractPrimitive):
             zeros = x.new_zeros(shape, dtype=x.dtype, device=x.device)
             return zeros
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -148,6 +154,8 @@ class Zero1x1(AbstractPrimitive):
         else:
             x = x[:, :, :: self.stride, :: self.stride].mul(0.0)
             return torch.cat([x, x], dim=1)  # double the channels
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -197,6 +205,8 @@ class SepConv(AbstractPrimitive):
     def forward(self, x, edge_data=None):
         return self.op(x)
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -237,6 +247,8 @@ class DilConv(AbstractPrimitive):
     def forward(self, x, edge_data):
         return self.op(x)
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -261,6 +273,8 @@ class Stem(AbstractPrimitive):
     def forward(self, x, edge_data=None):
         return self.seq(x)
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -278,6 +292,8 @@ class Sequential(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         return self.op(x)
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return list(self.primitives)
@@ -299,6 +315,8 @@ class MaxPool(AbstractPrimitive):
     def forward(self, x, edge_data):
         x = self.maxpool(x)
         return x
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -329,6 +347,8 @@ class MaxPool1x1(AbstractPrimitive):
             x = self.bn(x)
         return x
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -352,6 +372,8 @@ class AvgPool(AbstractPrimitive):
     def forward(self, x, edge_data):
         x = self.avgpool(x)
         return x
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -384,6 +406,8 @@ class AvgPool1x1(AbstractPrimitive):
             x = self.bn(x)
         return x
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -398,6 +422,8 @@ class GlobalAveragePooling(AbstractPrimitive):
 
     def forward(self, x, edge_data=None):
         return torch.mean(x, (2, 3))
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -419,6 +445,8 @@ class ReLUConvBN(AbstractPrimitive):
 
     def forward(self, x, edge_data=None):
         return self.op(x)
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -446,6 +474,8 @@ class ConvBnReLU(AbstractPrimitive):
 
     def forward(self, x, edge_data=None):
         return self.op(x)
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -477,6 +507,8 @@ class InputProjection(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         return self.op(x)
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -511,6 +543,8 @@ class Concat1x1(nn.Module):
         x = self.bn(x)
         return x
 
+    forward_beforeGP = forward
+
 
 class StemJigsaw(AbstractPrimitive):
     """
@@ -529,6 +563,8 @@ class StemJigsaw(AbstractPrimitive):
         _, _, s3, s4, s5 = x.size()
         x  = x.reshape(-1, s3, s4, s5)
         return self.seq(x)
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return None
@@ -553,6 +589,8 @@ class SequentialJigsaw(AbstractPrimitive):
             enc_out.append(x[:, i, :, : , :])
         x = torch.cat(enc_out, dim=1)
         return self.op(x)
+
+    forward_beforeGP = forward
 
     def get_embedded_ops(self):
         return list(self.primitives)
@@ -621,6 +659,8 @@ class GenerativeDecoder(AbstractPrimitive):
         x = self.conv14(x)
         return x
 
+    forward_beforeGP = forward
+
     def get_embedded_ops(self):
         return None
 
@@ -648,6 +688,8 @@ class ConvLayer(nn.Module):
             x = self.activation(x)
         return x
 
+    forward_beforeGP = forward
+
 
 class DeconvLayer(nn.Module):
     def __init__(self, in_channel, out_channel, kernel, stride, padding, activation, norm):
@@ -668,4 +710,5 @@ class DeconvLayer(nn.Module):
             x = self.activation(x)
         return x
 
+    forward_beforeGP = forward
 

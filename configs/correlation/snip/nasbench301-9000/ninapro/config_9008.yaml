@@ -1,0 +1,12 @@
+batch_size: 32
+config_type: correlation
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: ninapro
+out_dir: run
+predictor: snip
+search_space: nasbench301
+seed: 9008
+test_size: 200
+train_portion: 0.7

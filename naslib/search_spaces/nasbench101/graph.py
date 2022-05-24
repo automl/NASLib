@@ -166,8 +166,8 @@ class NasBench101SearchSpace(Graph):
 
         self.spec = spec
         
-        model = convert_spec_to_model(self.spec)
-        self.edges[1, 2].set('op', model)
+        # model = convert_spec_to_model(self.spec)
+        # self.edges[1, 2].set('op', model)
 
     def get_arch_iterator(self, dataset_api=None):        
         return dataset_api["nb101_data"].hash_iterator()
@@ -175,7 +175,7 @@ class NasBench101SearchSpace(Graph):
     def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        op_indices = eval(np.random.choice(self.labeled_archs))
+        op_indices = random.choice(self.labeled_archs)
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api, load_labeled=False):

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 searchspaces=(transbench101_micro transbench101_macro)
-datasets=(autoencoder class_object class_scene normal jigsaw room_layout segmentsemantic)
+datasets=(autoencoder class_object class_scene normal jigsaw room_layout segmentsemantic svhn scifar100 ninapro)
 
 for searchspace in "${searchspaces[@]}"
 do

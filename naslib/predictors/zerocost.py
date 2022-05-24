@@ -37,7 +37,7 @@ class ZeroCost(Predictor):
                 measure_names=[self.method_type],
             )
 
-        if math.isnan(score):
+        if math.isnan(score) or math.isinf(score):
             score = -1e8
 
         if self.method_type == 'synflow':
