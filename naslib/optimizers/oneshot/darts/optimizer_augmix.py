@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import logging
 from torch.autograd import Variable
+import torch.nn.functional as F
 
 from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
@@ -13,7 +14,7 @@ import naslib.search_spaces.core.primitives as ops
 logger = logging.getLogger(__name__)
 
 
-class DARTSOptimizer(MetaOptimizer):
+class DARTSOptimizerAugmix(MetaOptimizer):
     """
     Implementation of the DARTS paper as in
         Liu et al. 2019: DARTS: Differentiable Architecture Search.
@@ -52,7 +53,7 @@ class DARTSOptimizer(MetaOptimizer):
         Args:
 
         """
-        super(DARTSOptimizer, self).__init__()
+        super(DARTSOptimizerAugmix, self).__init__()
 
         self.config = config
         self.op_optimizer = op_optimizer
@@ -67,6 +68,10 @@ class DARTSOptimizer(MetaOptimizer):
         self.epsilon = 0
 
         self.dataset = config.dataset
+
+        self.aug_alpha = self.config.search.alpha
+        self.aug_architecture = self.config.search.aug_architecture
+        self.aug_operations = self.config.search.aug_operations        
 
     def adapt_search_space(self, search_space, scope=None, **kwargs):
         # We are going to modify the search space
@@ -146,8 +151,8 @@ class DARTSOptimizer(MetaOptimizer):
         super().new_epoch(epoch)
 
     def step(self, data_train, data_val):
-        input_train, target_train = data_train
-        input_val, target_val = data_val
+        input_train_all, target_train = data_train
+        input_val_all, target_val = data_val
 
         unrolled = False  # what it this?
 
@@ -155,23 +160,58 @@ class DARTSOptimizer(MetaOptimizer):
             raise NotImplementedError()
         else:
             # Update architecture weights
-            self.arch_optimizer.zero_grad()            
-            logits_val = self.graph(input_val)
-            val_loss = self.loss(logits_val, target_val)
+            self.arch_optimizer.zero_grad()
+            
+            #input_val_all = torch.cat(input_val, 0).cuda()
+
+            logits_val_all = self.graph(input_val_all)
+
+            logits_clean_val, logits_aug1_val, logits_aug2_val = torch.split(
+                logits_val_all, torch.chunk(input_val_all, 3)[0].size(0))
+            val_loss = self.loss(logits_clean_val, target_val)
+            
+            val_clean, val_aug1, val_aug2 = F.softmax(
+                logits_clean_val, dim=1), F.softmax(
+                    logits_aug1_val, dim=1), F.softmax(
+                        logits_aug2_val, dim=1)
+            
+            # Clamp mixture distribution to avoid exploding KL divergence
+            val_mixture = torch.clamp((val_clean + val_aug1 + val_aug2) / 3., 1e-7, 1).log()
+            if self.aug_architecture:
+                val_loss += self.aug_alpha * 12 * (F.kl_div(val_mixture, val_clean, reduction='batchmean')
+                        + F.kl_div(val_mixture, val_aug1, reduction='batchmean') 
+                        + F.kl_div(val_mixture, val_aug2, reduction='batchmean')) / 3.
             val_loss.backward()
+            
 
             self.arch_optimizer.step()
 
             # Update op weights
             self.op_optimizer.zero_grad()
-            logits_train = self.graph(input_train)
-            train_loss = self.loss(logits_train, target_train)
+            #input_train_all = torch.cat(input_train, 0).cuda()
+            logits_train_all = self.graph(input_train_all)
+            logits_clean_train, logits_aug1_train, logits_aug2_train = torch.split(
+                logits_train_all, torch.chunk(input_train_all, 3)[0].size(0))
+            train_loss = self.loss(logits_clean_train, target_train)
+            
+            train_clean, train_aug1, train_aug2 = F.softmax(
+                logits_clean_train, dim=1), F.softmax(
+                    logits_aug1_train, dim=1), F.softmax(
+                        logits_aug2_train, dim=1)
+            
+            # Clamp mixture distribution to avoid exploding KL divergence
+            train_mixture = torch.clamp((train_clean + train_aug1 + train_aug2) / 3., 1e-7, 1).log()
+            if self.aug_operations:
+                train_loss += self.aug_alpha * 12 * (F.kl_div(train_mixture, train_clean, reduction='batchmean')
+                        + F.kl_div(train_mixture, train_aug1, reduction='batchmean') 
+                        + F.kl_div(train_mixture, train_aug2, reduction='batchmean')) / 3.
+
             train_loss.backward()
             if self.grad_clip:
                 torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
             self.op_optimizer.step()
 
-        return logits_train, logits_val, train_loss, val_loss
+        return logits_clean_train, logits_clean_val, train_loss, val_loss
 
     def get_final_architecture(self):
         logger.info(
@@ -192,7 +232,7 @@ class DARTSOptimizer(MetaOptimizer):
         graph.prepare_evaluation()
         graph.parse()
         graph = graph.to(self.device)
-        #graph.QUERYABLE = False
+        graph.QUERYABLE = False
         return graph
 
     def get_op_optimizer(self):

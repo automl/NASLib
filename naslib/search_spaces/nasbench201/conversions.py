@@ -20,6 +20,27 @@ OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
 EDGE_LIST = ((1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4))
 
 
+def convert_op_indices_to_str(op_indices):
+    """
+    Converts naslib object to string representation.
+    """
+    EDGE_LIST = [(1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)]
+
+    ops_to_nb201 = {
+        4: "avg_pool_3x3",
+        3: "nor_conv_1x1",
+        2: "nor_conv_3x3",
+        0: "skip_connect",
+        1: "none",
+    }
+
+    op_edge_list = [
+        "{}~{}".format(ops_to_nb201[op_indices[i]], sorted(EDGE_LIST, key=lambda x: x[1])[i][0] - 1)
+        for i in range(len(EDGE_LIST))
+    ]
+
+    return "|{}|+|{}|{}|+|{}|{}|{}|".format(*op_edge_list)
+
 def convert_naslib_to_op_indices(naslib_object):
 
     cell = naslib_object._get_child_graphs(single_instances=True)[0]

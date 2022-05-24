@@ -1,4 +1,6 @@
 import codecs
+from random import shuffle
+from statistics import mean
 from naslib.search_spaces.core.graph import Graph
 import time
 import json
@@ -7,6 +9,7 @@ import os
 import copy
 import torch
 import numpy as np
+import torch.nn.functional as F
 
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
@@ -106,6 +109,11 @@ class Trainer(object):
                 self.config
             )
 
+        if hasattr(self.config.search, "augmix"):
+            augmix = self.config.search.augmix
+        else:
+            augmix = False
+
         for e in range(start_epoch, self.epochs):
 
             start_time = time.time()
@@ -114,12 +122,12 @@ class Trainer(object):
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
                     data_train = (
-                        data_train[0].to(self.device),
+                        torch.cat(data_train[0], 0).to(self.device) if augmix else data_train[0].to(self.device),
                         data_train[1].to(self.device, non_blocking=True),
                     )
                     data_val = next(iter(self.valid_queue))
                     data_val = (
-                        data_val[0].to(self.device),
+                        torch.cat(data_val[0], 0).to(self.device)if augmix else data_val[0].to(self.device),
                         data_val[1].to(self.device, non_blocking=True),
                     )
 
@@ -316,6 +324,7 @@ class Trainer(object):
                     optim=optim,
                     scheduler=scheduler,
                 )
+                #start_epoch = self.config.evaluation.start_epoch
 
                 grad_clip = self.config.evaluation.grad_clip
                 loss = torch.nn.CrossEntropyLoss()
@@ -355,15 +364,43 @@ class Trainer(object):
                         scope=best_arch.OPTIMIZER_SCOPE,
                         private_edge_data=True,
                     )
+                    
+                    if hasattr(self.config.evaluation, "augmix"):
+                        augmix = self.config.evaluation.augmix
+                        if hasattr(self.config.evaluation, "aug_alpha"):
+                            aug_alpha = self.config.evaluation.aug_alpha
+                    else:
+                        augmix = False
+                        aug_alpha = 0
 
                     # Train queue
                     for i, (input_train, target_train) in enumerate(self.train_queue):
-                        input_train = input_train.to(self.device)
+                        if augmix:
+                            input_train_all = torch.cat(input_train, 0).to(self.device)
+                        else:
+                            input_train = input_train.to(self.device)
                         target_train = target_train.to(self.device, non_blocking=True)
 
                         optim.zero_grad()
-                        logits_train = best_arch(input_train)
-                        train_loss = loss(logits_train, target_train)
+
+                        if augmix:
+                            logits_train_all = best_arch(input_train_all)
+                            logits_clean_train, logits_aug1_train, logits_aug2_train = torch.split(
+                                logits_train_all, input_train[0].size(0))
+                            train_loss = loss(logits_clean_train, target_train)
+                            train_clean, train_aug1, train_aug2 = F.softmax(
+                                logits_clean_train, dim=1), F.softmax(
+                                    logits_aug1_train, dim=1), F.softmax(
+                                        logits_aug2_train, dim=1)
+                            # Clamp mixture distribution to avoid exploding KL divergence
+                            train_mixture = torch.clamp((train_clean + train_aug1 + train_aug2) / 3., 1e-7, 1).log()
+                            train_loss += aug_alpha * 12 * (
+                                F.kl_div(train_mixture, train_clean, reduction='batchmean')+ F.kl_div(
+                                    train_mixture, train_aug1, reduction='batchmean') + F.kl_div(
+                                        train_mixture, train_aug2, reduction='batchmean')) / 3.
+                        else:
+                            logits_train = best_arch(input_train)
+                            train_loss = loss(logits_train, target_train)
                         if hasattr(
                             best_arch, "auxilary_logits"
                         ):  # darts specific stuff
@@ -381,7 +418,7 @@ class Trainer(object):
                             )
                         optim.step()
 
-                        self._store_accuracies(logits_train, target_train, "train")
+                        self._store_accuracies(logits_clean_train if augmix else logits_train, target_train, "train")
                         log_every_n_seconds(
                             logging.INFO,
                             "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
@@ -397,6 +434,8 @@ class Trainer(object):
                             self.valid_queue
                         ):
 
+                            if augmix:
+                                input_valid = input_valid[0]
                             input_valid = input_valid.to(self.device).float()
                             target_valid = target_valid.to(self.device).float()
 
@@ -451,6 +490,50 @@ class Trainer(object):
                     top1.avg, top5.avg
                 )
             )
+            try:
+                augmix = self.config.evaluation.augmix
+            except Exception:
+                augmix = False
+            if augmix:
+                logger.info(
+                "Now Evaluating on corrution dataset..."
+                )        
+                if self.config.dataset=="cifar10":
+                    base_path = self.config.evaluation.base_path +"CIFAR-10-C/"
+                else:
+                    base_path = self.config.evaluation.base_path +"CIFAR-100-C/"
+                CORRUPTIONS = ['gaussian_noise', 'shot_noise', 'impulse_noise', 
+                    'defocus_blur','glass_blur', 'motion_blur', 'zoom_blur', 'snow',
+                    'frost', 'fog', 'brightness', 'contrast', 'elastic_transform', 
+                    'pixelate', 'jpeg_compression']
+                assert os.path.exists(base_path), f"Could not find {base_path}. Please download CIFAR-10-C and CIFAR-100-C\
+                    refer Setup in https://github.com/google-research/augmix"
+                corr_accuracies=[]
+                corr_loss=[]
+                test_data = utils.get_test_data(self.config, "test")
+                for corr in CORRUPTIONS:
+                    test_data.data = np.load(base_path + corr + '.npy')
+                    test_data.targets = torch.LongTensor(np.load(base_path + 'labels.npy'))
+                    test_corr_loader = torch.utils.data.DataLoader(
+                        test_data, 
+                        batch_size=self.config.evaluation.batch_size, 
+                        shuffle=False, 
+                        num_workers=0, 
+                        worker_init_fn=np.random.seed(self.config.seed),
+                    )
+                    loss, accuracy = self.evaluate_corr(best_arch, test_corr_loader)
+                    corr_loss.append(loss)
+                    corr_accuracies.append(accuracy)
+                mean_loss = np.mean(corr_loss)
+                mean_acc = np.mean(corr_accuracies)
+                corr_loss.append(mean_loss)
+                corr_accuracies.append(mean_acc)
+                CORRUPTIONS.append("mCE")
+                for corr, acc, loss in zip(CORRUPTIONS, corr_accuracies, corr_loss):
+                    logger.info(
+                        "Corruption {}: loss = {:.5}, error = {:.5}".format(corr, loss, 1-acc)
+                        )
+                    
 
     @staticmethod
     def build_search_dataloaders(config):
@@ -606,3 +689,19 @@ class Trainer(object):
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(",", ":"))
+    
+    def evaluate_corr(self, net, test_loader):
+        net.eval()
+        total_loss = 0.
+        total_correct = 0
+        with torch.no_grad():
+            for images, targets in test_loader:
+                images, targets = images.cuda(), targets.cuda()
+                logits = net(images)
+                loss = F.cross_entropy(logits, targets)
+                pred = logits.data.max(1)[1]
+                total_loss += float(loss.data)
+                total_correct += pred.eq(targets.data).sum().item()
+        num_samples = len(test_loader.dataset)
+        return total_loss / num_samples, total_correct / num_samples
+

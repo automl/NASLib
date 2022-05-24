@@ -1,3 +1,5 @@
+from cmath import e
+from tkinter import EXCEPTION
 import networkx as nx
 import copy
 import logging
@@ -452,7 +454,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 )
         self.is_parsed = True
 
-    def unparse(self):
+    def unparse(self, num_classes=10):
         """
         Undo the pytorch parsing by reconstructing the graph uusing the
         networkx data structures.
@@ -462,7 +464,17 @@ class Graph(torch.nn.Module, nx.DiGraph):
         Returns:
             Graph: An unparsed shallow copy of the graph.
         """
-        g = self.__class__()
+        
+        #import ipdb;ipdb.set_trace()
+        #num_classes=100
+        #for edge in self.edges:
+        #    continue
+        #try:
+        #    num_classes=self.edges[edge].op.op[-1].out_features
+        #except Exception as e:
+        #    import ipdb;ipdb.set_trace()
+        #num_classes=self.num_classes
+        g = self.__class__(num_classes)
         g.clear()
 
         graph_nodes = self.nodes
@@ -475,7 +487,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 data["subgraph"] = data["subgraph"].unparse()
         for u, v, data in graph_edges.data():
             if isinstance(data.op, Graph):
-                data.set("op", data.op.unparse())
+                data.set("op", data.op.unparse(num_classes))
 
         # create the new graph
         # Remember to add all members here to update. I know it is ugly but don't know better
