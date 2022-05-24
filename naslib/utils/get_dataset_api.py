@@ -3,7 +3,9 @@ import pickle
 
 from naslib.utils.utils import get_project_root
 from naslib.utils.utils_asr import from_folder
+from naslib.utils.load_ops import TASK_NAMES
 
+from naslib.utils.nas_201_api import NASBench201API as API, test_api
 """
 This file loads any dataset files or api's needed by the Trainer or PredictorEvaluator object.
 They must be loaded outside of the search space object, because search spaces are copied many times
@@ -48,6 +50,39 @@ https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
 
     with open(datafile_path, 'rb') as f:
         data = pickle.load(f)
+
+    return {"nb201_data": data}
+
+def get_nasbench201_api_test(dataset):
+    """
+    Load the NAS-Bench-201 data
+    """
+
+    #datafile_path = os.path.join(get_project_root(), 'data', 'NAS-Bench-201-v1_0-e61699.pth')
+    datafile_path = os.path.join(get_project_root(), 'data', 'NAS-Bench-201-v1_1-096897.pth')
+    #/work/dlclarge2/agnihotr-ml/NASLib/naslib/data/NAS-Bench-201-v1_1-096897.pth
+#     assert os.path.exists(datafile_path), f'Could not find {datafile_path}. Please download {datafiles[dataset]} from \
+# https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
+
+
+    api = API(datafile_path)
+
+    def data(arch_str, dataset='cifar10', hp='200'): # works only for hp='200'
+        result = api.query_by_arch(arch_str, hp=hp)
+
+        if dataset=='cifar10':
+            result = result.split('\n')[5].replace(' ', '').split(':')
+            test_acc = float(result[2][-7:-2].strip('='))
+        elif dataset=='cifar100':
+            result = result.split('\n')[7].replace(' ', '').split(':')
+            test_acc = float(result[3][-7:-2].strip('='))
+        elif dataset=='ImageNet16-120':
+            result = result.split('\n')[9].replace(' ', '').split(':')
+            test_acc = float(result[3][-7:-2].strip('='))
+        else:
+            print(f'Invalid dataset {dataset}')
+        return test_acc
+
 
     return {"nb201_data": data}
 
@@ -145,6 +180,11 @@ def get_dataset_api(search_space=None, dataset=None):
 
     elif search_space == "nasbench201":
         return get_nasbench201_api(dataset=dataset)
+        #return get_nasbench201_api_test(dataset=dataset)
+    
+    elif search_space == "nasbench201_test":
+        #return get_nasbench201_api(dataset=dataset)
+        return get_nasbench201_api_test(dataset=dataset)
 
     elif search_space == "darts":
         return get_darts_api(dataset=dataset)
