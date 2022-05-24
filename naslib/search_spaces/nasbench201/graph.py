@@ -14,7 +14,6 @@ from naslib.search_spaces.nasbench201.conversions import (
     convert_op_indices_to_naslib,
     convert_naslib_to_op_indices,
     convert_naslib_to_str,
-    convert_op_indices_to_str
 )
 
 from naslib.utils.utils import get_project_root
@@ -39,9 +38,9 @@ class NasBench201SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self, num_classes):
+    def __init__(self):
         super().__init__()
-        self.num_classes = num_classes#self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
+        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
         self.op_indices = None
 
         self.max_epoch = 199
@@ -170,24 +169,14 @@ class NasBench201SearchSpace(Graph):
             Metric.EPOCH: "epochs",
         }
 
-        #def convert_op_indices_to_str(op_indices):            
-        #    return convert_naslib_to_str(convert_op_indices_to_naslib(op_indices))            
-
-
         arch_str = convert_naslib_to_str(self)
-        
 
         if metric == Metric.RAW:
             # return all data
             return dataset_api["nb201_data"][arch_str]
 
         if dataset in ["cifar10", "cifar10-valid"]:
-            try:
-                query_results = dataset_api["nb201_data"][arch_str]                        
-            #print(arch_str)
-            except Exception:
-                query_results = dataset_api["nb201_data"](arch_str, dataset='cifar10', hp='200')
-                return query_results
+            query_results = dataset_api["nb201_data"][arch_str]
             # set correct cifar10 dataset
             dataset = "cifar10-valid"
         elif dataset == "cifar100":

@@ -155,7 +155,7 @@ class DARTSOptimizer(MetaOptimizer):
             raise NotImplementedError()
         else:
             # Update architecture weights
-            self.arch_optimizer.zero_grad()            
+            self.arch_optimizer.zero_grad()
             logits_val = self.graph(input_val)
             val_loss = self.loss(logits_val, target_val)
             val_loss.backward()
@@ -192,7 +192,6 @@ class DARTSOptimizer(MetaOptimizer):
         graph.prepare_evaluation()
         graph.parse()
         graph = graph.to(self.device)
-        #graph.QUERYABLE = False
         return graph
 
     def get_op_optimizer(self):

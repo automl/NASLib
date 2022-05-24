@@ -22,15 +22,6 @@ search:
   train_portion: 0.95
   data_size: 50000
 
-  #augmix arguments:
-  augmix: True
-  all_ops: True
-  mixture_width: 3
-  mixture_depth: -1
-  aug_severity: 3
-  no_jsd: False
-  base_path: /work/dlclarge2/agnihotr-ml/NASLib/naslib/data/augmix/
-
 evaluation:
   checkpoint_freq: 30
   batch_size: 96
@@ -44,17 +35,8 @@ evaluation:
   train_portion: 1.
   data_size: 50000
 
-  cutout: False
+  cutout: True
   cutout_length: 16
   cutout_prob: 1.0
   drop_path_prob: 0.2
   auxiliary_weight: 0.4
-
-  #augmix arguments:
-  augmix: True
-  all_ops: True
-  mixture_width: 3
-  mixture_depth: -1
-  aug_severity: 3
-  no_jsd: False
-  base_path: /work/dlclarge2/agnihotr-ml/NASLib/naslib/data/augmix/
