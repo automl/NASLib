@@ -30,7 +30,7 @@ class GMovementOptimizer(MetaOptimizer):
     Such that the groups that have moved away most from 0 are kept,
     rest are pruned away.
     """
-    mu=0
+    mu=0    
     def __init__(
         self,
         config,
@@ -52,7 +52,7 @@ class GMovementOptimizer(MetaOptimizer):
         """
         super(GMovementOptimizer, self).__init__()
 
-        self.config = config
+        self.config = config        
         self.op_optimizer = op_optimizer
         self.op_optimizer_evaluate = op_optimizer_evaluate
         self.loss = loss_criteria
@@ -199,8 +199,8 @@ class GMovementOptimizer(MetaOptimizer):
         #import ipdb;ipdb.set_trace()
         train_loss = self.loss(logits_train, target_train)
         train_loss.backward()#retain_graph=True)
-        #if self.grad_clip:
-        #    torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
+        if self.grad_clip:
+            torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
         self.op_optimizer.step()
 
         with torch.no_grad():
@@ -210,17 +210,18 @@ class GMovementOptimizer(MetaOptimizer):
         self.graph.train()
         
         return logits_train, logits_val, train_loss, val_loss
-    
+
     def get_final_architecture(self):
         """
         Returns the final discretized architecture.
 
         Returns:
             Graph: The final architecture.
-        """
-        graph = self.graph.clone().unparse()
-        graph.prepare_discretization()
+        """    
         normalization_exponent=self.normalization_exponent
+        def debug(edge):
+            import ipdb;ipdb.set_trace()
+
         def update_l2_weights(edge):
             """
             For operations like SepConv etc that contain suboperations like Conv2d() etc. the square of 
@@ -283,10 +284,17 @@ class GMovementOptimizer(MetaOptimizer):
                 edge.data.set("op", primitives[torch.argmax(scores).item()])
 
         # Detailed description of the operations are provided in the functions.
-        graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
+        #graph.update_edges(debug, scope=self.scope, private_edge_data=True)        
+        #graph = self.graph.clone()#.to(device=self.graph.device)        
+        self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
+        graph = self.graph.clone().unparse()
+        #graph.update_edges(debug, scope=self.scope, private_edge_data=True)
+        graph.prepare_discretization()
         graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)        
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
+        #self.graph.update_edges(debug, scope=self.scope, private_edge_data=True)
+        
         graph.prepare_evaluation()
         graph.parse()
         #graph.QUERYABLE=False
@@ -318,6 +326,7 @@ class GMovementOptimizer(MetaOptimizer):
         self.mask = self.mask.to(self.device)
         self.score = self.score.to(self.device)
 
+    
     def new_epoch(self, epoch):
         """
         Just log the l2 norms of operation weights.
@@ -373,7 +382,7 @@ class GMovementOptimizer(MetaOptimizer):
                 mask = torch.nn.Parameter(torch.zeros(size=[len(scores)], requires_grad=False), requires_grad=False)
                 for i in range(len(edge.data.mask)):
                     edge.data.mask[i]=0
-                mask[torch.argmax(scores)]=1
+                edge.data.mask[torch.argmax(scores)]=1
                 #edge.data.set("mask", mask)
 
 
@@ -383,12 +392,16 @@ class GMovementOptimizer(MetaOptimizer):
                     edge.data.weights[i]=0
                     edge.data.dimension[i]=0
 
-        #import ipdb;ipdb.set_trace()
+        #import ipdb;ipdb.set_trace()        
+        def debuging(edge):
+            import ipdb;ipdb.set_trace()
+
         if epoch > 0:
             self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
             self.graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)  
-        if epoch > self.warm_start_epochs:
+        if epoch >= self.warm_start_epochs:
             self.graph.update_edges(masking, scope=self.scope, private_edge_data=True)
+            #self.graph.update_edges(debuging, scope=self.scope, private_edge_data=True)                
 
         for score in self.graph.get_all_edge_data("score"):            
             self.score.append(score)        
@@ -406,7 +419,7 @@ class GMovementOptimizer(MetaOptimizer):
         self.score = torch.nn.ParameterList()
         if epoch > 0:
             self.graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
-        if epoch > self.warm_start_epochs:
+        if epoch >= self.warm_start_epochs:
             self.mask = torch.nn.ParameterList()
             
             for mask in self.graph.get_all_edge_data("mask"):

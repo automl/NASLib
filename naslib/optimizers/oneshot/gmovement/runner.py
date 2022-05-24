@@ -16,7 +16,8 @@ from naslib.optimizers import (
     Bananas,
     BasePredictor,
     GSparseOptimizer,
-    GMovementOptimizer
+    GMovementOptimizer,
+    DrNASOptimizer
 )
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
@@ -42,7 +43,8 @@ supported_optimizers = {
     "bananas": Bananas(config),
     "bp": BasePredictor(config),
     "gsparsity": GSparseOptimizer(config),
-    "gmovement": GMovementOptimizer(config)
+    "gmovement": GMovementOptimizer(config),
+    "drnas": DrNASOptimizer(config)
 }
 
 supported_search_space ={
