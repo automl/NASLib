@@ -44,6 +44,7 @@ class Trainer(object):
         self.config = config
         self.epochs = self.config.search.epochs
         self.lightweight_output = lightweight_output
+        self.dataset = config.dataset
 
         # preparations
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -70,6 +71,7 @@ class Trainer(object):
                 "train_time": [],
                 "arch_eval": [],
                 "params": n_parameters,
+                "mCE": [],
             }
         )
 
@@ -199,6 +201,9 @@ class Trainer(object):
                 after_epoch(e)
 
         self.optimizer.after_training()
+
+        mean_CE = utils.test_corr(self.graph, self.dataset, self.config)
+        self.errors_dict.mCE.append(mean_CE)
 
         if summary_writer is not None:
             summary_writer.close()

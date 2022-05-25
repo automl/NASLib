@@ -1124,6 +1124,71 @@ https://arxiv.org/pdf/1912.02781.pdf
 """
 
 from naslib.utils import augmentations 
+
+CORRUPTIONS = [
+    'gaussian_noise', 'shot_noise', 'impulse_noise', 'defocus_blur',
+    'glass_blur', 'motion_blur', 'zoom_blur', 'snow', 'frost', 'fog',
+    'brightness', 'contrast', 'elastic_transform', 'pixelate',
+    'jpeg_compression'
+]
+
+def test(net, test_loader):
+    """Evaluate network on given dataset."""
+    net.eval()
+    total_loss = 0.
+    total_correct = 0
+    with torch.no_grad():
+        for images, targets in test_loader:
+            images, targets = images.cuda(), targets.cuda()
+            logits = net(images)
+            loss = torch.nn.functional.cross_entropy(logits, targets)
+            pred = logits.data.max(1)[1]
+            total_loss += float(loss.data)
+            total_correct += pred.eq(targets.data).sum().item()
+
+    return total_loss / len(test_loader.dataset), total_correct / len(
+        test_loader.dataset)
+
+def test_corr(net, dataset, config):
+    """Evaluate network on given corrupted dataset."""
+    corruption_accs = []
+    base_path = "../data/"
+    test_transform = transforms.Compose(
+        [transforms.ToTensor(),
+        transforms.Normalize([0.5] * 3, [0.5] * 3)])
+    test_data = dset.CIFAR10(
+            root=config.data, train=False, download=True, transform=test_transform
+        )
+    
+    if dataset=="cifar10":
+        base_path += "CIFAR-10-C/"        
+    elif dataset == "cifar100":
+        base_path += "CIFAR-100-C/"
+        test_data = dset.CIFAR100(
+            root=config.data, train=False, download=True, transform=test_transform
+        )
+    else:
+        raise NotImplementedError              
+
+    for corruption in CORRUPTIONS:
+        # Reference to original data is mutated
+        test_data.data = np.load(base_path + corruption + '.npy')
+        test_data.targets = torch.LongTensor(np.load(base_path + 'labels.npy'))
+
+        test_loader = torch.utils.data.DataLoader(
+            test_data,
+            batch_size=64,
+            shuffle=False,
+            num_workers=0,
+            pin_memory=True)
+
+        test_loss, test_acc = test(net, test_loader)
+        corruption_accs.append(test_acc)
+        logger.info('{}\n\tTest Loss {:.3f} | Test Error {:.3f}'.format(
+            corruption, test_loss, 100 - 100. * test_acc))
+
+    return (1 - np.mean(corruption_accs))
+
 def aug(image, preprocess, config):
     """Perform AugMix augmentations and compute mixture.
 
