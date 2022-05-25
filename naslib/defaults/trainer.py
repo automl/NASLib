@@ -45,6 +45,10 @@ class Trainer(object):
         self.epochs = self.config.search.epochs
         self.lightweight_output = lightweight_output
         self.dataset = config.dataset
+        try: 
+            self.eval_dataset = config.evaluation.dataset
+        except Exception as e:
+            self.eval_dataset = self.dataset
 
         # preparations
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -202,8 +206,20 @@ class Trainer(object):
 
         self.optimizer.after_training()
 
-        mean_CE = utils.test_corr(self.graph, self.dataset, self.config)
-        self.errors_dict.mCE.append(mean_CE)
+        """
+        Adding testing corruption performance        
+        """
+        test_corruption = False
+        try:
+            test_corruption = self.config.search.test_corr
+        except Exception as e:
+            test_corruption = False
+
+        if test_corruption:
+            mean_CE = utils.test_corr(self.graph, self.dataset, self.config)
+            self.errors_dict.mCE.append(mean_CE)
+        else:
+            self.errors_dict.mCE.append(-1)
 
         if summary_writer is not None:
             summary_writer.close()
@@ -280,6 +296,19 @@ class Trainer(object):
             metric              : Metric to query the benchmark for.
         """
         logger.info("Start evaluation")
+        
+        #Adding augmix and test corruption error to evalualte
+        augmix = False
+        test_corruption = False
+        try: 
+            augmix = self.config.evaluation.augmix
+        except Exception as e:
+            augmix = False
+        try: 
+            test_corr = self.config.evaluation.test_corr
+        except Exception as e:
+            test_corr = False
+
         if not best_arch:
 
             if not search_model:
@@ -291,7 +320,7 @@ class Trainer(object):
             best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
-        if best_arch.QUERYABLE:
+        if best_arch.QUERYABLE and not test_corr:
             if metric is None:
                 metric = Metric.TEST_ACCURACY
             result = best_arch.query(
@@ -454,6 +483,13 @@ class Trainer(object):
             logger.info(
                 "Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(
                     top1.avg, top5.avg
+                )
+            )
+            if test_corruption:
+                mean_CE = utils.test_corr(best_arch, self.eval_dataset, self.config)
+                logger.info(
+                "Corruption Evaluation finished. Mean Corruption Error: {:.9}".format(
+                    mean_CE
                 )
             )
 

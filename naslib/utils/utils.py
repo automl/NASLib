@@ -296,8 +296,8 @@ def get_train_val_loaders(config, mode):
     augmix = False
     no_jsd = False
     try:
-        augmix = config.search.augmix
-        no_jsd = config.search.no_jsd
+        augmix = config.augmix
+        no_jsd = config.no_jsd
     except Exception as e:
         augmix = False
         no_jsd = False
@@ -1200,10 +1200,10 @@ def aug(image, preprocess, config):
         mixed: Augmented and mixed image.
     """
     try:
-        all_ops = config.search.all_ops
-        mixture_width = config.search.mixture_width
-        mixture_depth = config.search.mixture_depth
-        aug_severity = config.search.aug_severity
+        all_ops = config.all_ops
+        mixture_width = config.mixture_width
+        mixture_depth = config.mixture_depth
+        aug_severity = config.aug_severity
     except Exception as e:
         all_ops = True
         mixture_depth = -1
