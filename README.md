@@ -1,4 +1,6 @@
 <div align="center">
+  ** For the <a href='https://codalab.lisn.upsaclay.fr/competitions/3932'>Zero-Cost NAS Competition</a>, please switch to the <a href='https://github.com/automl/NASLib/tree/automl-conf-competition'><code>automl-conf-competition</code></a> branch ** <br><br>
+
   <img src="images/naslib-logo.png" width="400" height="250">
 </div>
 
