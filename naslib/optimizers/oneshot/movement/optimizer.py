@@ -75,6 +75,37 @@ class MovementOptimizer(MetaOptimizer):
         num_classes = 10 if config.dataset=="cifar10" else 100
         self.num_classes = 120 if config.dataset=="ImageNet16-120" else num_classes
         self.k=1
+        try:
+            self.augmix = config.search.augmix
+        except Exception:
+            self.augmix = False
+        try:
+            self.no_jsd = config.search.no_jsd
+        except Exception:
+            self.no_jsd = False
+        try:
+            self.distill = config.search.distill            
+        except Exception:
+            self.distill = False
+        if self.distill:
+            import torchvision
+            self.teacher = torchvision.models.resnet50()
+            if self.dataset == "cifar10" or self.dataset == "cifar100":
+                self.teacher.conv1 = torch.nn.Conv2d(in_channels=3, out_channels=64, 
+                                            kernel_size=(3,3), stride=(1,1), padding=(1,1)) 
+            try:
+                teacher_path = config.search.teacher_path
+            except Exception:
+                teacher_path = "/work/dlclarge2/agnihotr-ml/NASLib/naslib/data/augmix/cifar10_resnet50_model_best.pth.tar"
+            teacher_state_dict = torch.load(teacher_path)['state_dict']
+            new_teacher_state_dict={}
+            for k, v in teacher_state_dict.items():
+                k=k.replace("module.","")
+                new_teacher_state_dict[k] = v
+            self.teacher.load_state_dict(new_teacher_state_dict)
+            self.teacher.to(device=self.device)
+            self.teacher.eval()
+            
 
     @staticmethod
     def update_ops(edge):
@@ -191,6 +222,16 @@ class MovementOptimizer(MetaOptimizer):
         self.graph = graph
         self.scope = scope
     
+    def jsd_loss(self, logits_train):
+        logits_train, logits_aug1, logits_aug2 = torch.split(logits_train, len(logits_train) // 3)
+        p_clean, p_aug1, p_aug2 = F.softmax(logits_train, dim=1), F.softmax(logits_aug1, dim=1), F.softmax(logits_aug2, dim=1)
+
+        p_mixture = torch.clamp((p_clean + p_aug1 + p_aug2) / 3., 1e-7, 1).log()
+        augmix_loss = 12 * (F.kl_div(p_mixture, p_clean, reduction='batchmean') +
+                F.kl_div(p_mixture, p_aug1, reduction='batchmean') +
+                F.kl_div(p_mixture, p_aug2, reduction='batchmean')) / 3.
+        return logits_train, augmix_loss
+
     def step(self, data_train, data_val):
         """
         Run one optimizer step with the batch of training and test data.
@@ -211,8 +252,24 @@ class MovementOptimizer(MetaOptimizer):
         self.graph.train()
         self.op_optimizer.zero_grad()
         logits_train = self.graph(input_train)
+
+        if self.augmix:
+            logits_train, augmix_loss = self.jsd_loss(logits_train)
+        if self.distill:
+            with torch.no_grad():
+                logits_teacher = self.teacher(input_train)
+                if self.augmix:
+                    logits_teacher, teacher_augmix_loss = self.jsd_loss(logits_teacher)
+                teacher_loss = self.loss(logits_teacher, target_train) + teacher_augmix_loss
+
+
         #import ipdb;ipdb.set_trace()
         train_loss = self.loss(logits_train, target_train)
+        if self.augmix:
+            train_loss = train_loss + augmix_loss
+        if self.distill:
+            train_loss = train_loss + teacher_loss
+
         train_loss.backward()#retain_graph=True)
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
@@ -221,6 +278,8 @@ class MovementOptimizer(MetaOptimizer):
         with torch.no_grad():
             self.graph.eval()
             logits_val = self.graph(input_val)
+            if self.augmix:
+                logits_val, _, _ = torch.split(logits_val, len(logits_val) // 3)
             val_loss = self.loss(logits_val, target_val)
         self.graph.train()
         
@@ -329,7 +388,7 @@ class MovementOptimizer(MetaOptimizer):
         #graph.update_edges(debug, scope=self.scope, private_edge_data=True)        
         #graph = self.graph.clone()#.to(device=self.graph.device)        
         self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
-        graph = self.graph.clone().unparse(num_classes=self.num_classes)
+        graph = self.graph.clone().unparse()#num_classes=self.num_classes)
         #graph.update_edges(debug, scope=self.scope, private_edge_data=True)
         graph.prepare_discretization()
         graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)        

@@ -56,9 +56,9 @@ elif config.dataset=='ImageNet16-120':
 else:
     num_classes=10
 supported_search_space ={
-    "nasbench201" : NasBench201SearchSpace(num_classes),
-    "darts" : DartsSearchSpace(num_classes),
-    "nasbench101" : NasBench101SearchSpace(num_classes)
+    "nasbench201" : NasBench201SearchSpace(),#num_classes),
+    "darts" : DartsSearchSpace(),#num_classes),
+    "nasbench101" : NasBench101SearchSpace(),#num_classes)
 }
 
 #search_space = NasBench201SearchSpace()
