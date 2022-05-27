@@ -1,4 +1,5 @@
 import codecs
+
 from naslib.search_spaces.core.graph import Graph
 import time
 import json
@@ -90,6 +91,11 @@ class Trainer(object):
                 train from scratch.
         """
         logger.info("Start training")
+        augmix = False
+        try:
+            augmix = self.config.search.augmix
+        except Exception as e:
+            augmix = False
 
         np.random.seed(self.config.search.seed)
         torch.manual_seed(self.config.search.seed)
@@ -118,14 +124,14 @@ class Trainer(object):
             self.optimizer.new_epoch(e)
 
             if self.optimizer.using_step_function:
-                for step, data_train in enumerate(self.train_queue):
-                    data_train = (
-                        data_train[0].to(self.device),
+                for step, data_train in enumerate(self.train_queue):                    
+                    data_train = (                        
+                        data_train[0].to(self.device) if not augmix else torch.cat(data_train[0], 0).to(self.device),
                         data_train[1].to(self.device, non_blocking=True),
                     )
                     data_val = next(iter(self.valid_queue))
                     data_val = (
-                        data_val[0].to(self.device),
+                        data_val[0].to(self.device) if not augmix else torch.cat(data_val[0], 0).to(self.device),
                         data_val[1].to(self.device, non_blocking=True),
                     )
 
@@ -216,7 +222,7 @@ class Trainer(object):
             test_corruption = False
 
         if test_corruption:
-            mean_CE = utils.test_corr(self.graph, self.dataset, self.config)
+            mean_CE = utils.test_corr(self.optimizer.graph, self.dataset, self.config)
             self.errors_dict.mCE.append(mean_CE)
         else:
             self.errors_dict.mCE.append(-1)
@@ -299,7 +305,7 @@ class Trainer(object):
         
         #Adding augmix and test corruption error to evalualte
         augmix = False
-        test_corruption = False
+        test_corr = False
         try: 
             augmix = self.config.evaluation.augmix
         except Exception as e:
@@ -328,6 +334,14 @@ class Trainer(object):
             )
             logger.info("Queried results ({}): {}".format(metric, result))
         else:
+            if best_arch.QUERYABLE:
+                if metric is None:
+                    metric = Metric.TEST_ACCURACY
+                result = best_arch.query(
+                    metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
+                )
+                logger.info("Queried results ({}): {}".format(metric, result))
+                
             best_arch.to(self.device)
             if retrain:
                 logger.info("Starting retraining from scratch")
@@ -485,7 +499,7 @@ class Trainer(object):
                     top1.avg, top5.avg
                 )
             )
-            if test_corruption:
+            if test_corr:
                 mean_CE = utils.test_corr(best_arch, self.eval_dataset, self.config)
                 logger.info(
                 "Corruption Evaluation finished. Mean Corruption Error: {:.9}".format(

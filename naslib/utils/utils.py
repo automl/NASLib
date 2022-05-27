@@ -297,11 +297,14 @@ def get_train_val_loaders(config, mode):
     no_jsd = False
     try:
         augmix = config.augmix
-        no_jsd = config.no_jsd
-    except Exception as e:
+    except Exception:
         augmix = False
+    try:
+        no_jsd = config.no_jsd
+    except Exception:
         no_jsd = False
 
+    #import ipdb;ipdb.set_trace()
     if dataset == "cifar10":
         if augmix:
             train_transform, valid_transform = _data_transforms_cifar_augmix(config)            
@@ -495,6 +498,8 @@ def _data_transforms_cifar100(args):
     return train_transform, valid_transform
 
 def _data_transforms_cifar_augmix(args):
+    
+    logger.info("..........TRAINING USING AUGMIX..........")
     CIFAR_MEAN = [0.5, 0.5, 0.5]
     CIFAR_STD = [0.5, 0.5, 0.5]
 
@@ -1151,8 +1156,10 @@ def test(net, test_loader):
 
 def test_corr(net, dataset, config):
     """Evaluate network on given corrupted dataset."""
-    corruption_accs = []
-    base_path = "../data/"
+    corruption_accs = []    
+
+    #Provide path to directory wiithin which CIFAR-10-C and CIFAR-100-C are stored
+    base_path = "../../../data/augmix/" 
     test_transform = transforms.Compose(
         [transforms.ToTensor(),
         transforms.Normalize([0.5] * 3, [0.5] * 3)])
@@ -1234,10 +1241,11 @@ def aug(image, preprocess, config):
 class AugMixDataset(torch.utils.data.Dataset, config):
     """Dataset wrapper to perform AugMix augmentation."""
 
-    def __init__(self, dataset, preprocess, no_jsd=False):
+    def __init__(self, dataset, preprocess, no_jsd=False, config=None):
         self.dataset = dataset
         self.preprocess = preprocess
         self.no_jsd = no_jsd
+        self.config = config
 
     def __getitem__(self, i):
         x, y = self.dataset[i]
