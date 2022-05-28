@@ -54,7 +54,7 @@ else:
         encodings = []
         for i in range(5):
             graph = search_space.clone()
-            graph.sample_random_architecture()
+            graph.sample_random_architecture(dataset_api)
             encodings.append(str(graph.get_hash()))
 
         archs.update(encodings)
