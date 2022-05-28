@@ -138,7 +138,13 @@ def get_config_from_args(args=None):
                 arg1, arg2 = arg.split(".")
                 config[arg1][arg2] = type(config[arg1][arg2])(value)
             else:
-                config[arg] = type(config[arg])(value) if arg in config else value
+                if arg in config:
+                    t = type(config[arg])
+                elif value.isnumeric():
+                    t = int
+                else:
+                    t = str
+                config[arg] = t(value)
 
         # load config file
         config.set_new_allowed(True)
