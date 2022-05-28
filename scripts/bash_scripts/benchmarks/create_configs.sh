@@ -26,7 +26,6 @@ for i in $(seq 0 $((${#predictors[@]}-1)) )
 do
     predictor=${predictors[$i]}
     python scripts/create_configs_benchmarks.py --predictor $predictor \
-    --train_size $train_size --start_seed $start_seed --trials $trials --out_dir $out_dir \
-    --dataset=$dataset --experiment benchmarks --search_space $search_space \
-    --config_root=$config_root
+    --start_seed $start_seed --out_dir $out_dir --dataset=$dataset \
+    --experiment benchmarks --search_space $search_space --config_root=$config_root
 done
