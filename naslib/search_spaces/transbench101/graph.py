@@ -286,7 +286,7 @@ class TransBench101SearchSpaceMicro(Graph):
             # return hyperparameter info
             return query_results[dataset]['cost_info']
         elif metric == Metric.TRAIN_TIME:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
 
         if full_lc and epoch == -1:
@@ -294,7 +294,7 @@ class TransBench101SearchSpaceMicro(Graph):
         elif full_lc and epoch != -1:
             return query_results[dataset][metric_to_tb101[metric]][:epoch]
         else:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
         
     def get_op_indices(self):
@@ -523,7 +523,7 @@ class TransBench101SearchSpaceMacro(Graph):
             # return hyperparameter info
             return query_results[dataset]['cost_info']
         elif metric == Metric.TRAIN_TIME:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
 
         if full_lc and epoch == -1:
@@ -531,7 +531,7 @@ class TransBench101SearchSpaceMacro(Graph):
         elif full_lc and epoch != -1:
             return query_results[dataset][metric_to_tb101[metric]][:epoch]
         else:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
         
     def get_op_indices(self):
