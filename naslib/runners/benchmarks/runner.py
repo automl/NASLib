@@ -19,13 +19,15 @@ utils.log_args(config)
 
 search_space = get_search_space(config.search_space, config.dataset)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
-archs = load_sampled_architectures(config.search_space, config.dataset)
+archs = load_sampled_architectures(config.search_space)
 archs_to_evaluate = {idx: eval(archs[str(idx)]) for idx in range(config.start_idx, config.start_idx + config.n_models)}
 
 utils.set_seed(config.seed)
 train_loader, _, _, _, _ = utils.get_train_val_loaders(config)
 
 predictor = ZeroCost(method_type=config.predictor)
+
+zc_scores = []
 
 for idx, arch in archs_to_evaluate.items():
     try:
@@ -48,17 +50,18 @@ for idx, arch in archs_to_evaluate.items():
             'time': end_time - start_time
         }
         zc_score['val_accuracy'] = accuracy
+        zc_scores.append(zc_score)
 
-        output_dir = os.path.join(config.data, 'zc_benchmarks', config.search_space, config.dataset, config.predictor)
+        output_dir = os.path.join(config.data, 'zc_benchmarks', config.predictor)
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        output_file = os.path.join(output_dir, f'benchmark_{idx}.json')
+        output_file = os.path.join(output_dir, f'benchmark_{config.search_space}_{config.dataset}.json')
 
         with open(output_file, 'w') as f:
-            json.dump(zc_score, f)
+            json.dump(zc_scores, f)
     except Exception as e:
-        logger.info(f'FAILED to compute score for model with arch {arch}!')
+        logger.info(f'Failed to compute score for model {idx} with arch {arch}!')
 
 logger.info('Done.')
