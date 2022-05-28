@@ -27,7 +27,9 @@ do
     do
         for pred in "${predictors[@]}"
         do
-            sbatch ./scripts/cluster/benchmarks/run.sh $searchspace $dataset $pred $start_seed $experiment <<< "y"
+            sed -i "s/THE_JOB_NAME/${searchspace}-${dataset}-${pred}/" ./scripts/cluster/benchmarks/run.sh
+            sbatch ./scripts/cluster/benchmarks/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
+            sed -i "s/${searchspace}-${dataset}-${pred}/THE_JOB_NAME/" ./scripts/cluster/benchmarks/run.sh
         done
 
         echo ""
