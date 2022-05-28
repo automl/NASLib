@@ -52,7 +52,9 @@ class ZCEnsembleEvaluator(object):
         graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled)
         model.arch = graph.get_hash()
         encoding = self.get_arch_as_string(model.arch)
-        model.accuracy = self.zc_api[encoding]['val_accuracy']
+
+        if self.load_labeled:
+            model.accuracy = self.zc_api[encoding]['val_accuracy']
 
         del graph
         return model
