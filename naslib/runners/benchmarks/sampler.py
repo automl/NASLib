@@ -62,7 +62,7 @@ else:
 
 archs_dict = {idx: str(arch) for idx, arch in enumerate(archs)}
 
-save_file = f'samples_{config.search_space}-{config.dataset}.json'
+save_file = f'archs_{config.search_space}.json'
 with open(os.path.join(config.data, save_file), 'w') as f:
     json.dump(archs_dict, f)
 logger.info('Done.')
