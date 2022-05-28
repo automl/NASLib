@@ -20,7 +20,8 @@ utils.log_args(config)
 search_space = get_search_space(config.search_space, config.dataset)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 archs = load_sampled_architectures(config.search_space)
-archs_to_evaluate = {idx: eval(archs[str(idx)]) for idx in range(config.start_idx, config.start_idx + config.n_models)}
+end_index = config.start_idx + config.n_models if config.start_idx + config.n_models < len(archs) else len(archs)
+archs_to_evaluate = {idx: eval(archs[str(idx)]) for idx in range(config.start_idx, end_index)}
 
 utils.set_seed(config.seed)
 train_loader, _, _, _, _ = utils.get_train_val_loaders(config)
@@ -29,9 +30,9 @@ predictor = ZeroCost(method_type=config.predictor)
 
 zc_scores = []
 
-for idx, arch in archs_to_evaluate.items():
+for i, (idx, arch) in enumerate(archs_to_evaluate.items()):
     try:
-        logger.info(f'Computing ZC score for model {idx} with encoding {arch}')
+        logger.info(f'{i} \tComputing ZC score for model id {idx} with encoding {arch}')
         zc_score = {}
         graph = search_space.clone()
         graph.set_spec(arch)
