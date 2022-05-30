@@ -58,7 +58,7 @@ for i, (idx, arch) in enumerate(archs_to_evaluate.items()):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        output_file = os.path.join(output_dir, f'benchmark-{config.search_space}-{config.dataset}-{config.start_idx}.json')
+        output_file = os.path.join(output_dir, f'benchmark--{config.search_space}--{config.dataset}--{config.start_idx}.json')
 
         with open(output_file, 'w') as f:
             json.dump(zc_scores, f)
