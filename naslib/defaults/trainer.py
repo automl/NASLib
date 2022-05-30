@@ -1,4 +1,5 @@
 import codecs
+from curses import flash
 
 from naslib.search_spaces.core.graph import Graph
 import time
@@ -8,6 +9,8 @@ import os
 import copy
 import torch
 import numpy as np
+import torch.nn.functional as F
+import torchvision.models as models
 
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
@@ -15,6 +18,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
+
 
 from typing import Callable
 from .additional_primitives import DropPathWrapper
@@ -53,6 +57,31 @@ class Trainer(object):
 
         # preparations
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.distill = False
+        try: 
+            self.distill = config.evaluation.distill
+        except Exception as e:
+            self.distill = False
+        
+        if self.distill:
+            self.teacher = models.resnet50()
+            if self.eval_dataset == "cifar10" or self.eval_dataset == "cifar100":
+                self.teacher.conv1 = torch.nn.Conv2d(in_channels=3, out_channels=64, 
+                                            kernel_size=(3,3), stride=(1,1), padding=(1,1))
+            try:
+                teacher_path = config.search.teacher_path
+            except Exception:
+                teacher_path = "/work/dlclarge2/agnihotr-ml/NASLib/naslib/data/augmix/cifar10_resnet50_model_best.pth.tar"
+            teacher_state_dict = torch.load(teacher_path)['state_dict']
+            new_teacher_state_dict={}
+            for k, v in teacher_state_dict.items():
+                k=k.replace("module.","")
+                new_teacher_state_dict[k] = v
+            self.teacher.load_state_dict(new_teacher_state_dict)
+            self.teacher.to(device=self.device)
+            self.teacher.eval()
+
 
         # measuring stuff
         self.train_top1 = utils.AverageMeter()
@@ -306,6 +335,7 @@ class Trainer(object):
         #Adding augmix and test corruption error to evalualte
         augmix = False
         test_corr = False
+        distill = False
         try: 
             augmix = self.config.evaluation.augmix
         except Exception as e:
@@ -406,12 +436,32 @@ class Trainer(object):
 
                     # Train queue
                     for i, (input_train, target_train) in enumerate(self.train_queue):
+                        if augmix:
+                            input_train = torch.cat(input_train, 0)
+
                         input_train = input_train.to(self.device)
                         target_train = target_train.to(self.device, non_blocking=True)
 
                         optim.zero_grad()
                         logits_train = best_arch(input_train)
+
+                        if augmix:
+                            logits_train, augmix_loss = self.jsd_loss(logits_train)
+                        if self.distill:
+                            with torch.no_grad():
+                                logits_teacher = self.teacher(input_train)
+                                teacher_augmix_loss = 0
+                                if augmix:
+                                    logits_teacher, teacher_augmix_loss = self.jsd_loss(logits_teacher)
+                                teacher_loss = loss(logits_teacher, target_train) + teacher_augmix_loss
+
                         train_loss = loss(logits_train, target_train)
+
+                        if augmix:
+                            train_loss = train_loss + augmix_loss
+                        if self.distill:
+                            train_loss = train_loss + teacher_loss
+
                         if hasattr(
                             best_arch, "auxilary_logits"
                         ):  # darts specific stuff
@@ -661,3 +711,13 @@ class Trainer(object):
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(",", ":"))
+    
+    def jsd_loss(self, logits_train):
+        logits_train, logits_aug1, logits_aug2 = torch.split(logits_train, len(logits_train) // 3)
+        p_clean, p_aug1, p_aug2 = F.softmax(logits_train, dim=1), F.softmax(logits_aug1, dim=1), F.softmax(logits_aug2, dim=1)
+
+        p_mixture = torch.clamp((p_clean + p_aug1 + p_aug2) / 3., 1e-7, 1).log()
+        augmix_loss = 12 * (F.kl_div(p_mixture, p_clean, reduction='batchmean') +
+                F.kl_div(p_mixture, p_aug1, reduction='batchmean') +
+                F.kl_div(p_mixture, p_aug2, reduction='batchmean')) / 3.
+        return logits_train, augmix_loss

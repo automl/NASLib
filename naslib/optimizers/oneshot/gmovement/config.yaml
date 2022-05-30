@@ -77,8 +77,12 @@ evaluation:
   train_portion: 1.
   data_size: 50000
 
-  cutout: True
+  cutout: False
   cutout_length: 16
   cutout_prob: 1.0
   drop_path_prob: 0.2
   auxiliary_weight: 0.4
+
+  #augmix
+  augmix: True
+  test_corr: True

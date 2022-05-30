@@ -165,8 +165,7 @@ class MovementOptimizer(MetaOptimizer):
                 weight = torch.nn.Parameter(torch.FloatTensor([1.0]), requires_grad=True)
                 edge.data.op[i].register_parameter("weight", weight)  
                 stdv = 1. / math.sqrt(edge.data.op[i].weight.size(0))
-                edge.data.op[i].weight.data.uniform_(-stdv, stdv)
-                #print(torch.norm(edge.data.op[i].weight,2))
+                edge.data.op[i].weight.data.uniform_(-stdv, stdv)                
     
 
     def adapt_search_space(self, search_space, scope=None, **kwargs):
@@ -214,9 +213,6 @@ class MovementOptimizer(MetaOptimizer):
             lr=self.config.search.learning_rate,
             momentum=self.config.search.momentum,
             weight_decay=self.mu,
-            #clip_bounds=(0,1),
-            #normalization=self.normalization,
-            #normalization_exponent=self.normalization_exponent
         )
         graph.train()
         self.graph = graph
@@ -258,6 +254,7 @@ class MovementOptimizer(MetaOptimizer):
         if self.distill:
             with torch.no_grad():
                 logits_teacher = self.teacher(input_train)
+                teacher_augmix_loss = 0
                 if self.augmix:
                     logits_teacher, teacher_augmix_loss = self.jsd_loss(logits_teacher)
                 teacher_loss = self.loss(logits_teacher, target_train) + teacher_augmix_loss
@@ -294,8 +291,6 @@ class MovementOptimizer(MetaOptimizer):
         """    
         normalization_exponent=self.normalization_exponent
         instantenous = self.instantenous
-        def debug(edge):
-            import ipdb;ipdb.set_trace()
 
         def update_l2_weights(edge):            
             """
@@ -314,59 +309,32 @@ class MovementOptimizer(MetaOptimizer):
                     try:
                         for j in range(len(edge.data.op.primitives[i].op)):
                             try:
-                                group_dim += torch.numel(edge.data.op.primitives[i].op[j].weight.grad)
-                                #group_dim += 1
-                                #weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.grad,2)**2).item()
-                                #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].op[j].weight.grad,2), torch.norm(edge.data.op.primitives[i].op[j].weight,2)))
-                                ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight,2)**2).to(device=edge.data.weights.device)
-                                #weight.append(torch.max(torch.abs(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight)).to(device=edge.data.weights.device))
+                                group_dim += torch.numel(edge.data.op.primitives[i].op[j].weight.grad)                                
                                 weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
                             except (AttributeError, TypeError) as e:
                                 try:
                                     for k in range(len(edge.data.op.primitives[i].op[j].op)):
-                                        group_dim += torch.numel(edge.data.op.primitives[i].op[j].op[k].weight.grad)
-                                        #group_dim += 1
-                                        #weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad,2)**2).item()
-                                        ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight,2)**2).to(device=edge.data.weights.device)
-                                        #weight.append(torch.max(torch.abs(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight)).to(device=edge.data.weights.device))
+                                        group_dim += torch.numel(edge.data.op.primitives[i].op[j].op[k].weight.grad)                                        
                                         weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
                                 except AttributeError:
                                     continue                         
-                        edge.data.weights[i]+=weight#.to(device=edge.data.weights.device)
-                        #edge.data.weights[i]+=max(weight)#.to(device=edge.data.weights.device)
-                        edge.data.dimension[i]+=group_dim.item()                          
-                        #edge.data.dimension[i]+=1                         
-                        weight=0.0
-                        #weight=[]
+                        edge.data.weights[i]+=weight#.to(device=edge.data.weights.device)                        
+                        edge.data.dimension[i]+=group_dim.item()                                                  
+                        weight=0.0                        
                         group_dim=torch.zeros(1)
-                    except AttributeError:   
-                        #
-                        size=torch.numel(edge.data.op.primitives[i].weight.grad)                        
-                        #size = 1
-                        #edge.data.weights[i]+=(edge.data.op.primitives[i].weight.grad.item())**2
-                        #import ipdb;ipdb.set_trace()
-                        #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].weight.grad,2), torch.norm(edge.data.op.primitives[i].weight,2)))
-                        ### edge.data.weights[i]+=(torch.norm(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight,2)**2).to(device=edge.data.weights.device)
-                        #edge.data.weights[i]+=torch.max(torch.abs(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight)).to(device=edge.data.weights.device)
+                    except AttributeError:                           
+                        size=torch.numel(edge.data.op.primitives[i].weight.grad)                                            
                         edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
                         edge.data.dimension[i]+=size
         
         def calculate_scores(edge):
             if edge.data.has("score"):
-                for i in range(len(edge.data.op.primitives)):
-                    #edge.data.weights[i]=torch.sqrt(edge.data.weights[i])
-                    #edge.data.score[i]+=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                    #print(edge.data.score.requires_grad)
-                    with torch.no_grad():
-                        #edge.data.score[i]+=0.1
-                        if instantenous:
-                            #edge.data.score[i]=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                            edge.data.score[i]=edge.data.weights[i]#/edge.data.dimension[i]
-                        else:
-                            #edge.data.score[i]+=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                            edge.data.score[i]+=edge.data.weights[i]#/edge.data.dimension[i]
-                    #print(edge.data.score.requires_grad)
-                #print(edge.data.weights)
+                for i in range(len(edge.data.op.primitives)):                    
+                    with torch.no_grad():                        
+                        if instantenous:                            
+                            edge.data.score[i]=edge.data.weights[i]
+                        else:                            
+                            edge.data.score[i]+=edge.data.weights[i]                    
         
         def reinitialize_l2_weights(edge):
             if edge.data.has("score"):                
@@ -383,18 +351,13 @@ class MovementOptimizer(MetaOptimizer):
                 primitives = edge.data.op.get_embedded_ops()
                 scores = torch.clone(edge.data.score).detach().cpu()
                 edge.data.set("op", primitives[torch.argmax(torch.abs(scores)).item()])
-
-        # Detailed description of the operations are provided in the functions.
-        #graph.update_edges(debug, scope=self.scope, private_edge_data=True)        
-        #graph = self.graph.clone()#.to(device=self.graph.device)        
+             
         self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)        
         graph = self.graph.clone().unparse()#num_classes=self.num_classes)
-        #graph.update_edges(debug, scope=self.scope, private_edge_data=True)
         graph.prepare_discretization()
         graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)        
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
-        graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)
-        #self.graph.update_edges(debug, scope=self.scope, private_edge_data=True)
+        graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=False)        
         
         graph.prepare_evaluation()
         graph.parse()
@@ -445,52 +408,28 @@ class MovementOptimizer(MetaOptimizer):
             For operations (not suboperations) like Identity() etc. that do not have weights,
             the weights attached to them are used.
             """            
-            if edge.data.has("score"):
-                #import ipdb;ipdb.set_trace()
-                weight=0.0
-                #weight=[]
+            if edge.data.has("score"):                
+                weight=0.0                
                 group_dim=torch.zeros(1)
                 for i in range(len(edge.data.op.primitives)):
                     try:
                         for j in range(len(edge.data.op.primitives[i].op)):
-                            try:
-                                #group_dim += torch.numel(edge.data.op.primitives[i].op[j].weight.grad)
-                                group_dim += 1
-                                #weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.grad,2)**2).item()
-                                #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].op[j].weight.grad,2), torch.norm(edge.data.op.primitives[i].op[j].weight,2)))
-                                ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight,2)**2).to(device=edge.data.weights.device)
-                                #weight.append(torch.max(torch.abs(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight)).to(device=edge.data.weights.device))
-                                #weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
+                            try:                                
+                                group_dim += 1                                
                                 weight+= torch.mean(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
                             except (AttributeError, TypeError) as e:
                                 try:
-                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):
-                                        #group_dim += torch.numel(edge.data.op.primitives[i].op[j].op[k].weight.grad)
-                                        group_dim += 1
-                                        #weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad,2)**2).item()
-                                        ### weight+= (torch.norm(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight,2)**2).to(device=edge.data.weights.device)
-                                        #weight.append(torch.max(torch.abs(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight)).to(device=edge.data.weights.device))
-                                        #weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
+                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):                                        
+                                        group_dim += 1                                        
                                         weight+= torch.mean(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
                                 except AttributeError:
                                     continue                         
-                        edge.data.weights[i]+=weight#.to(device=edge.data.weights.device)
-                        #edge.data.weights[i]+=max(weight)#.to(device=edge.data.weights.device)
-                        edge.data.dimension[i]+=group_dim.item()                          
-                        #edge.data.dimension[i]+=1                         
-                        weight=0.0
-                        #weight=[]
+                        edge.data.weights[i]+=weight
+                        edge.data.dimension[i]+=group_dim.item()                                                                         
+                        weight=0.0                        
                         group_dim=torch.zeros(1)
-                    except AttributeError:   
-                        #
-                        #size=torch.numel(edge.data.op.primitives[i].weight.grad)                        
+                    except AttributeError:                           
                         size = 1
-                        #edge.data.weights[i]+=(edge.data.op.primitives[i].weight.grad.item())**2
-                        #import ipdb;ipdb.set_trace()
-                        #logger.info("epoch grad: {}, epoch weight: {}" .format(torch.norm(edge.data.op.primitives[i].weight.grad,2), torch.norm(edge.data.op.primitives[i].weight,2)))
-                        ### edge.data.weights[i]+=(torch.norm(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight,2)**2).to(device=edge.data.weights.device)
-                        #edge.data.weights[i]+=torch.max(torch.abs(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight)).to(device=edge.data.weights.device)
-                        #edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
                         edge.data.weights[i]+=torch.mean(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
                         edge.data.dimension[i]+=size
         
@@ -498,17 +437,9 @@ class MovementOptimizer(MetaOptimizer):
         def calculate_scores(edge):
             if edge.data.has("score"):
                 for i in range(len(edge.data.op.primitives)):
-                    #edge.data.weights[i]=torch.sqrt(edge.data.weights[i])
-                    #edge.data.score[i]+=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
-                    #print(edge.data.score.requires_grad)
                     with torch.no_grad():
-                        #edge.data.score[i]+=0.1
-                        #edge.data.score[i]+=torch.sqrt(edge.data.weights[i])/torch.pow(edge.data.dimension[i], normalization_exponent).item() #TODO
                         edge.data.score[i]+=edge.data.weights[i]#/edge.data.dimension[i]
-                        #count[i].append(1)
-                    #print(edge.data.score.requires_grad)
-                #print(edge.data.weights)
-        
+                        
         def normalize_scores(edge):
             if edge.data.has("score"):
                 for i in range(len(edge.data.op.primitives)):
@@ -522,28 +453,13 @@ class MovementOptimizer(MetaOptimizer):
             nonlocal epoch     
             nonlocal k_initialized
             nonlocal k
-            #k = 1 if not k_initialized else k
-            #if not k_initialized:
-            #    k = 1
             k_initialized = True
             if edge.data.has("score"):
                 scores = torch.clone(edge.data.score).detach().cpu()
-                #mask = torch.nn.Parameter(torch.zeros(size=[len(scores)], requires_grad=False), requires_grad=False)
-                #for i in range(len(edge.data.mask)):
-                #    edge.data.mask[i]=0
-                #edge.data.mask[torch.argmax(torch.abs(scores))]=1
-                #edge.data.mask[torch.argmin(torch.abs(scores))]=0
-                #import ipdb;ipdb.set_trace()
-                edge.data.mask[torch.topk(torch.abs(scores), k=k, largest=False, sorted=False)[1]]=0
-                #if edge.data.operations_to_mask < len(edge.data.op.primitives)-1:
-                #    edge.data.set("operations_to_mask", edge.data.operations_to_mask+1, shared=True)
+                edge.data.mask[torch.topk(torch.abs(scores), k=k, largest=False, sorted=False)[1]]=0                
                 if k < len(edge.data.op.primitives)-1 and not k_changed_this_epoch:
-                    k += 1
-                    print('k: ', k)                    
-                    k_changed_this_epoch = True
-                #logger.info("Mask: {}".format(edge.data.mask))
-                #edge.data.set("mask", mask)
-
+                    k += 1                                       
+                    k_changed_this_epoch = True                
 
         def reinitialize_scores(edge):
             if edge.data.has("score"):                
@@ -558,28 +474,18 @@ class MovementOptimizer(MetaOptimizer):
                     if instantenous:
                         edge.data.score[i]=0
 
-        #import ipdb;ipdb.set_trace()        
-        def debuging(edge):
-            import ipdb;ipdb.set_trace()
-
         if epoch > 0:
             self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
-            self.graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)  
-            #self.graph.update_edges(normalize_scores, scope=self.scope, private_edge_data=False)
+            self.graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
         if epoch >= self.warm_start_epochs and self.count_masking%self.masking_interval==0:
             self.graph.update_edges(masking, scope=self.scope, private_edge_data=True)
             self.k_initialized = k_initialized
-            self.k = k
-            #self.graph.update_edges(debuging, scope=self.scope, private_edge_data=True)                
+            self.k = k            
 
-        for score in self.graph.get_all_edge_data("score"):            
-            #self.score.append(score)
-            #scores = torch.clone(score)#.detach().to(device=self.device)            
-            with torch.no_grad():
-                #print(score)
+        for score in self.graph.get_all_edge_data("score"):                        
+            with torch.no_grad():                
                 self.score.append(score)
-
-            #print(score)
+            
         weights_str = [
             ", ".join(["{:+.10f}".format(x) for x in a])
             + ", {}".format(np.max(torch.abs(a).detach().cpu().numpy()))
@@ -657,26 +563,12 @@ class GMoveMixedOp(MixedOp):
     def process_weights(self, weights):
         return weights
 
-    def apply_weights(self, x, weights):        
-        #print(weights)
-        #print(op(x, None) for op in self.primitives)     
+    def apply_weights(self, x, weights):            
         summed = 0  
         for mask, op in zip(weights, self.primitives):
             if hasattr(op, "op"):
-                summed += mask * op(x, None)
-                #for ops in op.op:
-                #    try:
-                #        print("op: {}, weight: {}" .format(ops, torch.norm(ops.weight,2)))
-                #    except AttributeError:
-                #        print("op: {}" .format(ops))
+                summed += mask * op(x, None)                
             else:
-                summed += mask * op(x, None)*op.weight   
-                #print("op: {}, weight: {}" .format(op, torch.norm(op.weight)))
-                #print(op.weight.grad)   
-                #if hasattr(op.weight, "grad"):
-                #    continue
-                #else:
-                #    print(op)
-        return F.normalize(summed)
-        #return F.normalize(sum(w * op(x, None)) if hasattr(op, "op") else sum(w * op(x, None) * op.weight) for w, op in zip(weights, self.primitives))
+                summed += mask * op(x, None)*op.weight                   
+        return F.normalize(summed)        
     
