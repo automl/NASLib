@@ -43,7 +43,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=150, help="How many search epochs")
     parser.add_argument("--search_space", type=str, default='nasbench201', help="nasbench101/201/301/transnasbench101")
     parser.add_argument("--experiment", type=str, default='benchmarks', help="Experiment type")
-    parser.add_argument("--batch_size", type=int, default=128, help="Batch size")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
     parser.add_argument("--train_portion", type=float, default=0.7, help="Train portion")
     args = parser.parse_args()
 
