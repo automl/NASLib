@@ -152,10 +152,7 @@ def encode_seminas(spec):
     return dic
 
 
-def encode_101(arch, encoding_type='path'):
-    
-    spec = arch.get_spec()
-
+def encode_101_spec(spec,  encoding_type='path'):
     if encoding_type == 'path':
         return encode_paths(spec=spec)
     
@@ -175,3 +172,7 @@ def encode_101(arch, encoding_type='path'):
         print('{} is not yet implemented as an encoding type \
          for nb101'.format(encoding_type))
         raise NotImplementedError()
+
+def encode_101(arch, encoding_type='path'):
+    spec = arch.get_spec()
+    return encode_101_spec(spec, encoding_type)
