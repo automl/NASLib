@@ -34,6 +34,7 @@ class NasBench101SearchSpace(Graph):
         self.space_name = "nasbench101"
         self.spec = None
         self.labeled_archs = None
+        self.instantiate_model = True
 
         self.add_edge(1, 2)
 
@@ -166,8 +167,9 @@ class NasBench101SearchSpace(Graph):
 
         self.spec = spec
         
-        # model = convert_spec_to_model(self.spec)
-        # self.edges[1, 2].set('op', model)
+        if self.instantiate_model == True:
+            model = convert_spec_to_model(self.spec)
+            self.edges[1, 2].set('op', model)
 
     def get_arch_iterator(self, dataset_api=None):        
         return dataset_api["nb101_data"].hash_iterator()
