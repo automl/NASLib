@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH -p bosch_cpu-cascadelake #,ml_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
-#SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -a 0-15624:5210 # array size
-#SBATCH --mem=10G
+#SBATCH -o logs/%x.memMEM_FOR_JOB.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
+#SBATCH -e logs/%x.memMEM_FOR_JOB.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
+#SBATCH -a JOB_ARRAY_RANGE # array size
+#SBATCH --mem=MEM_FOR_JOB
 #SBATCH --job-name="THE_JOB_NAME"
 
 echo "Workingdir: $PWD";
@@ -15,7 +15,7 @@ dataset=$2
 predictor=$3
 start_seed=$4
 experiment=$5
-N_MODELS=5210
+N_MODELS=JOB_N_MODELS
 
 if [ -z "$searchspace" ]
 then
