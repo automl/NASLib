@@ -7,6 +7,7 @@ from naslib.optimizers.discrete.bananas.acquisition_functions import acquisition
 
 from naslib.predictors.ensemble import Ensemble
 from naslib.predictors import ZeroCost
+from naslib.predictors.utils.encodings import encode_spec
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -68,7 +69,7 @@ class Bananas(MetaOptimizer):
         zc_scores = {}
 
         for predictor in predictors:
-            score = zc_api[self.get_arch_as_string(arch)][predictor]['score']
+            score = zc_api[str(arch)][predictor]['score']
 
             if float("-inf") == score:
                 score = -1e9
@@ -80,13 +81,15 @@ class Bananas(MetaOptimizer):
         return zc_scores
 
     def _sample_new_model(self):
+        self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
+
         model = torch.nn.Module()
-        model.arch = self.search_space.clone()
-        model.arch.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
-        model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
+        model.arch_hash = self.search_space.get_hash()
+        model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
+        model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
 
         if self.zc:
-            model.zc_scores = self.query_zc_scores(model.arch.get_hash(), self.zc_names, self.zc_api)
+            model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
 
         self.train_data.append(model)
         self._update_history(model)
@@ -118,9 +121,13 @@ class Bananas(MetaOptimizer):
         if self.acq_fn_optimization == 'random_sampling':
 
             for _ in range(self.num_candidates):
+                self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
+
                 model = torch.nn.Module()
-                model.arch = self.search_space.clone()
-                model.arch.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
+                model.arch_hash = self.search_space.get_hash()
+                model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
+                model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
+
                 candidates.append(model)
 
         elif self.acq_fn_optimization == 'mutation':
@@ -146,7 +153,7 @@ class Bananas(MetaOptimizer):
     def _get_best_candidates(self, candidates, acq_fn):
         if self.zc:
             for model in candidates:
-                model.zc_scores = self.query_zc_scores(model.arch.get_hash(), self.zc_names, self.zc_api)
+                model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
 
             values = [acq_fn(model.arch, [{'zero_cost_scores' : model.zc_scores}]) for model in candidates]
         else:
@@ -178,10 +185,10 @@ class Bananas(MetaOptimizer):
             # train the next architecture chosen by the neural predictor
             # model = torch.nn.Module()
             model = self.next_batch.pop()
-            model.accuracy = model.arch.query(self.performance_metric, self.dataset, dataset_api=self.dataset_api)
+            model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
 
             if self.zc and len(self.train_data) <= self.max_zerocost:
-                model.zc_scores = self.query_zc_scores(model.arch.get_hash(), self.zc_names, self.zc_api)
+                model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
 
             self._update_history(model)
             self.train_data.append(model)
@@ -197,19 +204,21 @@ class Bananas(MetaOptimizer):
 
     def train_statistics(self):
         best_arch = self.get_final_architecture()
+        # self.search_space.set_spec(best_arch)
         return (
-            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api),
-            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api),
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api),
-            best_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api),
+            -1,
+            self.zc_api[str(best_arch)]['val_accuracy'],
+            -1,
+            -1,
         )
 
     def test_statistics(self):
-        best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
+        # best_arch = self.get_final_architecture()
+        # self.search_space.set_spec(best_arch)
+        return {}
 
     def get_final_architecture(self):
-        return max(self.history, key=lambda x: x.accuracy).arch
+        return max(self.history, key=lambda x: x.accuracy).arch_hash
 
     def get_op_optimizer(self):
         raise NotImplementedError()
