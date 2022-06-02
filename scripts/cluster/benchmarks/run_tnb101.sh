@@ -12,18 +12,18 @@ fi
 
 if [ -z "$predictor" ];
 then
-    predictors=(fisher grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
-    memory=(    32G    32G       64G   32G   32G  32G     32G     5G    5G     32G    32G      32G)
+    predictors=(fisher) #grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
+    memory=(    64G)    #32G       64G   32G   32G  32G     32G     5G    5G     32G    32G      32G)
 else
     predictors=($predictor)
 fi
 
-searchspaces=(transbench101_macro) # transbench101_micro)
+searchspaces=(transbench101_micro) # transbench101_macro)
 datasets=(autoencoder class_object class_scene normal jigsaw room_layout segmentsemantic)
 
 start=0
-end=3256
-n_models=3256
+end=4095
+n_models=4096
 range=${start}-${end}:${n_models}
 
 sed -i "s/JOB_ARRAY_RANGE/$range/" ./scripts/cluster/benchmarks/run.sh
@@ -62,5 +62,6 @@ do
     done
 done
 
+# Restore placeholders
 sed -i "s/#SBATCH -a $range/#SBATCH -a JOB_ARRAY_RANGE/" ./scripts/cluster/benchmarks/run.sh
 sed -i "s/N_MODELS=$n_models/N_MODELS=JOB_N_MODELS/" ./scripts/cluster/benchmarks/run.sh
