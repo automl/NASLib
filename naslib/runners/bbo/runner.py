@@ -2,7 +2,7 @@ import os
 import logging
 
 from naslib.defaults.trainer import Trainer
-from naslib.optimizers import Bananas
+from naslib.optimizers import Bananas, Npenas
 
 from naslib.search_spaces import get_search_space
 from naslib.utils import utils, setup_logger, get_dataset_api, get_zc_benchmark_api
@@ -33,7 +33,8 @@ search_space = get_search_space(config.search_space, config.dataset)
 search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
 
 supported_optimizers = {
-    'bananas': Bananas(config, zc_api=zc_api)
+    'bananas': Bananas(config, zc_api=zc_api),
+    'npenas': Npenas(config, zc_api=zc_api)
 }
 
 utils.set_seed(config.seed)
