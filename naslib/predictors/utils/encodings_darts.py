@@ -267,10 +267,7 @@ def encode_gcn(arch):
     }
     return dic
 
-def encode_darts(arch, encoding_type='path'):
-    
-    compact = arch.get_compact()
-
+def encode_darts_compact(compact, encoding_type='path'):
     if encoding_type == 'path':
         return encode_paths(arch=compact)
     
@@ -293,3 +290,7 @@ def encode_darts(arch, encoding_type='path'):
         print('{} is not yet implemented as an encoding type \
          for darts'.format(encoding_type))
         raise NotImplementedError()
+
+def encode_darts(arch, encoding_type='path'):
+    compact = arch.get_compact()
+    return encode_darts_compact(compact, encoding_type)

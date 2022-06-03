@@ -48,9 +48,12 @@ def convert_spec_to_tuple(spec):
     return tup
 
 def convert_tuple_to_spec(tup):
-
-    matrix_vals = tup[:-NUM_VERTICES]
-    matrix = np.array(matrix_vals).reshape(NUM_VERTICES, NUM_VERTICES)
-    ops = [all_ops[t] for t in tup[-NUM_VERTICES:]]
+    l = len(tup)
+    # l = n*n + n
+    n = int(-0.5 + np.sqrt(1 + 4*l)/2)
+    matrix_vals = tup[:-n]
+    matrix = np.array(matrix_vals).reshape(n, n)
+    ops = [all_ops[t] for t in tup[-n:]]
 
     return {"matrix": matrix, "ops": ops}
+
