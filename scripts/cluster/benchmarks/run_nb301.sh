@@ -12,11 +12,11 @@ fi
 
 if [ -z "$predictor" ];
 then
-    # predictors=(fisher grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
-    # memory=(    32G    32G       32G   32G   32G  32G     32G     5G    5G     32G   32G     32G)
+    predictors=(zen) #fisher  grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
+    memory=(    32G)  #64G     32G       64G   32G   32G  32G     32G     5G    5G     32G   32G     32G)
 
-    predictors=(nwot)
-    memory=(64G)
+    # predictors=(nwot)
+    # memory=(64G)
 else
     predictors=($predictor)
 fi
@@ -42,6 +42,7 @@ do
         sed -i "s/MEM_FOR_JOB/$mem/" ./scripts/cluster/benchmarks/run.sh
         sed -i "s/THE_JOB_NAME/${searchspace}-${dataset}-${pred}/" ./scripts/cluster/benchmarks/run.sh
 
+        echo $pred $dataset
         sbatch ./scripts/cluster/benchmarks/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
         # cat ./scripts/cluster/benchmarks/run.sh # $searchspace $dataset $pred $start_seed $experiment --bosch
 

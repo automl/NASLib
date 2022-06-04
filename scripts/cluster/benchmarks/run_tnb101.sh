@@ -12,8 +12,8 @@ fi
 
 if [ -z "$predictor" ];
 then
-    predictors=(fisher) #grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
-    memory=(    64G)    #32G       64G   32G   32G  32G     32G     5G    5G     32G    32G      32G)
+    predictors=(zen) #fisher  grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
+    memory=(    32G)  #64G     32G       64G   32G   32G  32G     32G     5G    5G     32G   32G     32G)
 else
     predictors=($predictor)
 fi
@@ -23,7 +23,7 @@ datasets=(autoencoder class_object class_scene normal jigsaw room_layout segment
 
 start=0
 end=4095
-n_models=4096
+n_models=1000
 range=${start}-${end}:${n_models}
 
 sed -i "s/JOB_ARRAY_RANGE/$range/" ./scripts/cluster/benchmarks/run.sh
