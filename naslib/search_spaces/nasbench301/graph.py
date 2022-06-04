@@ -516,6 +516,22 @@ class NasBench301SearchSpace(Graph):
     def get_loss_fn(self):
         return F.cross_entropy
 
+    def forward_before_global_avg_pool(self, x):
+        outputs = []
+        def hook_fn(module, inputs, output_t):
+            # print(f'Input tensor shape: {inputs[0].shape}')
+            # print(f'Output tensor shape: {output_t.shape}')
+            outputs.append(inputs[0])
+
+        for m in self.modules():
+            if isinstance(m, torch.nn.AdaptiveAvgPool2d):
+                m.register_forward_hook(hook_fn)
+
+        self.forward(x, None)
+
+        assert len(outputs) == 1
+        return outputs[0]
+
 
 def channel_concat(tensors):
     return torch.cat(tensors, dim=1)

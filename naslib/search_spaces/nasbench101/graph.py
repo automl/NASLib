@@ -281,6 +281,20 @@ class NasBench101SearchSpace(Graph):
     def get_type(self):
         return "nasbench101"
 
+    def forward_before_global_avg_pool(self, x):
+        outputs = []
+        def hook_fn(module, input_t, output_t):
+            # print(f'Input tensor shape: {input_t[0].shape}')
+            # print(f'Output tensor shape: {output_t.shape}')
+            outputs.append(output_t)
+
+        model = self.edges[1, 2]['op'].model
+        model.layers[-1].register_forward_hook(hook_fn)
+
+        self.forward(x, None)
+
+        assert len(outputs) == 1
+        return outputs[0]
 
 def get_utilized(matrix):
     # return the sets of utilized edges and nodes
