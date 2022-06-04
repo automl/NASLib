@@ -38,16 +38,22 @@ class ZeroCostV2(Predictor):
         self.dataload = "random"
         self.num_imgs_or_batches = 1
         self.method_type = method_type
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda:0" if torch.cuda.is_available() else "cpu")
         config.data = "{}/data".format(get_project_root())
         self.config = config
-        num_classes_dic = {"cifar10": 10, "cifar100": 100, "ImageNet16-120": 120}
+        num_classes_dic = {
+            "cifar10": 10,
+            "cifar100": 100,
+            "ImageNet16-120": 120
+        }
         self.num_classes = None
         if self.config.dataset in num_classes_dic:
             self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
-        self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode="train")
+        self.train_loader, _, _, _, _ = get_train_val_loaders(self.config,
+                                                              mode="train")
 
     def query(self, xtest, info=None):
 
@@ -56,7 +62,7 @@ class ZeroCostV2(Predictor):
         for test_arch in xtest:
             count += 1
             logger.info("zero cost: {} of {}".format(count, len(xtest)))
-            
+
             if "nasbench201" in self.config.search_space:
                 ops_to_nb201 = {
                     "AvgPool1x1": "avg_pool_3x3",
@@ -84,8 +90,8 @@ class ZeroCostV2(Predictor):
                     "num_classes": self.num_classes,
                 }
                 network = nas201_arch.get_model_from_arch_str(
-                    arch_str, self.num_classes
-                )  # create the network from configuration
+                    arch_str,
+                    self.num_classes)  # create the network from configuration
                 # zero-cost-proxy author has the following checking lines (which I think might be optional)
                 arch_str2 = nas201_arch.get_arch_str_from_model(network)
                 if arch_str != arch_str2:
@@ -94,8 +100,6 @@ class ZeroCostV2(Predictor):
                     )
                     measure_score = -10e8
                     return measure_score
-                
-            
 
             elif "darts" in self.config.search_space:
                 test_genotype = convert_compact_to_genotype(test_arch.compact)
@@ -110,9 +114,8 @@ class ZeroCostV2(Predictor):
                 network = NetworkCIFAR(arch_config)
 
             elif "nasbench101" in self.config.search_space:
-                spec = nasbench1_spec._ToModelSpec(
-                    test_arch.spec["matrix"], test_arch.spec["ops"]
-                )
+                spec = nasbench1_spec._ToModelSpec(test_arch.spec["matrix"],
+                                                   test_arch.spec["ops"])
                 network = nas101_arch.Network(
                     spec,
                     stem_out=128,
@@ -141,7 +144,7 @@ class ZeroCostV2(Predictor):
             network = network.to(self.device)
 
             # todo: rearrange the if statements so that nb101/201/darts can use this code as well:
-            try: # useful when launching bash scripts            
+            try:  # useful when launching bash scripts
                 if self.method_type in ['flops', 'params']:
                     """
                     This code is from
@@ -150,12 +153,15 @@ class ZeroCostV2(Predictor):
                     data_iterator = iter(self.train_loader)
                     x, target = next(data_iterator)
                     x_shape = list(x.shape)
-                    x_shape[0] = 1 # to prevent overflow errors with large batch size we will use a batch size of 1
-                    model_stats = get_model_stats(network, input_tensor_shape=x_shape, clone_model=True)
+                    x_shape[
+                        0] = 1  # to prevent overflow errors with large batch size we will use a batch size of 1
+                    model_stats = get_model_stats(network,
+                                                  input_tensor_shape=x_shape,
+                                                  clone_model=True)
 
                     # important to do to avoid overflow
-                    mega_flops = float(model_stats.Flops)/1e6
-                    mega_params = float(model_stats.parameters)/1e6
+                    mega_flops = float(model_stats.Flops) / 1e6
+                    mega_params = float(model_stats.parameters) / 1e6
 
                     if self.method_type == 'params':
                         score = mega_params
@@ -167,12 +173,13 @@ class ZeroCostV2(Predictor):
                     score = predictive.find_measures(
                         network,
                         self.train_loader,
-                        (self.dataload, self.num_imgs_or_batches, self.num_classes),
+                        (self.dataload, self.num_imgs_or_batches,
+                         self.num_classes),
                         self.device,
                         loss_fn=loss_fn,
                         measure_names=[self.method_type],
                     )
-            except: # useful when launching bash scripts
+            except:  # useful when launching bash scripts
                 print('find_measures failed')
                 score = -1e8
 
@@ -180,16 +187,14 @@ class ZeroCostV2(Predictor):
             if math.isnan(score):
                 score = -1e8
 
-            if (
-                "nasbench101" in self.config.search_space
-                and self.method_type == "jacov"
-            ):
+            if ("nasbench101" in self.config.search_space
+                    and self.method_type == "jacov"):
                 score = -score
             elif "darts" in self.config.search_space and self.method_type in [
-                "fisher",
-                "grad_norm",
-                "synflow",
-                "snip",
+                    "fisher",
+                    "grad_norm",
+                    "synflow",
+                    "snip",
             ]:
                 score = -score
 

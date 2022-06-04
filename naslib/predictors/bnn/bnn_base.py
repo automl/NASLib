@@ -7,11 +7,13 @@ from naslib.predictors.predictor import Predictor
 
 
 class BNN(Predictor):
-    def __init__(self, encoding_type="adjacency_one_hot", 
-                 ss_type="nasbench201", hparams_from_file=None):
+    def __init__(self,
+                 encoding_type="adjacency_one_hot",
+                 ss_type="nasbench201",
+                 hparams_from_file=None):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
-        self.hparams_from_file=hparams_from_file
+        self.hparams_from_file = hparams_from_file
 
     def get_model(self, **kwargs):
         return NotImplementedError("Model needs to be defined.")
@@ -21,12 +23,11 @@ class BNN(Predictor):
 
     def fit(self, xtrain, ytrain, train_info=None, **kwargs):
         if self.encoding_type is not None:
-            _xtrain = np.array(
-                [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-                    for arch in xtrain
-                ]
-            )
+            _xtrain = np.array([
+                encode(arch,
+                       encoding_type=self.encoding_type,
+                       ss_type=self.ss_type) for arch in xtrain
+            ])
         else:
             _xtrain = xtrain
         _ytrain = np.array(ytrain)
@@ -34,7 +35,8 @@ class BNN(Predictor):
         self.model = self.get_model(**kwargs)
         if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
         and os.path.exists(self.hparams_from_file):
-            self.num_steps = json.load(open(self.hparams_from_file, 'rb'))['bohamiann']['num_steps']
+            self.num_steps = json.load(open(self.hparams_from_file,
+                                            'rb'))['bohamiann']['num_steps']
             print('loaded hyperparams from', self.hparams_from_file)
         else:
             self.num_steps = 100
@@ -46,12 +48,11 @@ class BNN(Predictor):
 
     def query(self, xtest, info=None):
         if self.encoding_type is not None:
-            test_data = np.array(
-                [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-                    for arch in xtest
-                ]
-            )
+            test_data = np.array([
+                encode(arch,
+                       encoding_type=self.encoding_type,
+                       ss_type=self.ss_type) for arch in xtest
+            ])
         else:
             test_data = xtest
 

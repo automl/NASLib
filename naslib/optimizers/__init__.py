@@ -1,4 +1,5 @@
 from .oneshot.darts.optimizer import DARTSOptimizer
+from .oneshot.configurable.optimizer import ConfigurableOptimizer
 from .oneshot.gsparsity.optimizer import GSparseOptimizer
 from .oneshot.oneshot_train.optimizer import OneShotNASOptimizer
 from .oneshot.rs_ws.optimizer import RandomNASOptimizer

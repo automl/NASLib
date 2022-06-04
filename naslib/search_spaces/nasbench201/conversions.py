@@ -67,8 +67,9 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
 
         chosen_op = primitives[edge.data.op_index]
         primitives[edge.data.op_index] = update_batchnorms(chosen_op)
-
+        #print("Before",edge.data)
         edge.data.set("op", primitives[edge.data.op_index])
+        #print("After",edge.data)
         edge.data.set("primitives", primitives)  # store for later use
 
     def update_batchnorms(op: AbstractPrimitive) -> AbstractPrimitive:
@@ -91,7 +92,7 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
 
         new_op = type(op)(**init_params)
         return new_op
-
+    
     naslib_object.update_edges(
         add_op_index, scope=naslib_object.OPTIMIZER_SCOPE, private_edge_data=False
     )
@@ -99,6 +100,7 @@ def convert_op_indices_to_naslib(op_indices, naslib_object):
     naslib_object.update_edges(
         update_ops, scope=naslib_object.OPTIMIZER_SCOPE, private_edge_data=True
     )
+    
 
 
 def convert_naslib_to_str(naslib_object):

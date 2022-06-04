@@ -56,34 +56,30 @@ class DirectedGraphConvolution(nn.Module):
 
     def forward(self, inputs, adj):
         norm_adj = normalize_adj(adj)
-        output1 = F.relu(torch.matmul(norm_adj, torch.matmul(inputs, self.weight1)))
+        output1 = F.relu(
+            torch.matmul(norm_adj, torch.matmul(inputs, self.weight1)))
         inv_norm_adj = normalize_adj(adj.transpose(1, 2))
-        output2 = F.relu(torch.matmul(inv_norm_adj, torch.matmul(inputs, self.weight2)))
+        output2 = F.relu(
+            torch.matmul(inv_norm_adj, torch.matmul(inputs, self.weight2)))
         out = (output1 + output2) / 2
         out = self.dropout(out)
         return out
 
     def __repr__(self):
-        return (
-            self.__class__.__name__
-            + " ("
-            + str(self.in_features)
-            + " -> "
-            + str(self.out_features)
-            + ")"
-        )
+        return (self.__class__.__name__ + " (" + str(self.in_features) +
+                " -> " + str(self.out_features) + ")")
 
 
 class NeuralPredictorModel(nn.Module):
-    def __init__(
-        self, initial_hidden=-1, gcn_hidden=144, gcn_layers=4, linear_hidden=128
-    ):
+    def __init__(self,
+                 initial_hidden=-1,
+                 gcn_hidden=144,
+                 gcn_layers=4,
+                 linear_hidden=128):
         super().__init__()
         self.gcn = [
-            DirectedGraphConvolution(
-                initial_hidden if i == 0 else gcn_hidden, gcn_hidden
-            )
-            for i in range(gcn_layers)
+            DirectedGraphConvolution(initial_hidden if i == 0 else gcn_hidden,
+                                     gcn_hidden) for i in range(gcn_layers)
         ]
         self.gcn = nn.ModuleList(self.gcn)
         self.dropout = nn.Dropout(0.1)
@@ -102,8 +98,8 @@ class NeuralPredictorModel(nn.Module):
         gs = adj.size(1)  # graph node number
 
         adj_with_diag = normalize_adj(
-            adj + torch.eye(gs, device=adj.device)
-        )  # assuming diagonal is not 1
+            adj +
+            torch.eye(gs, device=adj.device))  # assuming diagonal is not 1
         for layer in self.gcn:
             out = layer(out, adj_with_diag)
         out = graph_pooling(out, numv)
@@ -161,17 +157,18 @@ class GCNPredictor(Predictor):
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = encode(arch,
+                             encoding_type=self.encoding_type,
+                             ss_type=self.ss_type)
             encoded["val_acc"] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
 
         self.model = self.get_model(gcn_hidden=gcn_hidden)
-        data_loader = DataLoader(
-            train_data, batch_size=batch_size, shuffle=True, drop_last=True
-        )
+        data_loader = DataLoader(train_data,
+                                 batch_size=batch_size,
+                                 shuffle=True,
+                                 drop_last=True)
 
         self.model.to(device)
         criterion = nn.MSELoss().to(device)
@@ -190,9 +187,11 @@ class GCNPredictor(Predictor):
                 loss.backward()
                 optimizer.step()
                 mse = accuracy_mse(prediction, target)
-                meters.update(
-                    {"loss": loss.item(), "mse": mse.item()}, n=target.size(0)
-                )
+                meters.update({
+                    "loss": loss.item(),
+                    "mse": mse.item()
+                },
+                              n=target.size(0))
 
             lr_scheduler.step()
         train_pred = np.squeeze(self.query(xtrain))
@@ -200,12 +199,11 @@ class GCNPredictor(Predictor):
         return train_error
 
     def query(self, xtest, info=None, eval_batch_size=1000):
-        test_data = np.array(
-            [
-                encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-                for arch in xtest
-            ]
-        )
+        test_data = np.array([
+            encode(arch,
+                   encoding_type=self.encoding_type,
+                   ss_type=self.ss_type) for arch in xtest
+        ])
         test_data_loader = DataLoader(test_data, batch_size=eval_batch_size)
 
         self.model.eval()

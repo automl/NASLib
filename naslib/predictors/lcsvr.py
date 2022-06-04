@@ -22,13 +22,13 @@ def loguniform(low=0, high=1, size=None):
 
 class SVR_Estimator(Predictor):
     def __init__(
-        self,
-        metric=Metric.VAL_ACCURACY,
-        all_curve=True,
-        model_name="svr",
-        best_hyper=None,
-        n_hypers=1000,
-        require_hyper=True,
+            self,
+            metric=Metric.VAL_ACCURACY,
+            all_curve=True,
+            model_name="svr",
+            best_hyper=None,
+            n_hypers=1000,
+            require_hyper=True,
     ):
 
         self.n_hypers = n_hypers
@@ -72,9 +72,10 @@ class SVR_Estimator(Predictor):
             for i in range(self.n_hypers):
                 # define model
                 if self.model_name == "svr":
-                    model = NuSVR(
-                        C=hyper[i, 0], nu=hyper[i, 1], gamma=hyper[i, 2], kernel="rbf"
-                    )
+                    model = NuSVR(C=hyper[i, 0],
+                                  nu=hyper[i, 1],
+                                  gamma=hyper[i, 2],
+                                  kernel="rbf")
 
                 elif self.model_name == "blr":
                     model = BayesianRidge(
@@ -85,9 +86,9 @@ class SVR_Estimator(Predictor):
                     )
 
                 elif self.model_name == "rf":
-                    model = RandomForestRegressor(
-                        n_estimators=int(hyper[i, 0]), max_features=hyper[i, 1]
-                    )
+                    model = RandomForestRegressor(n_estimators=int(
+                        hyper[i, 0]),
+                                                  max_features=hyper[i, 1])
 
                 # perform cross validation to learn the best hyper value
                 scores = cross_val_score(model, xtrain_data, y_train, cv=3)
@@ -123,9 +124,9 @@ class SVR_Estimator(Predictor):
             )
 
         elif self.model_name == "rf":
-            best_model = RandomForestRegressor(
-                n_estimators=int(self.best_hyper[0]), max_features=self.best_hyper[1]
-            )
+            best_model = RandomForestRegressor(n_estimators=int(
+                self.best_hyper[0]),
+                                               max_features=self.best_hyper[1])
 
         best_model.fit(xtrain_data, y_train)
         self.best_model = best_model
@@ -197,7 +198,9 @@ class SVR_Estimator(Predictor):
         for i in range(len(info)):
             acc_metric = info[i]["lc"]
             if self.require_hyperparameters:
-                arch_hp = [info[i][hp] for hp in ["flops", "latency", "params"]]
+                arch_hp = [
+                    info[i][hp] for hp in ["flops", "latency", "params"]
+                ]
                 arch_params.append(arch_hp)
             val_acc_curve.append(acc_metric)
         return self.collate_inputs(val_acc_curve, arch_params)

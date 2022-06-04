@@ -14,7 +14,7 @@ class BOHAMIANN(BNN):
             get_network=get_default_network,
             sampling_method="adaptive_sghmc",
             use_double_precision=True,
-            metrics=(nn.MSELoss,),
+            metrics=(nn.MSELoss, ),
             likelihood_function=nll,
             print_every_n_steps=10,
             normalize_input=False,

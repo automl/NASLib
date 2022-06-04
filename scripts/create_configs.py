@@ -11,15 +11,15 @@ def main(args):
     if args.config_type == 'bbo-bs':
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
-        num_config = 100 
-        
+        num_config = 100
+
         # first generate the default config at config 0
         config_id = 0
-        
+
         base_folder = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
         folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
-        os.makedirs(folder, exist_ok=True)       
-            
+        os.makedirs(folder, exist_ok=True)
+
         for seed in range(args.start_seed, args.start_seed + args.trials):
             np.random.seed(seed)
             random.seed(seed)
@@ -35,7 +35,7 @@ def main(args):
                     "sample_size": 10,
                     "population_size": 50,
                     "num_init": 10,
-                    "k":10,
+                    "k": 10,
                     "num_ensemble": 3,
                     "acq_fn_type": "its",
                     "num_arches_to_mutate": 1,
@@ -57,7 +57,6 @@ def main(args):
                 },
             }
 
-
             path = folder + f"/seed_{seed}.yaml"
 
             with open(path, "w") as fh:
@@ -66,8 +65,7 @@ def main(args):
         for config_id in range(1, num_config):
             folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
             os.makedirs(folder, exist_ok=True)
-            
-            
+
             for seed in range(args.start_seed, args.start_seed + args.trials):
                 np.random.seed(seed)
                 random.seed(seed)
@@ -84,14 +82,16 @@ def main(args):
                         "epochs": args.epochs,
                         "fidelity": args.fidelity,
                         "sample_size": int(np.random.choice(range(5, 100))),
-                        "population_size": int(np.random.choice(range(5, 100))),
+                        "population_size": int(np.random.choice(range(5,
+                                                                      100))),
                         "num_init": int(np.random.choice(range(5, 100))),
-                        "k":int(np.random.choice(range(10, 50))),
+                        "k": int(np.random.choice(range(10, 50))),
                         "num_ensemble": 3,
                         "acq_fn_type": "its",
                         "acq_fn_optimization": args.acq_fn_optimization,
                         "encoding_type": "path",
-                        "num_arches_to_mutate": int(np.random.choice(range(1, 20))),
+                        "num_arches_to_mutate":
+                        int(np.random.choice(range(1, 20))),
                         "max_mutations": int(np.random.choice(range(1, 20))),
                         "num_candidates": int(np.random.choice(range(5, 50))),
                         "predictor": args.predictor,
@@ -99,12 +99,11 @@ def main(args):
                     },
                 }
 
-
                 path = folder + f"/seed_{seed}.yaml"
 
                 with open(path, "w") as fh:
                     yaml.dump(config, fh)
-    
+
     elif args.config_type == "predictor-bs":
         folder = f"naslib/configs/predictors-bs/configs_{args.search_space}/{args.dataset}"
         os.makedirs(folder, exist_ok=True)
@@ -120,14 +119,15 @@ def main(args):
             total_epochs = 96 - 1
         elif args.search_space == "nlp":
             total_epochs = 50 - 1
-        elif args.search_space in ["transbench101_micro", "transnasbench101_macro"]:
+        elif args.search_space in [
+                "transbench101_micro", "transnasbench101_macro"
+        ]:
             total_epochs = 10
         elif args.search_spaze == "asr":
             total_epochs = 40
 
         train_size_list = [
-            int(j)
-            for j in np.logspace(
+            int(j) for j in np.logspace(
                 start=np.log(5.1) / np.log(2),
                 stop=np.log(max_train_size) / np.log(2),
                 num=11,
@@ -136,8 +136,7 @@ def main(args):
             )
         ]
         fidelity_list = [
-            int(j)
-            for j in np.logspace(
+            int(j) for j in np.logspace(
                 start=0.9,
                 stop=np.log(total_epochs) / np.log(2),
                 num=15,
@@ -172,7 +171,8 @@ def main(args):
                 "max_hpo_time": 900,
             }
 
-            with open(folder + f"/config_{args.predictor}_{i}.yaml", "w") as fh:
+            with open(folder + f"/config_{args.predictor}_{i}.yaml",
+                      "w") as fh:
                 yaml.dump(config, fh)
 
     elif args.config_type == "nas":
@@ -241,8 +241,7 @@ def main(args):
             max_train_size = 1000
 
         train_size_list = [
-            int(j)
-            for j in np.logspace(
+            int(j) for j in np.logspace(
                 start=np.log(5.1) / np.log(2),
                 stop=np.log(max_train_size) / np.log(2),
                 num=11,
@@ -252,8 +251,7 @@ def main(args):
         ]
         # train_size_list = [i for i in train_size_list if i < 230]
         fidelity_list = [
-            int(j)
-            for j in np.logspace(
+            int(j) for j in np.logspace(
                 start=0.9,
                 stop=np.log(total_epochs) / np.log(2),
                 num=15,
@@ -299,7 +297,8 @@ def main(args):
                 "max_hpo_time": args.max_hpo_time,
             }
 
-            with open(folder + f"/config_{args.predictor}_{i}.yaml", "w") as fh:
+            with open(folder + f"/config_{args.predictor}_{i}.yaml",
+                      "w") as fh:
                 yaml.dump(config, fh)
 
     elif args.config_type == "nas_predictor":
@@ -377,14 +376,30 @@ if __name__ == "__main__":
     """This is executed when run from the command line"""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--start_seed", type=int, default=0, help="starting seed")
-    parser.add_argument("--trials", type=int, default=100, help="Number of trials")
-    parser.add_argument("--optimizer", type=str, default="rs", help="which optimizer")
-    parser.add_argument("--predictor_type", type=str, default="full", help="which predictor")
-    parser.add_argument("--predictor", type=str, default="bananas", help="which predictor")
-    parser.add_argument(
-        "--test_size", type=int, default=30, help="Test set size for predictor"
-    )
+    parser.add_argument("--start_seed",
+                        type=int,
+                        default=0,
+                        help="starting seed")
+    parser.add_argument("--trials",
+                        type=int,
+                        default=100,
+                        help="Number of trials")
+    parser.add_argument("--optimizer",
+                        type=str,
+                        default="rs",
+                        help="which optimizer")
+    parser.add_argument("--predictor_type",
+                        type=str,
+                        default="full",
+                        help="which predictor")
+    parser.add_argument("--predictor",
+                        type=str,
+                        default="bananas",
+                        help="which predictor")
+    parser.add_argument("--test_size",
+                        type=int,
+                        default=30,
+                        help="Test set size for predictor")
     parser.add_argument(
         "--uniform_random",
         type=int,
@@ -397,60 +412,80 @@ if __name__ == "__main__":
         default=10,
         help="Train size if exp type is single",
     )
-    parser.add_argument(
-        "--fidelity_single", type=int, default=5, help="Fidelity if exp type is single"
-    )
-    parser.add_argument(
-        "--fidelity", type=int, default=200, help="Fidelity"
-    )
-    parser.add_argument(
-        "--acq_fn_optimization", type=str, default="mutation", help="acq_fn"
-    )
-    parser.add_argument("--dataset", type=str, default="cifar10", help="Which dataset")
-    parser.add_argument("--out_dir", type=str, default="run", help="Output directory")
-    parser.add_argument(
-        "--checkpoint_freq", type=int, default=5000, help="How often to checkpoint"
-    )
-    parser.add_argument(
-        "--epochs", type=int, default=150, help="How many search epochs"
-    )
-    parser.add_argument(
-        "--config_type", type=str, default="nas", help="nas or predictor?"
-    )
-    parser.add_argument(
-        "--search_space", type=str, default="nasbench201", help="nasbench201 or darts?"
-    )
-    parser.add_argument(
-        "--experiment_type", type=str, default="single", help="type of experiment"
-    )
-    parser.add_argument(
-        "--run_acc_stats", type=int, default=1, help="run accuracy statistics"
-    )
-    parser.add_argument(
-        "--max_set_size", type=int, default=10000, help="size of val_acc stat computation"
-    )    
-    parser.add_argument(
-        "--run_nbhd_size", type=int, default=1, help="run experiment to compute nbhd size"
-    )    
-    parser.add_argument(
-        "--max_nbhd_trials", type=int, default=1000, help="size of nbhd size computation"
-    )
-    parser.add_argument(
-        "--run_autocorr", type=int, default=1, help="run experiment to compute autocorrelation"
-    )
-    parser.add_argument(
-        "--max_autocorr_trials", type=int, default=10, help="number of autocorrelation trials"
-    )
-    parser.add_argument(
-        "--autocorr_size", type=int, default=36, help="size of autocorrelation to test"
-    )
-    parser.add_argument(
-        "--walks", type=int, default=1000, help="number of random walks"
-    )
-    parser.add_argument(
-        "--max_hpo_time", type=int, default=3000, help="HPO time"
-    )
-    
+    parser.add_argument("--fidelity_single",
+                        type=int,
+                        default=5,
+                        help="Fidelity if exp type is single")
+    parser.add_argument("--fidelity", type=int, default=200, help="Fidelity")
+    parser.add_argument("--acq_fn_optimization",
+                        type=str,
+                        default="mutation",
+                        help="acq_fn")
+    parser.add_argument("--dataset",
+                        type=str,
+                        default="cifar10",
+                        help="Which dataset")
+    parser.add_argument("--out_dir",
+                        type=str,
+                        default="run",
+                        help="Output directory")
+    parser.add_argument("--checkpoint_freq",
+                        type=int,
+                        default=5000,
+                        help="How often to checkpoint")
+    parser.add_argument("--epochs",
+                        type=int,
+                        default=150,
+                        help="How many search epochs")
+    parser.add_argument("--config_type",
+                        type=str,
+                        default="nas",
+                        help="nas or predictor?")
+    parser.add_argument("--search_space",
+                        type=str,
+                        default="nasbench201",
+                        help="nasbench201 or darts?")
+    parser.add_argument("--experiment_type",
+                        type=str,
+                        default="single",
+                        help="type of experiment")
+    parser.add_argument("--run_acc_stats",
+                        type=int,
+                        default=1,
+                        help="run accuracy statistics")
+    parser.add_argument("--max_set_size",
+                        type=int,
+                        default=10000,
+                        help="size of val_acc stat computation")
+    parser.add_argument("--run_nbhd_size",
+                        type=int,
+                        default=1,
+                        help="run experiment to compute nbhd size")
+    parser.add_argument("--max_nbhd_trials",
+                        type=int,
+                        default=1000,
+                        help="size of nbhd size computation")
+    parser.add_argument("--run_autocorr",
+                        type=int,
+                        default=1,
+                        help="run experiment to compute autocorrelation")
+    parser.add_argument("--max_autocorr_trials",
+                        type=int,
+                        default=10,
+                        help="number of autocorrelation trials")
+    parser.add_argument("--autocorr_size",
+                        type=int,
+                        default=36,
+                        help="size of autocorrelation to test")
+    parser.add_argument("--walks",
+                        type=int,
+                        default=1000,
+                        help="number of random walks")
+    parser.add_argument("--max_hpo_time",
+                        type=int,
+                        default=3000,
+                        help="HPO time")
+
     args = parser.parse_args()
 
     main(args)

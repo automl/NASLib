@@ -8,7 +8,6 @@ in subsequent work. However, we find this version of jacov tends to perform
 better.
 """
 
-
 import numpy as np
 import torch
 import logging
@@ -49,17 +48,23 @@ class ZeroCostV1(Predictor):
         torch.backends.cudnn.benchmark = False
         self.batch_size = batch_size
         self.method_type = method_type
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda:0" if torch.cuda.is_available() else "cpu")
         config.data = "{}/data".format(get_project_root())
         self.config = config
         if method_type == "jacov":
             self.num_classes = 1
         else:
-            num_classes_dic = {"cifar10": 10, "cifar100": 100, "ImageNet16-120": 120}
+            num_classes_dic = {
+                "cifar10": 10,
+                "cifar100": 100,
+                "ImageNet16-120": 120
+            }
             self.num_classes = num_classes_dic[self.config.dataset]
 
     def pre_process(self):
-        self.train_loader, _, _, _, _ = get_train_val_loaders(self.config, mode="train")
+        self.train_loader, _, _, _, _ = get_train_val_loaders(self.config,
+                                                              mode="train")
 
     def query(self, xtest, info=None):
 
@@ -96,8 +101,7 @@ class ZeroCostV1(Predictor):
                 }
 
                 network = get_cell_based_tiny_net(
-                    arch_config
-                )  # create the network from configuration
+                    arch_config)  # create the network from configuration
 
             elif "darts" in self.config.search_space:
                 test_genotype = convert_compact_to_genotype(test_arch.compact)
@@ -136,8 +140,7 @@ class ZeroCostV1(Predictor):
                 loss.backward()
                 grads = [
                     p.grad.detach().clone().abs()
-                    for p in network.parameters()
-                    if p.grad is not None
+                    for p in network.parameters() if p.grad is not None
                 ]
 
                 with torch.no_grad():

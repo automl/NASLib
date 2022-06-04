@@ -24,25 +24,24 @@ def accuracy_mse(prediction, target, scale=100.0):
 
 class FeedforwardNet(nn.Module):
     def __init__(
-        self,
-        input_dims: int = 5,
-        num_layers: int = 3,
-        layer_width: list = [10, 10, 10],
-        output_dims: int = 1,
-        activation="relu",
+            self,
+            input_dims: int = 5,
+            num_layers: int = 3,
+            layer_width: list = [10, 10, 10],
+            output_dims: int = 1,
+            activation="relu",
     ):
         super(FeedforwardNet, self).__init__()
-        assert (
-            len(layer_width) == num_layers
-        ), "number of widths should be \
+        assert (len(layer_width) == num_layers), "number of widths should be \
         equal to the number of layers"
 
         self.activation = eval("F." + activation)
 
         all_units = [input_dims] + layer_width
-        self.layers = nn.ModuleList(
-            [nn.Linear(all_units[i], all_units[i + 1]) for i in range(num_layers)]
-        )
+        self.layers = nn.ModuleList([
+            nn.Linear(all_units[i], all_units[i + 1])
+            for i in range(num_layers)
+        ])
 
         self.out = nn.Linear(all_units[-1], 1)
 
@@ -65,13 +64,11 @@ class FeedforwardNet(nn.Module):
 
 
 class MLPPredictor(Predictor):
-    def __init__(
-        self,
-        encoding_type="adjacency_one_hot",
-        ss_type="nasbench201",
-        hpo_wrapper=False,
-        hparams_from_file=False
-    ):
+    def __init__(self,
+                 encoding_type="adjacency_one_hot",
+                 ss_type="nasbench201",
+                 hpo_wrapper=False,
+                 hparams_from_file=False):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
@@ -89,11 +86,18 @@ class MLPPredictor(Predictor):
         predictor = FeedforwardNet(**kwargs)
         return predictor
 
-    def fit(self, xtrain, ytrain, train_info=None, epochs=500, loss="mae", verbose=0):
+    def fit(self,
+            xtrain,
+            ytrain,
+            train_info=None,
+            epochs=500,
+            loss="mae",
+            verbose=0):
 
         if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
         and os.path.exists(self.hparams_from_file):
-            self.hyperparams = json.load(open(self.hparams_from_file, 'rb'))['mlp']
+            self.hyperparams = json.load(open(self.hparams_from_file,
+                                              'rb'))['mlp']
             print('loaded hyperparams from', self.hparams_from_file)
         elif self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
@@ -107,12 +111,11 @@ class MLPPredictor(Predictor):
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
         if self.encoding_type is not None:
-            _xtrain = np.array(
-                [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-                    for arch in xtrain
-                ]
-            )
+            _xtrain = np.array([
+                encode(arch,
+                       encoding_type=self.encoding_type,
+                       ss_type=self.ss_type) for arch in xtrain
+            ])
         else:
             _xtrain = xtrain
         _ytrain = np.array(ytrain)
@@ -134,7 +137,9 @@ class MLPPredictor(Predictor):
             layer_width=num_layers * [layer_width],
         )
         self.model.to(device)
-        optimizer = optim.Adam(self.model.parameters(), lr=lr, betas=(0.9, 0.99))
+        optimizer = optim.Adam(self.model.parameters(),
+                               lr=lr,
+                               betas=(0.9, 0.99))
 
         if loss == "mse":
             criterion = nn.MSELoss().to(device)
@@ -153,24 +158,24 @@ class MLPPredictor(Predictor):
 
                 loss_fn = criterion(prediction, target)
                 # add L1 regularization
-                params = torch.cat(
-                    [
-                        x[1].view(-1)
-                        for x in self.model.named_parameters()
-                        if x[0] == "out.weight"
-                    ]
-                )
+                params = torch.cat([
+                    x[1].view(-1) for x in self.model.named_parameters()
+                    if x[0] == "out.weight"
+                ])
                 loss_fn += regularization * torch.norm(params, 1)
                 loss_fn.backward()
                 optimizer.step()
 
                 mse = accuracy_mse(prediction, target)
-                meters.update(
-                    {"loss": loss_fn.item(), "mse": mse.item()}, n=target.size(0)
-                )
+                meters.update({
+                    "loss": loss_fn.item(),
+                    "mse": mse.item()
+                },
+                              n=target.size(0))
 
             if verbose and e % 100 == 0:
-                print("Epoch {}, {}, {}".format(e, meters["loss"], meters["mse"]))
+                print("Epoch {}, {}, {}".format(e, meters["loss"],
+                                                meters["mse"]))
 
         train_pred = np.squeeze(self.query(xtrain))
         train_error = np.mean(abs(train_pred - ytrain))
@@ -178,19 +183,19 @@ class MLPPredictor(Predictor):
 
     def query(self, xtest, info=None, eval_batch_size=None):
         if self.encoding_type is not None:
-            xtest = np.array(
-                [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-                    for arch in xtest
-                ]
-            )
+            xtest = np.array([
+                encode(arch,
+                       encoding_type=self.encoding_type,
+                       ss_type=self.ss_type) for arch in xtest
+            ])
         X_tensor = torch.FloatTensor(xtest).to(device)
         test_data = TensorDataset(X_tensor)
 
-        eval_batch_size = len(xtest) if eval_batch_size is None else eval_batch_size
-        test_data_loader = DataLoader(
-            test_data, batch_size=eval_batch_size, pin_memory=False
-        )
+        eval_batch_size = len(
+            xtest) if eval_batch_size is None else eval_batch_size
+        test_data_loader = DataLoader(test_data,
+                                      batch_size=eval_batch_size,
+                                      pin_memory=False)
 
         self.model.eval()
         pred = []

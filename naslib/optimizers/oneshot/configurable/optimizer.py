@@ -6,7 +6,7 @@ import torch
 import numpy as np
 import logging
 
-from naslib.optimizers.oneshot.configurable.components import AbstractArchitectureSampler, AbstractCombOpModifier, AbstractEdgeOpModifier, NoCombOpModifier, NoEdgeOpModifer, OptimizationStrategy
+from naslib.optimizers.oneshot.configurable.components import AbstractArchitectureSampler, AbstractCombOpModifier, AbstractEdgeOpModifier, NoCombOpModifier, NoEdgeOpModifer, OptimizationStrategy, DARTSSampler
 
 logger = logging.getLogger(__name__)
 

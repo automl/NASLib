@@ -95,12 +95,12 @@ class GraphConvolution(nn.Module):
     """
     Simple GCN layer, similar to https://arxiv.org/abs/1609.02907
     """
-
     def __init__(self, in_features, out_features, bias=True):
         super(GraphConvolution, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = nn.Parameter(torch.FloatTensor(in_features, out_features))
+        self.weight = nn.Parameter(torch.FloatTensor(in_features,
+                                                     out_features))
         if bias:
             self.bias = nn.Parameter(torch.FloatTensor(out_features))
         else:
@@ -122,14 +122,8 @@ class GraphConvolution(nn.Module):
             return output
 
     def __repr__(self):
-        return (
-            self.__class__.__name__
-            + " ("
-            + str(self.in_features)
-            + " -> "
-            + str(self.out_features)
-            + ")"
-        )
+        return (self.__class__.__name__ + " (" + str(self.in_features) +
+                " -> " + str(self.out_features) + ")")
 
 
 # nfeat=7 for nasbench 201
@@ -183,7 +177,11 @@ class BonasPredictor(Predictor):
         if ss_type is not None:
             self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
-        self.default_hyperparams = {"gcn_hidden": 64, "batch_size": 128, "lr": 1e-4}
+        self.default_hyperparams = {
+            "gcn_hidden": 64,
+            "batch_size": 128,
+            "lr": 1e-4
+        }
         self.hyperparams = None
 
     def get_model(self, **kwargs):
@@ -206,23 +204,24 @@ class BonasPredictor(Predictor):
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = encode(arch,
+                             encoding_type=self.encoding_type,
+                             ss_type=self.ss_type)
             encoded["val_acc"] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
         nfeat = len(train_data[0]["operations"][0])
         self.model = self.get_model(gcn_hidden=gcn_hidden, nfeat=nfeat)
-        data_loader = DataLoader(
-            train_data, batch_size=batch_size, shuffle=True, drop_last=False
-        )
+        data_loader = DataLoader(train_data,
+                                 batch_size=batch_size,
+                                 shuffle=True,
+                                 drop_last=False)
         self.model.to(device)
         criterion = nn.MSELoss().to(device)
         optimizer = optim.Adam(self.model.parameters(), lr=lr, weight_decay=wd)
-        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, epochs, eta_min=0
-        )
+        lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer,
+                                                            epochs,
+                                                            eta_min=0)
 
         self.model.train()
 
@@ -241,9 +240,11 @@ class BonasPredictor(Predictor):
                 loss.backward()
                 optimizer.step()
                 mse = accuracy_mse(prediction, target)
-                meters.update(
-                    {"loss": loss.item(), "mse": mse.item()}, n=target.size(0)
-                )
+                meters.update({
+                    "loss": loss.item(),
+                    "mse": mse.item()
+                },
+                              n=target.size(0))
 
             lr_scheduler.step()
         train_pred = np.squeeze(self.query(xtrain))
@@ -251,15 +252,14 @@ class BonasPredictor(Predictor):
         return train_error
 
     def query(self, xtest, info=None, eval_batch_size=100):
-        test_data = np.array(
-            [
-                encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-                for arch in xtest
-            ]
-        )
-        test_data_loader = DataLoader(
-            test_data, batch_size=eval_batch_size, drop_last=False
-        )
+        test_data = np.array([
+            encode(arch,
+                   encoding_type=self.encoding_type,
+                   ss_type=self.ss_type) for arch in xtest
+        ])
+        test_data_loader = DataLoader(test_data,
+                                      batch_size=eval_batch_size,
+                                      drop_last=False)
 
         self.model.eval()
         pred = []

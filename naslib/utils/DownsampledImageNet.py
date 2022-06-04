@@ -82,11 +82,11 @@ class ImageNet16(data.Dataset):
         self.data = np.vstack(self.data).reshape(-1, 3, 16, 16)
         self.data = self.data.transpose((0, 2, 3, 1))  # convert to HWC
         if use_num_of_class_only is not None:
-            assert (
-                isinstance(use_num_of_class_only, int)
-                and use_num_of_class_only > 0
-                and use_num_of_class_only < 1000
-            ), "invalid use_num_of_class_only : {:}".format(use_num_of_class_only)
+            assert (isinstance(use_num_of_class_only, int)
+                    and use_num_of_class_only > 0
+                    and use_num_of_class_only < 1000
+                    ), "invalid use_num_of_class_only : {:}".format(
+                        use_num_of_class_only)
             new_data, new_targets = [], []
             for I, L in zip(self.data, self.targets):
                 if 1 <= L <= use_num_of_class_only:
@@ -128,18 +128,18 @@ class ImageNet16(data.Dataset):
 
 #
 if __name__ == "__main__":
-    train = ImageNet16("/data02/dongxuanyi/.torch/cifar.python/ImageNet16", True, None)
-    valid = ImageNet16("/data02/dongxuanyi/.torch/cifar.python/ImageNet16", False, None)
+    train = ImageNet16("/data02/dongxuanyi/.torch/cifar.python/ImageNet16",
+                       True, None)
+    valid = ImageNet16("/data02/dongxuanyi/.torch/cifar.python/ImageNet16",
+                       False, None)
 
     print(len(train))
     print(len(valid))
     image, label = train[111]
-    trainX = ImageNet16(
-        "/data02/dongxuanyi/.torch/cifar.python/ImageNet16", True, None, 200
-    )
-    validX = ImageNet16(
-        "/data02/dongxuanyi/.torch/cifar.python/ImageNet16", False, None, 200
-    )
+    trainX = ImageNet16("/data02/dongxuanyi/.torch/cifar.python/ImageNet16",
+                        True, None, 200)
+    validX = ImageNet16("/data02/dongxuanyi/.torch/cifar.python/ImageNet16",
+                        False, None, 200)
     print(len(trainX))
     print(len(validX))
     # import pdb; pdb.set_trace()

@@ -20,13 +20,13 @@ from naslib.predictors.omni_seminas import OmniSemiNASPredictor
 
 class Ensemble(Predictor):
     def __init__(
-        self,
-        encoding_type=None,
-        num_ensemble=3,
-        predictor_type=None,
-        ss_type=None,
-        hpo_wrapper=True,
-        config=None,
+            self,
+            encoding_type=None,
+            num_ensemble=3,
+            predictor_type=None,
+            ss_type=None,
+            hpo_wrapper=True,
+            config=None,
     ):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
@@ -41,54 +41,67 @@ class Ensemble(Predictor):
         # TODO: if encoding_type is not None, set the encoding type
 
         trainable_predictors = {
-            "bananas": MLPPredictor(ss_type=self.ss_type, encoding_type="path"),
-            "bayes_lin_reg": BayesianLinearRegression(
-                ss_type=self.ss_type, encoding_type="adjacency_one_hot"
-            ),
-            "bohamiann": BOHAMIANN(
-                ss_type=self.ss_type, encoding_type="adjacency_one_hot"
-            ),
-            "bonas": BonasPredictor(ss_type=self.ss_type, encoding_type="bonas"),
-            "dngo": DNGOPredictor(
-                ss_type=self.ss_type, encoding_type="adjacency_one_hot"
-            ),
-            "lgb": LGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
-            "gcn": GCNPredictor(ss_type=self.ss_type, encoding_type="gcn"),
-            "gp": GPPredictor(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
-            "gpwl": GPWLPredictor(
+            "bananas":
+            MLPPredictor(ss_type=self.ss_type, encoding_type="path"),
+            "bayes_lin_reg":
+            BayesianLinearRegression(ss_type=self.ss_type,
+                                     encoding_type="adjacency_one_hot"),
+            "bohamiann":
+            BOHAMIANN(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
+            "bonas":
+            BonasPredictor(ss_type=self.ss_type, encoding_type="bonas"),
+            "dngo":
+            DNGOPredictor(ss_type=self.ss_type,
+                          encoding_type="adjacency_one_hot"),
+            "lgb":
+            LGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
+            "gcn":
+            GCNPredictor(ss_type=self.ss_type, encoding_type="gcn"),
+            "gp":
+            GPPredictor(ss_type=self.ss_type,
+                        encoding_type="adjacency_one_hot"),
+            "gpwl":
+            GPWLPredictor(
                 ss_type=self.ss_type,
                 kernel_type="wloa",
                 optimize_gp_hyper=True,
                 h="auto",
             ),
-            "mlp": MLPPredictor(
-                ss_type=self.ss_type, encoding_type="adjacency_one_hot"
-            ),
-            "nao": SemiNASPredictor(
-                ss_type=self.ss_type, semi=False, encoding_type="seminas"
-            ),
-            "ngb": NGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
-            "rf": RandomForestPredictor(
-                ss_type=self.ss_type, encoding_type="adjacency_one_hot"
-            ),
-            "seminas": SemiNASPredictor(
-                ss_type=self.ss_type, semi=True, encoding_type="seminas"
-            ),
-            "sparse_gp": SparseGPPredictor(
+            "mlp":
+            MLPPredictor(ss_type=self.ss_type,
+                         encoding_type="adjacency_one_hot"),
+            "nao":
+            SemiNASPredictor(ss_type=self.ss_type,
+                             semi=False,
+                             encoding_type="seminas"),
+            "ngb":
+            NGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
+            "rf":
+            RandomForestPredictor(ss_type=self.ss_type,
+                                  encoding_type="adjacency_one_hot"),
+            "seminas":
+            SemiNASPredictor(ss_type=self.ss_type,
+                             semi=True,
+                             encoding_type="seminas"),
+            "sparse_gp":
+            SparseGPPredictor(
                 ss_type=self.ss_type,
                 encoding_type="adjacency_one_hot",
                 optimize_gp_hyper=True,
             ),
-            "var_sparse_gp": VarSparseGPPredictor(
+            "var_sparse_gp":
+            VarSparseGPPredictor(
                 ss_type=self.ss_type,
                 encoding_type="adjacency_one_hot",
                 optimize_gp_hyper=True,
                 zc=False,
             ),
-            "xgb": XGBoost(
-                ss_type=self.ss_type, zc=False, encoding_type="adjacency_one_hot"
-            ),
-            "omni_ngb": OmniNGBPredictor(
+            "xgb":
+            XGBoost(ss_type=self.ss_type,
+                    zc=False,
+                    encoding_type="adjacency_one_hot"),
+            "omni_ngb":
+            OmniNGBPredictor(
                 zero_cost=["jacov"],
                 lce=[],
                 encoding_type="adjacency_one_hot",
@@ -98,7 +111,8 @@ class Ensemble(Predictor):
                 min_train_size=0,
                 max_zerocost=100,
             ),
-            "omni_seminas": OmniSemiNASPredictor(
+            "omni_seminas":
+            OmniSemiNASPredictor(
                 zero_cost=["jacov"],
                 lce=[],
                 encoding_type="seminas",
@@ -119,9 +133,8 @@ class Ensemble(Predictor):
         if self.ensemble is None:
             self.ensemble = self.get_ensemble()
 
-        if self.hyperparams is None and hasattr(
-            self.ensemble[0], "default_hyperparams"
-        ):
+        if self.hyperparams is None and hasattr(self.ensemble[0],
+                                                "default_hyperparams"):
             # todo: ideally should implement get_default_hyperparams() for all predictors
             self.hyperparams = self.ensemble[0].default_hyperparams.copy()
 
@@ -155,9 +168,8 @@ class Ensemble(Predictor):
         if self.ensemble is None:
             self.ensemble = self.get_ensemble()
 
-        if self.hyperparams is None and hasattr(
-            self.ensemble[0], "default_hyperparams"
-        ):
+        if self.hyperparams is None and hasattr(self.ensemble[0],
+                                                "default_hyperparams"):
             # todo: ideally should implement get_default_hyperparams() for all predictors
             params = self.ensemble[0].default_hyperparams.copy()
 
@@ -170,11 +182,11 @@ class Ensemble(Predictor):
         return params
 
     def set_pre_computations(
-        self,
-        unlabeled=None,
-        xtrain_zc_info=None,
-        xtest_zc_info=None,
-        unlabeled_zc_info=None,
+            self,
+            unlabeled=None,
+            xtrain_zc_info=None,
+            xtest_zc_info=None,
+            unlabeled_zc_info=None,
     ):
         """
         Some predictors have pre_computation steps that are performed outside the
@@ -186,9 +198,8 @@ class Ensemble(Predictor):
             self.ensemble = self.get_ensemble()
 
         for model in self.ensemble:
-            assert hasattr(
-                model, "set_pre_computations"
-            ), "set_pre_computations() not implemented"
+            assert hasattr(model, "set_pre_computations"
+                           ), "set_pre_computations() not implemented"
             model.set_pre_computations(
                 unlabeled=unlabeled,
                 xtrain_zc_info=xtrain_zc_info,

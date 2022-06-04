@@ -29,16 +29,16 @@ def parse_params(params, identifier):
 
 class OmniNGBPredictor(Predictor):
     def __init__(
-        self,
-        zero_cost,
-        lce,
-        encoding_type,
-        ss_type=None,
-        config=None,
-        n_hypers=35,
-        run_pre_compute=True,
-        min_train_size=0,
-        max_zerocost=np.inf,
+            self,
+            zero_cost,
+            lce,
+            encoding_type,
+            ss_type=None,
+            config=None,
+            n_hypers=35,
+            run_pre_compute=True,
+            min_train_size=0,
+            max_zerocost=np.inf,
     ):
 
         self.zero_cost = zero_cost
@@ -63,13 +63,12 @@ class OmniNGBPredictor(Predictor):
 
         if len(self.zero_cost) > 0:
             self.train_loader, _, _, _, _ = utils.get_train_val_loaders(
-                self.config, mode="train"
-            )
+                self.config, mode="train")
 
             for method_name in self.zero_cost:
-                zc_method = ZeroCostV1(
-                    self.config, batch_size=64, method_type=method_name
-                )
+                zc_method = ZeroCostV1(self.config,
+                                       batch_size=64,
+                                       method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 xtrain_zc_scores = zc_method.query(xtrain)
                 xtest_zc_scores = zc_method.query(xtest)
@@ -77,8 +76,10 @@ class OmniNGBPredictor(Predictor):
                 train_mean = np.mean(np.array(xtrain_zc_scores))
                 train_std = np.std((np.array(xtrain_zc_scores)))
 
-                normalized_train = (np.array(xtrain_zc_scores) - train_mean) / train_std
-                normalized_test = (np.array(xtest_zc_scores) - train_mean) / train_std
+                normalized_train = (np.array(xtrain_zc_scores) -
+                                    train_mean) / train_std
+                normalized_test = (np.array(xtest_zc_scores) -
+                                   train_mean) / train_std
 
                 self.xtrain_zc_info[f"{method_name}_scores"] = normalized_train
                 self.xtest_zc_info[f"{method_name}_scores"] = normalized_test
@@ -101,7 +102,8 @@ class OmniNGBPredictor(Predictor):
         for i in range(self.n_hypers):
             params = self.get_random_params()
             for key in ["base:min_samples_leaf", "base:min_samples_split"]:
-                params[key] = max(2, min(params[key], int(len(xtrain) / 3) - 1))
+                params[key] = max(2, min(params[key],
+                                         int(len(xtrain) / 3) - 1))
 
             score = self.cross_validate(xtrain, ytrain, params)
             if score < min_score:
@@ -134,15 +136,11 @@ class OmniNGBPredictor(Predictor):
             if self.run_pre_compute:
                 for key in self.xtrain_zc_info:
                     if train:
-                        full_xdata = [
-                            [*x, self.xtrain_zc_info[key][i]]
-                            for i, x in enumerate(full_xdata)
-                        ]
+                        full_xdata = [[*x, self.xtrain_zc_info[key][i]]
+                                      for i, x in enumerate(full_xdata)]
                     else:
-                        full_xdata = [
-                            [*x, self.xtest_zc_info[key][i]]
-                            for i, x in enumerate(full_xdata)
-                        ]
+                        full_xdata = [[*x, self.xtest_zc_info[key][i]]
+                                      for i, x in enumerate(full_xdata)]
             else:
                 # if the zero_cost scores were not precomputed, they are in info
                 full_xdata = [[*x, info[i]] for i, x in enumerate(full_xdata)]
@@ -152,7 +150,8 @@ class OmniNGBPredictor(Predictor):
             mean = np.mean(train_losses)
             std = np.std(train_losses)
             normalized = (train_losses - mean) / std
-            full_xdata = [[*x, normalized[i]] for i, x in enumerate(full_xdata)]
+            full_xdata = [[*x, normalized[i]]
+                          for i, x in enumerate(full_xdata)]
 
         elif "sotle" in self.lce and len(info[0]["TRAIN_LOSS_lc"]) < 3:
             logger.info("Not enough fidelities to use train loss")
@@ -162,16 +161,17 @@ class OmniNGBPredictor(Predictor):
             mean = np.mean(val_accs)
             std = np.std(val_accs)
             normalized = (val_accs - mean) / std
-            full_xdata = [[*x, normalized[i]] for i, x in enumerate(full_xdata)]
+            full_xdata = [[*x, normalized[i]]
+                          for i, x in enumerate(full_xdata)]
 
         if self.encoding_type is not None:
-            xdata_encoded = np.array(
-                [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
-                    for arch in xdata
-                ]
-            )
-            full_xdata = [[*x, *xdata_encoded[i]] for i, x in enumerate(full_xdata)]
+            xdata_encoded = np.array([
+                encode(arch,
+                       encoding_type=self.encoding_type,
+                       ss_type=self.ss_type) for arch in xdata
+            ])
+            full_xdata = [[*x, *xdata_encoded[i]]
+                          for i, x in enumerate(full_xdata)]
 
         return np.array(full_xdata)
 
@@ -210,7 +210,8 @@ class OmniNGBPredictor(Predictor):
     def query(self, xtest, info):
         if self.trained:
             test_data = self.prepare_features(xtest, info, train=False)
-            return np.squeeze(self.model.predict(test_data)) * self.std + self.mean
+            return np.squeeze(
+                self.model.predict(test_data)) * self.std + self.mean
         else:
             logger.info("below the train size, so returning info")
             return info

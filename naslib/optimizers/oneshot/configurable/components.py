@@ -46,7 +46,7 @@ class AbstractGraphModifier(metaclass=ABCMeta):
     def update_graph_edges(self, graph, scope):
         raise NotImplementedError()
 
-    @abstractmethod
+    #@abstractmethod
     def update_graph_nodes(self, graph, scope):
         raise NotImplementedError()
 
@@ -356,7 +356,8 @@ class PartialChannelConnection(AbstractEdgeOpModifier):
             scope=scope,
             private_edge_data=True,
         )
-
+    def update_graph_nodes(self, graph, scope):
+        pass
     def _wrap_mixed_op(self, edge):
         """Function to wrap PartialConnectionOps around the mixedops at the edges."""
         mixedop = edge.data.op

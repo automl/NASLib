@@ -42,7 +42,9 @@ class SoLosspredictor(Predictor):
                 score = np.sum(EMA_SoTL)
             else:
                 score = np.sum(past_loss)
-            if self.metric in [Metric.VAL_LOSS, Metric.TRAIN_LOSS, Metric.TEST_LOSS]:
+            if self.metric in [
+                    Metric.VAL_LOSS, Metric.TRAIN_LOSS, Metric.TEST_LOSS
+            ]:
                 test_set_scores.append(-score)
             else:
                 test_set_scores.append(score)

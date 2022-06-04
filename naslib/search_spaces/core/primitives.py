@@ -22,7 +22,7 @@ class AbstractPrimitive(nn.Module, metaclass=ABCMeta):
         self.init_params = {
             k: v
             for k, v in kwargs.items()
-            if k != "self" and not k.startswith("_") and k != "kwargs"
+            if k != "self" and not k.startswith("_") and k != "kwargs" and v!= None
         }
 
     @abstractmethod
@@ -146,6 +146,7 @@ class PartialConnectionOp(AbstractPrimitive):
 
         pc_primitives = []
         for primitive in mixed_op.get_embedded_ops():
+            #print(primitive)
             pc_primitives.append(self._create_pc_primitive(primitive))
 
         self.mixed_op.set_embedded_ops(pc_primitives)
@@ -159,6 +160,7 @@ class PartialConnectionOp(AbstractPrimitive):
 
         try:
             #TODO: Force all AbstractPrimitives with convolutions to use 'C_in' and 'C_out' in the initializer
+            #print(init_params)
             init_params['C_in'] = init_params['C_in']//self.k
 
             if 'C_out' in init_params:

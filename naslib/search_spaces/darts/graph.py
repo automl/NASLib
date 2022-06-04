@@ -180,7 +180,7 @@ class DartsSearchSpace(Graph):
         channel_map_from, channel_map_to = channel_maps(
             reduction_cell_indices, max_index=12
         )
-
+        print(self.edges)
         self._set_makrograph_ops(
             channel_map_from,
             channel_map_to,

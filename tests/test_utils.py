@@ -3,10 +3,12 @@ import os
 
 from naslib.utils import utils
 from fvcore.common.config import CfgNode
-class UtilsTest(unittest.TestCase):
 
+
+class UtilsTest(unittest.TestCase):
     def test_get_config_from_args_config_file(self):
-        args = utils.parse_args(args=['--config-file', 'assets/config.yaml', '--resume'])
+        args = utils.parse_args(
+            args=['--config-file', 'assets/config.yaml', '--resume'])
         config = utils.get_config_from_args(args)
 
         self.assertTrue(args.resume)
@@ -17,8 +19,9 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(config.evaluation.batch_size, 200)
 
     def test_get_config_from_args_config_args(self):
-        args = utils.parse_args(args=['seed', '1', 'search.epochs', '42',
-                                      'out_dir', 'tmp/util_test'])
+        args = utils.parse_args(args=[
+            'seed', '1', 'search.epochs', '42', 'out_dir', 'tmp/util_test'
+        ])
         config = utils.get_config_from_args(args)
 
         self.assertEqual(config.seed, 1)
@@ -69,7 +72,8 @@ class UtilsTest(unittest.TestCase):
             config_parent = CfgNode.load_cfg(f)
 
         config_child = utils.get_config_from_args(config_type=config_type)
-        self.assertTrue(self._verify_child_config_consistent(config_parent, config_child))
+        self.assertTrue(
+            self._verify_child_config_consistent(config_parent, config_child))
 
     def _test_get_config_from_args(self, config_type):
 
@@ -81,7 +85,8 @@ class UtilsTest(unittest.TestCase):
         with open(file=config_file) as f:
             config_parent = CfgNode.load_cfg(f)
 
-        config_child = utils.get_config_from_args(args=args, config_type=config_type)
+        config_child = utils.get_config_from_args(args=args,
+                                                  config_type=config_type)
 
         self.assertEqual(config_child.seed, 9001)
         self.assertEqual(config_child.dataset, 'new_dataset')
@@ -89,8 +94,8 @@ class UtilsTest(unittest.TestCase):
         config_child.seed = config_parent.seed
         config_child.dataset = config_parent.dataset
 
-        self.assertTrue(self._verify_child_config_consistent(config_parent, config_child))
-
+        self.assertTrue(
+            self._verify_child_config_consistent(config_parent, config_child))
 
     def _verify_child_config_consistent(self, parent_config, child_config):
         """ Returns True if all the attributes present in both configs have the same value in both of them.
@@ -102,7 +107,8 @@ class UtilsTest(unittest.TestCase):
                 return False
 
             if isinstance(parent_config[k], CfgNode):
-                return self._verify_child_config_consistent(parent_config[k], child_config[k])
+                return self._verify_child_config_consistent(
+                    parent_config[k], child_config[k])
             else:
                 if parent_config[k] != child_config[k]:
                     # print(f'{parent_config[k]} != {child_config[k]} for {k} in parent_config')
@@ -121,12 +127,11 @@ class UtilsTest(unittest.TestCase):
         }
 
         config_path_full = os.path.join(
-            *(
-                [utils.get_project_root()] + config_paths[config_type].split('/')
-            )
-        )
+            *([utils.get_project_root()] +
+              config_paths[config_type].split('/')))
 
         return config_path_full
+
 
 class LoggingTest(unittest.TestCase):
     pass

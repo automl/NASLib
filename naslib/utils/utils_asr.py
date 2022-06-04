@@ -14,32 +14,33 @@ def get_model_graph(arch_vec, ops=None, minimize=True, keep_dims=False):
         import search_space as ss
         ops = ss.all_ops
     num_nodes = len(arch_vec)
-    mat = np.zeros((num_nodes+2, num_nodes+2))
+    mat = np.zeros((num_nodes + 2, num_nodes + 2))
     labels = ['input']
     prev_skips = []
     for nidx, node in enumerate(arch_vec):
         op = node[0]
         labels.append(ops[op])
-        mat[nidx, nidx+1] = 1
+        mat[nidx, nidx + 1] = 1
         for i, sc in enumerate(prev_skips):
             if sc:
-                mat[i, nidx+1] = 1
+                mat[i, nidx + 1] = 1
         prev_skips = node[1:]
     labels.append('output')
-    mat[num_nodes, num_nodes+1] = 1
+    mat[num_nodes, num_nodes + 1] = 1
     for i, sc in enumerate(prev_skips):
         if sc:
-            mat[i, num_nodes+1] = 1
+            mat[i, num_nodes + 1] = 1
     orig = None
     if minimize:
         orig = copy.copy(mat), copy.copy(labels)
         for n in range(len(mat)):
             if labels[n] == 'zero':
                 for n2 in range(len(mat)):
-                    if mat[n,n2]:
-                        mat[n,n2] = 0
-                    if mat[n2,n]:
-                        mat[n2,n] = 0
+                    if mat[n, n2]:
+                        mat[n, n2] = 0
+                    if mat[n2, n]:
+                        mat[n2, n] = 0
+
         def bfs(src, mat, backward):
             visited = np.zeros(len(mat))
             q = [src]
@@ -49,12 +50,14 @@ def get_model_graph(arch_vec, ops=None, minimize=True, keep_dims=False):
                 for n2 in range(len(mat)):
                     if visited[n2]:
                         continue
-                    if (backward and mat[n2,n]) or (not backward and mat[n,n2]):
+                    if (backward and mat[n2, n]) or (not backward
+                                                     and mat[n, n2]):
                         q.append(n2)
                         visited[n2] = 1
             return visited
+
         vfw = bfs(0, mat, False)
-        vbw = bfs(len(mat)-1, mat, True)
+        vbw = bfs(len(mat) - 1, mat, True)
         v = vfw + vbw
         dangling = (v < 2).nonzero()[0]
         if dangling.size:
@@ -74,6 +77,7 @@ def get_model_graph(arch_vec, ops=None, minimize=True, keep_dims=False):
 def graph_hash(g):
     all_ops = ['linear', 'conv5', 'conv5d2', 'conv7', 'conv7d2', 'zero']
     m, l = g
+
     def hash_module(matrix, labelling):
         """Computes a graph-invariance MD5 hash of the matrix and label pair.
         Args:
@@ -86,23 +90,32 @@ def graph_hash(g):
         vertices = np.shape(matrix)[0]
         in_edges = np.sum(matrix, axis=0).tolist()
         out_edges = np.sum(matrix, axis=1).tolist()
-        assert len(in_edges) == len(out_edges) == len(labelling), f'{labelling} {matrix}'
+        assert len(in_edges) == len(out_edges) == len(
+            labelling), f'{labelling} {matrix}'
         hashes = list(zip(out_edges, in_edges, labelling))
-        hashes = [hashlib.md5(str(h).encode('utf-8')).hexdigest() for h in hashes]
+        hashes = [
+            hashlib.md5(str(h).encode('utf-8')).hexdigest() for h in hashes
+        ]
         # Computing this up to the diameter is probably sufficient but since the
         # operation is fast, it is okay to repeat more times.
         for _ in range(vertices):
             new_hashes = []
             for v in range(vertices):
-                in_neighbours = [hashes[w] for w in range(vertices) if matrix[w, v]]
-                out_neighbours = [hashes[w] for w in range(vertices) if matrix[v, w]]
-                new_hashes.append(hashlib.md5(
-                        (''.join(sorted(in_neighbours)) + '|' +
-                        ''.join(sorted(out_neighbours)) + '|' +
-                        hashes[v]).encode('utf-8')).hexdigest())
+                in_neighbours = [
+                    hashes[w] for w in range(vertices) if matrix[w, v]
+                ]
+                out_neighbours = [
+                    hashes[w] for w in range(vertices) if matrix[v, w]
+                ]
+                new_hashes.append(
+                    hashlib.md5((''.join(sorted(in_neighbours)) + '|' +
+                                 ''.join(sorted(out_neighbours)) + '|' +
+                                 hashes[v]).encode('utf-8')).hexdigest())
             hashes = new_hashes
-        fingerprint = hashlib.md5(str(sorted(hashes)).encode('utf-8')).hexdigest()
+        fingerprint = hashlib.md5(str(
+            sorted(hashes)).encode('utf-8')).hexdigest()
         return fingerprint
+
     labels = []
     if l:
         labels = [-1] + [all_ops.index(op) for op in l[1:-1]] + [-2]
@@ -138,7 +151,8 @@ class _Dataset():
             with open(db_file, 'rb') as f:
                 header = pickle.load(f)
                 if header['dataset_type'] != db_type:
-                    raise ValueError(f'Expected a dataset file with {db_type} information')
+                    raise ValueError(
+                        f'Expected a dataset file with {db_type} information')
 
                 if db_type == 'training':
                     seed = header.pop('seed')
@@ -148,26 +162,36 @@ class _Dataset():
                 if self.header is None:
                     self.header = header
                 if self.header != header:
-                    raise ValueError('Different dataset files contain data for different settings')
+                    raise ValueError(
+                        'Different dataset files contain data for different settings'
+                    )
 
                 # TODO: we could relax this if needed
                 if db_type == 'training':
-                    if header['columns'][:3] != ['model_hash', 'val_per', 'test_per']:
-                        raise ValueError('In the current implementation we expect the dataset to contain information in order: model hash, val PER, test PER')
+                    if header['columns'][:3] != [
+                            'model_hash', 'val_per', 'test_per'
+                    ]:
+                        raise ValueError(
+                            'In the current implementation we expect the dataset to contain information in order: model hash, val PER, test PER'
+                        )
                 elif db_type == 'benchmarking':
                     if header['columns'][:2] != ['model_hash', 'latency']:
-                        raise ValueError('In the current implementation we expect the dataset to contain information in order: model hash, latency')
+                        raise ValueError(
+                            'In the current implementation we expect the dataset to contain information in order: model hash, latency'
+                        )
                 elif db_type == 'static':
                     if header['columns'][:2] != ['model_hash', 'params']:
                         print(header['columns'])
-                        raise ValueError('In the current implementation we expect the dataset to contain information in order: model hash, number of parameters')
+                        raise ValueError(
+                            'In the current implementation we expect the dataset to contain information in order: model hash, number of parameters'
+                        )
 
                 if db_type == 'training':
                     self.seeds.append(seed)
                 elif db_type == 'benchmarking':
                     self.devices.append(device)
                 data = pickle.load(f)
-                data_dict = { model_hash: rest for model_hash, *rest in data }
+                data_dict = {model_hash: rest for model_hash, *rest in data}
                 self.dbs.append(data_dict)
 
         if not self.dbs:
@@ -175,13 +199,20 @@ class _Dataset():
 
         if validate_data and len(self.dbs) > 1:
             #if db_type == 'training':
-            models = { model_hash: model_pt for model_hash, (*_, model_pt) in self.dbs[0].items() }
+            models = {
+                model_hash: model_pt
+                for model_hash, (*_, model_pt) in self.dbs[0].items()
+            }
             for fidx, db in enumerate(self.dbs[1:]):
                 if len(db) != len(models):
-                    raise ValueError(f'Dataset file at position {fidx+1} has {len(db)} entries but the one at position 0 has {len(models)}')
+                    raise ValueError(
+                        f'Dataset file at position {fidx+1} has {len(db)} entries but the one at position 0 has {len(models)}'
+                    )
                 for model_hash, (*_, model_pt) in db.items():
                     if model_hash not in models:
-                        raise ValueError(f'{model_hash} is present in dataset file {fidx+1} but no in 0')
+                        raise ValueError(
+                            f'{model_hash} is present in dataset file {fidx+1} but no in 0'
+                        )
                     if db_type == 'training':
                         # even if this is not true, the same model hash should guarantee that the architectures are the same
                         # however, internally we'd expect the points to be the same
@@ -347,7 +378,11 @@ class Dataset(_Dataset):
         If you want to compare performance of models in different settings, e.g. using full training
         or reduced training of 10 epochs, you'd need to create different objects for each case.
     '''
-    def __init__(self, dataset_files,  devices_files=None, static_info=None, validate_data=True):
+    def __init__(self,
+                 dataset_files,
+                 devices_files=None,
+                 static_info=None,
+                 validate_data=True):
         ''' Create a new dataset by loading data from the provided list of files.
 
             If multiple files are given, they should contain information about models
@@ -362,7 +397,8 @@ class Dataset(_Dataset):
         self.bench_info = None
         self.static_info = None
         if devices_files:
-            self.bench_info = BenchmarkingDataset(devices_files, validate_data=validate_data)
+            self.bench_info = BenchmarkingDataset(devices_files,
+                                                  validate_data=validate_data)
         if static_info:
             self.static_info = StaticInfoDataset(static_info)
 
@@ -392,7 +428,8 @@ class Dataset(_Dataset):
         else:
             return self._get_raw_info(seed_idx, model_hash)
 
-    def _query(self, model_hash, seed, devices, include_static_info, return_dict):
+    def _query(self, model_hash, seed, devices, include_static_info,
+               return_dict):
         if seed is None:
             seed_idx = random.randrange(len(self.seeds))
         else:
@@ -404,7 +441,7 @@ class Dataset(_Dataset):
                 raise ValueError('No benchmarking information attached')
             lat = self.bench_info._get(model_hash, devices, return_dict)
             if return_dict:
-               ret.update(lat)
+                ret.update(lat)
             else:
                 ret.extend(lat)
 
@@ -419,7 +456,12 @@ class Dataset(_Dataset):
 
         return ret
 
-    def full_info(self, arch, seed=None, devices=None, include_static_info=None, return_dict=True):
+    def full_info(self,
+                  arch,
+                  seed=None,
+                  devices=None,
+                  include_static_info=None,
+                  return_dict=True):
         ''' Return all information about a specific architecture from the dataset.
             If multiple seeds are available, the can either return information about
             a specific one or a random one.
@@ -452,9 +494,15 @@ class Dataset(_Dataset):
                 ValueError - if invalid ``seed`` is given 
         '''
         model_hash = get_model_hash(arch, ops=self.ops)
-        return self._query(model_hash, seed, devices, include_static_info, return_dict)
+        return self._query(model_hash, seed, devices, include_static_info,
+                           return_dict)
 
-    def full_info_by_graph(self, graph, seed=None, devices=None, include_static_info=None, return_dict=True):
+    def full_info_by_graph(self,
+                           graph,
+                           seed=None,
+                           devices=None,
+                           include_static_info=None,
+                           return_dict=True):
         ''' Return all information about an architecture identified by the provided model
             graph.
             If multiple seeds are available, the can either return information about
@@ -489,7 +537,8 @@ class Dataset(_Dataset):
                 ValueError - if invalid ``seed`` is given 
         '''
         model_hash = graph_hash(graph)
-        return self._query(model_hash, seed, devices, include_static_info, return_dict)
+        return self._query(model_hash, seed, devices, include_static_info,
+                           return_dict)
 
     def test_acc(self, arch, seed=None):
         ''' Return test PER of a model.
@@ -506,7 +555,11 @@ class Dataset(_Dataset):
                 ``None`` if the dataset does not contain information about a model ``arch``,
                 otherwise a scalar ``float``.
         '''
-        info = self.full_info(arch, seed=seed, devices=False, include_static_info=False, return_dict=False)
+        info = self.full_info(arch,
+                              seed=seed,
+                              devices=False,
+                              include_static_info=False,
+                              return_dict=False)
         if info is None:
             return None
         return info[2]
@@ -534,7 +587,11 @@ class Dataset(_Dataset):
                     will be queried for a random seed (default: ``None``)
 
         '''
-        info = self.full_info(arch, seed=seed, devices=False, include_static_info=False, return_dict=False)
+        info = self.full_info(arch,
+                              seed=seed,
+                              devices=False,
+                              include_static_info=False,
+                              return_dict=False)
         if info is None:
             return None
         if epoch is None:
@@ -542,7 +599,7 @@ class Dataset(_Dataset):
         if best:
             return min(info[1][:epoch])
         else:
-            return info[1][epoch-1]
+            return info[1][epoch - 1]
 
     @functools.wraps(BenchmarkingDataset.latency)
     def latency(self, *args, **kwargs):
@@ -559,8 +616,12 @@ class Dataset(_Dataset):
         return self.static_info.params(*args, **kwargs)
 
 
-
-def from_folder(folder, max_epochs=None, seeds=None, devices=None, include_static_info=False, validate_data=True):
+def from_folder(folder,
+                max_epochs=None,
+                seeds=None,
+                devices=None,
+                include_static_info=False,
+                validate_data=True):
     ''' Create a ``Dataset`` object from files in a given directory.
         Arguments control what subset of the files will be used.
 
@@ -615,7 +676,8 @@ def from_folder(folder, max_epochs=None, seeds=None, devices=None, include_stati
 
     if devices != False:
         if devices is not None:
-            if isinstance(devices, cabc.Sequence) and not isinstance(devices, str):
+            if isinstance(devices,
+                          cabc.Sequence) and not isinstance(devices, str):
                 devices = '(' + '|'.join(map(str, devices)) + ')'
             else:
                 devices = str(devices)
@@ -637,5 +699,7 @@ def from_folder(folder, max_epochs=None, seeds=None, devices=None, include_stati
             if include_static_info and ff.name == 'nb-asr-info.pickle':
                 static_info = str(ff)
 
-
-    return Dataset(datasets, bench_info, static_info, validate_data=validate_data)
+    return Dataset(datasets,
+                   bench_info,
+                   static_info,
+                   validate_data=validate_data)

@@ -133,15 +133,15 @@ class ControllerDataset(torch.utils.data.Dataset):
 
 class Encoder(nn.Module):
     def __init__(
-        self,
-        layers,
-        mlp_layers,
-        hidden_size,
-        mlp_hidden_size,
-        vocab_size,
-        dropout,
-        source_length,
-        length,
+            self,
+            layers,
+            mlp_layers,
+            hidden_size,
+            mlp_hidden_size,
+            vocab_size,
+            dropout,
+            source_length,
+            length,
     ):
         super(Encoder, self).__init__()
         self.layers = layers
@@ -160,15 +160,20 @@ class Encoder(nn.Module):
             dropout=dropout,
             bidirectional=True,
         )
-        self.out_proj = nn.Linear(self.hidden_size * 2, self.hidden_size, bias=True)
+        self.out_proj = nn.Linear(self.hidden_size * 2,
+                                  self.hidden_size,
+                                  bias=True)
         self.mlp = nn.ModuleList([])
         for i in range(self.mlp_layers):
             if i == 0:
-                self.mlp.append(nn.Linear(self.hidden_size, self.mlp_hidden_size))
+                self.mlp.append(
+                    nn.Linear(self.hidden_size, self.mlp_hidden_size))
             elif i == self.mlp_layers - 1:
-                self.mlp.append(nn.Linear(self.mlp_hidden_size, self.hidden_size))
+                self.mlp.append(
+                    nn.Linear(self.mlp_hidden_size, self.hidden_size))
             else:
-                self.mlp.append(nn.Linear(self.mlp_hidden_size, self.mlp_hidden_size))
+                self.mlp.append(
+                    nn.Linear(self.mlp_hidden_size, self.mlp_hidden_size))
         self.regressor = nn.Linear(self.hidden_size, 1)
 
     def forward_predictor(self, x):
@@ -212,16 +217,14 @@ class Encoder(nn.Module):
     def infer(self, x, predict_lambda, direction="-"):
         encoder_outputs, encoder_hidden, arch_emb, predict_value = self(x)
         grads_on_outputs = torch.autograd.grad(
-            predict_value, encoder_outputs, torch.ones_like(predict_value)
-        )[0]
+            predict_value, encoder_outputs, torch.ones_like(predict_value))[0]
         if direction == "+":
             new_encoder_outputs = encoder_outputs + predict_lambda * grads_on_outputs
         elif direction == "-":
             new_encoder_outputs = encoder_outputs - predict_lambda * grads_on_outputs
         else:
             raise ValueError(
-                "Direction must be + or -, got {} instead".format(direction)
-            )
+                "Direction must be + or -, got {} instead".format(direction))
         new_encoder_outputs = F.normalize(new_encoder_outputs, 2, dim=-1)
         new_arch_emb = torch.mean(new_encoder_outputs, dim=1)
         new_arch_emb = F.normalize(new_arch_emb, 2, dim=-1)
@@ -242,7 +245,8 @@ EOS_ID = 0
 
 
 class Attention(nn.Module):
-    def __init__(self, input_dim, source_dim=None, output_dim=None, bias=False):
+    def __init__(self, input_dim, source_dim=None, output_dim=None,
+                 bias=False):
         super(Attention, self).__init__()
         if source_dim is None:
             source_dim = input_dim
@@ -252,7 +256,9 @@ class Attention(nn.Module):
         self.source_dim = source_dim
         self.output_dim = output_dim
         self.input_proj = nn.Linear(input_dim, source_dim, bias=bias)
-        self.output_proj = nn.Linear(input_dim + source_dim, output_dim, bias=bias)
+        self.output_proj = nn.Linear(input_dim + source_dim,
+                                     output_dim,
+                                     bias=bias)
 
     def forward(self, input, source_hids, mask=None):
         batch_size = input.size(0)
@@ -265,9 +271,8 @@ class Attention(nn.Module):
         attn = torch.bmm(x, source_hids.transpose(1, 2))
         if mask is not None:
             attn.data.masked_fill_(mask, -float("inf"))
-        attn = F.softmax(attn.view(-1, source_len), dim=1).view(
-            batch_size, -1, source_len
-        )
+        attn = F.softmax(attn.view(-1, source_len),
+                         dim=1).view(batch_size, -1, source_len)
 
         # (batch, tgt_len, src_len) * (batch, src_len, source_dim) -> (batch, tgt_len, source_dim)
         mix = torch.bmm(attn, source_hids)
@@ -276,20 +281,21 @@ class Attention(nn.Module):
         combined = torch.cat((mix, input), dim=2)
         # output -> (batch, tgt_len, output_dim)
         output = torch.tanh(
-            self.output_proj(combined.view(-1, self.input_dim + self.source_dim))
-        ).view(batch_size, -1, self.output_dim)
+            self.output_proj(
+                combined.view(-1, self.input_dim + self.source_dim))).view(
+                    batch_size, -1, self.output_dim)
 
         return output, attn
 
 
 class Decoder(nn.Module):
     def __init__(
-        self,
-        layers,
-        hidden_size,
-        vocab_size,
-        dropout,
-        length,
+            self,
+            layers,
+            hidden_size,
+            vocab_size,
+            dropout,
+            length,
     ):
         super(Decoder, self).__init__()
         self.layers = layers
@@ -328,9 +334,9 @@ class Decoder(nn.Module):
             residual = x
             x, _ = self.attention(x, encoder_outputs)
             x = (residual + x) * math.sqrt(0.5)
-            predicted_softmax = F.log_softmax(
-                self.out(x.view(-1, self.hidden_size)), dim=-1
-            )
+            predicted_softmax = F.log_softmax(self.out(
+                x.view(-1, self.hidden_size)),
+                                              dim=-1)
             predicted_softmax = predicted_softmax.view(bsz, tgt_len, -1)
             return predicted_softmax, None
 
@@ -349,7 +355,7 @@ class Decoder(nn.Module):
             return symbol
 
         for i in range(length):
-            x = self.embedding(decoder_input[:, i : i + 1])
+            x = self.embedding(decoder_input[:, i:i + 1])
             x = F.dropout(x, self.dropout, training=self.training)
             residual = x
             x, decoder_hidden = self.rnn(x, decoder_hidden)
@@ -377,17 +383,17 @@ class Decoder(nn.Module):
 
 class NAO(nn.Module):
     def __init__(
-        self,
-        encoder_layers,
-        decoder_layers,
-        mlp_layers,
-        hidden_size,
-        mlp_hidden_size,
-        vocab_size,
-        dropout,
-        source_length,
-        encoder_length,
-        decoder_length,
+            self,
+            encoder_layers,
+            decoder_layers,
+            mlp_layers,
+            hidden_size,
+            mlp_hidden_size,
+            vocab_size,
+            dropout,
+            source_length,
+            encoder_length,
+            decoder_length,
     ):
         super(NAO, self).__init__()
         self.encoder = Encoder(
@@ -416,18 +422,20 @@ class NAO(nn.Module):
 
     def forward(self, input_variable, target_variable=None):
         encoder_outputs, encoder_hidden, arch_emb, predict_value = self.encoder(
-            input_variable.to(device)
-        )
+            input_variable.to(device))
         decoder_hidden = (
             arch_emb.unsqueeze(0).to(device),
             arch_emb.unsqueeze(0).to(device),
         )
-        decoder_outputs, archs = self.decoder(
-            target_variable.to(device), decoder_hidden, encoder_outputs.to(device)
-        )
+        decoder_outputs, archs = self.decoder(target_variable.to(device),
+                                              decoder_hidden,
+                                              encoder_outputs.to(device))
         return predict_value, decoder_outputs, archs
 
-    def generate_new_arch(self, input_variable, predict_lambda=1, direction="-"):
+    def generate_new_arch(self,
+                          input_variable,
+                          predict_lambda=1,
+                          direction="-"):
         (
             encoder_outputs,
             encoder_hidden,
@@ -436,11 +444,13 @@ class NAO(nn.Module):
             new_encoder_outputs,
             new_arch_emb,
             new_predict_value,
-        ) = self.encoder.infer(input_variable, predict_lambda, direction=direction)
-        new_encoder_hidden = (new_arch_emb.unsqueeze(0), new_arch_emb.unsqueeze(0))
-        decoder_outputs, new_archs = self.decoder(
-            None, new_encoder_hidden, new_encoder_outputs
-        )
+        ) = self.encoder.infer(input_variable,
+                               predict_lambda,
+                               direction=direction)
+        new_encoder_hidden = (new_arch_emb.unsqueeze(0),
+                              new_arch_emb.unsqueeze(0))
+        decoder_outputs, new_archs = self.decoder(None, new_encoder_hidden,
+                                                  new_encoder_outputs)
         return new_archs, new_predict_value
 
 
@@ -460,9 +470,8 @@ def controller_train(train_queue, model, optimizer):
         optimizer.zero_grad()
         predict_value, log_prob, arch = model(encoder_input, decoder_input)
         loss_1 = F.mse_loss(predict_value.squeeze(), encoder_target.squeeze())
-        loss_2 = F.nll_loss(
-            log_prob.contiguous().view(-1, log_prob.size(-1)), decoder_target.view(-1)
-        )
+        loss_2 = F.nll_loss(log_prob.contiguous().view(-1, log_prob.size(-1)),
+                            decoder_target.view(-1))
         loss = trade_off * loss_1 + (1 - trade_off) * loss_2
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), grad_bound)
@@ -484,8 +493,7 @@ def controller_infer(queue, model, step, direction="+"):
         encoder_input = move_to_cuda(sample["encoder_input"])
         model.zero_grad()
         new_arch, new_predict_value = model.generate_new_arch(
-            encoder_input, step, direction=direction
-        )
+            encoder_input, step, direction=direction)
         new_arch_list.extend(new_arch.data.squeeze().tolist())
         new_predict_values.extend(new_predict_value.data.squeeze().tolist())
     return new_arch_list, new_predict_values
@@ -494,7 +502,8 @@ def controller_infer(queue, model, step, direction="+"):
 def train_controller(model, train_input, train_target, epochs):
 
     logging.info("Train data: {}".format(len(train_input)))
-    controller_train_dataset = ControllerDataset(train_input, train_target, True)
+    controller_train_dataset = ControllerDataset(train_input, train_target,
+                                                 True)
     controller_train_queue = torch.utils.data.DataLoader(
         controller_train_dataset,
         batch_size=batch_size,
@@ -502,22 +511,26 @@ def train_controller(model, train_input, train_target, epochs):
         pin_memory=True,
         drop_last=False,
     )
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=l2_reg)
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=lr,
+                                 weight_decay=l2_reg)
     for epoch in range(1, epochs + 1):
-        loss, mse, ce = controller_train(controller_train_queue, model, optimizer)
+        loss, mse, ce = controller_train(controller_train_queue, model,
+                                         optimizer)
         if epoch % 10 == 0:
-            print("epoch {} train loss {} mse {} ce {}".format(epoch, loss, mse, ce))
+            print("epoch {} train loss {} mse {} ce {}".format(
+                epoch, loss, mse, ce))
 
 
 class SemiNASPredictor(Predictor):
     def __init__(
-        self,
-        encoding_type="seminas",
-        ss_type=None,
-        semi=False,
-        hpo_wrapper=False,
-        synthetic_factor=1,
-        hparams_from_file=False,
+            self,
+            encoding_type="seminas",
+            ss_type=None,
+            semi=False,
+            hpo_wrapper=False,
+            synthetic_factor=1,
+            hparams_from_file=False,
     ):
         self.encoding_type = encoding_type
         self.semi = semi
@@ -525,7 +538,11 @@ class SemiNASPredictor(Predictor):
         if ss_type is not None:
             self.ss_type = ss_type
         self.hpo_wrapper = hpo_wrapper
-        self.default_hyperparams = {"gcn_hidden": 64, "batch_size": 100, "lr": 1e-3}
+        self.default_hyperparams = {
+            "gcn_hidden": 64,
+            "batch_size": 100,
+            "lr": 1e-3
+        }
         self.hyperparams = None
         self.hparams_from_file = hparams_from_file
 
@@ -536,12 +553,12 @@ class SemiNASPredictor(Predictor):
         # convert the architectures in self.unlabeled to the right encoding
         for i in range(num_synthetic):
             arch = self.unlabeled[i]
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
-            seq = convert_arch_to_seq(
-                encoded["adjacency"], encoded["operations"], max_n=self.max_n
-            )
+            encoded = encode(arch,
+                             encoding_type=self.encoding_type,
+                             ss_type=self.ss_type)
+            seq = convert_arch_to_seq(encoded["adjacency"],
+                                      encoded["operations"],
+                                      max_n=self.max_n)
             synthetic_input.append(seq)
 
         # use the model to label the synthetic data
@@ -567,26 +584,27 @@ class SemiNASPredictor(Predictor):
         return synthetic_input, synthetic_target
 
     def fit(
-        self,
-        xtrain,
-        ytrain,
-        train_info=None,
-        wd=0,
-        iterations=1,
-        epochs=50,
-        pretrain_epochs=50,
+            self,
+            xtrain,
+            ytrain,
+            train_info=None,
+            wd=0,
+            iterations=1,
+            epochs=50,
+            pretrain_epochs=50,
     ):
 
         if self.hparams_from_file and self.hparams_from_file not in ['False', 'None'] \
         and os.path.exists(self.hparams_from_file):
-            # note: this could be split to separate hyperparams for nao and seminas, 
+            # note: this could be split to separate hyperparams for nao and seminas,
             # but currently there is no need to do that
-            self.hyperparams = json.load(open(self.hparams_from_file, 'rb'))['seminas']
+            self.hyperparams = json.load(open(self.hparams_from_file,
+                                              'rb'))['seminas']
             print('loaded hyperparams from', self.hparams_from_file)
             print('hparams', self.hyperparams)
         elif self.hyperparams is None:
             self.hyperparams = self.default_hyperparams.copy()
-            
+
         batch_size = self.hyperparams["batch_size"]
         gcn_hidden = self.hyperparams["gcn_hidden"]
         lr = self.hyperparams["lr"]
@@ -615,7 +633,7 @@ class SemiNASPredictor(Predictor):
             encoder_length = 324
             decoder_length = 324
             vocab_size = 12
-            
+
         elif self.ss_type == "transbench101":
             self.max_n = 8
             encoder_length = 35
@@ -627,7 +645,7 @@ class SemiNASPredictor(Predictor):
             encoder_length = 44
             decoder_length = 44
             vocab_size = 9
-            
+
         # get mean and std, normlize accuracies
         self.mean = np.mean(ytrain)
         self.std = np.std(ytrain)
@@ -636,12 +654,12 @@ class SemiNASPredictor(Predictor):
         train_seq_pool = []
         train_target_pool = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
-            seq = convert_arch_to_seq(
-                encoded["adjacency"], encoded["operations"], max_n=self.max_n
-            )
+            encoded = encode(arch,
+                             encoding_type=self.encoding_type,
+                             ss_type=self.ss_type)
+            seq = convert_arch_to_seq(encoded["adjacency"],
+                                      encoded["operations"],
+                                      max_n=self.max_n)
             train_seq_pool.append(seq)
             train_target_pool.append(ytrain_normed[i])
 
@@ -666,33 +684,30 @@ class SemiNASPredictor(Predictor):
 
             # Pre-train
             print("Pre-train EPD")
-            train_controller(
-                self.model, train_encoder_input, train_encoder_target, pretrain_epochs
-            )
+            train_controller(self.model, train_encoder_input,
+                             train_encoder_target, pretrain_epochs)
             print("Finish pre-training EPD")
 
             if self.semi:
-                num_synthetic = self.synthetic_factor * len(train_encoder_input)
-                synthetic_data = self.generate_synthetic_data(self.model, num_synthetic)
+                num_synthetic = self.synthetic_factor * len(
+                    train_encoder_input)
+                synthetic_data = self.generate_synthetic_data(
+                    self.model, num_synthetic)
                 synthetic_encoder_input, synthetic_encoder_target = synthetic_data
 
                 if up_sample_ratio is None:
-                    up_sample_ratio = np.ceil(m / len(train_encoder_input)).astype(
-                        np.int
-                    )
+                    up_sample_ratio = np.ceil(
+                        m / len(train_encoder_input)).astype(np.int)
                 else:
                     up_sample_ratio = up_sample_ratio
 
-                all_encoder_input = (
-                    train_encoder_input * up_sample_ratio + synthetic_encoder_input
-                )
-                all_encoder_target = (
-                    train_encoder_target * up_sample_ratio + synthetic_encoder_target
-                )
+                all_encoder_input = (train_encoder_input * up_sample_ratio +
+                                     synthetic_encoder_input)
+                all_encoder_target = (train_encoder_target * up_sample_ratio +
+                                      synthetic_encoder_target)
                 print("Train EPD")
-                train_controller(
-                    self.model, all_encoder_input, all_encoder_target, epochs
-                )
+                train_controller(self.model, all_encoder_input,
+                                 all_encoder_target, epochs)
                 print("Finish training EPD")
 
         train_pred = np.squeeze(self.query(xtrain))
@@ -703,12 +718,12 @@ class SemiNASPredictor(Predictor):
 
         test_seq_pool = []
         for i, arch in enumerate(xtest):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
-            seq = convert_arch_to_seq(
-                encoded["adjacency"], encoded["operations"], max_n=self.max_n
-            )
+            encoded = encode(arch,
+                             encoding_type=self.encoding_type,
+                             ss_type=self.ss_type)
+            seq = convert_arch_to_seq(encoded["adjacency"],
+                                      encoded["operations"],
+                                      max_n=self.max_n)
             test_seq_pool.append(seq)
 
         test_dataset = ControllerDataset(test_seq_pool, None, False)
@@ -755,11 +770,11 @@ class SemiNASPredictor(Predictor):
         self.unlabeled = unlabeled
 
     def set_pre_computations(
-        self,
-        unlabeled=None,
-        xtrain_zc_info=None,
-        xtest_zc_info=None,
-        unlabeled_zc_info=None,
+            self,
+            unlabeled=None,
+            xtrain_zc_info=None,
+            xtest_zc_info=None,
+            unlabeled_zc_info=None,
     ):
         """
         This is the method to pass in unlabeled architectures during

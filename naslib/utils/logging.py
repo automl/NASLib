@@ -43,7 +43,8 @@ class _ColorfulFormatter(logging.Formatter):
         return prefix + " " + log
 
 
-@functools.lru_cache()  # so that calling setup_logger multiple times won't add many handlers
+@functools.lru_cache(
+)  # so that calling setup_logger multiple times won't add many handlers
 def setup_logger(output=None, *, color=True, name="naslib", abbrev_name=None):
     """
     Initialize the nalsib logger and set its verbosity level to "DEBUG".
@@ -67,8 +68,8 @@ def setup_logger(output=None, *, color=True, name="naslib", abbrev_name=None):
         abbrev_name = "nl" if name == "naslib" else name
 
     plain_formatter = logging.Formatter(
-        "[%(asctime)s] %(name)s %(levelname)s: %(message)s", datefmt="%m/%d %H:%M:%S"
-    )
+        "[%(asctime)s] %(name)s %(levelname)s: %(message)s",
+        datefmt="%m/%d %H:%M:%S")
 
     # stdout logger
     ch = logging.StreamHandler(stream=sys.stdout)
@@ -150,7 +151,7 @@ def log_first_n(lvl, msg, n=1, *, name=None, key="caller"):
             will not log only if the same caller has logged the same message before.
     """
     if isinstance(key, str):
-        key = (key,)
+        key = (key, )
     assert len(key) > 0
 
     caller_module, caller_key = _find_caller()
@@ -158,7 +159,7 @@ def log_first_n(lvl, msg, n=1, *, name=None, key="caller"):
     if "caller" in key:
         hash_key = hash_key + caller_key
     if "message" in key:
-        hash_key = hash_key + (msg,)
+        hash_key = hash_key + (msg, )
 
     _LOG_COUNTER[hash_key] += 1
     if _LOG_COUNTER[hash_key] <= n:
