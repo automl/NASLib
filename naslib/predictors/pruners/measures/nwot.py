@@ -43,7 +43,7 @@ def compute_nwot(net, inputs, targets, split_data=1, loss_fn=None):
     for name, module in net.named_modules():
         module_type = str(type(module))
         if ('ReLU' in module_type)  and ('naslib' not in module_type):
-            module.register_full_backward_hook(counting_backward_hook)
+            # module.register_full_backward_hook(counting_backward_hook)
             module.register_forward_hook(counting_forward_hook)
 
     x = torch.clone(inputs)
