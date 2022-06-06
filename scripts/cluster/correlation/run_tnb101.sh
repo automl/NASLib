@@ -12,7 +12,7 @@ fi
 
 if [ -z "$predictor" ];
 then
-    predictors=(fisher grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot)
+    predictors=(fisher grad_norm grasp jacov snip flops params plain l2_norm nwot zen)
 else
     predictors=($predictor)
 fi
@@ -27,7 +27,7 @@ do
     do
         for pred in "${predictors[@]}"
         do
-            sbatch ./scripts/cluster/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment <<< "y"
+            sbatch ./scripts/cluster/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
         done
 
         echo ""
