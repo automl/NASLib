@@ -18,7 +18,7 @@ class ZeroCostPredictorEvaluator(object):
     Evaluates a predictor.
     """
 
-    def __init__(self, predictor, config=None, log_results=True):
+    def __init__(self, predictor, zc_api=None, config=None, log_results=True):
         self.predictor = predictor
         self.config = config
         self.test_size = config.test_size
@@ -29,6 +29,7 @@ class ZeroCostPredictorEvaluator(object):
 
         self.test_data_file = config.test_data_file
         self.log_results_to_json = log_results
+        self.zc_api = zc_api
 
     def adapt_search_space(
         self, search_space, load_labeled=False, scope=None, dataset_api=None
@@ -96,17 +97,16 @@ class ZeroCostPredictorEvaluator(object):
                 graph = self.search_space.clone()
                 graph.sample_random_architecture(dataset_api=self.dataset_api)
             else:
-                graph = self.search_space.clone()
-                graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
+                self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
 
-            accuracy, train_time, info_dict = self.get_full_arch_info(graph)
+            encoding = self.search_space.get_hash()
+            accuracy = self.zc_api[str(encoding)]['val_accuracy']
+            # accuracy, train_time, info_dict = self.get_full_arch_info(graph)
 
-            xdata.append(graph.get_hash())
+            xdata.append(encoding)
             ydata.append(accuracy)
-            info.append(info_dict)
-            train_times.append(train_time)
-
-            del graph
+            # info.append(info_dict)
+            # train_times.append(train_time)
 
         return [xdata, ydata, info, train_times]
 
@@ -125,7 +125,7 @@ class ZeroCostPredictorEvaluator(object):
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
         for arch in xtest:
-            pred = zc_api[self.get_arch_as_string(arch)][self.predictor.method_type]['score']
+            pred = zc_api[str(arch)][self.predictor.method_type]['score']
 
             if float("-inf") == pred:
                 pred = -1e9

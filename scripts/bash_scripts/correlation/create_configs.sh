@@ -19,7 +19,7 @@ predictors=(fisher grad_norm grasp jacov snip synflow epe_nas flops params plain
 # other variables:
 trials=10
 end_seed=$(($start_seed + $trials - 1))
-test_size=200
+test_size=1000
 
 # create config files
 for i in $(seq 0 $((${#predictors[@]}-1)) )
