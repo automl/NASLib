@@ -11,15 +11,16 @@ fi
 
 
 out_dir=run
-trials=10
+trials=100
 end_seed=$(($start_seed + $trials - 1))
 test_size=200
 config_root=configs
 
-# TNB101
-python scripts/create_configs_zc_ensembles.py --start_seed $start_seed --trials $trials --out_dir $out_dir \
-    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names flops params snip jacov grad_norm plain fisher grasp l2_norm nwot
+if [[ "$search_space" == "transbench101_micro"  ||  "$search_space" == "transbenc101_macro" ]]; then
+    zc_names="flops params snip jacov grad_norm plain fisher grasp l2_norm nwot zen"
+else
+    zc_names="flops params snip jacov grad_norm plain fisher grasp l2_norm nwot zen epe_nas synflow"
+fi
 
-# NB101, 201, 301
-# python scripts/create_configs_zc_ensembles.py --start_seed $start_seed --trials $trials --out_dir $out_dir \
-#     --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names flops params snip jacov grad_norm plain fisher grasp l2_norm nwot epe_nas synflow
+python scripts/create_configs_zc_ensembles.py --start_seed $start_seed --trials $trials --out_dir $out_dir \
+    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names $zc_names
