@@ -16,7 +16,7 @@ end_seed=$(($start_seed + $trials - 1))
 test_size=200
 config_root=configs
 
-if [[ "$search_space" == "transbench101_micro"  ||  "$search_space" == "transbenc101_macro" ]]; then
+if [[ "$search_space" == "transbench101_micro"  ||  "$search_space" == "transbench101_macro" ]]; then
     zc_names="flops params snip jacov grad_norm plain fisher grasp l2_norm nwot zen"
 else
     zc_names="flops params snip jacov grad_norm plain fisher grasp l2_norm nwot zen epe_nas synflow"
