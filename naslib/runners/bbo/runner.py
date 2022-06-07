@@ -47,3 +47,4 @@ trainer = Trainer(optimizer, config, lightweight_output=True)
 trainer.search(resume_from="", summary_writer=writer, report_incumbent=False)
 
 logger.info('Ensemble experiment complete.')
+logger.info('Done.')
