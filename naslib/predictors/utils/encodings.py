@@ -3,6 +3,7 @@ import logging
 
 from naslib.predictors.utils.encodings_nb101 import encode_101, encode_101_spec
 from naslib.predictors.utils.encodings_darts import encode_darts, encode_darts_compact
+from naslib.search_spaces.nasbench101.conversions import convert_tuple_to_spec
 
 """
 Currently we need search space specific methods.
@@ -268,6 +269,8 @@ def encode(arch, encoding_type='adjacency_one_hot', ss_type=None):
 
 def encode_spec(spec, encoding_type='adjacency_one_hot', ss_type=None):
     if ss_type == 'nasbench101':
+        if isinstance(spec, tuple):
+            spec = convert_tuple_to_spec(spec)
         return encode_101_spec(spec, encoding_type=encoding_type)
     elif ss_type == 'nasbench201' and encoding_type == 'adjacency_one_hot':
         return encode_adjacency_one_hot_op_indices(spec)

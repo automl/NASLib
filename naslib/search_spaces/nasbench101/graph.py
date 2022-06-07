@@ -177,7 +177,11 @@ class NasBench101SearchSpace(Graph):
     def sample_random_labeled_architecture(self):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
-        op_indices = random.choice(self.labeled_archs)
+        while True:
+            op_indices = random.choice(self.labeled_archs)
+            if len(op_indices) == 56:
+                break
+
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api, load_labeled=False):
