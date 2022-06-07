@@ -46,6 +46,9 @@ def encode_adjacency_one_hot_transbench_macro_op_indices(op_indices):
     one_hot = []
     one_hot_mapping = np.eye(5)
 
+    if len(op_indices) < 6:
+        op_indices = op_indices + tuple((0 for i in range(6-len(op_indices))))
+
     for e in op_indices:
         one_hot = [*one_hot, *one_hot_mapping[e]]
     return one_hot
