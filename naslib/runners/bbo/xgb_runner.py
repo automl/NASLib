@@ -14,8 +14,9 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 search_space = get_search_space(config.search_space, config.dataset)
-dataset_api = get_dataset_api(config.search_space, config.dataset)
+dataset_api = None #get_dataset_api(config.search_space, config.dataset)
 zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
+search_space.instantiate_model = False
 search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
 
 utils.set_seed(config.seed)

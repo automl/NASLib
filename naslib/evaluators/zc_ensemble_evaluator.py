@@ -4,7 +4,7 @@ import json
 import torch
 import numpy as np
 import logging
-from naslib.predictors.utils.encodings import encode
+from naslib.predictors.utils.encodings import encode, encode_spec
 from naslib.predictors.zerocost import ZeroCost
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -48,10 +48,10 @@ class ZCEnsembleEvaluator(object):
 
     def _sample_new_model(self):
         model = torch.nn.Module()
-        graph = self.search_space.clone()
+        graph = self.search_space
         graph.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.load_labeled)
         model.arch = graph.get_hash()
-        encoding = self.get_arch_as_string(model.arch)
+        encoding = str(model.arch)
 
         if self.load_labeled:
             model.accuracy = self.zc_api[encoding]['val_accuracy']
@@ -106,12 +106,9 @@ class ZCEnsembleEvaluator(object):
         ensemble.set_pre_computations(xtrain_zc_info=train_info)
 
         xtrain = []
-        # for m in train_models:
-        #     g = self.search_space.clone()
-        #     g.set_spec(m.arch)
-        #     g.parse()
-        #     xtrain.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-        #     del g
+
+        for m in train_models:
+            xtrain.append(encode_spec(m.arch, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type()))
 
         ytrain = [m.accuracy for m in train_models]
 
@@ -133,10 +130,7 @@ class ZCEnsembleEvaluator(object):
 
         logger.info('Preparing test data')
         for m in test_models:
-            g = self.search_space.clone()
-            g.set_spec(m.arch)
-            x_test.append(encode(g, encoding_type='adjacency_one_hot', ss_type=g.get_type()))
-            del g
+            x_test.append(encode_spec(m.arch, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type()))
 
         test_info = [{'zero_cost_scores': m.zc_scores} for m in test_models]
         preds = np.mean(ensemble.query(x_test, test_info), axis=0)
