@@ -3,9 +3,9 @@
 searchspace=nasbench301
 datasets=(cifar10)
 start_seed=9000
-n_seeds=10
 
 experiment=$1
+n_seeds=$2
 
 if [ -z "$experiment" ]
 then
@@ -15,10 +15,8 @@ fi
 
 for dataset in "${datasets[@]}"
 do
-    for i in $(seq 0 $(($n_seeds - 1)))
-    do
-        sbatch ./scripts/cluster/zc_ensembles/run.sh $searchspace $dataset $start_seed $(($start_seed + $i)) $experiment <<< "y"
-    done
-
-    echo ""
+    echo $searchspace $dataset
+    sed -i "s/THE_JOB_NAME/${experiment}-${searchspace}-${dataset}/" ./scripts/cluster/zc_ensembles/run.sh
+    sbatch ./scripts/cluster/zc_ensembles/run.sh $searchspace $dataset $start_seed $n_seeds $experiment --bosch
+    sed -i "s/${experiment}-${searchspace}-${dataset}/THE_JOB_NAME/" ./scripts/cluster/zc_ensembles/run.sh
 done
