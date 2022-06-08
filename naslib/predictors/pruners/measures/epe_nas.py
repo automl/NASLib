@@ -56,14 +56,13 @@ def eval_score_perclass(jacob, labels=None, n_classes=10):
     for c in per_class.keys():
         s = 0
         try:
-            corrs = np.corrcoef(per_class[c])
+            corrs = np.array(np.corrcoef(per_class[c]))
 
             s = np.sum(np.log(abs(corrs)+k))#/len(corrs)
             if n_classes > 100:
                 s /= len(corrs)
         except: # defensive programming
             continue
-
         ind_corr_matrix_score[c] = s
 
     # per class-corr matrix A and B
@@ -80,8 +79,9 @@ def eval_score_perclass(jacob, labels=None, n_classes=10):
             for cj in ind_corr_matrix_score_keys:
                 score += np.absolute(ind_corr_matrix_score[c]-ind_corr_matrix_score[cj])
 
-        # should divide by number of classes seen
-        score /= len(ind_corr_matrix_score_keys)
+        if len(ind_corr_matrix_score_keys) > 0:
+            # should divide by number of classes seen
+            score /= len(ind_corr_matrix_score_keys)
 
     return score
 
