@@ -11,9 +11,9 @@ fi
 
 
 out_dir=run
-trials=100
+trials=500
 end_seed=$(($start_seed + $trials - 1))
-test_size=200
+epochs=500
 config_root=configs
 
 if [[ "$search_space" == "transbench101_micro"  ||  "$search_space" == "transbench101_macro" ]]; then
@@ -23,4 +23,4 @@ else
 fi
 
 python scripts/create_configs_zc_ensembles.py --start_seed $start_seed --trials $trials --out_dir $out_dir \
-    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names $zc_names
+    --dataset=$dataset --search_space $search_space --config_root=$config_root --zc_names $zc_names --epochs $epochs
