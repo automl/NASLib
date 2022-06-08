@@ -84,9 +84,9 @@ if __name__ == "__main__":
     parser.add_argument("--num_candidates", type=int, default=100, help="Root config directory")
     parser.add_argument("--predictor_type", type=str, default='xgb', help="Root config directory")
 
-    parser.add_argument("--config_type", type=str, default='zc_and_adjacency', help="Type of experiment")
+    parser.add_argument("--config_type", type=str, default='only_zc', help="Type of experiment")
     parser.add_argument("--zc_ensemble", type=bool, default=True, help="True to use ensemble of ZC predictors")
-    parser.add_argument("--zc_only", default=False, action='store_true', help="Root config directory")
+    parser.add_argument("--zc_only", default=True, action='store_true', help="Root config directory")
 
     args = parser.parse_args()
 
