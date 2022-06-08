@@ -47,7 +47,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--config_root", type=str, required=True, help="Root config directory")
     parser.add_argument("--start_seed", type=int, default=9000, help="Starting seed")
-    parser.add_argument("--trials", type=int, default=10, help="Number of trials")
+    parser.add_argument("--trials", type=int, default=500, help="Number of trials")
     parser.add_argument("--predictor", type=str, default='xgb', help="Predictor to evaluate")
     parser.add_argument("--train_size", type=int, default=400, help="Train set size for predictor")
     parser.add_argument("--test_size", type=int, default=200, help="Test set size for predictor")
@@ -61,10 +61,13 @@ if __name__ == "__main__":
     parser.add_argument("--cutout_length", type=int, default=16, help="Cutout length")
     parser.add_argument("--cutout_prob", type=float, default=1.0, help="Cutout probability")
     parser.add_argument("--train_portion", type=float, default=0.7, help="Train portion")
-    parser.add_argument("--zc_ensemble", type=bool, default=True, help="True to use ensemble of ZC predictors")
     parser.add_argument("--zc_names", nargs='+', default=['params', 'flops', 'jacov', 'plain', 'grasp', 'snip', 'fisher', 'grad_norm', 'epe_nas', 'synflow', 'l2_norm'], help="Names of ZC predictors to use")
-    parser.add_argument("--zc_only", default=True, action='store_true', help="Root config directory")
+    
+    parser.add_argument("--zc_ensemble", type=eval, choices=[True, False], default='True', help="True to use ensemble of ZC predictors")
+    parser.add_argument("--zc_only", type=eval, choices=[True, False], default='True', help="Use only ZC features")
 
     args = parser.parse_args()
+
+    print('args', args.zc_only, args.zc_ensemble)
 
     main(args)
