@@ -63,6 +63,7 @@ class TransBench101SearchSpaceMicro(Graph):
         self.create_graph = create_graph
         self.labeled_archs = None
         self.instantiate_model = True
+        self.sample_without_replacement = False
 
         if self.create_graph == True:
             self._create_graph()
@@ -338,6 +339,10 @@ class TransBench101SearchSpaceMicro(Graph):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
+
+        if self.sample_without_replacement == True:
+            self.labeled_archs.pop(self.labeled_archs.index(op_indices))
+
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):
@@ -494,6 +499,7 @@ class TransBench101SearchSpaceMacro(Graph):
         self.space_name = 'transbench101'
         self.labeled_archs = None
         self.instantiate_model = True
+        self.sample_without_replacement = False
 
         self.add_edge(1, 2)
         
@@ -608,6 +614,10 @@ class TransBench101SearchSpaceMacro(Graph):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
+
+        if self.sample_without_replacement == True:
+            self.labeled_archs.pop(self.labeled_archs.index(op_indices))
+
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):

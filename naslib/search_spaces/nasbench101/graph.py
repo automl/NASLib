@@ -35,6 +35,7 @@ class NasBench101SearchSpace(Graph):
         self.spec = None
         self.labeled_archs = None
         self.instantiate_model = True
+        self.sample_without_replacement = False
 
         self.add_edge(1, 2)
 
@@ -181,6 +182,9 @@ class NasBench101SearchSpace(Graph):
             op_indices = random.choice(self.labeled_archs)
             if len(op_indices) == 56:
                 break
+
+        if self.sample_without_replacement == True:
+            self.labeled_archs.pop(self.labeled_archs.index(op_indices))
 
         self.set_spec(op_indices)
 

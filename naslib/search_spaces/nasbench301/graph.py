@@ -79,6 +79,7 @@ class NasBench301SearchSpace(Graph):
         self.auxiliary_output = auxiliary
         self.labeled_archs = None
         self.instantiate_model = True
+        self.sample_without_replacement = False
 
         """
         Build the search space with the parameters specified in __init__.
@@ -463,6 +464,10 @@ class NasBench301SearchSpace(Graph):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
+
+        if self.sample_without_replacement == True:
+            self.labeled_archs.pop(self.labeled_archs.index(op_indices))
+
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):

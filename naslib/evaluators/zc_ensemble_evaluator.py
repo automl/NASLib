@@ -95,6 +95,8 @@ class ZCEnsembleEvaluator(object):
         # Load models to train
         train_models = self.sample_random_models(self.n_train)
 
+        print('len labeled_archs after drawing train samples', len(self.search_space.labeled_archs))
+
         # Get their ZC scores
         zc_predictors = [ZeroCost(method_type=zc_name) for zc_name in self.zc_names]
 
@@ -121,6 +123,8 @@ class ZCEnsembleEvaluator(object):
         # Sample test models, query zc scores
         logger.info(f'Sampling {self.n_test} test models')
         test_models = self.sample_random_models(self.n_test)
+
+        print('len labeled_archs after drawing test samples', len(self.search_space.labeled_archs))
 
         logger.info('Computing ZC scores')
         self.compute_zc_scores(test_models, zc_predictors, train_loader)
