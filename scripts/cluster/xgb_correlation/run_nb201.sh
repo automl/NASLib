@@ -1,6 +1,6 @@
 #!/bin/bash
 
-train_sizes=(400)
+train_sizes=(1000)
 searchspace=nasbench201
 datasets=(cifar10 cifar100 ImageNet16-120)
 start_seed=9000

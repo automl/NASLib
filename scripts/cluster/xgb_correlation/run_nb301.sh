@@ -1,6 +1,6 @@
 #!/bin/bash
 
-train_sizes=(400)
+train_sizes=(1000)
 searchspace=nasbench301
 datasets=(cifar10)
 start_seed=9000
