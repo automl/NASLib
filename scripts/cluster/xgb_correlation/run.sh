@@ -2,8 +2,8 @@
 #SBATCH -p bosch_cpu-cascadelake #,ml_gpu-rtx2080 #ml_gpu-rtx2080     # bosch_gpu-rtx2080    #alldlc_gpu-rtx2080     # partition (queue)
 #SBATCH -o logs/%x.%A-%a.%N.out       # STDOUT  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
-#SBATCH -a 0-9 # array size
-#SBATCH --mem=16G
+#SBATCH -a 0 # array size
+#SBATCH --mem=5G
 #SBATCH --job-name="XGB_ZC_CORRELATION"
 
 echo "Workingdir: $PWD";
@@ -15,6 +15,7 @@ dataset=$2
 train_size=train_size_$3
 start_seed=$4
 experiment=$5
+n_seeds=100
 
 if [ -z "$searchspace" ]
 then
@@ -47,9 +48,11 @@ then
 fi
 
 start=`date +%s`
-
-seed=$(($start_seed + ${SLURM_ARRAY_TASK_ID}))
-python naslib/runners/bbo/xgb_runner.py --config-file configs/${experiment}/${train_size}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
+for t in $(seq 0 $end_seed)
+do
+    seed=$(($start_seed + $t))
+    python naslib/runners/bbo/xgb_runner.py --config-file configs/${experiment}/${train_size}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
+done
 
 end=`date +%s`
 runtime=$((end-start))

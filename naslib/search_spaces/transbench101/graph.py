@@ -63,6 +63,7 @@ class TransBench101SearchSpaceMicro(Graph):
         self.create_graph = create_graph
         self.labeled_archs = None
         self.instantiate_model = True
+        self.sample_without_replacement = False
 
         if self.create_graph == True:
             self._create_graph()
@@ -338,6 +339,10 @@ class TransBench101SearchSpaceMicro(Graph):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
+
+        if self.sample_without_replacement == True:
+            self.labeled_archs.pop(self.labeled_archs.index(op_indices))
+
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):
@@ -493,6 +498,8 @@ class TransBench101SearchSpaceMacro(Graph):
         self.max_epoch = 199
         self.space_name = 'transbench101'
         self.labeled_archs = None
+        self.instantiate_model = True
+        self.sample_without_replacement = False
 
         self.add_edge(1, 2)
         
@@ -595,8 +602,10 @@ class TransBench101SearchSpaceMacro(Graph):
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
-        model = convert_op_indices_macro_to_model(op_indices, self.dataset)
-        self.edges[1, 2].set('op', model)
+
+        if self.instantiate_model == True:
+            model = convert_op_indices_macro_to_model(op_indices, self.dataset)
+            self.edges[1, 2].set('op', model)
 
     def set_spec(self, op_indices, dataset_api=None):
         self.set_op_indices(op_indices)
@@ -605,6 +614,10 @@ class TransBench101SearchSpaceMacro(Graph):
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
+
+        if self.sample_without_replacement == True:
+            self.labeled_archs.pop(self.labeled_archs.index(op_indices))
+
         self.set_spec(op_indices)
 
     def sample_random_architecture(self, dataset_api=None, load_labeled=False):
