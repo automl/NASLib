@@ -48,7 +48,7 @@ then
 fi
 
 start=`date +%s`
-for t in $(seq 0 $end_seed)
+for t in $(seq 0 $n_seeds)
 do
     seed=$(($start_seed + $t))
     python naslib/runners/bbo/xgb_runner.py --config-file configs/${experiment}/${train_size}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
