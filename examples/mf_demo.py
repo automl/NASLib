@@ -4,19 +4,20 @@
 from naslib import search_spaces
 from naslib.optimizers.discrete.sh import optimizer
 from naslib.search_spaces import NasBench201SearchSpace as NB201
-
+from naslib.search_spaces import NasBenchASRSearchSpace as NBASR
 import logging
-from naslib.utils import utils, setup_logger, get_dataset_api
-
+#from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib.utils import utils, utils_asr ,setup_logger, get_dataset_api
 from naslib.optimizers import RandomSearch as RS
+from naslib.optimizers import Npenas as npenas
 from naslib.optimizers import RegularizedEvolution as RE
 from naslib.optimizers import SuccessiveHalving as SH
 from naslib.optimizers import HB
 from naslib.optimizers import BOHB 
 from naslib.optimizers import DEHB
-
-from naslib.defaults.trainer_multifidelity import Trainer
-#from naslib.defaults.trainer import Trainer
+#from naslib.search_spaces.nasbenchasr.conversions as h
+#from naslib.defaults.trainer_multifidelity import Trainer
+from naslib.defaults.trainer import Trainer
 # TODO: rethinking logging is rigth now, completly ingnored 
 import yaml
 from pathlib import Path
@@ -36,7 +37,7 @@ with open(os.path.join(str(Path(__file__).parent), 'mf_demo.yaml'), "r") as stre
 config_optimizer = demo_config['optimizer']
 config_path_optimizer = os.path.join(
     utils.get_project_root(), "benchmarks", "nas_predictors", "discrete_config"
-) + "_" + config_optimizer + ".yaml"
+) + "_" + "SH" + ".yaml"
 default_config_path = os.path.join(
     utils.get_project_root(), "benchmarks", "nas_predictors", "discrete_config.yaml"
 ) 
@@ -44,7 +45,9 @@ default_config_path = os.path.join(
 copyfile(config_path_optimizer, default_config_path)
 
 # init search space
-search_space = NB201()
+#search_space = NB201()
+#TODO: fix overflow error 
+search_space = NBASR()
 
 # read config
 config = utils.get_config_from_args(config_type="nas_predictor")
@@ -70,6 +73,12 @@ elif config_optimizer == 'BOHB':
     optimizer = BOHB(config)
     plot_func = mf_plot.plot_hb
     predictor = "tpe"
+elif config_optimizer == "NPENAS":
+    #i thin kby save dir is soometihng strange
+    
+    predictor = "var_sparse_gp"
+    optimizer = npenas(config)
+    plot_func = mf_plot.plot_hb
 elif config_optimizer == "DEHB":
     #i thin kby save dir is soometihng strange
     

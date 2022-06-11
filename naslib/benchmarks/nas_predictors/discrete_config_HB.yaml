@@ -1,5 +1,5 @@
 seed: 0
-search_space: nasbench201
+search_space: asr
 dataset: cifar10
 out_dir: run
 
@@ -7,10 +7,10 @@ search:
   seed: 0
   checkpoint_freq: 10 # 1000
   fidelity: 200
-  budgets: 4000
+  budgets: 400
   eta: 3
   n_process: 100
-  max_budget: 512
+  max_budget: 39
   min_budget: 12
   epsilon: 1e-6
   predictor_type: var_sparse_gp

@@ -1,6 +1,7 @@
 import collections
 import logging
 import math
+from re import I
 import torch
 import copy
 import numpy as np
@@ -41,7 +42,7 @@ class  SuccessiveHalving(MetaOptimizer):
     # training the models is not implemented
     using_step_function = False
     
-    def __init__(self, config):
+    def __init__(self, config, hash_function = convert_naslib_to_str): 
         super().__init__()
         # Hyperband related stuff
         self.config = config
@@ -51,7 +52,7 @@ class  SuccessiveHalving(MetaOptimizer):
         self.min_budget = self.config.search.min_budget
         self.eta = self.config.search.eta 
         self._epsilon = float(self.config.search.epsilon) 
-        
+        self.hash_function = hash_function
         times_of_split  = math.floor(math.log(self.max_budget / self.min_budget, self.eta)  + self._epsilon )
         # set up round sizes, fidelities, and list of arches
         
@@ -177,9 +178,10 @@ class  SuccessiveHalving(MetaOptimizer):
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch-1), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
+           best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
             train_time_scaled, 
         )
+        
     
     def test_statistics(self):
         best_arch, epoch = self.get_final_architecture()
