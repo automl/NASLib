@@ -151,3 +151,7 @@ Session.vim
 *~
 # Auto-generated tag files
 tags
+
+# ignore png files in nb_models
+nasbench301/nb_models
+naslib/checkpoints

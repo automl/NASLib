@@ -188,8 +188,7 @@ class NasBench201SearchSpace(Graph):
             # return hyperparameter info
             return query_results[dataset]["cost_info"]
         elif metric == Metric.TRAIN_TIME:
-            return query_results[dataset]["cost_info"]["train_time"]
-
+            return query_results[dataset]['cost_info']['train_time'] * epoch
         if full_lc and epoch == -1:
             return query_results[dataset][metric_to_nb201[metric]]
         elif full_lc and epoch != -1:

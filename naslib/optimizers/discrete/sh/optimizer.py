@@ -61,6 +61,7 @@ class  SuccessiveHalving(MetaOptimizer):
            
             # n= 2*3 ** 1/2  for i in range(s + 1):
             n = math.floor(n / self.eta)
+            # TODO: maybe this can be replaced by search space get_max_epoch()
             r = min(math.floor(r * self.eta), config.search.fidelity)
             self.round_sizes.append(n)
             self.fidelities.append(r)
@@ -167,11 +168,12 @@ class  SuccessiveHalving(MetaOptimizer):
     def train_statistics(self):
         best_arch, best_arch_epoch = self.get_final_architecture()
         latest_arch, latest_arch_epoch = self.get_latest_architecture()
-        models = [x for x in self.history if convert_naslib_to_str(x.arch) == convert_naslib_to_str(latest_arch) and x.epoch < self.history[-1].epoch]
         train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch)
+        models = [x for x in self.history if x.arch.get_hash() == latest_arch.get_hash() and x.epoch < self.history[-1].epoch]
+        # models = [x for x in self.history if convert_naslib_to_str(x.arch) == convert_naslib_to_str(latest_arch) and x.epoch < self.history[-1].epoch]
         train_time_scaled = train_time * latest_arch_epoch
         if len(models) > 1:
-            train_time_scaled = train_time_scaled - train_time * models[-2].epoch
+            train_time_scaled = train_time_scaled - train_time
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch-1), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
