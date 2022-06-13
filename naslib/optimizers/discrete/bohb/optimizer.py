@@ -262,11 +262,14 @@ class BOHB(MetaOptimizer):
     def train_statistics(self):
         best_arch, best_arch_epoch = self.get_final_architecture()
         latest_arch, latest_arch_epoch = self.get_latest_architecture()
+        train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch)
+        previous_train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelities[self.round_number - 1]) if self.round_number > 0 else 0
+        train_time = train_time - previous_train_time
         return (
             best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch-1), 
             best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
             best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
-            latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch), # DONE: Maybe we have to solve this directly in benchmark API
+            train_time, 
         )
     
     def test_statistics(self):
