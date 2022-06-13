@@ -39,6 +39,7 @@ class DEHB(MetaOptimizer):
         self.de = dict()
         self.pop_size = {}
         self.counter = 0
+        self.min_budget = min(self.min_budget, self.max_budget)
         s_max = math.floor(math.log(self.max_budget / self.min_budget, self.eta) + self._epsilon)
         # set up round sizes, fidelities, and list of arches
         for s in reversed(range(s_max + 1)):
