@@ -14,7 +14,7 @@ dataset=$2
 start_seed=$3
 n_seeds=10
 experiment=$5
-optimizer=bananas
+optimizer=npenas
 
 if [ -z "$searchspace" ]
 then

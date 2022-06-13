@@ -20,6 +20,10 @@ src/*
 naslib/benchmarks/*/*/
 examples/*/
 
+#individual configs
+configs/bananas500/*
+configs/npenas500/*
+
 # IDE related
 .vscode/
 .idea/

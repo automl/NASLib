@@ -26,7 +26,7 @@ if not os.path.exists(config.save):
 
 writer = SummaryWriter(config.save)
 
-dataset_api = None #get_dataset_api(config.search_space, config.dataset)
+dataset_api = None #get_dataset_api(config.search_space, config.dataset) - unless it's for nb101 + mutation
 zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
 
 search_space = get_search_space(config.search_space, config.dataset)
