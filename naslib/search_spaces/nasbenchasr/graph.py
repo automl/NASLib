@@ -99,6 +99,37 @@ class NasBenchASRSearchSpace(Graph):
         compact = m
         self.set_compact(compact)
         return compact
+    def model_based_sample_architecture(self, dataset_api=None, minimize_me=None, good_kde=None, vartypes=None):
+        """
+        This will perform a model-based architecture sampling and update the edges in the
+        naslib object accordingly.
+        """
+        num_samples = 128
+        random_fraction = 0.33
+        best = np.inf
+        best_vector = None
+        for i in range(num_samples):
+            idx = np.random.randint(0, len(good_kde.data))
+            datum = good_kde.data[idx]
+            vector = []
+            for m, bw, t in zip(datum, good_kde.bw, vartypes):
+                if np.random.rand() < (1 - bw):
+                    vector.append(int(m))
+                else:
+                    vector.append(np.random.randint(t))
+            val = minimize_me(vector)
+            if val < best:
+                best = val
+                best_vector = vector
+        if best_vector is None or np.random.rand() < random_fraction:
+            self.sample_random_architecture(dataset_api=dataset_api)
+        else:
+            for i in range(len(best_vector)):
+                best_vector[i] = int(np.rint(best_vector[i]))
+            best_vector = [[best_vector[0],best_vector[1]],
+                           [best_vector[2],best_vector[3],best_vector[4]],
+                           [best_vector[5],best_vector[6], best_vector[7], best_vector[8]]]
+            self.set_compact(best_vector)
 
 
     def mutate(self, parent, mutation_rate=1, dataset_api=None):
