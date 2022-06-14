@@ -47,9 +47,8 @@ def get_search_space(name, dataset):
 
     if name == 'transbench101_micro' or name == 'transbench101_macro':
         create_graph = True if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else False
-        use_small_model = False if dataset.lower() in ['svhn', 'ninapro', 'scifar100'] else True
         return search_space_cls(dataset=dataset,
-                                use_small_model=use_small_model,
+                                use_small_model=True,
                                 create_graph=create_graph,
                                 n_classes=n_classes,
                                 in_channels=in_channels)
