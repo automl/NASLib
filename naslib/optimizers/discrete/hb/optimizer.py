@@ -31,7 +31,7 @@ class HB(MetaOptimizer):
         self.min_budget = self.config.search.min_budget
         self.eta = self.config.search.eta 
         self._epsilon = float(self.config.search.epsilon) 
-       
+        self.min_budget = min(self.min_budget, self.max_budget)
         s_max = math.floor(math.log(self.max_budget / self.min_budget, self.eta) + self._epsilon)
         # set up round sizes, fidelities, and list of arches
         for s in reversed(range(s_max + 1)):
