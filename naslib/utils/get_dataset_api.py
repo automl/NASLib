@@ -131,8 +131,8 @@ def get_zc_benchmark_api(search_space, dataset):
     return data[dataset]
 
 
-def load_sampled_architectures(search_space):
-    datafile_path = os.path.join(get_project_root(), "data", "archs", f"archs_{search_space}.json")
+def load_sampled_architectures(search_space, postfix=''):
+    datafile_path = os.path.join(get_project_root(), "data", "archs", f"archs_{search_space}{postfix}.json")
     with open(datafile_path) as f:
         data = json.load(f)
 
