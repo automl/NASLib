@@ -146,6 +146,15 @@ class BOHB(MetaOptimizer):
                     self.vartypes += [5]  # depend on the encoding of search spaces
                 else:
                     self.vartypes += [7]
+        elif self.config.search_space == "asr":
+            good_enc = np.array([sum(m.arch.get_compact(), []) for m in good_models])
+            bad_enc = np.array([sum(m.arch.get_compact(), []) for m in bad_models])
+            self.kde_vartypes = ""
+            self.vartypes = []
+            for _ in range(len(good_enc[0])):  # we use unordered discrete variable
+                self.kde_vartypes += 'u'
+                # TODO: Adapt this
+                self.vartypes += [2]  # depend on the encoding of search spaces
         self.vartypes = np.array(self.vartypes, dtype=int)
         good_enc = self.impute_conditional_data(good_enc)
         bad_enc = self.impute_conditional_data(bad_enc)
