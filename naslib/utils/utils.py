@@ -178,6 +178,21 @@ def get_config_from_args(args=None):
 
     return config
 
+def load_ninapro(path, whichset):
+    data_str = 'ninapro_' + whichset + '.npy'
+    label_str = 'label_' + whichset + '.npy'
+
+    data = np.load(os.path.join(path, data_str),
+                             encoding="bytes", allow_pickle=True)
+    labels = np.load(os.path.join(path, label_str), encoding="bytes", allow_pickle=True)
+
+    data = np.transpose(data, (0, 2, 1))
+    data = data[:, None, :, :]
+    data = torch.from_numpy(data.astype(np.float32))
+    labels = torch.from_numpy(labels.astype(np.int64))
+
+    all_data = TensorDataset(data, labels)
+    return all_data
 
 def get_train_val_loaders(config):
     """
