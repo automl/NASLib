@@ -10,8 +10,11 @@ from naslib.utils.get_dataset_api import get_dataset_api, load_sampled_architect
 from naslib.utils.logging import setup_logger
 from naslib.utils import utils
 
-config = utils.get_config_from_args()
+def translate_str(s, replace_str='[]', with_str='()'):
+    table = str.maketrans(replace_str, with_str)
+    return str.translate(s, table)
 
+config = utils.get_config_from_args()
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 
@@ -19,7 +22,16 @@ utils.log_args(config)
 
 search_space = get_search_space(config.search_space, config.dataset)
 dataset_api = get_dataset_api(config.search_space, config.dataset)
-archs = load_sampled_architectures(config.search_space)
+
+if config.dataset in ['ninapro', 'svhn', 'scifar100']:
+    postfix = '9x'
+    with open(f'./naslib/data/9x/{config.search_space}/{config.dataset}/test.json') as f:
+        api9x_data = json.load(f)
+    api9x = {translate_str(str(record['arch'])): record['accuracy'] for record in api9x_data}
+else:
+    postfix = ''
+
+archs = load_sampled_architectures(config.search_space, postfix)
 end_index = config.start_idx + config.n_models if config.start_idx + config.n_models < len(archs) else len(archs)
 archs_to_evaluate = {idx: eval(archs[str(idx)]) for idx in range(config.start_idx, end_index)}
 
@@ -37,7 +49,10 @@ for i, (idx, arch) in enumerate(archs_to_evaluate.items()):
         graph = search_space.clone()
         graph.set_spec(arch)
         graph.parse()
-        accuracy = graph.query(Metric.VAL_ACCURACY, config.dataset, dataset_api=dataset_api)
+        if config.dataset in ['ninapro', 'svhn', 'scifar100']:
+            accuracy = api9x[str(arch)]
+        else:
+            accuracy = graph.query(Metric.VAL_ACCURACY, config.dataset, dataset_api=dataset_api)
 
         # Query predictor
         start_time = timeit.default_timer()
