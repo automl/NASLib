@@ -459,12 +459,13 @@ class TransBench101SearchSpaceMicro(Graph):
         return outputs[0]
 
     def forward_before_global_avg_pool(self, x):
-        assert self.create_graph == False, "forward_before_global_avg_pool method not implemented for NASLib graph"
-
-        if self.dataset in ['class_scene', 'class_object', 'room_layout', 'jigsaw']:
+        if (self.create_graph == True and self.dataset in ['ninapro', 'svhn', 'scifar100']) or \
+           (self.dataset in ['class_scene', 'class_object', 'room_layout', 'jigsaw']):
             return self._forward_before_global_avg_pool(x)
-        else:
+        elif self.create_graph == False:
             return self._forward_before_last_conv(x)
+        else:
+            raise Exception(f"forward_before_global_avg_pool method not implemented for NASLib graph for dataset {self.dataset}")
 
 
 class TransBench101SearchSpaceMacro(Graph):
