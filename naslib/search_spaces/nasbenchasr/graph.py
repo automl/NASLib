@@ -55,7 +55,8 @@ class NasBenchASRSearchSpace(Graph):
             Metric.TRAIN_TIME,
             Metric.RAW,
         ]
-        query_results = dataset_api["asr_data"].full_info(self.compact)
+        # seed has to be set manually, otherwise one would get different metric values for the same architecture!
+        query_results = dataset_api["asr_data"].full_info(self.compact, seed=1234)
 
 
         if metric != Metric.VAL_ACCURACY:

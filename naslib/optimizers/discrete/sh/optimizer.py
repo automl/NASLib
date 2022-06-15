@@ -91,7 +91,7 @@ class  SuccessiveHalving(MetaOptimizer):
         
         if self.process < i: # re-init for each new process
             del self.current_round
-            del  self.next_round
+            del self.next_round
             del self.round_number
             del self.prev_round
             del self.process
