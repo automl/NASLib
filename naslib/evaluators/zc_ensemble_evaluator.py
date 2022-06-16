@@ -145,17 +145,20 @@ class ZCEnsembleEvaluator(object):
 
         model = ensemble.ensemble[0].model
         feature_importances = model.get_fscore()
-        feature_mapping = ensemble.ensemble[0].zc_to_features_map
 
-        zc_feature_importances = {zc_name: 0 for zc_name in self.zc_names}
-        for zc_name, feature_name in feature_mapping.items():
-            if feature_name in feature_importances:
-                zc_feature_importances[zc_name] = feature_importances[feature_name]
+        if hasattr(ensemble.ensemble[0], 'zc_to_features_map'):
+            feature_mapping = ensemble.ensemble[0].zc_to_features_map
 
-        scores['zc_feature_importances'] = zc_feature_importances
+            zc_feature_importances = {zc_name: 0 for zc_name in self.zc_names}
+            for zc_name, feature_name in feature_mapping.items():
+                if feature_name in feature_importances:
+                    zc_feature_importances[zc_name] = feature_importances[feature_name]
+
+            scores['zc_feature_importances'] = zc_feature_importances
+            logger.info(f'ZC feature importances: {zc_feature_importances}')
+
         scores['feature_importances'] = feature_importances
 
-        logger.info(f'ZC feature importances: {zc_feature_importances}')
         self._log_to_json([self.config, scores], self.config.save)
 
 
