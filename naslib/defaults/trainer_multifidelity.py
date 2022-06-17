@@ -24,8 +24,7 @@ class Trainer(object):
     Default implementation that handles dataloading and preparing batches, the
     train loop, gathering statistics, checkpointing and doing the final
     final evaluation.
-    If this does not fulfil your needs free do subclass it and implement your
-    required logic.
+    This trainer is purposed for multi-fidelity optimizers.
     """
 
     def __init__(self, optimizer, config, lightweight_output=False):
@@ -39,7 +38,7 @@ class Trainer(object):
         self.optimizer = optimizer
         self.config = config
         self.lightweight_output = lightweight_output
-        self.n_process = config.search.n_process #need to be a parameter
+        self.n_process = config.search.n_process
 
         # anytime
         computed_epochs = self.optimizer.compute_epochs()
@@ -78,7 +77,6 @@ class Trainer(object):
              'params': n_parameters}
         )
 
-
     def search(self, resume_from=""):
         """
         Start the architecture search.
@@ -96,7 +94,6 @@ class Trainer(object):
         checkpoint_freq = self.config.search.checkpoint_freq
         if self.optimizer.using_step_function:
             self.scheduler = self.build_search_scheduler(self.optimizer.op_optimizer, self.config)
-        
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq, scheduler=self.scheduler)
         else:
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq)
@@ -126,10 +123,12 @@ class Trainer(object):
 
                                 log_every_n_seconds(logging.INFO,
                                                     "Round {}: Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}".format(
-                                                        round, e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
+                                                        round, e, step, train_loss, val_loss,
+                                                        self.scheduler.get_last_lr()), n=5)
 
                                 if torch.cuda.is_available():
-                                    log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()),
+                                    log_first_n(logging.INFO,
+                                                "cuda consumption\n {}".format(torch.cuda.memory_summary()),
                                                 n=3)
 
                                 self.train_loss.update(float(train_loss.detach().cpu()))
@@ -147,7 +146,6 @@ class Trainer(object):
                         else:
                             end_time = time.time()
                             train_acc, valid_acc, test_acc, train_time = self.optimizer.train_statistics()
-                            
                             train_loss, valid_loss, test_loss = -1, -1, -1
 
                             self.errors_dict.train_acc.append(train_acc)
@@ -157,18 +155,14 @@ class Trainer(object):
                             self.errors_dict.test_acc.append(test_acc)
                             self.errors_dict.test_loss.append(test_loss)
                             self.errors_dict.runtime.append(end_time - start_time)
-                           
                             self.train_top1.avg = train_acc
                             self.val_top1.avg = valid_acc
                             if train_time > 0:
                                 self.search_time += end_time - start_time
                                 self.search_time += train_time
                             else:
-                                #this if we have no time only epochs
-                                #self.fidelities[self.round_number]
-                                #if work proberly has to be check 
-                                #ofcourse now we doesn't factor in runetime of optimizer, but this not hat large comapre to training time normaly
-                                _, latest_arch_epoch  = self.optimizer.get_latest_architecture()
+                                # case if we do not work with train_time as budget, like in NASBenchASR
+                                _, latest_arch_epoch = self.optimizer.get_latest_architecture()
                                 self.search_time += 1 * latest_arch_epoch
                                 train_time = 1 * latest_arch_epoch
                             self.errors_dict.train_time.append(train_time)
@@ -176,7 +170,7 @@ class Trainer(object):
 
                         anytime_results = self.optimizer.test_statistics()
                         if anytime_results:
-                           # record anytime performance
+                            # record anytime performance
                             self.errors_dict.arch_eval.append(anytime_results)
                             log_every_n_seconds(logging.INFO, "Round {} Epoch {}, Anytime results: {}".format(
                                 round, e, anytime_results), n=5)
@@ -203,8 +197,9 @@ class Trainer(object):
                         self._store_accuracies(logits_train, data_train[1], 'train')
                         self._store_accuracies(logits_val, data_val[1], 'val')
 
-                        log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}".format(
-                            e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
+                        log_every_n_seconds(logging.INFO,
+                                            "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}".format(
+                                                e, step, train_loss, val_loss, self.scheduler.get_last_lr()), n=5)
 
                         if torch.cuda.is_available():
                             log_first_n(logging.INFO, "cuda consumption\n {}".format(torch.cuda.memory_summary()), n=3)
@@ -233,18 +228,15 @@ class Trainer(object):
                     self.errors_dict.test_acc.append(test_acc)
                     self.errors_dict.test_loss.append(test_loss)
                     self.errors_dict.runtime.append(end_time - start_time)
-                    
+
                     self.train_top1.avg = train_acc
                     self.val_top1.avg = valid_acc
                     if train_time > 0:
                         self.search_time += end_time - start_time
                         self.search_time += train_time
                     else:
-                        #this if we have no time only epochs        
-                        #self.fidelities[self.round_number]
-                        #if work proberly has to be check         
-                        #ofcourse now we doesn't factor in runetime of optimizer, but this not hat large comapre to training time normaly
-                        _, latest_arch_epoch  = self.optimizer.get_latest_architecture()
+                        # case if we do not work with train_time as budget, like in NASBenchASR
+                        _, latest_arch_epoch = self.optimizer.get_latest_architecture()
                         self.search_time += 1 * latest_arch_epoch
                         train_time = 1
                     self.errors_dict.train_time.append(train_time)
@@ -256,17 +248,16 @@ class Trainer(object):
                     # record anytime performance
                     self.errors_dict.arch_eval.append(anytime_results)
                     log_every_n_seconds(logging.INFO, "Epoch {}, Anytime results: {}".format(
-                            e, anytime_results), n=5)
+                        e, anytime_results), n=5)
 
                 self._log_to_json()
                 self._log_and_reset_accuracies(e)
                 if self.search_time > self.budgets:
-                    gc.collect() 
+                    gc.collect()
                     return
 
             self.optimizer.after_training()
         logger.info("Training finished. Total Budgets[s]: {}".format(self.search_time))
-
 
     def evaluate_oneshot(self, resume_from="", dataloader=None):
         """
@@ -310,15 +301,14 @@ class Trainer(object):
         logger.info("Evaluation finished")
         return self.val_top1.avg
 
-
     def evaluate(
-            self, 
-            retrain=True, 
-            search_model="", 
+            self,
+            retrain=True,
+            search_model="",
             resume_from="",
-            best_arch=None, 
+            best_arch=None,
             dataset_api=None
-        ):
+    ):
         """
         Evaluate the final architecture as given from the optimizer.
         If the search space has an interface to a benchmark then query that.
@@ -336,7 +326,7 @@ class Trainer(object):
 
             if not search_model:
                 search_model = os.path.join(self.config.save, "search", "model_final.pth")
-            self._setup_checkpointers(search_model)      # required to load the architecture
+            self._setup_checkpointers(search_model)  # required to load the architecture
 
             best_arch, _ = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
@@ -358,10 +348,11 @@ class Trainer(object):
                 optim = self.build_eval_optimizer(best_arch.parameters(), self.config)
                 scheduler = self.build_eval_scheduler(optim, self.config)
 
-                start_epoch = self._setup_checkpointers(resume_from, 
-                    search=False, 
+                start_epoch = self._setup_checkpointers(
+                    resume_from,
+                    search=False,
                     period=self.config.evaluation.checkpoint_freq,
-                    model=best_arch,    # checkpointables start here
+                    model=best_arch,  # checkpointables start here
                     optim=optim,
                     scheduler=scheduler
                 )
@@ -404,7 +395,7 @@ class Trainer(object):
                         optim.zero_grad()
                         logits_train = best_arch(input_train)
                         train_loss = loss(logits_train, target_train)
-                        if hasattr(best_arch, 'auxilary_logits'):   # darts specific stuff
+                        if hasattr(best_arch, 'auxilary_logits'):  # darts specific stuff
                             log_first_n(logging.INFO, "Auxiliary is used", n=10)
                             auxiliary_loss = loss(best_arch.auxilary_logits(), target_train)
                             train_loss += self.config.evaluation.auxiliary_weight * auxiliary_loss
@@ -416,12 +407,10 @@ class Trainer(object):
                         self._store_accuracies(logits_train, target_train, 'train')
                         log_every_n_seconds(logging.INFO, "Epoch {}-{}, Train loss: {:.5}, learning rate: {}".format(
                             e, i, train_loss, scheduler.get_last_lr()), n=5)
-                        
-                        
+
                     # Validation queue
                     if self.valid_queue:
                         for i, (input_valid, target_valid) in enumerate(self.valid_queue):
-                            
                             input_valid = input_valid.cuda().float()
                             target_valid = target_valid.cuda().float()
 
@@ -465,18 +454,15 @@ class Trainer(object):
 
             logger.info("Evaluation finished. Test accuracies: top-1 = {:.5}, top-5 = {:.5}".format(top1.avg, top5.avg))
 
-
     @staticmethod
     def build_search_dataloaders(config):
         train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode='train')
         return train_queue, valid_queue, _  # test_queue is not used in search currently
 
-
     @staticmethod
     def build_eval_dataloaders(config):
         train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(config, mode='val')
         return train_queue, valid_queue, test_queue
-
 
     @staticmethod
     def build_eval_optimizer(parameters, config):
@@ -487,56 +473,54 @@ class Trainer(object):
             weight_decay=config.evaluation.weight_decay,
         )
 
-
     @staticmethod
     def build_search_scheduler(optimizer, config):
         return torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, 
-            T_max=config.search.epochs, 
+            optimizer,
+            T_max=config.search.epochs,
             eta_min=config.search.learning_rate_min
         )
-
 
     @staticmethod
     def build_eval_scheduler(optimizer, config):
         return torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, 
-            T_max=config.evaluation.epochs, 
+            optimizer,
+            T_max=config.evaluation.epochs,
             eta_min=config.evaluation.learning_rate_min
         )
-
 
     def _log_and_reset_accuracies(self, epoch, *args):
         if args:
             r, i = args[0], args[1]
-            logger.info("Process: {}, Round {} Epoch {} done. Train accuracy (top1): {:.5f}, Validation accuracy: {:.5f}, Query time: {:.5f}, Training time: {:.5f}, Accumulated time: {:.5f}".format(
-                i,
-                r,
-                epoch,
-                self.train_top1.avg,
-                self.val_top1.avg,
-                self.errors_dict['runtime'][-1],
-                self.errors_dict['train_time'][-1],
-                sum(self.errors_dict['runtime']) +
-                sum(self.errors_dict['train_time'])
-            ))
+            logger.info(
+                "Process: {}, Round {} Epoch {} done. Train accuracy (top1): {:.5f}, Validation accuracy: {:.5f}, Query time: {:.5f}, Training time: {:.5f}, Accumulated time: {:.5f}".format(
+                    i,
+                    r,
+                    epoch,
+                    self.train_top1.avg,
+                    self.val_top1.avg,
+                    self.errors_dict['runtime'][-1],
+                    self.errors_dict['train_time'][-1],
+                    sum(self.errors_dict['runtime']) +
+                    sum(self.errors_dict['train_time'])
+                ))
         else:
-            logger.info("Epoch {} done. Train accuracy (top1): {:.5f}, Validation accuracy: {:.5f}, Query time: {:.5f}, Training time: {:.5f}, Accumulated time: {:.5f}".format(
-                epoch,
-                self.train_top1.avg,
-                self.val_top1.avg,
-                self.errors_dict['runtime'][-1],
-                self.errors_dict['train_time'][-1],
-                sum(self.errors_dict['runtime']) +
-                sum(self.errors_dict['train_time']),
-            ))
+            logger.info(
+                "Epoch {} done. Train accuracy (top1): {:.5f}, Validation accuracy: {:.5f}, Query time: {:.5f}, Training time: {:.5f}, Accumulated time: {:.5f}".format(
+                    epoch,
+                    self.train_top1.avg,
+                    self.val_top1.avg,
+                    self.errors_dict['runtime'][-1],
+                    self.errors_dict['train_time'][-1],
+                    sum(self.errors_dict['runtime']) +
+                    sum(self.errors_dict['train_time']),
+                ))
         self.train_top1.reset()
         self.train_top5.reset()
         self.train_loss.reset()
         self.val_top1.reset()
         self.val_top5.reset()
         self.val_loss.reset()
-
 
     def _store_accuracies(self, logits, target, split):
         """Update the accuracy counters"""
@@ -554,7 +538,6 @@ class Trainer(object):
         else:
             raise ValueError("Unknown split: {}. Expected either 'train' or 'val'")
 
-
     def _prepare_dataloaders(self, config, mode='train'):
         """
         Prepare train, validation, and test dataloaders with the splits defined
@@ -566,7 +549,6 @@ class Trainer(object):
         self.train_queue = train_queue
         self.valid_queue = valid_queue
         self.test_queue = test_queue
-    
 
     def _setup_checkpointers(self, resume_from="", search=True, period=1, **add_checkpointables):
         """
@@ -586,14 +568,13 @@ class Trainer(object):
         checkpointer = utils.Checkpointer(
             model=checkpointables.pop('model'),
             save_dir=self.config.save + "/search" if search else self.config.save + "/eval",
-            #**checkpointables #NOTE: this is throwing an Error
+            # **checkpointables #NOTE: this is throwing an Error
         )
 
         self.periodic_checkpointer = PeriodicCheckpointer(
             checkpointer,
             period=period,
             max_iter=1)
-        #max_iter=self.config.search.epochs if search else self.config.evaluation.epochs
 
         if resume_from:
             logger.info("loading model from file {}".format(resume_from))
@@ -601,7 +582,6 @@ class Trainer(object):
             if checkpointer.has_checkpoint():
                 return checkpoint.get("iteration", -1) + 1
         return 0
-
 
     def _log_to_json(self):
         """log training statistics to json file"""
@@ -616,4 +596,3 @@ class Trainer(object):
                 for key in ['arch_eval', 'train_loss', 'valid_loss', 'test_loss']:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(',', ':'))
-

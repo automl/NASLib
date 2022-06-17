@@ -1,25 +1,22 @@
 import collections
+import copy
 import logging
 import math
-import torch
-import copy
 import numpy as np
+import torch
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-
 from naslib.search_spaces.core.query_metrics import Metric
-
-from naslib.utils.utils import AttrDict, count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
+from naslib.utils.utils import AttrDict, count_parameters_in_MB
 
 logger = logging.getLogger(__name__)
-    
-        
+
+
 class HB(MetaOptimizer):
-    
     # training the models is not implemented
     using_step_function = False
-    
+
     def __init__(self, config):
         super().__init__()
         # Hyperband related stuff
@@ -29,8 +26,8 @@ class HB(MetaOptimizer):
         self.fidelities = []
         self.max_budget = self.config.search.max_budget
         self.min_budget = self.config.search.min_budget
-        self.eta = self.config.search.eta 
-        self._epsilon = float(self.config.search.epsilon) 
+        self.eta = self.config.search.eta
+        self._epsilon = float(self.config.search.epsilon)
         self.min_budget = min(self.min_budget, self.max_budget)
         s_max = math.floor(math.log(self.max_budget / self.min_budget, self.eta) + self._epsilon)
         # set up round sizes, fidelities, and list of arches
@@ -38,8 +35,8 @@ class HB(MetaOptimizer):
             self.rounds.append(s)
             round_sizes = []
             fidelities = []
-            n = math.ceil((s_max + 1) * self.eta ** s / (s + 1) - self._epsilon) # initial number of configurations
-            r = self.max_budget / self.eta**s # initial number of iterations to run configurations for
+            n = math.ceil((s_max + 1) * self.eta ** s / (s + 1) - self._epsilon)  # initial number of configurations
+            r = self.max_budget / self.eta ** s  # initial number of iterations to run configurations for
             for i in range(s + 1):
                 n_i = math.floor(n / self.eta ** i + self._epsilon)
                 r_i = min(math.floor(r * self.eta ** i + self._epsilon), config.search.fidelity)
@@ -72,7 +69,7 @@ class HB(MetaOptimizer):
     def new_epoch(self, epoch, round, i):
         # round - bracket
         # epoch - number of architectures in bracket so far
-        if self.process < i: # re-init for each new process
+        if self.process < i:  # re-init for each new process
             del self.current_round
             del self.next_round
             del self.round_number
@@ -80,7 +77,7 @@ class HB(MetaOptimizer):
             del self.process
             self.current_round = []
             self.next_round = []
-            self.round_number = 0 # index to fidelity
+            self.round_number = 0  # index to fidelity
             self.prev_round = 0
             self.process = i
             self.clean_history()
@@ -89,22 +86,22 @@ class HB(MetaOptimizer):
             self.prev_round = round
             self.round_number = 0
 
-        if epoch < self.round_sizes[round][0]: # check if first fidelity of bracket
+        if epoch < self.round_sizes[round][0]:  # check if first fidelity of bracket
             # sample random architectures
-            model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
+            model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture(dataset_api=self.dataset_api)   
+            model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.epoch = self.fidelities[round][0]
             model.accuracy = model.arch.query(self.performance_metric,
-                                              self.dataset, 
-                                              epoch=model.epoch, 
+                                              self.dataset,
+                                              epoch=model.epoch,
                                               dataset_api=self.dataset_api)
             self._update_history(model)
             self.next_round.append(model)
 
-        else: 
-            if len(self.current_round) == 0: # fidelity is full
-                # if we are at the end of a round of hyperband, continue training only the best 
+        else:
+            if len(self.current_round) == 0:  # fidelity is full
+                # if we are at the end of a round of hyperband, continue training only the best
                 logger.info("Starting a new round: continuing to train the best arches")
                 self.round_number += 1
                 cutoff = self.round_sizes[round][self.round_number]
@@ -112,7 +109,7 @@ class HB(MetaOptimizer):
                 self.next_round = []
 
             # train the next architecture
-            model = self.current_round.pop() # architecture to train
+            model = self.current_round.pop()  # architecture to train
             """
             Note: technically we would just continue training this arch, but right now,
             just for simplicity, we treat it as if we start to train it again from scratch
@@ -120,23 +117,22 @@ class HB(MetaOptimizer):
             model = copy.deepcopy(model)
             model.epoch = self.fidelities[round][self.round_number]
             model.accuracy = model.arch.query(self.performance_metric,
-                                              self.dataset, 
-                                              epoch=model.epoch, 
+                                              self.dataset,
+                                              epoch=model.epoch,
                                               dataset_api=self.dataset_api)
             self._update_history(model)
             self.next_round.append(model)
 
     def _update_history(self, child):
         self.history.append(child)
-    
+
     def clean_history(self):
         best_arch = max(self.history, key=lambda x: x.accuracy)
         self.history = torch.nn.ModuleList()
         self.history.append(best_arch)
 
-
     def get_final_architecture(self):
-        
+
         # Returns the sampled architecture with the lowest validation error.
         best_arch = max(self.history, key=lambda x: x.accuracy)
         return best_arch.arch, best_arch.epoch
@@ -150,21 +146,24 @@ class HB(MetaOptimizer):
     def train_statistics(self):
         best_arch, best_arch_epoch = self.get_final_architecture()
         latest_arch, latest_arch_epoch = self.get_latest_architecture()
-        train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=latest_arch_epoch)
-        previous_train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api, epoch=self.fidelities[self.prev_round][self.round_number - 1]) if self.round_number > 0 else 0
+        train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api,
+                                       epoch=latest_arch_epoch)
+        previous_train_time = latest_arch.query(Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api,
+                                                epoch=self.fidelities[self.prev_round][
+                                                    self.round_number - 1]) if self.round_number > 0 else 0
         train_time = train_time - previous_train_time
         return (
-            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch-1), 
-            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
-            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch), 
-            train_time, 
+            best_arch.query(Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api,
+                            epoch=best_arch_epoch - 1),
+            best_arch.query(Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch),
+            best_arch.query(Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api, epoch=best_arch_epoch),
+            train_time,
         )
-    
+
     def test_statistics(self):
         best_arch, epoch = self.get_final_architecture()
         return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api, epoch=epoch)
 
-    
     def get_op_optimizer(self):
         raise NotImplementedError()
 
