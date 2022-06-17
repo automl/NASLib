@@ -70,24 +70,26 @@ class HB(MetaOptimizer):
         return self.round_sizes, self.rounds[::-1]
 
     def new_epoch(self, epoch, round, i):
+        # round - bracket
+        # epoch - number of architectures in bracket so far
         if self.process < i: # re-init for each new process
             del self.current_round
-            del  self.next_round
+            del self.next_round
             del self.round_number
             del self.prev_round
             del self.process
             self.current_round = []
             self.next_round = []
-            self.round_number = 0
+            self.round_number = 0 # index to fidelity
             self.prev_round = 0
             self.process = i
             self.clean_history()
 
-        if self.prev_round < round:  # reset round_number for each new round
+        if self.prev_round < round:  # reset round_number for each new round # check if new bracket
             self.prev_round = round
             self.round_number = 0
 
-        if epoch < self.round_sizes[round][0]:
+        if epoch < self.round_sizes[round][0]: # check if first fidelity of bracket
             # sample random architectures
             model = torch.nn.Module()   # hacky way to get arch and accuracy checkpointable
             model.arch = self.search_space.clone()
@@ -100,8 +102,8 @@ class HB(MetaOptimizer):
             self._update_history(model)
             self.next_round.append(model)
 
-        else:
-            if len(self.current_round) == 0:
+        else: 
+            if len(self.current_round) == 0: # fidelity is full
                 # if we are at the end of a round of hyperband, continue training only the best 
                 logger.info("Starting a new round: continuing to train the best arches")
                 self.round_number += 1
@@ -110,7 +112,7 @@ class HB(MetaOptimizer):
                 self.next_round = []
 
             # train the next architecture
-            model = self.current_round.pop()
+            model = self.current_round.pop() # architecture to train
             """
             Note: technically we would just continue training this arch, but right now,
             just for simplicity, we treat it as if we start to train it again from scratch
