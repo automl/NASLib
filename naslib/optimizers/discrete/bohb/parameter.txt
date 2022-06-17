@@ -1,7 +1,0 @@
-p = 0.15 #percentage of random sampeling
-N_min = 0 # mimum of nodes that needs to sample
-num_samples = 64 # num_essemels as ide
-min_points_in_model = 6
-top_n_percent = 15
-min_bandwith = 1e-3
-random_fraction = 0.15
