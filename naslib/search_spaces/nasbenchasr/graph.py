@@ -64,6 +64,11 @@ class NasBenchASRSearchSpace(Graph):
                 return query_results[metric_to_asr[metric]]
             elif (metric == Metric.PARAMETERS) or (metric == Metric.FLOPS):
                 return query_results['info'][metric_to_asr[metric]]
+            elif (metric == Metric.TRAIN_TIME):
+                if epoch == -1:
+                    return self.get_max_epochs() + 1
+                else:
+                    return 1 * epoch
             elif metric in [Metric.TRAIN_ACCURACY, Metric.TRAIN_LOSS,
                             Metric.TRAIN_TIME, Metric.RAW]:
                 return -1
