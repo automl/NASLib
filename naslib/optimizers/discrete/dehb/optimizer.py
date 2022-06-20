@@ -109,7 +109,7 @@ class DEHB(MetaOptimizer):
                 model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             else:
                 if len(self.de[budget]['promotions']) > 0:
-                    print('promotion from budget: {}, length: {}'.format(budget, len(self.de[budget]['promotions'])))
+                    logger.info('promotion from budget: {}, length: {}'.format(budget, len(self.de[budget]['promotions'])))
                     model = self.de[budget]['promotions'].pop()
                     model = copy.deepcopy(model)
                     arch = self.search_space.clone()

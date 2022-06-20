@@ -192,8 +192,8 @@ class BOHB(MetaOptimizer):
             if round == 0:
                 model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             else:
-                print("budget: {}, the number of good enc: {}".format(budget, len(self.kde_models[budget]['good'])))
-                print("budget: {}, the number of bad enc: {}".format(budget, len(self.kde_models[budget]['bad'])))
+                logger.info("budget: {}, the number of good enc: {}".format(budget, len(self.kde_models[budget]['good'])))
+                logger.info("budget: {}, the number of bad enc: {}".format(budget, len(self.kde_models[budget]['bad'])))
                 if epoch == 0 and \
                         len(self.kde_models[budget]['good']) >= self.min_points_in_model and \
                         len(self.kde_models[budget]['bad']) >= self.min_points_in_model:
@@ -234,9 +234,6 @@ class BOHB(MetaOptimizer):
             Note: technically we would just continue training this arch, but right now,
             just for simplicity, we treat it as if we start to train it again from scratch
             """
-            print(self.fidelities[round])
-            print(self.round_number)
-            print(self.fidelities[round][self.round_number])
             model = copy.deepcopy(model)
             model.epoch = min(self.fidelities[round][self.round_number], self.max_training_epoch)
             model.accuracy = model.arch.query(self.performance_metric,
