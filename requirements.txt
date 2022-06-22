@@ -1,6 +1,6 @@
 ConfigSpace==0.4.19
 cython==0.29.23
-networkx==2.8
+networkx==2.7.1
 numpy==1.21.5; python_version <= '3.7'
 numpy>=1.22.0; python_version > '3.7'
 torch==1.9.0
