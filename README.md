@@ -2,13 +2,14 @@
 # NAS-Bench-Suite-Zero: Accelerating Research on Zero Cost Proxies
 
 <div align=justify>
+
 `NAS-Bench-Suite-Zero` is a dataset and unified codebase for ZC proxies, enabling orders-of-magnitude faster experiments on ZC proxies, while avoiding confounding factors stemming from different implementations.
 
 `NAS-Bench-Suite-Zero` contains precomputed scores of 13 ZC proxies on 100 to 15625 architectures on 28 tasks, with a total of 1.5M total evaluations. It can be used to run large-scale analyses of ZC proxies, including studies on generalizability and bias of ZC proxies, analyzing mutual information, or integrating ZC proxies into NAS algorithms. 
 </div>
   
 <div align="center">
-  <img src="images/nas-bench-suite-zero.png" width="1000" height="377">
+  <img src="images/nas-bench-suite-zero.png" width="700">
 </div>
 
 
