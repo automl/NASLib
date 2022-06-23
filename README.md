@@ -1,23 +1,15 @@
 
+# NAS-Bench-Suite-Zero: Accelerating Research on Zero Cost Proxies
+
+<div align=justify>
+`NAS-Bench-Suite-Zero` is a dataset and unified codebase for ZC proxies, enabling orders-of-magnitude faster experiments on ZC proxies, while avoiding confounding factors stemming from different implementations.
+
+`NAS-Bench-Suite-Zero` contains precomputed scores of 13 ZC proxies on 100 to 15625 architectures on 28 tasks, with a total of 1.5M total evaluations. It can be used to run large-scale analyses of ZC proxies, including studies on generalizability and bias of ZC proxies, analyzing mutual information, or integrating ZC proxies into NAS algorithms. 
+</div>
+  
 <div align="center">
-  <img src="images/zcp_competition.png" width="1000" height="200">
+  <img src="images/nas-bench-suite-zero.png" width="1000" height="377">
 </div>
-<div>
-
-</div>
-
-<div align=justify>
-
-This is the official github repo for the [Zero-Cost NAS Competition](https://sites.google.com/view/zero-cost-nas-competition/home) organized at the [AutoML-Conf 22](https://automl.cc/). This competition shall be hosted on CodaLab. Participants will be required to implement their zero-cost proxies using a lightweight version of [NASLib](https://github.com/automl/NASLib), a library for Neural Architecture Search. NASLib provides users with a range of tabular and surrogate benchmarks, making it easy to sample a random architecture from a supported search space, instantiate it as a PyTorch model, and query its final performance instantly. Once a zero-cost proxy has been implemented, the framework allows users to evaluate its performance across several search spaces and tasks in a matter of minutes.
-
-</div>
-
-<div align=justify>
-
-The challenge is as follows: Given N models from a search space, such as [NASBench301](https://arxiv.org/pdf/2008.09777.pdf), the participant's zero-cost proxy will be used to score and rank the models for a given task, such as classification on CIFAR10 dataset. The Kendall-Tau rank correlation between the predicted and actual ranks of the models is the metric of interest. The final score of a submission shall be the average rank correlation across a set of NAS benchmarks (combinations of search spaces and datasets). To keep the spirit of "zero-cost" proxies in the user submissions, it is required that the scoring of models consumes only negligible computational resources. This is enforced by running the computations on CPUs instead of GPUs and setting a hard limit for the runtime of the program.
-
-</div>
-
 
 
 [**Setup**](#setup)
