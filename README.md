@@ -1,5 +1,6 @@
 
-# NAS-Bench-Suite-Zero: Accelerating Research on Zero Cost Proxies
+<h1  align="center" > ℕ𝔸𝕊-𝔹𝕖𝕟𝕔𝕙-𝕊𝕦𝕚𝕥𝕖-ℤ𝕖r𝕠:  </h1>
+
 
 <div align=justify>
 
@@ -7,7 +8,14 @@
 
 `NAS-Bench-Suite-Zero` contains precomputed scores of 13 ZC proxies on 100 to 15625 architectures on 28 tasks, with a total of 1.5M total evaluations. It can be used to run large-scale analyses of ZC proxies, including studies on generalizability and bias of ZC proxies, analyzing mutual information, or integrating ZC proxies into NAS algorithms. 
 </div>
-  
+
+<p> Runtimes (on an Intel Xeon Gold 6242 CPU) for all types of experiments done in this paper, with and without NAS-Bench-Suite-Zero:</p>
+<div align="center">
+  <img src="images/speedup_table.png" width="700">
+</div>
+<br>
+
+<p> Overview of NAS-Bench-Suite-Zero:
 <div align="center">
   <img src="images/nas-bench-suite-zero.png" width="700">
 </div>
@@ -23,10 +31,10 @@
 While installing the repository, creating a new conda environment is recomended. [Install PyTorch GPU/CPU](https://pytorch.org/get-started/locally/) for your setup.
 
 ```bash
-git clone -b automl-conf-competition https://github.com/automl/NASLib/
+git clone -b zerocost https://github.com/automl/NASLib/
 cd NASLib
-conda create -n automl-competition  python=3.9
-conda activate automl-competition
+conda create -n zerocost  python=3.7
+conda activate zerocost
 ```
 
 Run setup.py file with the following command, which will install all the packages listed in [`requirements.txt`](requirements.txt).
@@ -34,7 +42,17 @@ Run setup.py file with the following command, which will install all the package
 pip install --upgrade pip setuptools wheel
 pip install -e .
 ```
-Download all the datasets and benchmarks ( for mac users, please make sure you have wget installed).
+# Data
+
+Download all the ZC proxies evaluations, which contains the scores for each proxy and validation accuracy for each architecutre. The ```gdown (pip install gdown)``` package is required to download from google drive. The following command will download the data.
+
+```bash
+source scripts/bash_scripts/download_nbs_zero.sh <search_space>
+source scripts/bash_scripts/download_nbs_zero.sh nb201
+source scripts/bash_scripts/download_nbs_zero.sh all
+```
+
+Download all the NAS benchmarks and their associated datasets ( for mac users, please make sure you have wget installed).
 ```bash
 source scripts/bash_scripts/download_data.sh all 
 ```
@@ -48,15 +66,9 @@ Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk
 
 If you face issues downloading the datasets please follow the steps [here](dataset_preparation/).
 
-# Tutorial
-This [tutorial](tutorial/) will help participants get acquainted with NASLib and a sample submission.
+# Experiments 
+See [`naslib/runners`](naslib/runners) for experiments to run predictor-guided XGBoost, the standalone predictor, and compute ZC proxy correlations. More details to follow.
 
-# Usage
-To test the setup on different benchmarks you can run
-
-```bash
-bash scripts/bash_scripts/run_nb201.sh
-bash scripts/bash_scripts/run_nb301.sh
-bash scripts/bash_scripts/run_tnb101.sh
-```
+# Visualizations
+Check out the jupyter notebooks in [`plotting`](plotting) for visualizations of information theory plots, correlation plots, etc.  
 
