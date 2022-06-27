@@ -6,7 +6,7 @@
 
 `NAS-Bench-Suite-Zero` is a dataset and unified codebase for ZC proxies, enabling orders-of-magnitude faster experiments on ZC proxies, while avoiding confounding factors stemming from different implementations.
 
-`NAS-Bench-Suite-Zero` contains precomputed scores of 13 ZC proxies on 100 to 15625 architectures on 28 tasks, with a total of 1.5M total evaluations. It can be used to run large-scale analyses of ZC proxies, including studies on generalizability and bias of ZC proxies, analyzing mutual information, or integrating ZC proxies into NAS algorithms. 
+As a benchmark, `NAS-Bench-Suite-Zero` contains precomputed scores of 13 ZC proxies on 100 to 15625 architectures on 28 tasks, with a total of 1.5M total evaluations. It can be used to run large-scale analyses of ZC proxies, including studies on generalizability and bias of ZC proxies, analyzing mutual information, or integrating ZC proxies into NAS algorithms. 
 </div>
 
 <p> Runtimes (on an Intel Xeon Gold 6242 CPU) for all types of experiments done in this paper, with and without NAS-Bench-Suite-Zero:</p>
@@ -15,16 +15,25 @@
 </div>
 <br>
 
-<p> Overview of NAS-Bench-Suite-Zero:
+<p> Overview of how NAS-Bench-Suite-Zero facilitates NAS research:
 <div align="center">
   <img src="images/nas-bench-suite-zero.png" width="700">
 </div>
+<br>
 
+<p> NAS search spaces and zero-cost proxies studied in NAS-Bench-Suite-Zero: 
+<div align="center">
+  <img src="images/benchmark_info.png" width="700">
+  <img src="images/benchmark_proxies.png" width="700">
+</div>
+<br>
+
+<h3> Quick Links: </h3>
 
 [**Setup**](#setup)
-| [**Tutorial**](#tutorial)
-| [**Usage**](#usage)
-
+| [**Data**](#data)
+| [**Experiments**](#experiments)
+| [**Visualizations**](#visualizations)
 
 # Setup
 
@@ -62,13 +71,51 @@ source scripts/bash_scripts/download_data.sh <search_space> <dataset>
 source scripts/bash_scripts/download_data.sh nb201 cifar10
 source scripts/bash_scripts/download_data.sh nb201 all 
 ```
+
+<!---
 Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101) unzip the folder and place the benchmark `transnas-bench_v10141024.pth` from this folder in `NASLib/naslib/data/..`
 
 If you face issues downloading the datasets please follow the steps [here](dataset_preparation/).
+-->
 
 # Experiments 
-See [`naslib/runners`](naslib/runners) for experiments to run predictor-guided XGBoost, the standalone predictor, and compute ZC proxy correlations. More details to follow.
+See [`naslib/runners`](naslib/runners) for specific experiment scripts. Here we provide instructions for running experiments en masse. 
+<!---
+## Reproduce ZC proxy correlation experiments  
+```bash
+cd configs
+unzip configs/correlation.zip 
+source scripts/cluster/correlation/run_{benchmark}.sh 
+source scripts/cluster/correlation/run_all.sh 
+(runner: naslib/runners/runner.py)
+```
+After the scores are generated, visualizations of correlation results are generated in  ```plotting/PlotCorrelations.ipynb```. 
+
+## Reproduce XGBoost + ZC proxy correlation experiments
+```bash
+cd configs
+unzip configs/xgb_configs.zip 
+source scripts/cluster/xgb_correlation/run_{benchmark}.sh 
+source scripts/cluster/xgb_correlation/run_all.sh 
+(runner: naslib/runners/bbo/xgb_runner.py)
+```
+After the scores are generated, visualizations of correlation results are generated in  ```plotting/PlotXGBCorrelations.ipynb```.
+-->
+
+## Reproduce predictor-guided NAS (BANANAS) experiments
+After downloading the data, run the following commands to reproduce the predictor-guided NAS experiments.
+
+```bash
+cd configs
+unzip configs/bananas.zip 
+source scripts/cluster/zc_ensembles/run_{benchmark}.sh {[only_zc, only_adjacency, zc_and_adjacency]} {n_seeds}
+source scripts/cluster/zc_ensembles/run_all.sh 
+(runner: naslib/runners/bbo/runner.py)
+```
+After the scores are generated, visualizations of correlation results are generated in  ```plotting/PlotEnsembles.ipynb```. You can regenerate configs for NPENAS using ```scripts/create_configs_zc_ensembles.py``` and modifying the optimizer flag. 
 
 # Visualizations
 Check out the jupyter notebooks in [`plotting`](plotting) for visualizations of information theory plots, correlation plots, etc.  
 
+For information theory plots, see ```plotting/PlotMutualInformation.ipynb``` and ```PlotProxies.ipynb```. <br>
+For bias results, see ```plotting/BiasExperiments.ipynb```. <br>

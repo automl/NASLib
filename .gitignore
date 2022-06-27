@@ -132,7 +132,7 @@ ENV/
 runs/
 data/
 *.tfrecord
-*.png
+#*.png
 *.pdf
 *.pkl
 *.obj

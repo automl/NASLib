@@ -7,14 +7,15 @@
 #SBATCH --mem=5G
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
-echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node with given JID $SLURM_JOB_ID on queue $SLURM_JOB_PARTITION";
+#echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node with given JID $SLURM_JOB_ID on queue $SLURM_JOB_PARTITION";
 
 searchspace=$1
 dataset=$2
 start_seed=$3
 n_seeds=10
 experiment=$5
-optimizer=npenas
+optimizer=bananas
+
 
 if [ -z "$searchspace" ]
 then
@@ -50,8 +51,8 @@ start=`date +%s`
 
 for i in $(seq 0 $(($n_seeds - 1)))
 do
-    echo "running experiment for config_$(($start_seed + $i + $SLURM_ARRAY_TASK_ID)).yaml"
-    python naslib/runners/bbo/runner.py --config-file configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i + $SLURM_ARRAY_TASK_ID)).yaml
+    echo "running experiment for config_$(($start_seed + $i)).yaml"
+    python naslib/runners/bbo/runner.py --config-file configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
 done
 
 end=`date +%s`
