@@ -9,7 +9,8 @@ from naslib.optimizers import (
     Bananas,
     DARTSOptimizer,
     DrNASOptimizer,
-    GDASOptimizer
+    GDASOptimizer,
+    EdgePopUpOptimizer,
 )
 
 from naslib.search_spaces import (
@@ -42,6 +43,7 @@ supported_optimizers = {
     'darts': DARTSOptimizer(config),
     'drnas': DrNASOptimizer(config),
     'gdas': GDASOptimizer(config),
+    'edge_popup': EdgePopUpOptimizer(config),
 }
 
 supported_search_spaces = {

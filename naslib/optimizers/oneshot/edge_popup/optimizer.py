@@ -12,11 +12,13 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
 
+SPARSITY = 0.17
+
 logger = logging.getLogger(__name__)
 
 class GetSubnet(autograd.Function):
     @staticmethod
-    def forward(ctx, scores, k=0.8):
+    def forward(ctx, scores, k=0.17):
         # Get the supermask by sorting the scores and using the top k%
         out = scores.clone()
         _, idx = scores.flatten().sort()
@@ -51,6 +53,13 @@ class EdgePopUpOptimizer(MetaOptimizer):
             1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
         )
         edge.data.set("alpha", alpha, shared=True)
+
+    @staticmethod
+    def add_scores(edge):
+        """
+        Function to add the scores of the alphas to the edges.
+        """
+        len
 
     @staticmethod
     def update_ops(edge):
@@ -387,23 +396,27 @@ class EdgePopUpMixedOp(MixedOp):
         super().__init__(primitives)
         # initialize the scores
         #TODO: set the self.weights somewhere
-        self.scores = nn.Parameter(torch.Tensor(self.weight.size()))
+        self.scores = nn.Parameter(torch.Tensor(self.primitives.size()))
         nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
 
         # NOTE: initialize the weights like this.
-        nn.init.kaiming_normal_(self.weight, mode="fan_in", nonlinearity="relu")
+        # TODO: what is the effect of the type of nonlinearality
+        nn.init.kaiming_normal_(self.primitives, mode="fan_in", nonlinearity="relu")
 
         # NOTE: turn the gradient on the weights off
-        self.weight.requires_grad = False
+        self.primitives.requires_grad = False
 
     def get_weights(self, edge_data):
         return edge_data.alpha
 
     def process_weights(self, weights):
-        # TODO: is this still softmax?
+        # TODO: is this still softmax? yes!
         return torch.softmax(weights, dim=-1)
 
     def apply_weights(self, x, weights):
-        subnet = GetSubnet.apply(self.scores.abs()) #TODO: remove abs()
+        subnet = GetSubnet.apply(self.scores.abs(), SPARSITY) #TODO: remove abs()
+        # applying edge_popup to the alphas
         primitives = self.primitives * subnet
         return sum(w * op(x, None) for w, op in zip(weights, primitives))
+        # TODO: applying edge_popup to the weights
+
