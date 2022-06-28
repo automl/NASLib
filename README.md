@@ -79,8 +79,8 @@ If you face issues downloading the datasets please follow the steps [here](datas
 -->
 
 # Experiments 
-See [`naslib/runners`](naslib/runners) for specific experiment scripts. Here we provide instructions for running experiments en masse. 
-<!---
+See [`naslib/runners`](naslib/runners) for specific experiment scripts. Here we provide instructions for running experiments en masse. Note that the correlation experiments requires SLURM on your machine. Please contact us if you have any questions.
+
 ## Reproduce ZC proxy correlation experiments  
 ```bash
 cd configs
@@ -100,7 +100,7 @@ source scripts/cluster/xgb_correlation/run_all.sh
 (runner: naslib/runners/bbo/xgb_runner.py)
 ```
 After the scores are generated, visualizations of correlation results are generated in  ```plotting/PlotXGBCorrelations.ipynb```.
--->
+
 
 ## Reproduce predictor-guided NAS (BANANAS) experiments
 After downloading the data, run the following commands to reproduce the predictor-guided NAS experiments.
