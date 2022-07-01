@@ -357,6 +357,7 @@ class AutoformerSearchSpace(Graph):
         total_num_nodes = 16
         self.add_nodes_from(range(1, total_num_nodes + 1))
         self.add_edges_from([(i, i + 1) for i in range(1, total_num_nodes)])
+        
         self.patch_embed_super = PatchembedSuper(img_size=img_size,
                                                  patch_size=patch_size,
                                                  in_chans=in_chans,

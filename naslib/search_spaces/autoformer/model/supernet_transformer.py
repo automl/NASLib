@@ -193,14 +193,14 @@ class Vision_TransformerSuper(nn.Module):
 
     def forward_features(self, x):
         B = x.shape[0]
-        x = self.patch_embed_super(x)
+        x = self.patch_embed_super(x)  #done
         cls_tokens = self.cls_token[..., :self.sample_embed_dim[0]].expand(
-            B, -1, -1)
-        x = torch.cat((cls_tokens, x), dim=1)
-        if self.abs_pos:
-            x = x + self.pos_embed[..., :self.sample_embed_dim[0]]
+            B, -1, -1)  #done
+        x = torch.cat((cls_tokens, x), dim=1)  #done
+        if self.abs_pos:  #done
+            x = x + self.pos_embed[..., :self.sample_embed_dim[0]]  #done
 
-        x = F.dropout(x, p=self.sample_dropout, training=self.training)
+        x = F.dropout(x, p=self.sample_dropout, training=self.training)  #done
 
         # start_time = time.time()
         for blk in self.blocks:
@@ -346,8 +346,8 @@ class TransformerEncoderLayer(nn.Module):
         # compute attn
         # start_time = time.time()
 
-        residual = x
-        x = self.maybe_layer_norm(self.attn_layer_norm, x, before=True)
+        residual = x  # What to do with this?
+        x = self.maybe_layer_norm(self.attn_layer_norm, x, before=True)  #done
         x = self.attn(x)
         x = F.dropout(x, p=self.sample_attn_dropout, training=self.training)
         x = self.drop_path(x)

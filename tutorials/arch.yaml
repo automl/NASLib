@@ -1,0 +1,26 @@
+arch:
+      layers:
+        0:
+          typename: Conv2D
+          filters: 64
+          kernel_size: 3
+          strides: 2
+          padding: same
+          activation: relu
+        1:
+          typename: Conv2D
+          filters: x1
+          kernel_size: 3
+          strides: 1
+          padding: same
+          activation: relu
+        2:
+          typename: MaxPool2D
+          pool_size: 2
+          strides: 2
+          padding: same
+ connections:
+
+    - [0, 1, 0]
+    - [1, 2, 0]
+    - [2, 3, 0]

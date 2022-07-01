@@ -3,8 +3,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from naslib.search_spaces.core.primitives import AbstractPrimitive
+
+
 class LinearSuper(nn.Linear):
-    def __init__(self, super_in_dim, super_out_dim, bias=True, uniform_=None, non_linear='linear', scale=False):
+    def __init__(self,
+                 super_in_dim,
+                 super_out_dim,
+                 bias=True,
+                 uniform_=None,
+                 non_linear='linear',
+                 scale=False):
         super().__init__(super_in_dim, super_out_dim, bias=bias)
 
         # super_in_dim and super_out_dim indicate the largest network!
@@ -35,29 +43,34 @@ class LinearSuper(nn.Linear):
         if bias:
             nn.init.constant_(self.bias, 0.)
 
-    def set_sample_config(self, config,sample_in_dim=None,sample_out_dim=None):
+    def set_sample_config(self,
+                          config,
+                          sample_in_dim=None,
+                          sample_out_dim=None):
         if sample_in_dim == None:
-           self.sample_in_dim =  config['embed_dim'][-1]
+            self.sample_in_dim = config['embed_dim'][-1]
         else:
-           self.sample_in_dim =  sample_in_dim
+            self.sample_in_dim = sample_in_dim
         if sample_out_dim == None:
-           self.sample_out_dim =  config["num_classes"]
+            self.sample_out_dim = config["num_classes"]
         else:
-            self.sample_out_dim =  sample_out_dim
+            self.sample_out_dim = sample_out_dim
 
         self._sample_parameters()
 
     def _sample_parameters(self):
-        self.samples['weight'] = sample_weight(self.weight, self.sample_in_dim, self.sample_out_dim)
+        self.samples['weight'] = sample_weight(self.weight, self.sample_in_dim,
+                                               self.sample_out_dim)
         self.samples['bias'] = self.bias
-        self.sample_scale = self.super_out_dim/self.sample_out_dim
+        self.sample_scale = self.super_out_dim / self.sample_out_dim
         if self.bias is not None:
             self.samples['bias'] = sample_bias(self.bias, self.sample_out_dim)
         return self.samples
 
     def forward(self, x):
         self.sample_parameters()
-        return F.linear(x, self.samples['weight'], self.samples['bias']) * (self.sample_scale if self.scale else 1)
+        return F.linear(x, self.samples['weight'], self.samples['bias']) * (
+            self.sample_scale if self.scale else 1)
 
     def calc_sampled_param_num(self):
         assert 'weight' in self.samples.keys()
@@ -69,10 +82,12 @@ class LinearSuper(nn.Linear):
             bias_numel = 0
 
         return weight_numel + bias_numel
+
     def get_complexity(self, sequence_length):
         total_flops = 0
-        total_flops += sequence_length *  np.prod(self.samples['weight'].size())
+        total_flops += sequence_length * np.prod(self.samples['weight'].size())
         return total_flops
+
 
 def sample_weight(weight, sample_in_dim, sample_out_dim):
     sample_weight = weight[:, :sample_in_dim]

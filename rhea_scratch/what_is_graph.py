@@ -2,6 +2,7 @@ from naslib.search_spaces import (
     DartsSearchSpace,
     SimpleCellSearchSpace,
     NasBench201SearchSpace,
+    NasBench101SearchSpace,
     HierarchicalSearchSpace,
 )
 import subprocess
@@ -15,7 +16,7 @@ def count_parameters_in_MB(model):
 
 
 from naslib.search_spaces.darts.conversions import convert_naslib_to_genotype
-ss = NasBench201SearchSpace()
+ss = NasBench101SearchSpace()
 # print child graph embedding within a macrograph
 #print(ss._get_child_graphs())
 # Sample a fixed set of operations

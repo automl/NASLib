@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 class LayerNormSuper(torch.nn.LayerNorm):
     def __init__(self, super_embed_dim):
         super().__init__(super_embed_dim)
@@ -34,7 +35,10 @@ class LayerNormSuper(torch.nn.LayerNorm):
 
     def forward(self, x):
         self.sample_parameters()
-        return F.layer_norm(x, (self.sample_embed_dim,), weight=self.samples['weight'], bias=self.samples['bias'], eps=self.eps)
+        return F.layer_norm(x, (self.sample_embed_dim, ),
+                            weight=self.samples['weight'],
+                            bias=self.samples['bias'],
+                            eps=self.eps)
 
     def calc_sampled_param_num(self):
         assert 'weight' in self.samples.keys()
