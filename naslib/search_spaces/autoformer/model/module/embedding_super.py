@@ -96,6 +96,7 @@ class PatchembedSuper(AbstractPrimitive):  #TODO: Better name?
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         #print(output.shape)
         #print(x.shape)
+        print("Embedding_out_shape", x.shape)
         output[:, :, :x.shape[-1]] = x
         return output
 

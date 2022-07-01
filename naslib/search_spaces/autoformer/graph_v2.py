@@ -364,7 +364,7 @@ class AutoformerSearchSpace(Graph):
         self.choices = {
             'num_heads': [3, 4, 5],
             'mlp_ratio': [3.5, 4],
-            'embed_dim': [345, 546, 478],
+            'embed_dim': [1, 2, 3],
             'depth': [192, 216, 240]
         }
         # operations at the edges

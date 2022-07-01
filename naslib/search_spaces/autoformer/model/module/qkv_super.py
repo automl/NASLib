@@ -22,8 +22,11 @@ class Dropout_emb_choice(AbstractPrimitive):
         pass
 
     def forward(self, x, edge_data):
-        x = F.dropout(x, p=self.sample_attn_dropout, training=self.training)
-        return x
+        #print(x.sum(dim=(0,1)))
+        output = torch.zeros_like(x)
+        x = F.dropout(x[:,:,x.sum(dim=(0,1)) != 0], p=self.sample_attn_dropout, training=self.training)
+        output[:,:,:x.shape[-1]]=x
+        return output
 
     def get_embedded_ops(self):
         return None
@@ -41,7 +44,7 @@ class QKV_super_embed_choice(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         self.set_sample_config()
-        return x
+        return x[:,:,:self.sampled_in_dim]
 
     def get_embedded_ops(self):
         return None
@@ -67,10 +70,12 @@ class QKV_super_head_choice(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         self.set_sample_config()
+        print("QKV in shape", x.shape)
         out = self.qkv_super(x)
         print(out.shape)
         output = torch.zeros(
             [out.shape[0], out.shape[1], self.qkv_super.super_out_dim])
+        print("QKV out shape", out.shape)
         output[:, :, :out.shape[-1]] = out
         #print(output.shape)
         #print(x.shape)
