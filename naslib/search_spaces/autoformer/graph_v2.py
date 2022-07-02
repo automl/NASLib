@@ -5,7 +5,7 @@ import random
 import itertools
 import torch
 import torch.nn as nn
-
+from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core.primitives import AbstractPrimitive
@@ -15,13 +15,14 @@ from naslib.search_spaces.nasbench201.conversions import (
     convert_naslib_to_op_indices,
     convert_naslib_to_str,
 )
+import matplotlib.pyplot as plt
 from naslib.utils.utils import iter_flatten, AttrDict
 from model.module.embedding_super import PatchembedSuper
 from model.module.embedding_super import PatchembedSub
 from naslib.utils.utils import get_project_root
 from model.module.embedding_super import PatchembedSuper
 from model.module.qkv_super import qkv_super
-from model.module.qkv_super import QKV_super_head_choice, QKV_super_embed_choice, Dropout_emb_choice
+from model.module.qkv_super import QKV_super_head_choice, QKV_super_embed_choice, Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice
 import math
 import random
 import torch
@@ -148,7 +149,7 @@ class TransformerEncoderLayer(AbstractPrimitive):
         self.super_dropout = attn_drop
 
         self.drop_path = DropPath(
-            drop_path) if drop_path > 0. else nn.Identity()
+            drop_path) if drop_path > 0. else ops.Identity()
         self.scale = scale
         self.relative_position = relative_position
         # self.super_activation_dropout = getattr(args, 'activation_dropout', 0)
@@ -356,19 +357,22 @@ class AutoformerSearchSpace(Graph):
         self.super_dropout = drop_rate
         self.super_attn_dropout = attn_drop_rate
         self.block = 0
-        total_num_nodes = 5
-        self.add_nodes_from(range(1, 5))
+        total_num_nodes = 7
+        self.add_nodes_from(range(1, 7))
         self.add_edges_from([(i, i + 1) for i in range(1, total_num_nodes)])
-
+        self.add_edges_from([(2,7)])
         #
         self.choices = {
             'num_heads': [3, 4, 5],
             'mlp_ratio': [3.5, 4],
             'embed_dim': [1, 2, 3],
-            'depth': [192, 216, 240]
+            'depth': [2,3,4]
         }
         # operations at the edges
         #
+        self.depth_super = max(self.choices["depth"])
+        self.super_num_heads = max(self.choices["num_heads"])
+        self.super_embed_head_dim = self.super_num_heads * 64 * 3
         self.super_embed_dim = max(self.choices["embed_dim"])
         self.patch_embed_super = PatchembedSuper(
             img_size=img_size,
@@ -391,20 +395,31 @@ class AutoformerSearchSpace(Graph):
         for e in self.choices["embed_dim"]:
             for h in self.choices["num_heads"]:
                 self.qkv_embed_choice_list.append(
-                    QKV_super_embed_choice(self.qkv_super, e))
+                    QKV_super_embed_choice(self.qkv_super, e, self.super_embed_dim, pre_norm))
         self.edges[2, 3].set("op", self.qkv_embed_choice_list)
+        self.rel_pos_embed_k = RelativePosition2D_super(64, max_relative_position)
+        self.rel_pos_embed_v = RelativePosition2D_super(64, max_relative_position)
+        self.proj = LinearSuper(self.super_embed_head_dim,self.super_embed_dim)
         self.qkv_head_choice_list = []
         for h in self.choices["num_heads"]:
             self.qkv_head_choice_list.append(
-                QKV_super_head_choice(self.qkv_super, h))
+                QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k, self.rel_pos_embed_v, self.proj, h, attn_drop_rate, self.super_embed_dim, self.super_embed_head_dim))
         self.edges[3, 4].set("op", self.qkv_head_choice_list)
+        self.proj_emb_choice_list = []
+        for e in self.choices["embed_dim"]:
+            self.proj_emb_choice_list.append(
+                Proj_emb_choice(self.proj, e, self.super_embed_dim))
+        self.edges[4, 5].set("op", self.proj_emb_choice_list)
         self.dropout_emb_choice_list = []
         for e in self.choices["embed_dim"]:
             self.dropout_emb_choice_list.append(
                 Dropout_emb_choice(e, self.super_attn_dropout,
                                    self.super_embed_dim))
-        self.edges[4, 5].set("op", self.dropout_emb_choice_list)
-
+        self.edges[5, 6].set("op", self.dropout_emb_choice_list)
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, self.depth_super)]
+        self.drop_path = DropPath(dpr[0]) if dpr[0] > 0. else ops.Identity()
+        self.edges[6, 7].set("op", self.drop_path)
+        self.edges[2, 7].set("op", ops.Identity())
     def sample_random_architecture(self, dataset_api=None):
         """
         This will sample a random architecture and update the edges in the
@@ -421,7 +436,8 @@ class AutoformerSearchSpace(Graph):
         self.edges[1, 2].set("op", self.patch_emb_op_list[op_indices_1[0]])
         self.edges[2, 3].set("op", self.qkv_embed_choice_list[op_indices_1[0]])
         self.edges[3, 4].set("op", self.qkv_head_choice_list[op_indices_2[0]])
-        self.edges[4, 5].set("op",
+        self.edges[4, 5].set("op", self.proj_emb_choice_list[op_indices_1[0]])
+        self.edges[5, 6].set("op",
                              self.dropout_emb_choice_list[op_indices_1[0]])
 
 
@@ -432,6 +448,10 @@ def count_parameters_in_MB(model):
 
 
 ss = AutoformerSearchSpace()
+import networkx as nx
+nx.draw(ss, with_labels = True)
+plt.show()
+plt.savefig('autoformer.png')
 for i in range(2):
     ss.sample_random_architecture()
     #print(ss.config)

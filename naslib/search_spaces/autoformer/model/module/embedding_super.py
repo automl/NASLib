@@ -63,17 +63,9 @@ class PatchembedSuper(AbstractPrimitive):  #TODO: Better name?
         self.sample_dropout = calc_dropout(self.super_dropout,
                                            sample_embed_dim,
                                            self.super_embed_dim)
-        self.attn_layer_norm.set_sample_config(
-            sample_embed_dim=sample_embed_dim)
         if self.scale:
             self.sampled_scale = self.super_embed_dim / sample_embed_dim
 
-    def maybe_layer_norm(self, layer_norm, x, before=False, after=False):
-        assert before ^ after
-        if after ^ self.normalize_before:
-            return layer_norm(x)
-        else:
-            return x
 
     def forward(self, x, edge_data):
         B, C, H, W = x.shape
@@ -92,7 +84,6 @@ class PatchembedSuper(AbstractPrimitive):  #TODO: Better name?
         if self.abs_pos:
             x = x + self.sampled_pos_embed
         x = F.dropout(x, p=self.sample_dropout, training=self.training)
-        x = self.maybe_layer_norm(self.attn_layer_norm, x, before=True)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         #print(output.shape)
         #print(x.shape)
