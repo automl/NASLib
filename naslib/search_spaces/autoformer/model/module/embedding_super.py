@@ -66,7 +66,6 @@ class PatchembedSuper(AbstractPrimitive):  #TODO: Better name?
         if self.scale:
             self.sampled_scale = self.super_embed_dim / sample_embed_dim
 
-
     def forward(self, x, edge_data):
         B, C, H, W = x.shape
         assert H == self.img_size[0] and W == self.img_size[1], \

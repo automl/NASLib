@@ -8,7 +8,7 @@ import torch.nn as nn
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.core.primitives import AbstractPrimitive
+from naslib.search_spaces.core.primitives import AbstractPrimitive, Identity
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.conversions import (
     convert_op_indices_to_naslib,
@@ -22,7 +22,7 @@ from model.module.embedding_super import PatchembedSub
 from naslib.utils.utils import get_project_root
 from model.module.embedding_super import PatchembedSuper
 from model.module.qkv_super import qkv_super
-from model.module.qkv_super import QKV_super_head_choice, QKV_super_embed_choice, Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice
+from model.module.qkv_super import QKV_super_head_choice, LinearEmb, QKV_super_embed_choice, Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice, Dropout, AttnFfnNorm_embed_choice, Scale, LinearSuper_Emb_Ratio_Combi, Norm_embed_choice
 import math
 import random
 import torch
@@ -357,23 +357,29 @@ class AutoformerSearchSpace(Graph):
         self.super_dropout = drop_rate
         self.super_attn_dropout = attn_drop_rate
         self.block = 0
-        total_num_nodes = 7
-        self.add_nodes_from(range(1, 7))
-        self.add_edges_from([(i, i + 1) for i in range(1, total_num_nodes)])
-        self.add_edges_from([(2,7)])
+
         #
         self.choices = {
             'num_heads': [3, 4, 5],
-            'mlp_ratio': [3.5, 4],
+            'mlp_ratio': [3.5, 4, 5],
             'embed_dim': [1, 2, 3],
-            'depth': [2,3,4]
+            'depth': [1, 2, 3]
         }
         # operations at the edges
         #
+        self.scale = scale
         self.depth_super = max(self.choices["depth"])
         self.super_num_heads = max(self.choices["num_heads"])
         self.super_embed_head_dim = self.super_num_heads * 64 * 3
         self.super_embed_dim = max(self.choices["embed_dim"])
+        self.super_mlp_ratio = max(self.choices["mlp_ratio"])
+        self.super_ffn_embed_dim_this_layer = int(
+            max(self.choices["mlp_ratio"]) * self.super_embed_dim)
+        self.total_num_nodes = 1 + 15 * (self.depth_super) + 3
+        self.add_nodes_from(range(1, self.total_num_nodes))
+        self.add_edges_from([(i, i + 1)
+                             for i in range(1, self.total_num_nodes)])
+
         self.patch_embed_super = PatchembedSuper(
             img_size=img_size,
             patch_size=patch_size,
@@ -384,61 +390,229 @@ class AutoformerSearchSpace(Graph):
         # preprocessing
         num_patches = self.patch_embed_super.num_patches
         self.patch_emb_op_list = []
+        self.pre_norm = pre_norm
         for e in self.choices["embed_dim"]:
             self.patch_emb_op_list.append(
                 PatchembedSub(self.patch_embed_super, e))
         self.edges[1, 2].set("op", self.patch_emb_op_list)
-        self.qkv_super = qkv_super(self.super_embed_dim,
-                                   3 * 64 * max(self.choices["num_heads"]),
-                                   bias=qkv_bias)
-        self.qkv_embed_choice_list = []
-        for e in self.choices["embed_dim"]:
-            for h in self.choices["num_heads"]:
+        start = 2
+        for i in range(self.depth_super):
+            self.add_edges_from([(start, start + 6)])
+            self.add_edges_from([(start + 7, start + 14)])
+            start = start + 15
+            if i != self.depth_super - 1 and (i + 1 in self.choices["depth"]):
+                self.add_edges_from([(start, self.total_num_nodes - 2)])
+
+        start = 2
+        for i in range(self.depth_super):
+            self.qkv_super = qkv_super(self.super_embed_dim,
+                                       3 * 64 * max(self.choices["num_heads"]),
+                                       bias=qkv_bias)
+            self.qkv_embed_choice_list = []
+            self.attn_layer_norm = LayerNormSuper(self.super_embed_dim)
+            self.ffn_layer_norm = LayerNormSuper(self.super_embed_dim)
+            for e in self.choices["embed_dim"]:
                 self.qkv_embed_choice_list.append(
-                    QKV_super_embed_choice(self.qkv_super, e, self.super_embed_dim, pre_norm))
-        self.edges[2, 3].set("op", self.qkv_embed_choice_list)
-        self.rel_pos_embed_k = RelativePosition2D_super(64, max_relative_position)
-        self.rel_pos_embed_v = RelativePosition2D_super(64, max_relative_position)
-        self.proj = LinearSuper(self.super_embed_head_dim,self.super_embed_dim)
-        self.qkv_head_choice_list = []
-        for h in self.choices["num_heads"]:
-            self.qkv_head_choice_list.append(
-                QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k, self.rel_pos_embed_v, self.proj, h, attn_drop_rate, self.super_embed_dim, self.super_embed_head_dim))
-        self.edges[3, 4].set("op", self.qkv_head_choice_list)
-        self.proj_emb_choice_list = []
+                    QKV_super_embed_choice(self.qkv_super,
+                                           self.attn_layer_norm, e,
+                                           self.super_embed_dim, pre_norm))
+            self.edges[start, start + 1].set("op", self.qkv_embed_choice_list)
+            self.rel_pos_embed_k = RelativePosition2D_super(
+                64, max_relative_position)
+            self.rel_pos_embed_v = RelativePosition2D_super(
+                64, max_relative_position)
+            self.proj = LinearSuper(self.super_embed_head_dim,
+                                    self.super_embed_dim)
+            self.qkv_head_choice_list = []
+            for h in self.choices["num_heads"]:
+                self.qkv_head_choice_list.append(
+                    QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k,
+                                          self.rel_pos_embed_v, self.proj, h,
+                                          attn_drop_rate, self.super_embed_dim,
+                                          self.super_embed_head_dim))
+            self.edges[start + 1, start + 2].set("op",
+                                                 self.qkv_head_choice_list)
+            self.proj_emb_choice_list = []
+            for e in self.choices["embed_dim"]:
+                self.proj_emb_choice_list.append(
+                    Proj_emb_choice(self.proj, e, self.super_embed_dim))
+            self.edges[start + 2, start + 3].set("op",
+                                                 self.proj_emb_choice_list)
+            self.proj_drop = Dropout(drop_rate)
+            self.edges[start + 3, start + 4].set("op", self.proj_drop)
+            self.dropout_emb_choice_list = []
+            for e in self.choices["embed_dim"]:
+                self.dropout_emb_choice_list.append(
+                    Dropout_emb_choice(e, self.super_attn_dropout,
+                                       self.super_embed_dim))
+            self.edges[start + 4, start + 5].set("op",
+                                                 self.dropout_emb_choice_list)
+            dpr = [
+                x.item()
+                for x in torch.linspace(0, drop_path_rate, self.depth_super)
+            ]
+            self.drop_path = DropPath(
+                dpr[0]) if dpr[0] > 0. else ops.Identity()
+            self.edges[start + 5, start + 6].set("op", self.drop_path)
+            self.edges[start, start + 6].set("op", ops.Identity())
+            self.attn_norm_choice_list = []
+            for e in self.choices["embed_dim"]:
+                self.attn_norm_choice_list.append(
+                    AttnFfnNorm_embed_choice(self.attn_layer_norm,
+                                             e,
+                                             self.super_embed_dim,
+                                             pre_norm,
+                                             after=True))
+            self.edges[start + 6, start + 7].set("op",
+                                                 self.attn_norm_choice_list)
+            self.ffn_norm_choice_list = []
+            for e in self.choices["embed_dim"]:
+                self.ffn_norm_choice_list.append(
+                    AttnFfnNorm_embed_choice(self.ffn_layer_norm,
+                                             e,
+                                             self.super_embed_dim,
+                                             pre_norm,
+                                             before=True))
+            self.edges[start + 7, start + 8].set("op",
+                                                 self.ffn_norm_choice_list)
+            self.fc1 = LinearSuper(
+                super_in_dim=self.super_embed_dim,
+                super_out_dim=self.super_ffn_embed_dim_this_layer)
+            self.fc2 = LinearSuper(
+                super_in_dim=self.super_ffn_embed_dim_this_layer,
+                super_out_dim=self.super_embed_dim)
+            self.fc1_emb_r_choice_list = []
+            for e in self.choices["embed_dim"]:
+                for r in self.choices["mlp_ratio"]:
+                    self.fc1_emb_r_choice_list.append(
+                        LinearSuper_Emb_Ratio_Combi(
+                            self.fc1, self.super_ffn_embed_dim_this_layer,
+                            self.super_embed_dim, self.super_mlp_ratio, e, r))
+            self.edges[start + 8, start + 9].set("op",
+                                                 self.fc1_emb_r_choice_list)
+            self.dropout_emb_full_choice_list = []
+            for e in self.choices["embed_dim"]:
+                self.dropout_emb_full_choice_list.append(
+                    Dropout_emb_choice(e, self.super_dropout,
+                                       self.super_embed_dim))
+            self.edges[start + 9, start + 10].set(
+                "op", self.dropout_emb_full_choice_list)
+            self.fc2_emb_r_choice_list = []
+            for e in self.choices["embed_dim"]:
+                for r in self.choices["mlp_ratio"]:
+                    self.fc2_emb_r_choice_list.append(
+                        LinearSuper_Emb_Ratio_Combi(
+                            self.fc2,
+                            self.super_ffn_embed_dim_this_layer,
+                            self.super_embed_dim,
+                            self.super_mlp_ratio,
+                            e,
+                            r,
+                            reverse=True,
+                            scale=True))
+            self.edges[start + 10, start + 11].set("op",
+                                                   self.fc2_emb_r_choice_list)
+            self.edges[start + 11, start + 12].set(
+                "op", self.dropout_emb_full_choice_list)
+            self.scale_choice_list = []
+            for e in self.choices["embed_dim"]:
+                for r in self.choices["mlp_ratio"]:
+                    self.scale_choice_list.append(
+                        Scale(self.super_mlp_ratio, self.super_embed_dim, r,
+                              e))
+            if scale == True:
+                self.edges[start + 12, start + 13].set("op",
+                                                       self.scale_choice_list)
+            else:
+                self.edges[start + 12, start + 13].set("op", ops.Identity())
+            self.edges[start + 13, start + 14].set("op", self.drop_path)
+            self.edges[start + 7, start + 14].set("op", ops.Identity())
+            self.ffn_norm_choice_list_after = []
+            for e in self.choices["embed_dim"]:
+                self.ffn_norm_choice_list_after.append(
+                    AttnFfnNorm_embed_choice(self.ffn_layer_norm,
+                                             e,
+                                             self.super_embed_dim,
+                                             pre_norm,
+                                             after=True))
+            self.edges[start + 14, start + 15].set(
+                "op", self.ffn_norm_choice_list_after)
+            start = start + 15
+
+        if self.pre_norm:
+            self.norm = LayerNormSuper(super_embed_dim=embed_dim)
+        self.norm_choice_list = []
         for e in self.choices["embed_dim"]:
-            self.proj_emb_choice_list.append(
-                Proj_emb_choice(self.proj, e, self.super_embed_dim))
-        self.edges[4, 5].set("op", self.proj_emb_choice_list)
-        self.dropout_emb_choice_list = []
+            self.norm_choice_list.append(
+                Norm_embed_choice(self.norm, e, self.super_embed_dim))
+        self.edges[start, start + 1].set("op", self.norm_choice_list)
+        self.head = LinearSuper(
+            self.super_embed_dim,
+            num_classes) if num_classes > 0 else ops.Identity()
+        self.head_choice_list = []
         for e in self.choices["embed_dim"]:
-            self.dropout_emb_choice_list.append(
-                Dropout_emb_choice(e, self.super_attn_dropout,
-                                   self.super_embed_dim))
-        self.edges[5, 6].set("op", self.dropout_emb_choice_list)
-        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, self.depth_super)]
-        self.drop_path = DropPath(dpr[0]) if dpr[0] > 0. else ops.Identity()
-        self.edges[6, 7].set("op", self.drop_path)
-        self.edges[2, 7].set("op", ops.Identity())
+            if num_classes > 0:
+                self.head_choice_list.append(
+                    LinearEmb(self.head, e, num_classes))
+            else:
+                self.head_choice_list.append(self.head)
+        self.edges[start + 1, start + 2].set("op", self.head_choice_list)
+
     def sample_random_architecture(self, dataset_api=None):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
-        op_indices_1 = np.random.randint(3, size=(1))
-        op_indices_2 = np.random.randint(3, size=(1))
-        print("Choosing op 1", op_indices_1)
-        print("Choosing op 2", op_indices_2)
-        self.set_op_indices(op_indices_1, op_indices_2)
+        op_indices_depth = np.random.randint(3, size=(1))
+        depth = self.choices["depth"][op_indices_depth[0]]
+        op_indices_emb = np.random.randint(3, size=(1))
+        op_indices_emb = [op_indices_emb[0] for _ in range(depth)]
+        op_indices_head = np.random.randint(3, size=(depth))
+        op_indices_ratio_emb = np.random.randint(9, size=(depth))
+        print("Choosing op 1", op_indices_emb)
+        print("Choosing op 2", op_indices_head)
+        self.set_op_indices(op_indices_emb, op_indices_head,
+                            op_indices_ratio_emb, depth)
 
-    def set_op_indices(self, op_indices_1, op_indices_2):
+    def set_op_indices(self, op_indices_emb, op_indices_head,
+                       op_indices_ratio_emb, depth):
         # This will update the edges in the naslib object to op_indices
-        self.edges[1, 2].set("op", self.patch_emb_op_list[op_indices_1[0]])
-        self.edges[2, 3].set("op", self.qkv_embed_choice_list[op_indices_1[0]])
-        self.edges[3, 4].set("op", self.qkv_head_choice_list[op_indices_2[0]])
-        self.edges[4, 5].set("op", self.proj_emb_choice_list[op_indices_1[0]])
-        self.edges[5, 6].set("op",
-                             self.dropout_emb_choice_list[op_indices_1[0]])
+        self.edges[1, 2].set("op", self.patch_emb_op_list[op_indices_emb[0]])
+        start = 2
+        for i in range(depth):
+            self.edges[start, start + 1].set(
+                "op", self.qkv_embed_choice_list[op_indices_emb[i]])
+            self.edges[start + 1, start + 2].set(
+                "op", self.qkv_head_choice_list[op_indices_head[i]])
+            self.edges[start + 2, start + 3].set(
+                "op", self.proj_emb_choice_list[op_indices_emb[i]])
+            self.edges[start + 4, start + 5].set(
+                "op", self.dropout_emb_choice_list[op_indices_emb[i]])
+            self.edges[start + 6, start + 7].set(
+                "op", self.attn_norm_choice_list[op_indices_emb[i]])
+            self.edges[start + 7, start + 8].set(
+                "op", self.ffn_norm_choice_list[op_indices_emb[i]])
+            self.edges[start + 8, start + 9].set(
+                "op", self.fc1_emb_r_choice_list[op_indices_ratio_emb[i]])
+            self.edges[start + 9, start + 10].set(
+                "op", self.dropout_emb_full_choice_list[op_indices_emb[i]])
+            self.edges[start + 10, start + 11].set(
+                "op", self.fc2_emb_r_choice_list[op_indices_ratio_emb[i]])
+            self.edges[start + 11, start + 12].set(
+                "op", self.dropout_emb_full_choice_list[op_indices_emb[i]])
+            if self.scale == True:
+                self.edges[start + 12, start + 13].set(
+                    "op", self.scale_choice_list[op_indices_ratio_emb[i]])
+            self.edges[start + 14, start + 15].set(
+                "op", self.ffn_norm_choice_list_after[op_indices_emb[i]])
+            start = start + 15
+        for i in range(start, self.total_num_nodes - 2):
+            self.edges[i, i + 1].set("op", ops.Identity())
+        start = self.total_num_nodes - 2
+        self.edges[start, start + 1].set(
+            "op", self.norm_choice_list[op_indices_emb[-1]])
+        self.edges[start + 1, start + 2].set(
+            "op", self.head_choice_list[op_indices_emb[-1]])
 
 
 def count_parameters_in_MB(model):
@@ -449,7 +623,7 @@ def count_parameters_in_MB(model):
 
 ss = AutoformerSearchSpace()
 import networkx as nx
-nx.draw(ss, with_labels = True)
+nx.draw(ss, with_labels=True)
 plt.show()
 plt.savefig('autoformer.png')
 for i in range(2):

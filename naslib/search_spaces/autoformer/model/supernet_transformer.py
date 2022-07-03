@@ -346,27 +346,27 @@ class TransformerEncoderLayer(nn.Module):
         # compute attn
         # start_time = time.time()
 
-        residual = x  # What to do with this?
+        residual = x  # done
         x = self.maybe_layer_norm(self.attn_layer_norm, x, before=True)  #done
-        x = self.attn(x)
-        x = F.dropout(x, p=self.sample_attn_dropout, training=self.training)
-        x = self.drop_path(x)
-        x = residual + x
-        x = self.maybe_layer_norm(self.attn_layer_norm, x, after=True)
+        x = self.attn(x) #done
+        x = F.dropout(x, p=self.sample_attn_dropout, training=self.training) #done
+        x = self.drop_path(x) #done
+        x = residual + x #done
+        x = self.maybe_layer_norm(self.attn_layer_norm, x, after=True) #done
         # print("attn :", time.time() - start_time)
         # compute the ffn
         # start_time = time.time()
-        residual = x
-        x = self.maybe_layer_norm(self.ffn_layer_norm, x, before=True)
-        x = self.activation_fn(self.fc1(x))
-        x = F.dropout(x, p=self.sample_dropout, training=self.training)
-        x = self.fc2(x)
-        x = F.dropout(x, p=self.sample_dropout, training=self.training)
+        residual = x #todo
+        x = self.maybe_layer_norm(self.ffn_layer_norm, x, before=True) #done
+        x = self.activation_fn(self.fc1(x)) #done
+        x = F.dropout(x, p=self.sample_dropout, training=self.training) #done 
+        x = self.fc2(x) #done
+        x = F.dropout(x, p=self.sample_dropout, training=self.training) # done
         if self.scale:
-            x = x * (self.super_mlp_ratio / self.sample_mlp_ratio)
-        x = self.drop_path(x)
-        x = residual + x
-        x = self.maybe_layer_norm(self.ffn_layer_norm, x, after=True)
+            x = x * (self.super_mlp_ratio / self.sample_mlp_ratio) #done
+        x = self.drop_path(x)#done
+        x = residual + x #done
+        x = self.maybe_layer_norm(self.ffn_layer_norm, x, after=True) #done
         # print("ffn :", time.time() - start_time)
         return x
 
