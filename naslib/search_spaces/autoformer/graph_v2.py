@@ -360,8 +360,8 @@ class AutoformerSearchSpace(Graph):
 
         #
         self.choices = {
-            'num_heads': [3, 4, 5],
-            'mlp_ratio': [3.5, 4, 5],
+            'num_heads': [1, 2, 3],
+            'mlp_ratio': [1, 2, 3],
             'embed_dim': [1, 2, 3],
             'depth': [1, 2, 3]
         }
@@ -402,6 +402,7 @@ class AutoformerSearchSpace(Graph):
             start = start + 15
             if i != self.depth_super - 1 and (i + 1 in self.choices["depth"]):
                 self.add_edges_from([(start, self.total_num_nodes - 2)])
+                self.edges[start,self.total_num_nodes-2].set("op", ops.Identity())#edges[start, start + 6].set("op", ops.Identity())
 
         start = 2
         for i in range(self.depth_super):
@@ -571,6 +572,7 @@ class AutoformerSearchSpace(Graph):
         op_indices_ratio_emb = np.random.randint(9, size=(depth))
         print("Choosing op 1", op_indices_emb)
         print("Choosing op 2", op_indices_head)
+        print("Depth",depth )
         self.set_op_indices(op_indices_emb, op_indices_head,
                             op_indices_ratio_emb, depth)
 
@@ -628,6 +630,8 @@ plt.show()
 plt.savefig('autoformer.png')
 for i in range(2):
     ss.sample_random_architecture()
+    ss.parse()
+    print(ss.modules_str())
     #print(ss.config)
     inp = torch.randn([2, 3, 32, 32])
     out = ss(inp)

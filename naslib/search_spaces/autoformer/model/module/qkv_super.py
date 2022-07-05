@@ -92,6 +92,7 @@ class LinearSuper_Emb_Ratio_Combi(AbstractPrimitive):
             output = torch.zeros(
                 [x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
+        print(output)
         print("Fc shape", output.shape)
         return output
 
@@ -115,6 +116,7 @@ class Norm_embed_choice(AbstractPrimitive):
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
         print("Norm out", x.shape)
+        print(output)
         return output
 
     def get_embedded_ops(self):
@@ -157,6 +159,7 @@ class AttnFfnNorm_embed_choice(AbstractPrimitive):
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
         print("Norm out", x.shape)
+        print(output)
         return output
 
     def get_embedded_ops(self):
@@ -189,6 +192,7 @@ class Scale(AbstractPrimitive):
                                                 self.sampled_mlp_ratio)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
+        print(output)
         return output
 
     def get_embedded_ops(self):
@@ -284,6 +288,7 @@ class Dropout_emb_choice(AbstractPrimitive):
                       p=self.sample_attn_dropout,
                       training=self.training)
         output[:, :, :x.shape[-1]] = x
+        print(output)
         return output
 
     def get_embedded_ops(self):
@@ -313,6 +318,7 @@ class Proj_emb_choice(AbstractPrimitive):
                                                if self.proj.scale else 1)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
+        print(output)
         return output
 
     def get_embedded_ops(self):
@@ -349,6 +355,7 @@ class QKV_super_embed_choice(AbstractPrimitive):
                                   before=True)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
+        print(output)
         return x
 
     def get_embedded_ops(self):
@@ -417,6 +424,7 @@ class QKV_super_head_choice(AbstractPrimitive):
         output[:, :, :x.shape[-1]] = x
         #print(output.shape)
         #print(x.shape)
+        print(output)
         return output
 
     def get_embedded_ops(self):
