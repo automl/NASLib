@@ -4,9 +4,8 @@ import torch.nn.functional as F
 from model.utils import trunc_normal_
 from model.utils import to_2tuple
 import numpy as np
-from naslib.search_spaces.core.primitives import AbstractPrimitive
 from model.module.layernorm_super import LayerNormSuper
-
+from naslib.search_spaces.core.primitives import AbstractPrimitive
 
 def calc_dropout(dropout, sample_embed_dim, super_embed_dim):
     return dropout * 1.0 * sample_embed_dim / super_embed_dim
@@ -86,23 +85,24 @@ class Preprocess(AbstractPrimitive):  #TODO: Better name?
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         #print(output.shape)
         #print(x.shape)
-        print("Embedding_out_shape", x.shape)
+        #print("Embedding_out_shape", x.shape)
         output[:, :, :x.shape[-1]] = x
         return output
 
     def get_embedded_ops(self):
         return None
 
-
-class PatchembedSub(AbstractPrimitive):
+class Preprocess_partial(AbstractPrimitive):
     def __init__(self, patch_emb_layer, emb_choice):
-        super(PatchembedSub, self).__init__(locals())
-
+        super(Preprocess_partial, self).__init__(locals())
         self.patch_emb_layer = patch_emb_layer
         self.emb_choice = emb_choice
+        
+    def set_sample_config(self):
+        self.patch_emb_layer.sample(self.emb_choice)
 
     def forward(self, x, edge_data):
-        self.patch_emb_layer.sample(self.emb_choice)
+        self.set_sample_config()
         x = self.patch_emb_layer(x, edge_data)
         return x
 

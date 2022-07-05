@@ -41,7 +41,8 @@ class LinearEmb(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         self.set_sample_config()
-        x = self.layer(x[:, :, :self.in_dim])
+        assert torch.sum(x[:,self.in_dim:])==0
+        x = self.layer(x[:,  :self.in_dim])
         return x
 
     def get_embedded_ops(self):
@@ -83,7 +84,7 @@ class LinearSuper_Emb_Ratio_Combi(AbstractPrimitive):
     def forward(self, x, edge_data):
         self.set_sample_config()
         if self.reverse == False:
-            print(self.fc1)
+            #print(self.fc1)
             x = self.activation_fn(self.fc1(x[:, :, :self.sampled_in_dim]))
             output = torch.zeros(
                 [x.shape[0], x.shape[1], self.super_ffn_embed_dim_this_layer])
@@ -92,8 +93,9 @@ class LinearSuper_Emb_Ratio_Combi(AbstractPrimitive):
             output = torch.zeros(
                 [x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
-        print(output)
-        print("Fc shape", output.shape)
+        assert torch.sum(output[:,:,x.shape[-1]:]) == 0
+        #print(output)
+        #print("Fc shape", output.shape)
         return output
 
     def get_embedded_ops(self):
@@ -101,22 +103,30 @@ class LinearSuper_Emb_Ratio_Combi(AbstractPrimitive):
 
 
 class Norm_embed_choice(AbstractPrimitive):
-    def __init__(self, layer_norm, embed_choice, super_embed_dim):
+    def __init__(self, layer_norm, embed_choice, super_embed_dim, gp):
         super(Norm_embed_choice, self).__init__(locals())
         self.sampled_in_dim = embed_choice
         self.layer_norm = layer_norm
         self.super_embed_dim = super_embed_dim
-
+        self.gp = gp
+        
     def set_sample_config(self):
         self.layer_norm.set_sample_config(sample_embed_dim=self.sampled_in_dim)
 
     def forward(self, x, edge_data):
         self.set_sample_config()
         x = self.layer_norm(x[:, :, :self.sampled_in_dim])
-        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
-        output[:, :, :x.shape[-1]] = x
-        print("Norm out", x.shape)
-        print(output)
+        if self.gp:
+            x_out = torch.mean(x[:, 1:], dim=1)
+        else:
+            x_out = x[:, 0]
+        print(x_out.shape)
+        output = torch.zeros([x_out.shape[0], self.super_embed_dim])
+        output[:,  :x_out.shape[-1]] = x_out
+        #print("Norm out", x.shape)
+        #print(output)
+
+        assert torch.sum(output[:,x_out.shape[-1]:]) == 0
         return output
 
     def get_embedded_ops(self):
@@ -158,8 +168,9 @@ class AttnFfnNorm_embed_choice(AbstractPrimitive):
                                   before=self.before)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
-        print("Norm out", x.shape)
-        print(output)
+        assert torch.sum(output[:,:,x.shape[-1]:]) == 0
+        #print("Norm out", x.shape)
+        #print(output)
         return output
 
     def get_embedded_ops(self):
@@ -192,7 +203,8 @@ class Scale(AbstractPrimitive):
                                                 self.sampled_mlp_ratio)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
-        print(output)
+        assert torch.sum(output[:,:,x.shape[-1]:]) == 0
+        #print(output)
         return output
 
     def get_embedded_ops(self):
@@ -217,8 +229,8 @@ class RelativePosition2D_super(nn.Module):
         self.sample_head_dim = None
         self.sample_embeddings_table_h = None
         self.sample_embeddings_table_v = None
-        print("Relative position_h", self.embeddings_table_h.shape)
-        print("Relative position_v", self.embeddings_table_v.shape)
+        #print("Relative position_h", self.embeddings_table_h.shape)
+        #print("Relative position_v", self.embeddings_table_v.shape)
 
     def set_sample_config(self, sample_head_dim):
         self.sample_head_dim = sample_head_dim
@@ -232,8 +244,8 @@ class RelativePosition2D_super(nn.Module):
         ) + self.sample_embeddings_table_v.numel()
 
     def forward(self, length_q, length_k):
-        print("Relative position_h", self.sample_embeddings_table_h.shape)
-        print("Relative position_v", self.sample_embeddings_table_v.shape)
+        #print("Relative position_h", self.sample_embeddings_table_h.shape)
+        #print("Relative position_v", self.sample_embeddings_table_v.shape)
         # remove the first cls token distance computation
         length_q = length_q - 1
         length_k = length_k - 1
@@ -288,7 +300,8 @@ class Dropout_emb_choice(AbstractPrimitive):
                       p=self.sample_attn_dropout,
                       training=self.training)
         output[:, :, :x.shape[-1]] = x
-        print(output)
+        #print(output)
+        assert torch.sum(output[:,:,x.shape[-1]:]) == 0
         return output
 
     def get_embedded_ops(self):
@@ -305,20 +318,21 @@ class Proj_emb_choice(AbstractPrimitive):
     def set_sample_config(self):
         self.proj.sample_weight = self.proj.sample_weight[:self.
                                                           sampled_in_dim, :]
-        print("Weight shape", self.proj.sample_weight.shape)
+        #print("Weight shape", self.proj.sample_weight.shape)
         self.sample_scale = self.super_embed_dim / self.sampled_in_dim
         if self.proj.bias is not None:
             self.proj.sample_bias = self.proj.bias[:self.sampled_in_dim]
 
     def forward(self, x, edge_data):
         self.set_sample_config()
-        print("X shape", x.shape)
+        #print("X shape", x.shape)
         x = F.linear(x[:, :, x.sum(dim=(0, 1)) != 0], self.proj.sample_weight,
                      self.proj.sample_bias) * (self.sample_scale
                                                if self.proj.scale else 1)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
-        print(output)
+        assert torch.sum(output[:,:,x.shape[-1]:]) == 0
+        #print(output)
         return output
 
     def get_embedded_ops(self):
@@ -355,7 +369,8 @@ class QKV_super_embed_choice(AbstractPrimitive):
                                   before=True)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
-        print(output)
+        assert torch.sum(output[:,:,x.shape[-1]:]) == 0
+        #print(output)
         return x
 
     def get_embedded_ops(self):
@@ -397,16 +412,16 @@ class QKV_super_head_choice(AbstractPrimitive):
     def forward(self, x, edge_data):
         self.set_sample_config()
         B, N, C = x.shape
-        print("QKV in shape", x.shape)
+        #print("QKV in shape", x.shape)
         qkv = self.qkv_super(x).reshape(B, N, 3, self.sample_num_heads,
                                         -1).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[
             2]  # make torchscript happy (cannot use tensor as tuple)
-        print("Q shape", q.shape)
-        print("K shape", k.shape)
+        #print("Q shape", q.shape)
+        #print("K shape", k.shape)
         attn = (q @ k.transpose(-2, -1)) * self.sample_scale
         r_p_k = self.rel_pos_embed_k(N, N)
-        print(r_p_k.shape)
+        #print(r_p_k.shape)
         attn = attn + (q.permute(2, 0, 1, 3).reshape(N, self.sample_num_heads * B, -1) @ r_p_k.transpose(2, 1)) \
                 .transpose(1, 0).reshape(B, self.sample_num_heads, N, N) * self.sample_scale
         attn = attn.softmax(dim=-1)
@@ -418,13 +433,14 @@ class QKV_super_head_choice(AbstractPrimitive):
         x = x + (attn_1 @ r_p_v).transpose(1, 0).reshape(
             B, self.sample_num_heads, N, -1).transpose(2, 1).reshape(B, N, -1)
         x = x * (self.super_embed_dim / self.sampled_out_dim)
-        print("head emb dim", self.super_head_emb_dim)
+        #print("head emb dim", self.super_head_emb_dim)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_head_emb_dim])
-        print("QKV out shape", x.shape)
+        #print("QKV out shape", x.shape)
         output[:, :, :x.shape[-1]] = x
         #print(output.shape)
         #print(x.shape)
-        print(output)
+        #print(output)
+        assert torch.sum(output[:,:,x.shape[-1]:]) == 0
         return output
 
     def get_embedded_ops(self):

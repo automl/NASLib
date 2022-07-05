@@ -17,10 +17,8 @@ from naslib.search_spaces.nasbench201.conversions import (
 )
 import matplotlib.pyplot as plt
 from naslib.utils.utils import iter_flatten, AttrDict
-from model.module.embedding_super import PatchembedSuper
-from model.module.embedding_super import PatchembedSub
+from model.module.preprocess import Preprocess, Preprocess_partial
 from naslib.utils.utils import get_project_root
-from model.module.embedding_super import PatchembedSuper
 from model.module.qkv_super import qkv_super
 from model.module.qkv_super import QKV_super_head_choice, LinearEmb, QKV_super_embed_choice, Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice, Dropout, AttnFfnNorm_embed_choice, Scale, LinearSuper_Emb_Ratio_Combi, Norm_embed_choice
 import math
@@ -31,7 +29,6 @@ import torch.nn.functional as F
 from model.module.Linear_super import LinearSuper
 from model.module.layernorm_super import LayerNormSuper
 from model.module.multihead_super import AttentionSuper
-from model.module.embedding_super import PatchembedSuper
 from model.utils import trunc_normal_
 from model.utils import DropPath
 import numpy as np
@@ -42,264 +39,6 @@ def gelu(x: torch.Tensor) -> torch.Tensor:
         return torch.nn.functional.gelu(x.float()).type_as(x)
     else:
         return x * 0.5 * (1.0 + torch.erf(x / math.sqrt(2.0)))
-
-
-#OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
-class Head(AbstractPrimitive):
-    def __init__(self,
-                 super_in_dim,
-                 super_out_dim,
-                 bias=True,
-                 uniform_=None,
-                 non_linear='linear',
-                 scale=False):
-        super().__init__(locals())
-        self.norm = LayerNormSuper(super_embed_dim=super_in_dim)
-        self.head = LinearSuper(super_in_dim,
-                                super_out_dim,
-                                bias=bias,
-                                uniform_=uniform_,
-                                non_linear=non_linear,
-                                scale=scale)
-
-    def set_sample_config(self,
-                          config,
-                          sample_in_dim=None,
-                          sample_out_dim=None):
-        self.norm.set_sample_config(config['embed_dim'][-1])
-        self.head.set_sample_config(config,
-                                    sample_in_dim=sample_in_dim,
-                                    sample_out_dim=sample_out_dim)
-
-    def forward(self, x, edge_data):
-        x = self.norm(x)
-        return self.head(x[:, 0])
-
-    def get_embedded_ops(self):
-        return None
-
-
-class PosEmbedLayer(AbstractPrimitive):
-    def __init__(self, num_patches, embed_dim, abs_pos, super_dropout,
-                 super_embed_dim):
-        super().__init__(locals())
-        self.abs_pos = abs_pos
-        self.super_embed_dim = super_embed_dim
-        self.super_dropout = super_dropout
-        if self.abs_pos:
-            self.pos_embed = nn.Parameter(
-                torch.zeros(1, num_patches + 1, embed_dim))
-            trunc_normal_(self.pos_embed, std=.02)
-        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
-        trunc_normal_(self.cls_token, std=.02)
-
-    def set_sample_config(self, config):
-        embed_dim = config['embed_dim']
-        #self.sample_mlp_ratio = self.config['mlp_ratio']
-        #self.sample_layer_num = self.config['layer_num']
-        #self.sample_num_heads = self.config['num_heads']
-        self.sample_dropout = calc_dropout(self.super_dropout, embed_dim[0],
-                                           self.super_embed_dim)
-        self.cls_token_sampled = self.cls_token[
-            ..., :embed_dim[0]]  #.expand(B, -1, -1)
-        self.pos_embed_sampled = self.pos_embed[..., :embed_dim[0]]
-
-    def forward(self, x, edge_data):
-        B = x.shape[0]
-
-        x = torch.cat((self.cls_token_sampled.expand(B, -1, -1), x), dim=1)
-        if self.abs_pos:
-            x = x + self.pos_embed_sampled
-        x = F.dropout(x, p=self.sample_dropout, training=self.training)
-        return x
-
-    def get_embedded_ops(self):
-        return None
-
-
-class TransformerEncoderLayer(AbstractPrimitive):
-    """Encoder layer block.
-
-    Args:
-        args (argparse.Namespace): parsed command-line arguments which
-    """
-    def __init__(self,
-                 dim,
-                 num_heads,
-                 mlp_ratio=4.,
-                 qkv_bias=False,
-                 qk_scale=None,
-                 dropout=0.,
-                 attn_drop=0.,
-                 drop_path=0.,
-                 act_layer=nn.GELU,
-                 pre_norm=True,
-                 scale=False,
-                 relative_position=False,
-                 change_qkv=False,
-                 max_relative_position=14):
-        super().__init__(locals())
-
-        # the configs of super arch of the encoder, three dimension [embed_dim, mlp_ratio, and num_heads]
-        self.super_embed_dim = dim
-        self.super_mlp_ratio = mlp_ratio
-        self.super_ffn_embed_dim_this_layer = int(mlp_ratio * dim)
-        self.super_num_heads = num_heads
-        self.normalize_before = pre_norm
-        self.super_dropout = attn_drop
-
-        self.drop_path = DropPath(
-            drop_path) if drop_path > 0. else ops.Identity()
-        self.scale = scale
-        self.relative_position = relative_position
-        # self.super_activation_dropout = getattr(args, 'activation_dropout', 0)
-
-        # the configs of current sampled arch
-        self.sample_embed_dim = None
-        self.sample_mlp_ratio = None
-        self.sample_ffn_embed_dim_this_layer = None
-        self.sample_num_heads_this_layer = None
-        self.sample_scale = None
-        self.sample_dropout = None
-        self.sample_attn_dropout = None
-
-        self.is_identity_layer = None
-        self.attn = AttentionSuper(dim,
-                                   num_heads=num_heads,
-                                   qkv_bias=qkv_bias,
-                                   qk_scale=qk_scale,
-                                   attn_drop=attn_drop,
-                                   proj_drop=dropout,
-                                   scale=self.scale,
-                                   relative_position=self.relative_position,
-                                   change_qkv=change_qkv,
-                                   max_relative_position=max_relative_position)
-
-        self.attn_layer_norm = LayerNormSuper(self.super_embed_dim)
-        self.ffn_layer_norm = LayerNormSuper(self.super_embed_dim)
-        # self.dropout = dropout
-        self.activation_fn = gelu
-        # self.normalize_before = args.encoder_normalize_before
-
-        self.fc1 = LinearSuper(
-            super_in_dim=self.super_embed_dim,
-            super_out_dim=self.super_ffn_embed_dim_this_layer)
-        self.fc2 = LinearSuper(
-            super_in_dim=self.super_ffn_embed_dim_this_layer,
-            super_out_dim=self.super_embed_dim)
-
-    def set_sample_config(self, config, is_identity_layer, block_id,
-                          super_dropout, super_embed_dim, super_attn_dropout):
-        #self.sample_embed_dim = self.config['embed_dim']
-        #self.sample_mlp_ratio = self.config['mlp_ratio']
-        #self.sample_layer_num = self.config['layer_num']
-        #self.sample_num_heads = self.config['num_heads']
-        #self.sample_dropout = calc_dropout(self.super_dropout, self.sample_embed_dim[0], self.super_embed_dim)
-
-        if is_identity_layer:
-            self.is_identity_layer = True
-            return
-
-        self.is_identity_layer = False
-
-        self.sample_embed_dim = config['embed_dim']
-        self.sample_out_dim = [
-            out_dim for out_dim in self.sample_embed_dim[1:]
-        ] + [self.sample_embed_dim[-1]]
-        self.sample_out_dim = self.sample_out_dim[block_id]
-        self.sample_mlp_ratio = config['mlp_ratio'][block_id]
-        self.sample_ffn_embed_dim_this_layer = int(
-            self.sample_embed_dim[block_id] * self.sample_mlp_ratio)
-        self.sample_num_heads_this_layer = config['num_heads'][block_id]
-
-        self.sample_dropout = calc_dropout(super_dropout,
-                                           self.sample_embed_dim[block_id],
-                                           super_embed_dim)
-        self.sample_attn_dropout = calc_dropout(
-            super_attn_dropout, self.sample_embed_dim[block_id],
-            super_embed_dim)
-        self.attn_layer_norm.set_sample_config(
-            sample_embed_dim=self.sample_embed_dim[block_id])
-
-        self.attn.set_sample_config(
-            sample_q_embed_dim=self.sample_num_heads_this_layer * 64,
-            sample_num_heads=self.sample_num_heads_this_layer,
-            sample_in_embed_dim=self.sample_embed_dim[block_id])
-
-        self.fc1.set_sample_config(
-            {},
-            sample_in_dim=self.sample_embed_dim[block_id],
-            sample_out_dim=self.sample_ffn_embed_dim_this_layer)
-        self.fc2.set_sample_config(
-            {},
-            sample_in_dim=self.sample_ffn_embed_dim_this_layer,
-            sample_out_dim=self.sample_out_dim)
-
-        self.ffn_layer_norm.set_sample_config(
-            sample_embed_dim=self.sample_embed_dim[block_id])
-
-    def forward(self, x, edge_data):
-        """
-        Args:
-            x (Tensor): input to the layer of shape `(batch, patch_num , sample_embed_dim)`
-
-        Returns:
-            encoded output of shape `(batch, patch_num, sample_embed_dim)`
-        """
-        if self.is_identity_layer:
-            return x
-
-        # compute attn
-        # start_time = time.time()
-
-        residual = x
-        x = self.maybe_layer_norm(self.attn_layer_norm, x, before=True)
-        x = self.attn(x)
-        x = F.dropout(x, p=self.sample_attn_dropout, training=self.training)
-        x = self.drop_path(x)
-        x = residual + x
-        x = self.maybe_layer_norm(self.attn_layer_norm, x, after=True)
-        # print("attn :", time.time() - start_time)
-        # compute the ffn
-        # start_time = time.time()
-        residual = x
-        x = self.maybe_layer_norm(self.ffn_layer_norm, x, before=True)
-        x = self.activation_fn(self.fc1(x))
-        x = F.dropout(x, p=self.sample_dropout, training=self.training)
-        x = self.fc2(x)
-        x = F.dropout(x, p=self.sample_dropout, training=self.training)
-        if self.scale:
-            x = x * (self.super_mlp_ratio / self.sample_mlp_ratio)
-        x = self.drop_path(x)
-        x = residual + x
-        x = self.maybe_layer_norm(self.ffn_layer_norm, x, after=True)
-        # print("ffn :", time.time() - start_time)
-        return x
-
-    def maybe_layer_norm(self, layer_norm, x, before=False, after=False):
-        assert before ^ after
-        if after ^ self.normalize_before:
-            return layer_norm(x)
-        else:
-            return x
-
-    def get_complexity(self, sequence_length):
-        total_flops = 0
-        if self.is_identity_layer:
-            return total_flops
-        total_flops += self.attn_layer_norm.get_complexity(sequence_length + 1)
-        total_flops += self.attn.get_complexity(sequence_length + 1)
-        total_flops += self.ffn_layer_norm.get_complexity(sequence_length + 1)
-        total_flops += self.fc1.get_complexity(sequence_length + 1)
-        total_flops += self.fc2.get_complexity(sequence_length + 1)
-        return total_flops
-
-    def get_embedded_ops(self):
-        return None
-
-
-def calc_dropout(dropout, sample_embed_dim, super_embed_dim):
-    return dropout * 1.0 * sample_embed_dim / super_embed_dim
 
 
 class AutoformerSearchSpace(Graph):
@@ -370,7 +109,7 @@ class AutoformerSearchSpace(Graph):
         self.scale = scale
         self.depth_super = max(self.choices["depth"])
         self.super_num_heads = max(self.choices["num_heads"])
-        self.super_embed_head_dim = self.super_num_heads * 64 * 3
+        self.super_head_dim = self.super_num_heads * 64 * 3
         self.super_embed_dim = max(self.choices["embed_dim"])
         self.super_mlp_ratio = max(self.choices["mlp_ratio"])
         self.super_ffn_embed_dim_this_layer = int(
@@ -380,20 +119,22 @@ class AutoformerSearchSpace(Graph):
         self.add_edges_from([(i, i + 1)
                              for i in range(1, self.total_num_nodes)])
 
-        self.patch_embed_super = PatchembedSuper(
+        self.preprocess_super = Preprocess(
             img_size=img_size,
             patch_size=patch_size,
             in_chans=in_chans,
             embed_dim_list=self.choices["embed_dim"],
             abs_pos=abs_pos,
             pre_norm=pre_norm)
+        self.attn_layer_norm = LayerNormSuper(self.super_embed_dim)
+        self.ffn_layer_norm = LayerNormSuper(self.super_embed_dim)
         # preprocessing
-        num_patches = self.patch_embed_super.num_patches
+        num_patches = self.preprocess_super.num_patches
         self.patch_emb_op_list = []
         self.pre_norm = pre_norm
         for e in self.choices["embed_dim"]:
             self.patch_emb_op_list.append(
-                PatchembedSub(self.patch_embed_super, e))
+                Preprocess_partial(self.preprocess_super, e))
         self.edges[1, 2].set("op", self.patch_emb_op_list)
         start = 2
         for i in range(self.depth_super):
@@ -402,7 +143,9 @@ class AutoformerSearchSpace(Graph):
             start = start + 15
             if i != self.depth_super - 1 and (i + 1 in self.choices["depth"]):
                 self.add_edges_from([(start, self.total_num_nodes - 2)])
-                self.edges[start,self.total_num_nodes-2].set("op", ops.Identity())#edges[start, start + 6].set("op", ops.Identity())
+                self.edges[start, self.total_num_nodes - 2].set(
+                    "op", ops.Identity()
+                )  #edges[start, start + 6].set("op", ops.Identity())
 
         start = 2
         for i in range(self.depth_super):
@@ -422,7 +165,7 @@ class AutoformerSearchSpace(Graph):
                 64, max_relative_position)
             self.rel_pos_embed_v = RelativePosition2D_super(
                 64, max_relative_position)
-            self.proj = LinearSuper(self.super_embed_head_dim,
+            self.proj = LinearSuper(self.super_head_dim,
                                     self.super_embed_dim)
             self.qkv_head_choice_list = []
             for h in self.choices["num_heads"]:
@@ -430,11 +173,11 @@ class AutoformerSearchSpace(Graph):
                     QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k,
                                           self.rel_pos_embed_v, self.proj, h,
                                           attn_drop_rate, self.super_embed_dim,
-                                          self.super_embed_head_dim))
+                                          self.super_head_dim))
             self.edges[start + 1, start + 2].set("op",
                                                  self.qkv_head_choice_list)
             self.proj_emb_choice_list = []
-            for e in self.choices["embed_dim"]:
+            for e in self.choices["embed_dim"]: 
                 self.proj_emb_choice_list.append(
                     Proj_emb_choice(self.proj, e, self.super_embed_dim))
             self.edges[start + 2, start + 3].set("op",
@@ -442,7 +185,7 @@ class AutoformerSearchSpace(Graph):
             self.proj_drop = Dropout(drop_rate)
             self.edges[start + 3, start + 4].set("op", self.proj_drop)
             self.dropout_emb_choice_list = []
-            for e in self.choices["embed_dim"]:
+            for e in self.choices["embed_dim"]: 
                 self.dropout_emb_choice_list.append(
                     Dropout_emb_choice(e, self.super_attn_dropout,
                                        self.super_embed_dim))
@@ -457,7 +200,7 @@ class AutoformerSearchSpace(Graph):
             self.edges[start + 5, start + 6].set("op", self.drop_path)
             self.edges[start, start + 6].set("op", ops.Identity())
             self.attn_norm_choice_list = []
-            for e in self.choices["embed_dim"]:
+            for e in self.choices["embed_dim"]: 
                 self.attn_norm_choice_list.append(
                     AttnFfnNorm_embed_choice(self.attn_layer_norm,
                                              e,
@@ -542,22 +285,23 @@ class AutoformerSearchSpace(Graph):
 
         if self.pre_norm:
             self.norm = LayerNormSuper(super_embed_dim=embed_dim)
-        self.norm_choice_list = []
-        for e in self.choices["embed_dim"]:
-            self.norm_choice_list.append(
-                Norm_embed_choice(self.norm, e, self.super_embed_dim))
-        self.edges[start, start + 1].set("op", self.norm_choice_list)
-        self.head = LinearSuper(
-            self.super_embed_dim,
-            num_classes) if num_classes > 0 else ops.Identity()
+            self.norm_choice_list = []
+            for e in self.choices["embed_dim"]: #G2
+                self.norm_choice_list.append(
+                Norm_embed_choice(self.norm, e, self.super_embed_dim, gp))
+            self.edges[start, start + 1].set("op", self.norm_choice_list)
+        else:
+            self.edges[start, start+1].set("op", ops.Identity())
+        self.head = LinearSuper(self.super_embed_dim, num_classes) if num_classes > 0 else ops.Identity()
         self.head_choice_list = []
-        for e in self.choices["embed_dim"]:
-            if num_classes > 0:
+        if num_classes > 0:
+            for e in self.choices["embed_dim"]: #G2
+
                 self.head_choice_list.append(
                     LinearEmb(self.head, e, num_classes))
-            else:
-                self.head_choice_list.append(self.head)
-        self.edges[start + 1, start + 2].set("op", self.head_choice_list)
+            self.edges[start + 1, start + 2].set("op", self.head_choice_list)
+        else:
+            self.edges[start + 1, start + 2].set("op", ops.Identity())
 
     def sample_random_architecture(self, dataset_api=None):
         """
@@ -572,7 +316,7 @@ class AutoformerSearchSpace(Graph):
         op_indices_ratio_emb = np.random.randint(9, size=(depth))
         print("Choosing op 1", op_indices_emb)
         print("Choosing op 2", op_indices_head)
-        print("Depth",depth )
+        print("Depth", depth)
         self.set_op_indices(op_indices_emb, op_indices_head,
                             op_indices_ratio_emb, depth)
 
@@ -611,10 +355,10 @@ class AutoformerSearchSpace(Graph):
         for i in range(start, self.total_num_nodes - 2):
             self.edges[i, i + 1].set("op", ops.Identity())
         start = self.total_num_nodes - 2
-        self.edges[start, start + 1].set(
-            "op", self.norm_choice_list[op_indices_emb[-1]])
-        self.edges[start + 1, start + 2].set(
-            "op", self.head_choice_list[op_indices_emb[-1]])
+        if self.pre_norm:
+            self.edges[start, start + 1].set("op", self.norm_choice_list[op_indices_emb[-1]])
+        if self.num_classes>0:
+            self.edges[start + 1, start + 2].set("op", self.head_choice_list[op_indices_emb[-1]])
 
 
 def count_parameters_in_MB(model):
@@ -625,7 +369,7 @@ def count_parameters_in_MB(model):
 
 ss = AutoformerSearchSpace()
 import networkx as nx
-nx.draw(ss, with_labels=True)
+nx.draw(ss, with_labels=True, pos=nx.kamada_kawai_layout(ss))
 plt.show()
 plt.savefig('autoformer.png')
 for i in range(2):
@@ -637,5 +381,5 @@ for i in range(2):
     out = ss(inp)
     loss = torch.sum(out)
     print(out.shape)
-    #print(out)
+    print(out)
     loss.backward()
