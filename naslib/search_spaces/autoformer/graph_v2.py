@@ -4,6 +4,8 @@ import numpy as np
 import random
 import itertools
 import torch
+import torchvision
+import torchvision.transforms as transforms
 import torch.nn as nn
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core import primitives as ops
@@ -15,12 +17,13 @@ from naslib.search_spaces.nasbench201.conversions import (
     convert_naslib_to_op_indices,
     convert_naslib_to_str,
 )
+from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 from naslib.utils.utils import iter_flatten, AttrDict
 from model.module.preprocess import Preprocess, Preprocess_partial
 from naslib.utils.utils import get_project_root
 from model.module.qkv_super import qkv_super
-from model.module.qkv_super import QKV_super_head_choice, LinearEmb, QKV_super_embed_choice, Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice, Dropout, AttnFfnNorm_embed_choice, Scale, LinearSuper_Emb_Ratio_Combi, Norm_embed_choice
+from model.module.qkv_super import QKV_super_head_choice, QKV_Linear_Emb, LinearEmb, QKV_super_embed_choice, Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice, Dropout, AttnFfnNorm_embed_choice, Scale, LinearSuper_Emb_Ratio_Combi, Norm_embed_choice
 import math
 import random
 import torch
@@ -73,7 +76,7 @@ class AutoformerSearchSpace(Graph):
                  scale=False,
                  gp=False,
                  relative_position=False,
-                 change_qkv=False,
+                 change_qkv=True,
                  abs_pos=True,
                  max_relative_position=14):
         super().__init__()
@@ -100,8 +103,8 @@ class AutoformerSearchSpace(Graph):
         #
         self.choices = {
             'num_heads': [1, 2, 3],
-            'mlp_ratio': [1, 2, 3],
-            'embed_dim': [1, 2, 3],
+            'mlp_ratio': [1, 2, 1.5],
+            'embed_dim': [5, 10, 18],
             'depth': [1, 2, 3]
         }
         # operations at the edges
@@ -149,33 +152,47 @@ class AutoformerSearchSpace(Graph):
 
         start = 2
         for i in range(self.depth_super):
-            self.qkv_super = qkv_super(self.super_embed_dim,
+            self.ffn_layer_norm = LayerNormSuper(self.super_embed_dim)
+            self.attn_layer_norm = LayerNormSuper(self.super_embed_dim)
+            if change_qkv:
+                self.qkv_super = qkv_super(self.super_embed_dim,
                                        3 * 64 * max(self.choices["num_heads"]),
                                        bias=qkv_bias)
-            self.qkv_embed_choice_list = []
-            self.attn_layer_norm = LayerNormSuper(self.super_embed_dim)
-            self.ffn_layer_norm = LayerNormSuper(self.super_embed_dim)
-            for e in self.choices["embed_dim"]:
-                self.qkv_embed_choice_list.append(
+                self.qkv_embed_choice_list = []
+
+                
+                for e in self.choices["embed_dim"]:
+                    self.qkv_embed_choice_list.append(
                     QKV_super_embed_choice(self.qkv_super,
                                            self.attn_layer_norm, e,
                                            self.super_embed_dim, pre_norm))
-            self.edges[start, start + 1].set("op", self.qkv_embed_choice_list)
+                self.edges[start, start + 1].set("op", self.qkv_embed_choice_list)
+            else:
+                self.qkv_super = LinearSuper(self.super_embed_dim,3 * self.super_embed_dim,bias=qkv_bias)
+                self.qkv_embed_choice_list = []
+                for e in self.choices["embed_dim"]:
+                    self.qkv_embed_choice_list.append(
+                    QKV_Linear_Emb(self.qkv_super,
+                                           self.attn_layer_norm, e,
+                                           self.super_embed_dim, pre_norm))
+                self.edges[start, start + 1].set("op", self.qkv_embed_choice_list)
             self.rel_pos_embed_k = RelativePosition2D_super(
                 64, max_relative_position)
             self.rel_pos_embed_v = RelativePosition2D_super(
-                64, max_relative_position)
+                64, max_relative_position) 
+
             self.proj = LinearSuper(self.super_head_dim,
-                                    self.super_embed_dim)
+                                    self.super_embed_dim)                 
             self.qkv_head_choice_list = []
             for h in self.choices["num_heads"]:
                 self.qkv_head_choice_list.append(
-                    QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k,
+                QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k,
                                           self.rel_pos_embed_v, self.proj, h,
                                           attn_drop_rate, self.super_embed_dim,
-                                          self.super_head_dim))
+                                          self.super_head_dim, change_qkv))
             self.edges[start + 1, start + 2].set("op",
                                                  self.qkv_head_choice_list)
+
             self.proj_emb_choice_list = []
             for e in self.choices["embed_dim"]: 
                 self.proj_emb_choice_list.append(
@@ -367,19 +384,56 @@ def count_parameters_in_MB(model):
         if "auxiliary" not in name) / 1e6
 
 
-ss = AutoformerSearchSpace()
+ss = AutoformerSearchSpace(num_classes=10)
 import networkx as nx
 nx.draw(ss, with_labels=True, pos=nx.kamada_kawai_layout(ss))
 plt.show()
 plt.savefig('autoformer.png')
-for i in range(2):
-    ss.sample_random_architecture()
-    ss.parse()
-    print(ss.modules_str())
+ss.sample_random_architecture()
+ss.parse()
+optim = torch.optim.Adam(ss.parameters(),lr=0.0001)
+transform = transforms.Compose(
+    [transforms.ToTensor(),
+     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+
+batch_size = 2
+
+trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
+                                        download=True, transform=transform)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
+                                          shuffle=True, num_workers=2)
+
+testset = torchvision.datasets.CIFAR10(root='./data', train=False,
+                                       download=True, transform=transform)
+testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
+                                         shuffle=False, num_workers=2)
+print(ss.modules_str())
+writer = SummaryWriter('test_autoformer_cifar10_test_2')
+step =0
+running_loss = 0
+for i in range(10):
     #print(ss.config)
-    inp = torch.randn([2, 3, 32, 32])
-    out = ss(inp)
-    loss = torch.sum(out)
-    print(out.shape)
-    print(out)
-    loss.backward()
+    print("starting epoch", i)
+    for i, data in enumerate(trainloader, 0):
+        step=step+1
+        inputs, targets = data
+        optim.zero_grad()
+        writer.add_graph(ss, inputs)
+        loss_fn = torch.nn.CrossEntropyLoss()
+        out = ss(inputs)
+        print("Out", torch.argmax(out,dim=-1))
+        print("Targets", targets)
+        loss = loss_fn(out, targets)
+        loss.backward()
+        #for name, param in ss.named_parameters():
+        #    print(name)
+        #    print(param.grad)
+        optim.step()
+        writer.add_scalar('training loss',
+                            loss ,
+                            step)
+        break
+    break
+writer.close()
+
+

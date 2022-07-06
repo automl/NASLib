@@ -27,6 +27,43 @@ def gelu(x: torch.Tensor) -> torch.Tensor:
         return x * 0.5 * (1.0 + torch.erf(x / math.sqrt(2.0)))
 
 
+class QKV_Linear_Emb(AbstractPrimitive):
+    def __init__(self, layer, attn_layer_norm, emb_choice, super_emb_dim, pre_norm):
+        super(QKV_Linear_Emb, self).__init__(locals())
+        self.layer = layer
+        self.in_dim = emb_choice
+        self.out_dim = 3 * super_emb_dim
+        self.normalize_before = pre_norm
+        self.attn_layer_norm = attn_layer_norm
+        self.super_emb_dim = super_emb_dim
+
+    def set_sample_config(self):
+        self.layer.set_sample_config({},
+                                     sample_in_dim=self.in_dim,
+                                     sample_out_dim=self.out_dim)
+        self.attn_layer_norm.set_sample_config(
+            sample_embed_dim=self.in_dim)
+
+    def maybe_layer_norm(self, layer_norm, x, before=False, after=False):
+        assert before ^ after
+        if after ^ self.normalize_before:
+            return layer_norm(x)
+        else:
+            return x
+
+    def forward(self, x, edge_data):
+        self.set_sample_config()
+        #print("input sum", torch.sum(x))
+        x = self.maybe_layer_norm(self.attn_layer_norm,
+                                  x[:, :, :self.in_dim],
+                                  before=True)
+        output = torch.zeros([x.shape[0], x.shape[1], self.super_emb_dim])
+        output[:, :, :x.shape[-1]] = x
+        return output
+
+    def get_embedded_ops(self):
+        return None
+
 class LinearEmb(AbstractPrimitive):
     def __init__(self, layer, emb_choice, num_classes):
         super(LinearEmb, self).__init__(locals())
@@ -41,8 +78,10 @@ class LinearEmb(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         self.set_sample_config()
+        #print("input sum", torch.sum(x))
         assert torch.sum(x[:,self.in_dim:])==0
         x = self.layer(x[:,  :self.in_dim])
+
         return x
 
     def get_embedded_ops(self):
@@ -83,6 +122,7 @@ class LinearSuper_Emb_Ratio_Combi(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         self.set_sample_config()
+        #print("input sum", torch.sum(x))
         if self.reverse == False:
             #print(self.fc1)
             x = self.activation_fn(self.fc1(x[:, :, :self.sampled_in_dim]))
@@ -115,12 +155,13 @@ class Norm_embed_choice(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         self.set_sample_config()
+        #print("input sum", torch.sum(x))
         x = self.layer_norm(x[:, :, :self.sampled_in_dim])
         if self.gp:
             x_out = torch.mean(x[:, 1:], dim=1)
         else:
             x_out = x[:, 0]
-        print(x_out.shape)
+        #print(x_out.shape)
         output = torch.zeros([x_out.shape[0], self.super_embed_dim])
         output[:,  :x_out.shape[-1]] = x_out
         #print("Norm out", x.shape)
@@ -161,7 +202,9 @@ class AttnFfnNorm_embed_choice(AbstractPrimitive):
             return x
 
     def forward(self, x, edge_data):
+
         self.set_sample_config()
+        #print("input sum", torch.sum(x))
         x = self.maybe_layer_norm(self.attn_layer_norm,
                                   x[:, :, :self.sampled_in_dim],
                                   after=self.after,
@@ -183,6 +226,7 @@ class Dropout(AbstractPrimitive):
         self.dropout = nn.Dropout(drop_rate)
 
     def forward(self, x, edge_data):
+        #print("input sum", torch.sum(x))
         return self.dropout(x)
 
     def get_embedded_ops(self):
@@ -199,6 +243,7 @@ class Scale(AbstractPrimitive):
         self.super_embed_dim = super_embed_dim
 
     def forward(self, x, edge_data):
+        #print("input sum", torch.sum(x))
         x = x[:, :, :self.sampled_embed_dim] * (self.super_mlp_ratio /
                                                 self.sampled_mlp_ratio)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
@@ -295,6 +340,7 @@ class Dropout_emb_choice(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         #print(x.sum(dim=(0,1)))
+        #print("input sum", torch.sum(x))
         output = torch.zeros_like(x)
         x = F.dropout(x[:, :, x.sum(dim=(0, 1)) != 0],
                       p=self.sample_attn_dropout,
@@ -326,6 +372,7 @@ class Proj_emb_choice(AbstractPrimitive):
     def forward(self, x, edge_data):
         self.set_sample_config()
         #print("X shape", x.shape)
+        #print("input sum", torch.sum(x))
         x = F.linear(x[:, :, x.sum(dim=(0, 1)) != 0], self.proj.sample_weight,
                      self.proj.sample_bias) * (self.sample_scale
                                                if self.proj.scale else 1)
@@ -364,6 +411,7 @@ class QKV_super_embed_choice(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         self.set_sample_config()
+        #print("input sum", torch.sum(x))
         x = self.maybe_layer_norm(self.attn_layer_norm,
                                   x[:, :, :self.sampled_in_dim],
                                   before=True)
@@ -379,41 +427,48 @@ class QKV_super_embed_choice(AbstractPrimitive):
 
 class QKV_super_head_choice(AbstractPrimitive):
     def __init__(self, qkv_super, rel_pos_embed_k, rel_pos_embed_v, proj,
-                 head_choice, attn_drop, super_emb, super_head_emb_dim):
+                 head_choice, attn_drop, super_emb, super_head_emb_dim, change_qkv):
         super(QKV_super_head_choice, self).__init__(locals())
         self.super_embed_dim = super_emb
         self.qkv_super = qkv_super
         self.rel_pos_embed_k = rel_pos_embed_k
         self.rel_pos_embed_v = rel_pos_embed_v
         self.proj = proj
-        self.sampled_out_dim = head_choice * 64 * 3
+        if change_qkv:
+           self.sampled_out_dim = head_choice * 64 * 3
+        else:
+           self.sampled_out_dim = self.super_embed_dim*3
         self.sample_num_heads = head_choice
         self.sample_scale = (head_choice * 64 // head_choice)**-0.5
         self.super_head_emb_dim = super_head_emb_dim
-
+        self.change_qkv = change_qkv
         self.attn_drop = nn.Dropout(attn_drop)
 
     def set_sample_config(self):
-        self.qkv_super.sample_weight = torch.cat([
+        if self.change_qkv:
+            self.qkv_super.sample_weight = torch.cat([
             self.qkv_super.sample_weight[i:self.sampled_out_dim:3, :]
-            for i in range(3)
-        ],
-                                                 dim=0)
-        self.qkv_super.sample_bias = self.qkv_super.bias
-        if self.qkv_super.bias is not None:
-            self.qkv_super.sample_bias = self.qkv_super.bias[:self.
+            for i in range(3)],dim=0)
+            self.qkv_super.sample_bias = self.qkv_super.bias
+            if self.qkv_super.bias is not None:
+               self.qkv_super.sample_bias = self.qkv_super.bias[:self.
                                                              sampled_out_dim]
-        self.qkv_super.sample_out_dim = self.sampled_out_dim
-        self.rel_pos_embed_k.set_sample_config(64 * 3 * self.sample_num_heads)
-        self.rel_pos_embed_v.set_sample_config(64 * 3 * self.sample_num_heads)
-        self.proj.sample_weight = self.proj.weight[:, :64 *
+            self.qkv_super.sample_out_dim = self.sampled_out_dim
+            self.proj.sample_weight = self.proj.weight[:, :64 *
                                                    self.sample_num_heads]
+        else:
+            self.proj.sample_weight = self.proj.weight[:, :self.super_embed_dim]
+        self.rel_pos_embed_k.set_sample_config(self.sampled_out_dim//(self.sample_num_heads*3))
+        self.rel_pos_embed_v.set_sample_config(self.sampled_out_dim//(self.sample_num_heads*3))
+        
+ 
 
     def forward(self, x, edge_data):
         self.set_sample_config()
+        #print("input sum", torch.sum(x))
         B, N, C = x.shape
-        #print("QKV in shape", x.shape)
-        qkv = self.qkv_super(x).reshape(B, N, 3, self.sample_num_heads,
+        #print("QKV out shape", self.qkv_super(x[:, :, x.sum(dim=(0, 1)) != 0]).shape)
+        qkv = self.qkv_super(x[:, :, x.sum(dim=(0, 1)) != 0]).reshape(B, N, 3, self.sample_num_heads,
                                         -1).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[
             2]  # make torchscript happy (cannot use tensor as tuple)
