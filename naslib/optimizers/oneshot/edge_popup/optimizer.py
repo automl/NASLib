@@ -49,17 +49,13 @@ class EdgePopUpOptimizer(MetaOptimizer):
         Function to add the architectural weights to the edges.
         """
         len_primitives = len(edge.data.op)
+        # nn.init.kaiming_normal_(self.primitives, mode="fan_in", nonlinearity="relu")
         alpha = torch.nn.Parameter(
             1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
         )
+        alpha.requires_grad = False
         edge.data.set("alpha", alpha, shared=True)
 
-    @staticmethod
-    def add_scores(edge):
-        """
-        Function to add the scores of the alphas to the edges.
-        """
-        len
 
     @staticmethod
     def update_ops(edge):
@@ -396,27 +392,25 @@ class EdgePopUpMixedOp(MixedOp):
         super().__init__(primitives)
         # initialize the scores
         #TODO: set the self.weights somewhere
-        self.scores = nn.Parameter(torch.Tensor(self.primitives.size()))
+        self.scores = nn.Parameter(torch.Tensor(1, len(self.primitives)))
         nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
 
         # NOTE: initialize the weights like this.
-        # TODO: what is the effect of the type of nonlinearality
-        nn.init.kaiming_normal_(self.primitives, mode="fan_in", nonlinearity="relu")
+        # nn.init.kaiming_normal_(self.primitives, mode="fan_in", nonlinearity="relu")
 
         # NOTE: turn the gradient on the weights off
-        self.primitives.requires_grad = False
+
 
     def get_weights(self, edge_data):
         return edge_data.alpha
 
     def process_weights(self, weights):
-        # TODO: is this still softmax? yes!
         return torch.softmax(weights, dim=-1)
 
     def apply_weights(self, x, weights):
         subnet = GetSubnet.apply(self.scores.abs(), SPARSITY) #TODO: remove abs()
         # applying edge_popup to the alphas
-        primitives = self.primitives * subnet
-        return sum(w * op(x, None) for w, op in zip(weights, primitives))
+        weights = weights * subnet[0]
+        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
         # TODO: applying edge_popup to the weights
 

@@ -16,6 +16,7 @@ from naslib.optimizers import (
 from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
+    NasBench301SearchSpace,
     DartsSearchSpace,
     NasBenchNLPSearchSpace,
     TransBench101SearchSpaceMicro,
@@ -49,6 +50,7 @@ supported_optimizers = {
 supported_search_spaces = {
     'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
+    'nasbench301': NasBench301SearchSpace(),
     'darts': DartsSearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
