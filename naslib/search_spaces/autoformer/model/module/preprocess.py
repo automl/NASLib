@@ -7,6 +7,7 @@ import numpy as np
 from model.module.layernorm_super import LayerNormSuper
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 
+
 def calc_dropout(dropout, sample_embed_dim, super_embed_dim):
     return dropout * 1.0 * sample_embed_dim / super_embed_dim
 
@@ -92,12 +93,13 @@ class Preprocess(AbstractPrimitive):  #TODO: Better name?
     def get_embedded_ops(self):
         return None
 
+
 class Preprocess_partial(AbstractPrimitive):
     def __init__(self, patch_emb_layer, emb_choice):
         super(Preprocess_partial, self).__init__(locals())
         self.patch_emb_layer = patch_emb_layer
         self.emb_choice = emb_choice
-        
+
     def set_sample_config(self):
         self.patch_emb_layer.sample(self.emb_choice)
 

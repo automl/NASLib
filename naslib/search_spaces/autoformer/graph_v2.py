@@ -156,37 +156,39 @@ class AutoformerSearchSpace(Graph):
             self.attn_layer_norm = LayerNormSuper(self.super_embed_dim)
             if change_qkv:
                 self.qkv_super = qkv_super(self.super_embed_dim,
-                                       3 * 64 * max(self.choices["num_heads"]),
-                                       bias=qkv_bias)
+                                           3 * 64 *
+                                           max(self.choices["num_heads"]),
+                                           bias=qkv_bias)
                 self.qkv_embed_choice_list = []
 
-                
                 for e in self.choices["embed_dim"]:
                     self.qkv_embed_choice_list.append(
-                    QKV_super_embed_choice(self.qkv_super,
-                                           self.attn_layer_norm, e,
-                                           self.super_embed_dim, pre_norm))
-                self.edges[start, start + 1].set("op", self.qkv_embed_choice_list)
+                        QKV_super_embed_choice(self.qkv_super,
+                                               self.attn_layer_norm, e,
+                                               self.super_embed_dim, pre_norm))
+                self.edges[start, start + 1].set("op",
+                                                 self.qkv_embed_choice_list)
             else:
-                self.qkv_super = LinearSuper(self.super_embed_dim,3 * self.super_embed_dim,bias=qkv_bias)
+                self.qkv_super = LinearSuper(self.super_embed_dim,
+                                             3 * self.super_embed_dim,
+                                             bias=qkv_bias)
                 self.qkv_embed_choice_list = []
                 for e in self.choices["embed_dim"]:
                     self.qkv_embed_choice_list.append(
-                    QKV_Linear_Emb(self.qkv_super,
-                                           self.attn_layer_norm, e,
-                                           self.super_embed_dim, pre_norm))
-                self.edges[start, start + 1].set("op", self.qkv_embed_choice_list)
+                        QKV_Linear_Emb(self.qkv_super, self.attn_layer_norm, e,
+                                       self.super_embed_dim, pre_norm))
+                self.edges[start, start + 1].set("op",
+                                                 self.qkv_embed_choice_list)
             self.rel_pos_embed_k = RelativePosition2D_super(
                 64, max_relative_position)
             self.rel_pos_embed_v = RelativePosition2D_super(
-                64, max_relative_position) 
+                64, max_relative_position)
 
-            self.proj = LinearSuper(self.super_head_dim,
-                                    self.super_embed_dim)                 
+            self.proj = LinearSuper(self.super_head_dim, self.super_embed_dim)
             self.qkv_head_choice_list = []
             for h in self.choices["num_heads"]:
                 self.qkv_head_choice_list.append(
-                QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k,
+                    QKV_super_head_choice(self.qkv_super, self.rel_pos_embed_k,
                                           self.rel_pos_embed_v, self.proj, h,
                                           attn_drop_rate, self.super_embed_dim,
                                           self.super_head_dim, change_qkv))
@@ -194,7 +196,7 @@ class AutoformerSearchSpace(Graph):
                                                  self.qkv_head_choice_list)
 
             self.proj_emb_choice_list = []
-            for e in self.choices["embed_dim"]: 
+            for e in self.choices["embed_dim"]:
                 self.proj_emb_choice_list.append(
                     Proj_emb_choice(self.proj, e, self.super_embed_dim))
             self.edges[start + 2, start + 3].set("op",
@@ -202,7 +204,7 @@ class AutoformerSearchSpace(Graph):
             self.proj_drop = Dropout(drop_rate)
             self.edges[start + 3, start + 4].set("op", self.proj_drop)
             self.dropout_emb_choice_list = []
-            for e in self.choices["embed_dim"]: 
+            for e in self.choices["embed_dim"]:
                 self.dropout_emb_choice_list.append(
                     Dropout_emb_choice(e, self.super_attn_dropout,
                                        self.super_embed_dim))
@@ -217,7 +219,7 @@ class AutoformerSearchSpace(Graph):
             self.edges[start + 5, start + 6].set("op", self.drop_path)
             self.edges[start, start + 6].set("op", ops.Identity())
             self.attn_norm_choice_list = []
-            for e in self.choices["embed_dim"]: 
+            for e in self.choices["embed_dim"]:
                 self.attn_norm_choice_list.append(
                     AttnFfnNorm_embed_choice(self.attn_layer_norm,
                                              e,
@@ -303,16 +305,18 @@ class AutoformerSearchSpace(Graph):
         if self.pre_norm:
             self.norm = LayerNormSuper(super_embed_dim=embed_dim)
             self.norm_choice_list = []
-            for e in self.choices["embed_dim"]: #G2
+            for e in self.choices["embed_dim"]:  #G2
                 self.norm_choice_list.append(
-                Norm_embed_choice(self.norm, e, self.super_embed_dim, gp))
+                    Norm_embed_choice(self.norm, e, self.super_embed_dim, gp))
             self.edges[start, start + 1].set("op", self.norm_choice_list)
         else:
-            self.edges[start, start+1].set("op", ops.Identity())
-        self.head = LinearSuper(self.super_embed_dim, num_classes) if num_classes > 0 else ops.Identity()
+            self.edges[start, start + 1].set("op", ops.Identity())
+        self.head = LinearSuper(
+            self.super_embed_dim,
+            num_classes) if num_classes > 0 else ops.Identity()
         self.head_choice_list = []
         if num_classes > 0:
-            for e in self.choices["embed_dim"]: #G2
+            for e in self.choices["embed_dim"]:  #G2
 
                 self.head_choice_list.append(
                     LinearEmb(self.head, e, num_classes))
@@ -373,9 +377,11 @@ class AutoformerSearchSpace(Graph):
             self.edges[i, i + 1].set("op", ops.Identity())
         start = self.total_num_nodes - 2
         if self.pre_norm:
-            self.edges[start, start + 1].set("op", self.norm_choice_list[op_indices_emb[-1]])
-        if self.num_classes>0:
-            self.edges[start + 1, start + 2].set("op", self.head_choice_list[op_indices_emb[-1]])
+            self.edges[start, start + 1].set(
+                "op", self.norm_choice_list[op_indices_emb[-1]])
+        if self.num_classes > 0:
+            self.edges[start + 1, start + 2].set(
+                "op", self.head_choice_list[op_indices_emb[-1]])
 
 
 def count_parameters_in_MB(model):
@@ -391,37 +397,46 @@ plt.show()
 plt.savefig('autoformer.png')
 ss.sample_random_architecture()
 ss.parse()
-optim = torch.optim.Adam(ss.parameters(),lr=0.0001)
-transform = transforms.Compose(
-    [transforms.ToTensor(),
-     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+optim = torch.optim.Adam(ss.parameters(), lr=0.0001)
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
 
 batch_size = 2
 
-trainset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform)
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-                                          shuffle=True, num_workers=2)
+trainset = torchvision.datasets.CIFAR10(root='./data',
+                                        train=True,
+                                        download=True,
+                                        transform=transform)
+trainloader = torch.utils.data.DataLoader(trainset,
+                                          batch_size=batch_size,
+                                          shuffle=True,
+                                          num_workers=2)
 
-testset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transform)
-testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
-                                         shuffle=False, num_workers=2)
+testset = torchvision.datasets.CIFAR10(root='./data',
+                                       train=False,
+                                       download=True,
+                                       transform=transform)
+testloader = torch.utils.data.DataLoader(testset,
+                                         batch_size=batch_size,
+                                         shuffle=False,
+                                         num_workers=2)
 print(ss.modules_str())
 writer = SummaryWriter('test_autoformer_cifar10_test_2')
-step =0
+step = 0
 running_loss = 0
 for i in range(10):
     #print(ss.config)
     print("starting epoch", i)
     for i, data in enumerate(trainloader, 0):
-        step=step+1
+        step = step + 1
         inputs, targets = data
         optim.zero_grad()
         writer.add_graph(ss, inputs)
         loss_fn = torch.nn.CrossEntropyLoss()
         out = ss(inputs)
-        print("Out", torch.argmax(out,dim=-1))
+        print("Out", torch.argmax(out, dim=-1))
         print("Targets", targets)
         loss = loss_fn(out, targets)
         loss.backward()
@@ -429,11 +444,7 @@ for i in range(10):
         #    print(name)
         #    print(param.grad)
         optim.step()
-        writer.add_scalar('training loss',
-                            loss ,
-                            step)
+        writer.add_scalar('training loss', loss, step)
         break
     break
 writer.close()
-
-
