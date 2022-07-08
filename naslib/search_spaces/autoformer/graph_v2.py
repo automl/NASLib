@@ -102,9 +102,9 @@ class AutoformerSearchSpace(Graph):
 
         #
         self.choices = {
-            'num_heads': [1, 2, 3],
+            'num_heads': [2, 4, 6],
             'mlp_ratio': [1, 2, 1.5],
-            'embed_dim': [5, 10, 18],
+            'embed_dim': [20,30,96],
             'depth': [1, 2, 3]
         }
         # operations at the edges
@@ -314,13 +314,13 @@ class AutoformerSearchSpace(Graph):
         self.head = LinearSuper(
             self.super_embed_dim,
             num_classes) if num_classes > 0 else ops.Identity()
-        self.head_choice_list = []
+        self.classifier_head_choice_list = []
         if num_classes > 0:
             for e in self.choices["embed_dim"]:  #G2
 
-                self.head_choice_list.append(
+                self.classifier_head_choice_list.append(
                     LinearEmb(self.head, e, num_classes))
-            self.edges[start + 1, start + 2].set("op", self.head_choice_list)
+            self.edges[start + 1, start + 2].set("op", self.classifier_head_choice_list)
         else:
             self.edges[start + 1, start + 2].set("op", ops.Identity())
 
@@ -334,12 +334,12 @@ class AutoformerSearchSpace(Graph):
         op_indices_emb = np.random.randint(3, size=(1))
         op_indices_emb = [op_indices_emb[0] for _ in range(depth)]
         op_indices_head = np.random.randint(3, size=(depth))
-        op_indices_ratio_emb = np.random.randint(9, size=(depth))
+        op_indices_ratio = np.random.choice([x for x in range(3*op_indices_emb[0],3+3*op_indices_emb[0])], size=(depth))
         print("Choosing op 1", op_indices_emb)
         print("Choosing op 2", op_indices_head)
         print("Depth", depth)
         self.set_op_indices(op_indices_emb, op_indices_head,
-                            op_indices_ratio_emb, depth)
+                            op_indices_ratio, depth)
 
     def set_op_indices(self, op_indices_emb, op_indices_head,
                        op_indices_ratio_emb, depth):
@@ -381,7 +381,7 @@ class AutoformerSearchSpace(Graph):
                 "op", self.norm_choice_list[op_indices_emb[-1]])
         if self.num_classes > 0:
             self.edges[start + 1, start + 2].set(
-                "op", self.head_choice_list[op_indices_emb[-1]])
+                "op", self.classifier_head_choice_list[op_indices_emb[-1]])
 
 
 def count_parameters_in_MB(model):
@@ -403,7 +403,7 @@ transform = transforms.Compose([
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
-batch_size = 2
+batch_size = 128
 
 trainset = torchvision.datasets.CIFAR10(root='./data',
                                         train=True,
@@ -423,10 +423,10 @@ testloader = torch.utils.data.DataLoader(testset,
                                          shuffle=False,
                                          num_workers=2)
 print(ss.modules_str())
-writer = SummaryWriter('test_autoformer_cifar10_test_2')
+writer = SummaryWriter('test_autoformer_cifar10_qkv_1')
 step = 0
 running_loss = 0
-for i in range(10):
+for i in range(200):
     #print(ss.config)
     print("starting epoch", i)
     for i, data in enumerate(trainloader, 0):
