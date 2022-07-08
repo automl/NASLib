@@ -278,11 +278,9 @@ class AutoformerSearchSpace(Graph):
             self.edges[start + 11, start + 12].set(
                 "op", self.dropout_emb_full_choice_list)
             self.scale_choice_list = []
-            for e in self.choices["embed_dim"]:
-                for r in self.choices["mlp_ratio"]:
-                    self.scale_choice_list.append(
-                        Scale(self.super_mlp_ratio, self.super_embed_dim, r,
-                              e))
+            for r in self.choices["mlp_ratio"]:
+                self.scale_choice_list.append(
+                        Scale(self.super_mlp_ratio, self.super_embed_dim, r,))
             if scale == True:
                 self.edges[start + 12, start + 13].set("op",
                                                        self.scale_choice_list)
@@ -334,15 +332,17 @@ class AutoformerSearchSpace(Graph):
         op_indices_emb = np.random.randint(3, size=(1))
         op_indices_emb = [op_indices_emb[0] for _ in range(depth)]
         op_indices_head = np.random.randint(3, size=(depth))
-        op_indices_ratio = np.random.choice([x for x in range(3*op_indices_emb[0],3+3*op_indices_emb[0])], size=(depth))
-        print("Choosing op 1", op_indices_emb)
-        print("Choosing op 2", op_indices_head)
+        op_indices_ratio_emb = np.random.choice([x for x in range(3*op_indices_emb[0],3+3*op_indices_emb[0])], size=(depth))
+        op_indices_ratio = [x%3 for x in list(op_indices_ratio_emb)]
+        print("Choosing emp index", op_indices_emb)
+        print("Choosing head indices", op_indices_head)
+        print("Choosing mlp_ratio_op indices", op_indices_ratio)
         print("Depth", depth)
         self.set_op_indices(op_indices_emb, op_indices_head,
-                            op_indices_ratio, depth)
+                            op_indices_ratio_emb,op_indices_ratio, depth)
 
     def set_op_indices(self, op_indices_emb, op_indices_head,
-                       op_indices_ratio_emb, depth):
+                       op_indices_ratio_emb, op_indices_ratio, depth):
         # This will update the edges in the naslib object to op_indices
         self.edges[1, 2].set("op", self.patch_emb_op_list[op_indices_emb[0]])
         start = 2
@@ -369,7 +369,7 @@ class AutoformerSearchSpace(Graph):
                 "op", self.dropout_emb_full_choice_list[op_indices_emb[i]])
             if self.scale == True:
                 self.edges[start + 12, start + 13].set(
-                    "op", self.scale_choice_list[op_indices_ratio_emb[i]])
+                    "op", self.scale_choice_list[op_indices_ratio[i]])
             self.edges[start + 14, start + 15].set(
                 "op", self.ffn_norm_choice_list_after[op_indices_emb[i]])
             start = start + 15
