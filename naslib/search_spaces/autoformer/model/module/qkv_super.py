@@ -235,17 +235,15 @@ class Dropout(AbstractPrimitive):
 
 
 class Scale(AbstractPrimitive):
-    def __init__(self, super_mlp_ratio, super_embed_dim, sampled_mlp_ratio,
-                 sampled_embed_dim):
+    def __init__(self, super_mlp_ratio, super_embed_dim, sampled_mlp_ratio):
         super(Scale, self).__init__(locals())
         self.super_mlp_ratio = super_mlp_ratio
         self.sampled_mlp_ratio = sampled_mlp_ratio
-        self.sampled_embed_dim = sampled_embed_dim
         self.super_embed_dim = super_embed_dim
 
     def forward(self, x, edge_data):
         #print("input sum", torch.sum(x))
-        x = x[:, :, :self.sampled_embed_dim] * (self.super_mlp_ratio /
+        x = x[:, :, x.sum(dim=(0, 1)) != 0] * (self.super_mlp_ratio /
                                                 self.sampled_mlp_ratio)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
