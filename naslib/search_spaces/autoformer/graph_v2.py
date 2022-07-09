@@ -22,8 +22,11 @@ import matplotlib.pyplot as plt
 from naslib.utils.utils import iter_flatten, AttrDict
 from model.module.preprocess import Preprocess, Preprocess_partial
 from naslib.utils.utils import get_project_root
+from model.module.primitives import Stack, Split
 from model.module.qkv_super import qkv_super
-from model.module.qkv_super import QKV_super_head_choice, QKV_Linear_Emb, LinearEmb, QKV_super_embed_choice, Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice, Dropout, AttnFfnNorm_embed_choice, Scale, LinearSuper_Emb_Ratio_Combi, Norm_embed_choice
+from model.module.qkv_super import QKV_super_head_choice, QKV_Linear_Emb, LinearEmb, QKV_super_embed_choice, \
+    Dropout_emb_choice, RelativePosition2D_super, Proj_emb_choice, Dropout, AttnFfnNorm_embed_choice, Scale, \
+    LinearSuper_Emb_Ratio_Combi, Norm_embed_choice
 import math
 import random
 import torch
@@ -104,7 +107,7 @@ class AutoformerSearchSpace(Graph):
         self.choices = {
             'num_heads': [2, 4, 6],
             'mlp_ratio': [1, 2, 1.5],
-            'embed_dim': [20,30,96],
+            'embed_dim': [20, 30, 96],
             'depth': [1, 2, 3]
         }
         # operations at the edges
@@ -148,7 +151,12 @@ class AutoformerSearchSpace(Graph):
                 self.add_edges_from([(start, self.total_num_nodes - 2)])
                 self.edges[start, self.total_num_nodes - 2].set(
                     "op", ops.Identity()
-                )  #edges[start, start + 6].set("op", ops.Identity())
+                )  # edges[start, start + 6].set("op", ops.Identity())
+
+        # set comb_op and split
+        self.nodes[self.total_num_nodes - 2]["comb_op"] = Stack()
+        self.depth_choice_list = [Split(idx) for idx in range(len(self.choices["depth"]))]
+        self.edges[self.total_num_nodes - 2, self.total_num_nodes - 1].set('op', self.depth_choice_list)
 
         start = 2
         for i in range(self.depth_super):
@@ -280,7 +288,7 @@ class AutoformerSearchSpace(Graph):
             self.scale_choice_list = []
             for r in self.choices["mlp_ratio"]:
                 self.scale_choice_list.append(
-                        Scale(self.super_mlp_ratio, self.super_embed_dim, r,))
+                    Scale(self.super_mlp_ratio, self.super_embed_dim, r, ))
             if scale == True:
                 self.edges[start + 12, start + 13].set("op",
                                                        self.scale_choice_list)
@@ -303,7 +311,7 @@ class AutoformerSearchSpace(Graph):
         if self.pre_norm:
             self.norm = LayerNormSuper(super_embed_dim=embed_dim)
             self.norm_choice_list = []
-            for e in self.choices["embed_dim"]:  #G2
+            for e in self.choices["embed_dim"]:  # G2
                 self.norm_choice_list.append(
                     Norm_embed_choice(self.norm, e, self.super_embed_dim, gp))
             self.edges[start, start + 1].set("op", self.norm_choice_list)
@@ -314,7 +322,7 @@ class AutoformerSearchSpace(Graph):
             num_classes) if num_classes > 0 else ops.Identity()
         self.classifier_head_choice_list = []
         if num_classes > 0:
-            for e in self.choices["embed_dim"]:  #G2
+            for e in self.choices["embed_dim"]:  # G2
 
                 self.classifier_head_choice_list.append(
                     LinearEmb(self.head, e, num_classes))
@@ -332,14 +340,15 @@ class AutoformerSearchSpace(Graph):
         op_indices_emb = np.random.randint(3, size=(1))
         op_indices_emb = [op_indices_emb[0] for _ in range(depth)]
         op_indices_head = np.random.randint(3, size=(depth))
-        op_indices_ratio_emb = np.random.choice([x for x in range(3*op_indices_emb[0],3+3*op_indices_emb[0])], size=(depth))
-        op_indices_ratio = [x%3 for x in list(op_indices_ratio_emb)]
+        op_indices_ratio_emb = np.random.choice([x for x in range(3 * op_indices_emb[0], 3 + 3 * op_indices_emb[0])],
+                                                size=(depth))
+        op_indices_ratio = [x % 3 for x in list(op_indices_ratio_emb)]
         print("Choosing emp index", op_indices_emb)
         print("Choosing head indices", op_indices_head)
         print("Choosing mlp_ratio_op indices", op_indices_ratio)
         print("Depth", depth)
         self.set_op_indices(op_indices_emb, op_indices_head,
-                            op_indices_ratio_emb,op_indices_ratio, depth)
+                            op_indices_ratio_emb, op_indices_ratio, depth)
 
     def set_op_indices(self, op_indices_emb, op_indices_head,
                        op_indices_ratio_emb, op_indices_ratio, depth):
@@ -392,6 +401,7 @@ def count_parameters_in_MB(model):
 
 ss = AutoformerSearchSpace(num_classes=10)
 import networkx as nx
+
 nx.draw(ss, with_labels=True, pos=nx.kamada_kawai_layout(ss))
 plt.show()
 plt.savefig('autoformer.png')
@@ -427,7 +437,7 @@ writer = SummaryWriter('test_autoformer_cifar10_qkv_1')
 step = 0
 running_loss = 0
 for i in range(200):
-    #print(ss.config)
+    # print(ss.config)
     print("starting epoch", i)
     for i, data in enumerate(trainloader, 0):
         step = step + 1
@@ -440,7 +450,7 @@ for i in range(200):
         print("Targets", targets)
         loss = loss_fn(out, targets)
         loss.backward()
-        #for name, param in ss.named_parameters():
+        # for name, param in ss.named_parameters():
         #    print(name)
         #    print(param.grad)
         optim.step()
