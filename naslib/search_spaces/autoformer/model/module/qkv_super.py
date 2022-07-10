@@ -244,7 +244,7 @@ class Scale(AbstractPrimitive):
     def forward(self, x, edge_data):
         #print("input sum", torch.sum(x))
         x = x[:, :, x.sum(dim=(0, 1)) != 0] * (self.super_mlp_ratio /
-                                                self.sampled_mlp_ratio)
+                                               self.sampled_mlp_ratio)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
         assert torch.sum(output[:, :, x.shape[-1]:]) == 0
