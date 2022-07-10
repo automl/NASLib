@@ -521,7 +521,7 @@ print(ss(input))
         loss = loss_fn(out, targets)
         print("loss", loss)
         loss.backward()
-        #for name, param in ss.named_parameters():
+        # for name, param in ss.named_parameters():
         #    print(name)
         #    print(param.grad)
         optim.step()
