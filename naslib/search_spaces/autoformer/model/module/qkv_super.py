@@ -3,10 +3,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from model.utils import trunc_normal_
-from .Linear_super import LinearSuper
+from naslib.search_spaces.autoformer.model.utils import trunc_normal_
+from naslib.search_spaces.autoformer.model.module.Linear_super import LinearSuper
 from naslib.search_spaces.core.primitives import AbstractPrimitive
-from model.module.layernorm_super import LayerNormSuper
+from naslib.search_spaces.autoformer.model.module.layernorm_super import LayerNormSuper
 
 
 def calc_dropout(dropout, sample_embed_dim, super_embed_dim):

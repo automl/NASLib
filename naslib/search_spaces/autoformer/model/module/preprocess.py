@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from model.utils import trunc_normal_
-from model.utils import to_2tuple
+from naslib.search_spaces.autoformer.model.utils import trunc_normal_
+from naslib.search_spaces.autoformer.model.utils import to_2tuple
 import numpy as np
-from model.module.layernorm_super import LayerNormSuper
+from naslib.search_spaces.autoformer.model.module.layernorm_super import LayerNormSuper
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 
 
