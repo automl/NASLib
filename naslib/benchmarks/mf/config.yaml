@@ -1,21 +1,26 @@
 start_seed: 0
-trials: 1
+trials: 2
 out_dir: run
-out_dir_config: configs
-config_type: bbo-bs
-search_space: nasbench201
+out_dir_configs: configs
+
+search_space: 
+  - nasbench201
+  - nasbench311
+  - asr
 datasets: 
   - cifar10
+  - cifar100
+  - ImageNet16-120
+  - TIMIT
 optimizers: # sh, rs, ls, ...
+  - rs
+  - ls
+  - re
+  - bananas
+  - npenas
   - sh
-fidelity: 200
+  - hb
+  - bohb
+  - dehb
 
-HPO: True
-# only relevant if HPO is enabled
-num_config: 10
-
-# for SH: 4
-# for default BBOs: 200
-epochs: 200
-
-predictor: var_sparse_gp
+num_config: 2
