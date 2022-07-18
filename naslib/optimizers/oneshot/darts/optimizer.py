@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import logging
 from torch.autograd import Variable
-
+from naslib.utils.utils import iter_flatten, AttrDict
 from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
@@ -18,17 +18,31 @@ class DARTSOptimizer(MetaOptimizer):
     Implementation of the DARTS paper as in
         Liu et al. 2019: DARTS: Differentiable Architecture Search.
     """
-
-    @staticmethod
-    def add_alphas(edge):
-        """
-        Function to add the architectural weights to the edges.
-        """
-        len_primitives = len(edge.data.op)
+    
+    def add_group_alphas(self,group_name,len_primitives):
         alpha = torch.nn.Parameter(
             1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
         )
-        edge.data.set("alpha", alpha, shared=True)
+        self.groups[group_name] = alpha #.cuda()
+
+    def add_alphas(self,edge):
+        """
+        Function to add the architectural weights to the edges.
+        """
+        #print("Group",edge.data)
+        #print("Group",edge.data.op)
+        group = edge.data.group
+        if group in self.groups.keys():
+            edge.data.set("alpha", self.groups[group], shared=True)
+        elif group == "combi":
+            alpha = torch.Tensor([x*y for x in self.groups["emb"] for y in self.groups["ratio"]])
+            alpha = alpha.to("cuda")
+            #print(alpha)
+            edge.data.set("alpha", alpha , shared=True)
+        else:
+            len_primitives = len(edge.data.op)
+            alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
+            edge.data.set("alpha", alpha, shared=True)
 
     @staticmethod
     def update_ops(edge):
@@ -37,6 +51,7 @@ class DARTSOptimizer(MetaOptimizer):
         with the DARTS specific MixedOp.
         """
         primitives = edge.data.op
+        #print("Primitives",primitives)
         edge.data.set("op", DARTSMixedOp(primitives))
 
     def __init__(
@@ -53,7 +68,7 @@ class DARTSOptimizer(MetaOptimizer):
 
         """
         super(DARTSOptimizer, self).__init__()
-
+        self.groups={}
         self.config = config
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
@@ -76,11 +91,27 @@ class DARTSOptimizer(MetaOptimizer):
         # If there is no scope defined, let's use the search space default one
         if not scope:
             scope = graph.OPTIMIZER_SCOPE
+        import math
+        for u,v, edge_data in graph.edges.data():
+            if not edge_data.is_final():
+             edge = AttrDict(head=u, tail=v, data=edge_data)
+             #print(edge)
+             group = edge.data.group
+             if group not in self.groups.keys():
+                if group!="combi":
+                    self.add_group_alphas(group,len(edge.data.op))  
+                else:
+                    self.add_group_alphas("ratio",3)      
 
         # 1. add alphas
-        graph.update_edges(
-            self.__class__.add_alphas, scope=scope, private_edge_data=False
-        )
+    
+        for u,v, edge_data in graph.edges.data():
+            if not edge_data.is_final():
+             edge = AttrDict(head=u, tail=v, data=edge_data)
+             self.add_alphas(edge)
+        #graph.update_edges(
+        #    self.__class__.add_alphas, scope=scope, private_edge_data=False
+        #)
 
         # 2. replace primitives with mixed_op
         graph.update_edges(
@@ -91,7 +122,7 @@ class DARTSOptimizer(MetaOptimizer):
             self.architectural_weights.append(alpha)
 
         graph.parse()
-        #logger.info("Parsed graph:\n" + graph.modules_str())
+        logger.info("Parsed graph:\n" + graph.modules_str())
 
         # Init optimizers
         if self.arch_optimizer is not None:
@@ -105,10 +136,10 @@ class DARTSOptimizer(MetaOptimizer):
         self.op_optimizer = self.op_optimizer(
             graph.parameters(),
             lr=self.config.search.learning_rate,
-            momentum=self.config.search.momentum,
+  
             weight_decay=self.config.search.weight_decay,
         )
-
+        #momentum=self.config.search.momentum,
         graph.train()
 
         self.graph = graph
@@ -349,6 +380,7 @@ class DARTSOptimizer(MetaOptimizer):
         return [(x - y).div_(2 * R) for x, y in zip(grads_p, grads_n)]
 
     def _loss(self, model, criterion, input, target):
+        #print("Arch Parameters",model.arch_parameters())
         pred = model(input)
         return criterion(pred, target)
 
@@ -368,7 +400,18 @@ class DARTSMixedOp(MixedOp):
         return torch.softmax(weights, dim=-1)
 
     def apply_weights(self, x, weights):  
-        #print(x.shape)      
-        #print(w.shape)
-        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
+        weights = weights.to("cuda")
+        x = x.to("cuda")
+        li = []
+        #print(self.primitives)
+        for w, op in zip(weights, self.primitives):
+            op = op.cuda()
+            #print(op)
+            #print(op.device)
+            #print(x.device)
+            #print(w.device)
+            out = op(x,None)
+            li.append(w*out.cuda())
+
+        return sum(li)
 
