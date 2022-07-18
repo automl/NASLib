@@ -16,6 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class BOHB(MetaOptimizer):
+    """
+    This implementation is mainly based on https://github.com/automl/nas-bench-x11. 
+    Falkner, Stefan, et al. 
+    BOHB: Robust and Efficient Hyperparameter Optimization at Scale. arXiv:1807.01774, 
+    arXiv, 4th July 2018. arXiv.org, http://arxiv.org/abs/1807.01774.
+    """
     # training the models is not implemented
     using_step_function = False
 

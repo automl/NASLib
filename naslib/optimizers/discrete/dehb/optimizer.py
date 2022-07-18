@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 class DEHB(MetaOptimizer):
+    """
+    This implementation is mainly based on https://github.com/automl/nas-bench-x11. 
+    Awad, Noor, et al. 
+    DEHB: Evolutionary Hyperband for Scalable, Robust and Efficient Hyperparameter Optimization. 
+    arXiv:2105.09821, arXiv, 21st October 2021. 
+    arXiv.org, http://arxiv.org/abs/2105.09821.
+    """
     # training the models is not implemented
     using_step_function = False
 

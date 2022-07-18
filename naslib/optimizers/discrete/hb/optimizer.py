@@ -14,6 +14,14 @@ logger = logging.getLogger(__name__)
 
 
 class HB(MetaOptimizer):
+    """
+    This implementation is mainly based on https://github.com/automl/nas-bench-x11. 
+    
+    Li, Lisha, et al. 
+    Hyperband: A Novel Bandit-Based Approach to Hyperparameter Optimization. 
+    arXiv:1603.06560, arXiv, 18th June 2018. 
+    arXiv.org, http://arxiv.org/abs/1603.06560.
+    """
     # training the models is not implemented
     using_step_function = False
 
