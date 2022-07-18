@@ -53,7 +53,7 @@ class Preprocess(AbstractPrimitive):  #TODO: Better name?
         self.sampled_weight = None
         self.sampled_bias = None
         self.sampled_scale = None
-
+        self.device = "cuda"
     def sample(self, emb_choice):
         sample_embed_dim = emb_choice
         self.sampled_weight = self.proj.weight[:sample_embed_dim, ...]
@@ -97,15 +97,15 @@ class Preprocess(AbstractPrimitive):  #TODO: Better name?
 class Preprocess_partial(AbstractPrimitive):
     def __init__(self, patch_emb_layer, emb_choice):
         super(Preprocess_partial, self).__init__(locals())
-        self.patch_emb_layer = patch_emb_layer
+        self.patch_emb_layer = patch_emb_layer.cuda()
         self.emb_choice = emb_choice
-
     def set_sample_config(self):
         self.patch_emb_layer.sample(self.emb_choice)
 
     def forward(self, x, edge_data):
         self.set_sample_config()
         x = self.patch_emb_layer(x, edge_data)
+        #print("Patch out shape",x.shape)
         return x
 
     def get_embedded_ops(self):

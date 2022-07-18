@@ -245,8 +245,10 @@ class Scale(AbstractPrimitive):
 
     def forward(self, x, edge_data):
         #print("input sum", torch.sum(x))
-        x = x[:, :, x.sum(dim=(0, 1)) != 0] * (self.super_mlp_ratio /
-                                               self.sampled_mlp_ratio)
+        #x = x[:, :, x.sum(dim=(0, 1)) != 0] * (self.super_mlp_ratio /
+        #                                       self.sampled_mlp_ratio)
+        # Todo add emb dim here at some point
+        x = x * (self.super_mlp_ratio /self.sampled_mlp_ratio)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         output[:, :, :x.shape[-1]] = x
         #assert torch.sum(output[:, :, x.shape[-1]:]) == 0
@@ -363,24 +365,24 @@ class Proj_emb_choice(AbstractPrimitive):
         self.super_embed_dim = super_emb
 
     def set_sample_config(self):
-        print(self.sampled_in_dim)
+        #print(self.sampled_in_dim)
         self.proj.sample_weight = self.proj.weight[:self.
                                                           sampled_in_dim, :]
         #print("Weight shape", self.proj.sample_weight.shape)
         self.sample_scale = self.super_embed_dim / self.sampled_in_dim
         if self.proj.bias is not None:
             self.proj.sample_bias = self.proj.bias[:self.sampled_in_dim]
-        print(self.sampled_in_dim)
-        print(self.proj.sample_weight.shape)
-        print(self.proj.sample_bias.shape)
+        #print(self.sampled_in_dim)
+        #print(self.proj.sample_weight.shape)
+        #print(self.proj.sample_bias.shape)
     def forward(self, x, edge_data):
         self.set_sample_config()
         #print("X shape", x.shape)
         #print("input sum", torch.sum(x))
-        print(x[:, :, x.sum(dim=(0, 1)) != 0].shape)
-        print(self.proj.sample_weight.shape)
-        print(self.proj.sample_bias.shape)
-        x = F.linear(x[:, :, x.sum(dim=(0, 1)) != 0], self.proj.sample_weight,
+        #print(x[:, :, x.sum(dim=(0, 1)) != 0].shape)
+        #print(self.proj.sample_weight.shape)
+        #print(self.proj.sample_bias.shape)
+        x = F.linear(x[:, :, :self.proj.sample_weight.shape[-1]], self.proj.sample_weight,
                      self.proj.sample_bias) * (self.sample_scale
                                                if self.proj.scale else 1)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
@@ -508,7 +510,7 @@ class QKV_super_head_choice(AbstractPrimitive):
         #print("head emb dim", self.super_head_emb_dim)
         output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
         #print("QKV out shape", x.shape)
-        print(x.shape)
+        #print(x.shape)
         output[:, :, :x.shape[-1]] = x
         #print(output.shape)
         #print(x.shape)
