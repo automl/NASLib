@@ -35,7 +35,7 @@ class DARTSOptimizer(MetaOptimizer):
         if group in self.groups.keys():
             edge.data.set("alpha", self.groups[group], shared=True)
         elif group == "combi":
-            alpha = torch.Tensor([x*y for x in self.groups["emb"] for y in self.groups["ratio"]])
+            alpha = torch.Tensor([x*y for x in torch.softmax(self.groups["emb"],dim=-1) for y in torch.softmax(self.groups["ratio"],dim=-1)])
             alpha = alpha.to("cuda")
             #print(alpha)
             edge.data.set("alpha", alpha , shared=True)
