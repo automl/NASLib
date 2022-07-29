@@ -55,7 +55,7 @@ class AutoformerSearchSpace(Graph):
 
     def __init__(self,
                  img_size=32,
-                 patch_size=4,
+                 patch_size=2,
                  in_chans=3,
                  num_classes=10,
                  embed_dim=768,
@@ -102,10 +102,10 @@ class AutoformerSearchSpace(Graph):
 
         #
         self.choices = {
-            'num_heads': [3, 4],
-            'mlp_ratio': [3.5, 4],
+            'num_heads': [2, 3, 4],
+            'mlp_ratio': [3, 3.5, 4],
             'embed_dim': [192,216,240],
-            'depth': [12,13,14]
+            'depth': [1,2,3]
         }
         # operations at the edges
         #
@@ -238,7 +238,7 @@ class AutoformerSearchSpace(Graph):
                 self.edges[start, start + 1].set("group", "emb")
                 self.qkv_embed_choice_list_blocks.append(self.qkv_embed_choice_list)
                 self.edges[start+1, start + 2].set("op", ops.Identity())
-                self.edges[start + 1, start + 2].finalize()
+                #self.edges[start + 1, start + 2].finalize()
             else:
                 self.qkv_embed_choice_list = []
 
@@ -292,7 +292,7 @@ class AutoformerSearchSpace(Graph):
                 self.edges[start+3, start + 4].set("p2", "head"+str(i))            
                 self.proj_emb_head_choice_list_blocks.append(self.proj_head_emb_choice_list)
             self.edges[start + 4, start + 5].set("op", self.proj_drop_list[i])
-            self.edges[start + 4, start + 5].finalize()
+            #self.edges[start + 4, start + 5].finalize()
             self.dropout_emb_choice_list = []
             for e in self.choices["embed_dim"]:
                 self.dropout_emb_choice_list.append(
@@ -305,7 +305,7 @@ class AutoformerSearchSpace(Graph):
             dpr = [x.item() for x in torch.linspace(0, self.drop_path_rate, self.depth_super)]
             self.drop_path = DropPath(dpr[0]) if dpr[0] > 0. else ops.Identity()
             self.edges[start + 6, start + 7].set("op", self.drop_path)
-            self.edges[start + 6, start + 7].finalize()
+            #self.edges[start + 6, start + 7].finalize()
             self.edges[start, start + 7].set("op", ops.Identity())
             self.edges[start, start + 7].finalize()
             self.attn_norm_choice_list = []
@@ -386,12 +386,12 @@ class AutoformerSearchSpace(Graph):
                 self.scale_choice_list_blocks.append(self.scale_choice_list)
             else:
                 self.edges[start + 13, start + 14].set("op", ops.Identity())
-                self.edges[start + 13, start + 14].finalize()
+                #self.edges[start + 13, start + 14].finalize()
 
             self.edges[start + 14, start + 15].set("op", self.drop_path)
-            self.edges[start + 14, start + 15].finalize()
+            #self.edges[start + 14, start + 15].finalize()
             self.edges[start + 8, start + 15].set("op", ops.Identity())
-            self.edges[start + 8, start + 15].finalize()
+            #self.edges[start + 8, start + 15].finalize()
             self.ffn_norm_choice_list_after = []
             for e in self.choices["embed_dim"]:
                 self.ffn_norm_choice_list_after.append(
@@ -410,7 +410,7 @@ class AutoformerSearchSpace(Graph):
                 self.add_edges_from([(start-1, self.total_num_nodes - 3)])
                 self.edges[start-1, self.total_num_nodes - 3].set(
                     "op", ops.Identity())
-                self.edges[start-1, self.total_num_nodes - 3].finalize()
+                #self.edges[start-1, self.total_num_nodes - 3].finalize()
         if self.pre_norm:
             self.norm = LayerNormSuper(super_embed_dim=self.super_embed_dim)
             self.norm_choice_list = []
@@ -422,7 +422,7 @@ class AutoformerSearchSpace(Graph):
         else:
             self.edges[start + 1, start + 2].set("op", ops.Identity())
             self.edges[start + 1, start + 2].set("group", "emb")
-            self.edges[start + 1, start + 2].finalize()
+            #self.edges[start + 1, start + 2].finalize()
         self.head = LinearSuper(
             self.super_embed_dim,
             num_classes) if num_classes > 0 else ops.Identity()
@@ -437,7 +437,7 @@ class AutoformerSearchSpace(Graph):
             self.edges[start + 2, start + 3].set("group", "emb")
         else:
             self.edges[start + 2, start + 3].set("op", ops.Identity())
-            self.edges[start + 2, start + 3].finalize()
+            #self.edges[start + 2, start + 3].finalize()
         #for u, v, data in self.edges.data():
         #    print(u)
         #    print(v)
@@ -547,9 +547,9 @@ def count_parameters_in_MB(model):
         if "auxiliary" not in name) / 1e6
 
 
-#ss = AutoformerSearchSpace(num_classes=10)
+ss = AutoformerSearchSpace(num_classes=10)
 
-'''import networkx as nx
+import networkx as nx
 nx.draw(ss, with_labels=True, pos=nx.kamada_kawai_layout(ss))
 plt.show()
 plt.savefig('autoformer.png')
@@ -559,8 +559,7 @@ x = torch.randn([2,3,32,32])#.cuda()
 out = ss(x)
 import copy
 g = copy.deepcopy(ss)
-print(out.shape)'''
-'''
+print(out.shape)
 loss = torch.sum(out)
 loss.backward()
 for k, v in ss.named_parameters():
@@ -580,10 +579,10 @@ for k, v in graph.named_parameters():
 
 
 
-'''
+
 
 #ss.parse()
-'''ss = AutoformerSearchSpace(num_classes=10)
+ss = AutoformerSearchSpace(num_classes=10)
 import networkx as nx
 
 nx.draw(ss, with_labels=True, pos=nx.kamada_kawai_layout(ss))
@@ -594,9 +593,9 @@ for graph in ss._get_child_graphs(single_instances=False) + [ss]:
             print("Graph name", graph.name)
             for u, v, edge_data in graph.edges.data():
                 print(edge_data)
-'''
 
-'''ss.sample_random_architecture()
+
+ss.sample_random_architecture()
 ss.parse()
 ss = ss.to("cuda")
 optim = torch.optim.AdamW(ss.parameters(), lr=5e-4)
@@ -655,7 +654,7 @@ for i in range(200):
         #print("Targets", targets)
 
         loss = loss_fn(out, targets.cuda())
-        #print("loss", loss)
+        print("loss", loss)
         loss.backward()
         # for name, param in ss.named_parameters():
         #    print(name)
@@ -680,4 +679,4 @@ for i in range(200):
     print(f'Accuracy of the network on the 10000 test images: {100 * correct / total} %')
         #break
     #break
-writer.close()'''
+writer.close()
