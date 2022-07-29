@@ -35,10 +35,11 @@ class DARTSOptimizer(MetaOptimizer):
         if group in self.groups.keys():
             edge.data.set("alpha", self.groups[group], shared=True)
         elif group == "combi":
-            alpha = torch.Tensor([x*y for x in torch.softmax(self.groups["emb"],dim=-1) for y in torch.softmax(self.groups["ratio"],dim=-1)])
-            alpha = alpha.to("cuda")
+            #alpha = torch.Tensor([x*y for x in torch.softmax(self.groups[edge.data.p1],dim=-1) for y in torch.softmax(self.groups[edge.data.p2],dim=-1)])
+            #alpha = alpha.to("cuda")
             #print(alpha)
-            edge.data.set("alpha", alpha , shared=True)
+            edge.data.set("alpha_p1", self.groups[edge.data.p1] , shared=True)
+            edge.data.set("alpha_p2", self.groups[edge.data.p2] , shared=True)
         else:
             len_primitives = len(edge.data.op)
             alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
@@ -112,11 +113,16 @@ class DARTSOptimizer(MetaOptimizer):
         #graph.update_edges(
         #    self.__class__.add_alphas, scope=scope, private_edge_data=False
         #)
-
+        for u,v, edge_data in graph.edges.data():
+            if not edge_data.is_final():
+             edge = AttrDict(head=u, tail=v, data=edge_data)
+             edge.data.set("discretize", False, shared=True)
         # 2. replace primitives with mixed_op
         graph.update_edges(
             self.__class__.update_ops, scope=scope, private_edge_data=True
         )
+
+
 
         for alpha in graph.get_all_edge_data("alpha"):
             self.architectural_weights.append(alpha)
@@ -217,6 +223,10 @@ class DARTSOptimizer(MetaOptimizer):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
+                edge.data.set("op", primitives[np.argmax(alphas)])
+            elif edge.data.has("alpha_p1"):
+                primitives = edge.data.op.get_embedded_ops()
+                alphas = torch.Tensor([x*y for x in torch.softmax(edge.data.alpha_p1,dim=-1) for y in torch.softmax(edge.data.alpha_p2,dim=-1)]).detach().cpu()
                 edge.data.set("op", primitives[np.argmax(alphas)])
 
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
@@ -394,24 +404,30 @@ class DARTSMixedOp(MixedOp):
         super().__init__(primitives)
     
     def get_weights(self, edge_data):
-        return edge_data.alpha
-    
+        #return edge_data.alpha
+        if hasattr(edge_data, 'alpha'):
+           return edge_data.alpha
+        else:
+            alpha = torch.Tensor([x*y for x in torch.softmax(edge_data.alpha_p1,dim=-1) for y in torch.softmax(edge_data.alpha_p2,dim=-1)])
+            return alpha
+
     def process_weights(self, weights):
         return torch.softmax(weights, dim=-1)
 
-    def apply_weights(self, x, weights):  
-        weights = weights.to("cuda")
-        x = x.to("cuda")
+    def apply_weights(self, x, weights,edge_data):  
+        #weights = weights.to("cuda")
+        #x = x.to("cuda")
         li = []
         #print(self.primitives)
         for w, op in zip(weights, self.primitives):
-            op = op.cuda()
+            #op = op.cuda()
             #print(op)
             #print(op.device)
             #print(x.device)
             #print(w.device)
-            out = op(x,None)
+            out = op(x,edge_data)
             li.append(w*out.cuda())
 
         return sum(li)
+
 

@@ -24,10 +24,23 @@ class DrNASOptimizer(DARTSOptimizer):
     from DARTSOptimizer instead of MetaOptimizer
     """
 
-    @staticmethod
-    def sample_alphas(edge):
-        beta = F.elu(edge.data.alpha) + 1
-        weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
+    def sample_alphas(self,edge):
+        if edge.data.group == "combi":
+            group = edge.data.p1+edge.data.p2
+        else:
+            group = edge.data.group
+        if group in self.groups.keys():
+            weights = self.groups[group]
+        else:
+            if edge.data.group!="combi":
+                beta = F.elu(edge.data.alpha) + 1
+                weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
+                self.groups[edge.data.group] = weights
+            else:  
+                alpha =  torch.Tensor([x*y for x in torch.softmax(edge.data.alpha_p1,dim=-1) for y in torch.softmax(edge.data.alpha_p2,dim=-1)]) 
+                beta = F.elu(alpha) + 1    
+                weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
+                self.groups[group] = weights
         edge.data.set("sampled_arch_weight", weights, shared=True)
 
     @staticmethod
@@ -58,11 +71,12 @@ class DrNASOptimizer(DARTSOptimizer):
 
         """
         super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
-        self.reg_type = "kl"
+        self.reg_type = "l2"
         self.reg_scale = 1e-3
         # self.reg_scale = config.reg_scale
         self.epochs = config.search.epochs
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.groups={}
 
     def new_epoch(self, epoch):
         super().new_epoch(epoch)
@@ -151,10 +165,15 @@ class DrNASOptimizer(DARTSOptimizer):
         graph = self.graph.clone().unparse()
         graph.prepare_discretization()
 
+
         def discretize_ops(edge):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
+                edge.data.set("op", primitives[np.argmax(alphas)])
+            elif edge.data.has("alpha_p1"):
+                primitives = edge.data.op.get_embedded_ops()
+                alphas = torch.Tensor([x*y for x in torch.softmax(edge.data.alpha_p1,dim=-1) for y in torch.softmax(edge.data.alpha_p2,dim=-1)]).detach().cpu()
                 edge.data.set("op", primitives[np.argmax(alphas)])
 
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
@@ -181,9 +200,9 @@ class DrNASMixedOp(MixedOp):
     def process_weights(self, weights):
         return weights
 
-    def apply_weights(self, x, weights):
+    def apply_weights(self, x, weights, edge_data):
         weighted_sum = sum(
-            w * op(x, None)
+            w.cuda() * op(x, edge_data).cuda()
             for w, op in zip(weights, self.primitives)
         )
         return weighted_sum
