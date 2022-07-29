@@ -3,11 +3,11 @@ from naslib.search_spaces.core.graph import Graph
 import time
 import json
 import logging
-import os
+import os 
 import copy
 import torch
 import numpy as np
-
+from naslib.utils.utils import iter_flatten, AttrDict
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -149,6 +149,7 @@ class Trainer(object):
 
                     self.train_loss.update(float(train_loss.detach().cpu()))
                     self.val_loss.update(float(val_loss.detach().cpu()))
+                    #break
 
                 self.scheduler.step()
 
@@ -159,6 +160,7 @@ class Trainer(object):
                 self.errors_dict.valid_acc.append(self.val_top1.avg)
                 self.errors_dict.valid_loss.append(self.val_loss.avg)
                 self.errors_dict.runtime.append(end_time - start_time)
+                
             else:
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
@@ -193,7 +195,7 @@ class Trainer(object):
                     "Epoch {}, Anytime results: {}".format(e, anytime_results),
                     n=5,
                 )
-
+            
             self._log_to_json()
 
             self._log_and_reset_accuracies(e, summary_writer)
@@ -297,7 +299,8 @@ class Trainer(object):
                                      dataset_api=dataset_api)
             logger.info("Queried results ({}): {}".format(metric, result))
         else:
-            best_arch.to(self.device)
+            #best_arch = torch.nn.DataParallel(best_arch)
+            #best_arch = best_arch.cuda()
             if retrain:
                 logger.info("Starting retraining from scratch")
                 best_arch.reset_weights(inplace=True)
@@ -330,12 +333,12 @@ class Trainer(object):
                 self.val_top5.reset()
 
                 # Enable drop path
-                best_arch.update_edges(
-                    update_func=lambda edge: edge.data.set(
-                        "op", DropPathWrapper(edge.data.op)),
-                    scope=best_arch.OPTIMIZER_SCOPE,
-                    private_edge_data=True,
-                )
+                #best_arch.update_edges(
+                ##    update_func=lambda edge: edge.data.set(
+                #        "op", DropPathWrapper(edge.data.op)),
+                #    scope=best_arch.OPTIMIZER_SCOPE,
+                #    private_edge_data=True,
+                #)
 
                 # train from scratch
                 epochs = self.config.evaluation.epochs
@@ -351,21 +354,23 @@ class Trainer(object):
                         )
 
                     # update drop path probability
-                    drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
-                    best_arch.update_edges(
-                        update_func=lambda edge: edge.data.set(
-                            "drop_path_prob", drop_path_prob),
-                        scope=best_arch.OPTIMIZER_SCOPE,
-                        private_edge_data=True,
-                    )
+                    #drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
+                    for u,v, edge_data in best_arch.edges.data():
+                        if not edge_data.is_final():
+                            edge = AttrDict(head=u, tail=v, data=edge_data)
+                            edge.data.set("discretize", True, shared=True)
+
+
 
                     # Train queue
+                    #for name,param in best_arch.module.named_parameters():
+                    #    #print(name)
+                    #    #print(param.device)
                     for i, (input_train,
                             target_train) in enumerate(self.train_queue):
                         input_train = input_train.to(self.device)
-                        target_train = target_train.to(self.device,
-                                                       non_blocking=True)
-
+                        target_train = target_train.to(self.device,non_blocking=True)
+                        #print(input_train.shape)
                         optim.zero_grad()
                         logits_train = best_arch(input_train)
                         train_loss = loss(logits_train, target_train)
@@ -414,12 +419,12 @@ class Trainer(object):
                     self._log_and_reset_accuracies(e)
 
             # Disable drop path
-            best_arch.update_edges(
-                update_func=lambda edge: edge.data.set(
-                    "op", edge.data.op.get_embedded_ops()),
-                scope=best_arch.OPTIMIZER_SCOPE,
-                private_edge_data=True,
-            )
+            #best_arch.update_edges(
+            #    update_func=lambda edge: edge.data.set(
+            #        "op", edge.data.op.get_embedded_ops()),
+            #    scope=best_arch.OPTIMIZER_SCOPE,
+            #    private_edge_data=True,
+            #)
 
             # measure final test accuracy
             top1 = utils.AverageMeter()
@@ -468,10 +473,9 @@ class Trainer(object):
 
     @staticmethod
     def build_eval_optimizer(parameters, config):
-        return torch.optim.SGD(
+        return torch.optim.AdamW(
             parameters,
             lr=config.evaluation.learning_rate,
-            momentum=config.evaluation.momentum,
             weight_decay=config.evaluation.weight_decay,
         )
 
