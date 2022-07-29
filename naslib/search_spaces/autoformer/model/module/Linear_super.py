@@ -65,6 +65,9 @@ class LinearSuper(nn.Linear):
         self.sample_scale = self.super_out_dim / self.sample_out_dim
         if self.bias is not None:
             self.samples['bias'] = sample_bias(self.bias, self.sample_out_dim)
+        #self.register_buffer("sampled_bias_qkv",self.samples['bias'])
+        #self.register_buffer("sampled_weight_qkv",self.samples['weight'] )
+
         return self.samples
 
     def forward(self, x):
