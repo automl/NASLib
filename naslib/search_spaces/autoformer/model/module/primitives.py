@@ -18,11 +18,11 @@ def sample_weight(weight, sample_in_dim, sample_out_dim):
     sample_weight = weight[:, :sample_in_dim]
     sample_weight = sample_weight[:sample_out_dim, :]
 
-    return sample_weight.cuda()
+    return sample_weight#.cuda()
 def sample_bias(bias, sample_out_dim):
     sample_bias = bias[:sample_out_dim]
 
-    return sample_bias.cuda()
+    return sample_bias#.cuda()
 
 def softmax(x, dim, onnx_trace=False):
     if onnx_trace:
@@ -57,8 +57,8 @@ class LinearEmb(AbstractPrimitive):
         bias = sample_bias(self.layer.bias,self.out_dim)
         sample_scale = 1
         x= F.linear(
-            x[:, :self.in_dim], weight.to(x.device),
-            bias.to(x.device)) * (sample_scale if self.layer.scale else 1)
+            x[:, :self.in_dim], weight,
+            bias) * (sample_scale if self.layer.scale else 1)
 
         return x
 
@@ -100,21 +100,21 @@ class LinearSuper_Emb_Ratio_Combi(AbstractPrimitive):
         if self.reverse == False:
             sample_scale = self.super_ffn_embed_dim_this_layer / self.sample_ffn_embed_dim_this_layer
             if not edge_data.discretize:
-                x = F.linear(x[:, :, :self.sampled_in_dim], weight.to(x.device), bias.to(x.device)) * (sample_scale if self.fc1.scale else 1)
+                x = F.linear(x[:, :, :self.sampled_in_dim], weight, bias) * (sample_scale if self.fc1.scale else 1)
             else:
-                x = F.linear(x, weight.to(x.device), bias.to(x.device)) * (sample_scale if self.fc1.scale else 1)
+                x = F.linear(x, weight, bias) * (sample_scale if self.fc1.scale else 1)
             x = self.activation_fn(x)
             output = torch.zeros(
-                [x.shape[0], x.shape[1], self.super_ffn_embed_dim_this_layer])
+                [x.shape[0], x.shape[1], self.super_ffn_embed_dim_this_layer],device=x.device)
         else:
             sample_scale = self.super_embed_dim / self.sample_ffn_embed_dim_this_layer
             #print(x.shape)
             if not edge_data.discretize:
-                x = F.linear(x[:, :, :self.sampled_in_dim], weight.to(x.device), bias.to(x.device)) * (sample_scale if self.fc1.scale else 1)
+                x = F.linear(x[:, :, :self.sampled_in_dim], weight, bias) * (sample_scale if self.fc1.scale else 1)
             else:
-                x = F.linear(x, weight.to(x.device), bias.to(x.device)) * (sample_scale if self.fc1.scale else 1)
+                x = F.linear(x, weight, bias) * (sample_scale if self.fc1.scale else 1)
             output = torch.zeros(
-                [x.shape[0], x.shape[1], self.super_embed_dim])
+                [x.shape[0], x.shape[1], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -137,14 +137,14 @@ class Norm_embed_choice(AbstractPrimitive):
         weight = self.layer_norm.weight[:self.sampled_in_dim]
         bias =  self.layer_norm.bias[:self.sampled_in_dim]
         x = F.layer_norm(x[:, :, :self.sampled_in_dim], (self.sampled_in_dim, ),
-                            weight=weight.to(x.device),
-                            bias=bias.to(x.device),
+                            weight=weight,
+                            bias=bias,
                             eps=self.layer_norm.eps)
         if self.gp:
             x_out = torch.mean(x[:, 1:], dim=1)
         else:
             x_out = x[:, 0]
-        output = torch.zeros([x_out.shape[0], self.super_embed_dim])
+        output = torch.zeros([x_out.shape[0], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :x_out.shape[-1]] = x_out
         else:
@@ -181,8 +181,8 @@ class AttnFfnNorm_embed_choice(AbstractPrimitive):
         assert before ^ after
         if after ^ self.normalize_before:
             return F.layer_norm(x, (self.sampled_in_dim, ),
-                            weight=weight.to(x.device),
-                            bias=bias.to(x.device),
+                            weight=weight,
+                            bias=bias,
                             eps=self.attn_layer_norm.eps)
         else:
             return x
@@ -191,7 +191,7 @@ class AttnFfnNorm_embed_choice(AbstractPrimitive):
         x = self.maybe_layer_norm(x[:, :, :self.sampled_in_dim],
                                   after=self.after,
                                   before=self.before)
-        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
+        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -224,7 +224,7 @@ class Scale(AbstractPrimitive):
     def forward(self, x, edge_data):
 
         x = x * (self.super_mlp_ratio / self.sampled_mlp_ratio)
-        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
+        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -314,7 +314,7 @@ class Dropout_emb_choice(AbstractPrimitive):
         pass
 
     def forward(self, x, edge_data):
-        output = torch.zeros_like(x)
+        output = torch.zeros(x.shape,device=x.device)
         x = F.dropout(x[:, :, x.sum(dim=(0, 1)) != 0],
                       p=self.sample_attn_dropout,
                       training=self.training)
@@ -341,9 +341,9 @@ class Proj_head_emb_choice(AbstractPrimitive):
         sample_scale = self.super_embed_dim / self.sampled_in_dim
         #print(x)
         x = F.linear(x[:, :, :sample_weight.shape[-1]],
-                    sample_weight.to(x.device), sample_bias.to(x.device)) * (
+                    sample_weight, sample_bias) * (
                         sample_scale if self.proj.scale else 1)
-        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
+        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -368,7 +368,7 @@ class Proj_emb_choice(AbstractPrimitive):
         x = F.linear(x[:, :, :sample_weight.shape[-1]],
                     sample_weight, sample_bias) * (
                         sample_scale if self.proj.scale else 1)
-        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
+        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -431,9 +431,11 @@ class Super_embed_choice_qkv(AbstractPrimitive):
         bias =  self.attn_layer_norm.bias[:self.sampled_in_dim]
         assert before ^ after
         if after ^ self.normalize_before:
+            #print(x.device)
+            #print(weight.device)
             return F.layer_norm(x, (self.sampled_in_dim, ),
-                            weight=weight.to(x.device),
-                            bias=bias.to(x.device),
+                            weight=weight,
+                            bias=bias,
                             eps=self.attn_layer_norm.eps)
         else:
             return x
@@ -442,7 +444,7 @@ class Super_embed_choice_qkv(AbstractPrimitive):
         x = self.maybe_layer_norm(self.attn_layer_norm,
                                   x[:, :, :self.sampled_in_dim],
                                   before=True)
-        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
+        output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -466,9 +468,9 @@ class Super_embed_head_choice_qkv(AbstractPrimitive):
         bias = sample_bias(self.qkv_super.bias,self.sampled_out_dim)
         self.sample_scale = self.super_head_emb / self.sampled_out_dim
         x= F.linear(
-            x[:, :, :weight.shape[-1]], weight.to(x.device),
-            bias.to(x.device)) * (self.sample_scale if self.qkv_super.scale else 1)
-        output = torch.zeros([x.shape[0], x.shape[1], self.super_head_emb])
+            x[:, :, :weight.shape[-1]], weight,
+            bias) * (self.sample_scale if self.qkv_super.scale else 1)
+        output = torch.zeros([x.shape[0], x.shape[1], self.super_head_emb],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -517,7 +519,7 @@ class QKV_super_head_choice(AbstractPrimitive):
         attn = (q @ k.transpose(-2, -1)) * self.sample_scale
         #print(q.shape)
         if self.relative_position:
-            r_p_k = self.rel_pos_embed_k(N, N,sample_embeddings_table_v_k,sample_embeddings_table_h_k).to(x.device)
+            r_p_k = self.rel_pos_embed_k(N, N,sample_embeddings_table_v_k,sample_embeddings_table_h_k)
             #print(r_p_k.shape)
             attn = attn + (q.permute(2, 0, 1, 3).reshape(N, self.sample_num_heads * B, -1) @ r_p_k.transpose(2, 1)) \
                 .transpose(1, 0).reshape(B, self.sample_num_heads, N, N) * self.sample_scale
@@ -525,7 +527,7 @@ class QKV_super_head_choice(AbstractPrimitive):
         attn = self.attn_drop(attn)
         x = (attn @ v).transpose(1, 2).reshape(B, N, -1)
         if self.relative_position:
-            r_p_v = self.rel_pos_embed_v(N, N,sample_embeddings_table_v_v,sample_embeddings_table_h_v).to(x.device)
+            r_p_v = self.rel_pos_embed_v(N, N,sample_embeddings_table_v_v,sample_embeddings_table_h_v)
             attn_1 = attn.permute(2, 0, 1,
                                   3).reshape(N, B * self.sample_num_heads, -1)
             x = x + (attn_1 @ r_p_v).transpose(1, 0).reshape(
@@ -534,9 +536,9 @@ class QKV_super_head_choice(AbstractPrimitive):
         if self.scale:
             x = x * (self.super_embed_dim / self.sampled_out_dim)
         if self.change_qkv:
-           output = torch.zeros([x.shape[0], x.shape[1], 64*3*self.super_head])
+           output = torch.zeros([x.shape[0], x.shape[1], 64*3*self.super_head],device=x.device)
         else:
-           output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim])
+           output = torch.zeros([x.shape[0], x.shape[1], self.super_embed_dim],device=x.device)
         if not edge_data.discretize:
             output[:, :, :x.shape[-1]] = x
         else:
@@ -649,7 +651,7 @@ class Split(AbstractPrimitive):
         self.idx = idx
 
     def forward(self, x, edge_data=None):
-        return x[self.idx].to(x.device)
+        return x[self.idx]
 
     def get_embedded_ops(self):
         return None

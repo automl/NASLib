@@ -54,7 +54,6 @@ class Preprocess(AbstractPrimitive):  #TODO: Better name?
         self.sampled_weight = None
         self.sampled_bias = None
         self.sampled_scale = None
-        self.device = "cuda:0"
     def sample(self, emb_choice):
         sample_embed_dim = emb_choice
         sampled_weight = self.proj.weight[:sample_embed_dim, ...]
@@ -90,6 +89,7 @@ class Preprocess(AbstractPrimitive):  #TODO: Better name?
         #print(x.shape)
         #print("Embedding_out_shape", x.shape)
         output[:, :, :x.shape[-1]] = x
+
         return output
 
     def get_embedded_ops(self):
@@ -121,19 +121,19 @@ class Preprocess_partial(AbstractPrimitive):
         assert H == self.patch_emb_layer.img_size[0] and W == self.patch_emb_layer.img_size[1], \
             f"Input image size ({H}*{W}) doesn't match model ({self.patch_emb_layer.img_size[0]}*{self.patch_emb_layer.img_size[1]})."
         x = F.conv2d(x,
-                     sampled_weight.to(x.device),
-                     sampled_bias.to(x.device),
+                     sampled_weight,
+                     sampled_bias,
                      stride=self.patch_emb_layer.patch_size,
                      padding=self.patch_emb_layer.proj.padding,
                      dilation=self.patch_emb_layer.proj.dilation).flatten(2).transpose(1, 2)
         if self.patch_emb_layer.scale:
             return x * sampled_scale
 
-        x = torch.cat((sampled_cls_token.to(x.device).expand(B, -1, -1), x), dim=1)
+        x = torch.cat((sampled_cls_token.expand(B, -1, -1), x), dim=1)
         if self.patch_emb_layer.abs_pos:
-            x = x + sampled_pos_embed.to(x.device)
+            x = x + sampled_pos_embed
         x = F.dropout(x, p=sample_dropout, training=self.training)
-        output = torch.zeros([x.shape[0], x.shape[1], self.patch_emb_layer.super_embed_dim])
+        output = torch.zeros([x.shape[0], x.shape[1], self.patch_emb_layer.super_embed_dim],device=x.device)
         #print(output.shape)
         #print(x.shape)
         #print("Embedding_out_shape", x.shape)
@@ -142,7 +142,7 @@ class Preprocess_partial(AbstractPrimitive):
             output[:, :, :x.shape[-1]] = x
         else:
             output = x
-        #print(output)
+        #print("output device", output.device)
         return output
 
     def get_embedded_ops(self):
