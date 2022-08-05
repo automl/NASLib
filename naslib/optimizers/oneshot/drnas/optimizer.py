@@ -10,7 +10,7 @@ from naslib.search_spaces.core.primitives import AbstractPrimitive, MixedOp
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
-
+from naslib.utils.utils import iter_flatten, AttrDict
 import naslib.search_spaces.core.primitives as ops
 
 logger = logging.getLogger(__name__)
@@ -25,29 +25,29 @@ class DrNASOptimizer(DARTSOptimizer):
     """
 
     def sample_alphas(self,edge):
+        #print(self.groups_sample)
         if edge.data.group == "combi":
             group = edge.data.p1+edge.data.p2
         else:
             group = edge.data.group
-        if group in self.groups.keys():
-            weights = self.groups[group]
+        if group in self.groups_sample.keys():
+            weights = self.groups_sample[group]
         else:
             if edge.data.group!="combi":
                 beta = F.elu(edge.data.alpha) + 1
                 weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
-                self.groups[edge.data.group] = weights
+                self.groups_sample[edge.data.group] = weights
             else:  
                 alpha =  torch.Tensor([x*y for x in torch.softmax(edge.data.alpha_p1,dim=-1) for y in torch.softmax(edge.data.alpha_p2,dim=-1)]) 
                 beta = F.elu(alpha) + 1    
                 weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
-                self.groups[group] = weights
+                self.groups_sample[group] = weights
         edge.data.set("sampled_arch_weight", weights, shared=True)
 
     @staticmethod
     def remove_sampled_alphas(edge):
         if edge.data.has("sampled_arch_weight"):
             edge.data.remove("sampled_arch_weight")
-
     @staticmethod
     def update_ops(edge):
         """
@@ -71,12 +71,12 @@ class DrNASOptimizer(DARTSOptimizer):
 
         """
         super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
-        self.reg_type = "l2"
+        self.reg_type = "kl"
         self.reg_scale = 1e-3
         # self.reg_scale = config.reg_scale
         self.epochs = config.search.epochs
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.groups={}
+        self.groups_sample={}
 
     def new_epoch(self, epoch):
         super().new_epoch(epoch)
@@ -88,9 +88,9 @@ class DrNASOptimizer(DARTSOptimizer):
         """
         super().adapt_search_space(search_space, scope)
         self.anchor = Dirichlet(
-            torch.ones_like(
-                torch.nn.utils.parameters_to_vector(self.architectural_weights)
-            ).to(self.device)
+            torch.ones(
+                torch.nn.utils.parameters_to_vector(self.architectural_weights).shape
+            )
         )
 
     def step(self, data_train, data_val):
@@ -98,12 +98,35 @@ class DrNASOptimizer(DARTSOptimizer):
         input_val, target_val = data_val
 
         # sample weights (alphas) from the dirichlet distribution (parameterized by beta) and set to edges
-        self.graph.update_edges(
-            update_func=lambda edge: self.sample_alphas(edge),
-            scope=self.scope,
-            private_edge_data=False,
-        )
-
+        #self.graph.update_edges(
+        #    update_func=lambda edge: self.sample_alphas(edge),
+        #    scope=self.scope,
+        #    private_edge_data=False,
+        #)
+        self.edge_groups = {}
+        for u,v, edge_data in self.graph.edges.data():
+            if not edge_data.is_final():
+                if edge_data.group == "combi":
+                    group = edge_data.p1+edge_data.p2
+                else:
+                    group = edge_data.group
+                edge = AttrDict(head=u, tail=v, data=edge_data)
+                if group in self.edge_groups.keys():
+                    self.edge_groups[group].append(edge)
+                else:
+                    self.edge_groups[group] = []
+                    self.edge_groups[group].append(edge)
+                    #print(edge)
+        for g in self.edge_groups.keys():
+            if hasattr(self.edge_groups[g][0].data, 'alpha'):
+                beta = F.elu(self.edge_groups[g][0].data.alpha) + 1
+            else:
+                edge_data = self.edge_groups[g][0].data
+                alpha = torch.Tensor([x*y for x in torch.softmax(edge_data.alpha_p1,dim=-1) for y in torch.softmax(edge_data.alpha_p2,dim=-1)])
+                beta = F.elu(alpha) + 1
+            weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
+            for edge in self.edge_groups[g]:
+                edge.data.set("sampled_arch_weight", weights, shared=True)
         # Update architecture weights
         self.arch_optimizer.zero_grad()
         logits_val = self.graph(input_val)
@@ -112,22 +135,28 @@ class DrNASOptimizer(DARTSOptimizer):
         if self.reg_type == "kl":
             val_loss += self._get_kl_reg()
 
-        val_loss.backward()
+        val_loss.backward(retain_graph=True)
 
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(
                 self.architectural_weights.parameters(), self.grad_clip
             )
         self.arch_optimizer.step()
-
+        #print("Edge groups",self.edge_groups)
+        for g in self.edge_groups.keys():
+            if hasattr(self.edge_groups[g][0].data, 'alpha'):
+                beta = F.elu(self.edge_groups[g][0].data.alpha) + 1
+            else:
+                edge_data = self.edge_groups[g][0].data
+                alpha = torch.Tensor([x*y for x in torch.softmax(edge_data.alpha_p1,dim=-1) for y in torch.softmax(edge_data.alpha_p2,dim=-1)])
+                beta = F.elu(alpha) + 1
+            weights = torch.distributions.dirichlet.Dirichlet(beta).rsample()
+            for edge in self.edge_groups[g]:
+                edge.data.set("sampled_arch_weight", weights, shared=True)
         # has to be done again, cause val_loss.backward() frees the gradient from sampled alphas
         # TODO: this is not how it is intended because the samples are now different. Another
         # option would be to set val_loss.backward(retain_graph=True) but that requires more memory.
-        self.graph.update_edges(
-            update_func=lambda edge: self.sample_alphas(edge),
-            scope=self.scope,
-            private_edge_data=False,
-        )
+        #self.groups ={}
 
         # Update op weights
         self.op_optimizer.zero_grad()
@@ -144,7 +173,7 @@ class DrNASOptimizer(DARTSOptimizer):
             scope=self.scope,
             private_edge_data=False,
         )
-
+        self.groups_sample.clear()
         return logits_train, logits_val, train_loss, val_loss
 
     def _get_kl_reg(self):
@@ -179,7 +208,7 @@ class DrNASOptimizer(DARTSOptimizer):
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
         graph.parse()
-        graph = graph.to(self.device)
+        graph = graph#.to(self.device)
         return graph
 
 
@@ -195,6 +224,7 @@ class DrNASMixedOp(MixedOp):
         self.min_cuda_memory = min_cuda_memory
 
     def get_weights(self, edge_data):
+        #print(edge_data)
         return edge_data.sampled_arch_weight
 
     def process_weights(self, weights):
@@ -202,7 +232,7 @@ class DrNASMixedOp(MixedOp):
 
     def apply_weights(self, x, weights, edge_data):
         weighted_sum = sum(
-            w.cuda() * op(x, edge_data).cuda()
+            w * op(x, edge_data)
             for w, op in zip(weights, self.primitives)
         )
         return weighted_sum

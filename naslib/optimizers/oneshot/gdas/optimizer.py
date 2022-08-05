@@ -95,9 +95,9 @@ class GDASOptimizer(DARTSOptimizer):
                self.group_gumbels[group]= -torch.empty_like(arch_parameters).exponential_().log()
             #gumbels = -torch.empty_like(arch_parameters).exponential_().log()
             gumbels = self.group_gumbels[group]
-            gumbels = gumbels.to(device)
-            tau = tau.to(device)
-            arch_parameters = arch_parameters.to(device)
+            gumbels = gumbels#.to(device)
+            tau = tau#.to(device)
+            arch_parameters = arch_parameters#.to(device)
             logits = (arch_parameters.log_softmax(dim=1) + gumbels) / tau
             probs = torch.nn.functional.softmax(logits, dim=1)
             index = probs.max(-1, keepdim=True)[1]
@@ -196,7 +196,7 @@ class GDASMixedOp(MixedOp):
         argmax = torch.argmax(weights)
 
         weighted_sum = sum(
-            weights[i] * op(x,edge_data).cuda() if i == argmax else weights[i]
+            weights[i] * op(x,edge_data) if i == argmax else weights[i]
             for i, op in enumerate(self.primitives)
         )
 

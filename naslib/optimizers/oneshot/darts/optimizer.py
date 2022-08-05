@@ -163,8 +163,8 @@ class DARTSOptimizer(MetaOptimizer):
         """
         Move the graph into cuda memory if available.
         """
-        self.graph = self.graph.to(self.device)
-        self.architectural_weights = self.architectural_weights.to(self.device)
+        self.graph = self.graph#.to(self.device)
+        self.architectural_weights = self.architectural_weights#.to(self.device)
 
     def new_epoch(self, epoch):
         """
@@ -232,7 +232,7 @@ class DARTSOptimizer(MetaOptimizer):
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
         graph.parse()
-        graph = graph.to(self.device)
+        graph = graph#.to(self.device)
         return graph
 
     def get_op_optimizer(self):
@@ -368,7 +368,7 @@ class DARTSOptimizer(MetaOptimizer):
         assert offset == len(theta)
         model_dict.update(params)
         model_new.load_state_dict(model_dict)
-        model_new = model_new.to(self.device)
+        model_new = model_new#.to(self.device)
 
         return model_new
 
@@ -426,7 +426,7 @@ class DARTSMixedOp(MixedOp):
             #print(x.device)
             #print(w.device)
             out = op(x,edge_data)
-            li.append(w*out.cuda())
+            li.append(w*out)
 
         return sum(li)
 
