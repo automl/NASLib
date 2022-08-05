@@ -2,7 +2,7 @@ dataset: cifar10
 seed: 99
 search_space: nasbench301 #changed from darts
 out_dir: run
-optimizer: edge_popup #changed from darts
+optimizer: darts #changed from darts
 
 search:
   checkpoint_freq: 5

@@ -54,7 +54,7 @@ class GDASOptimizer(DARTSOptimizer):
         primitives = edge.data.op
         edge.data.set("op", GDASMixedOp(primitives))
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, scope=None, **kwargs):
         """
         Same as in darts with a different mixop.
         Just add tau as buffer so it is checkpointed.

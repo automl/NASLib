@@ -372,7 +372,7 @@ class NasBench301SearchSpace(Graph):
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: "train_losses",
             Metric.VAL_ACCURACY: "val_accuracies",
-            Metric.TEST_ACCURACY: "val_accuracies",
+            Metric.TEST_ACCURACY: "test_accuracies",
             Metric.TRAIN_TIME: "runtime",
         }
 
@@ -389,6 +389,11 @@ class NasBench301SearchSpace(Graph):
                 config=genotype, representation="genotype"
             )
             return runtime
+        elif metric == Metric.TEST_ACCURACY:
+            test_acc = dataset_api["nb301_model"][0].predict(
+                config=genotype, representation="genotype"
+            )
+            return test_acc
         else:
             return -1
 

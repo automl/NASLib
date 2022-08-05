@@ -67,7 +67,7 @@ class DrNASOptimizer(DARTSOptimizer):
     def new_epoch(self, epoch):
         super().new_epoch(epoch)
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, scope=None, **kwargs):
         """
         Same as in darts with a different mixop.
         If you want to checkpoint the dirichlet 'concentration' parameter (beta) add it to the buffer here.
