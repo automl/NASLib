@@ -18,7 +18,7 @@ from naslib.search_spaces.nasbench201.conversions import (
 
 from naslib.utils.utils import get_project_root
 
-from .primitives import ResNetBasicblock
+from naslib.search_spaces.nasbench201.primitives import ResNetBasicblock
 
 
 OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
@@ -278,3 +278,16 @@ def _set_cell_ops(edge, C):
             ops.AvgPool1x1(kernel_size=3, stride=1, affine=False),
         ],
     )
+
+'''ss = NasBench201SearchSpace()
+import networkx as nx
+import matplotlib.pyplot as plt
+nx.draw(ss, with_labels=True, pos=nx.kamada_kawai_layout(ss))
+plt.show()
+plt.savefig('nb201.png')'''
+'''for u, v, data in ss.edges.data():
+            print(u)
+            print(v)
+            print(data)
+            if data==None:
+                print("Found None data")'''

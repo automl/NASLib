@@ -123,13 +123,13 @@ class Graph(torch.nn.Module, nx.DiGraph):
         # across different Graph instances.
 
         # self._nxgraph.edge_attr_dict_factory = lambda: EdgeData()
-        self.edge_attr_dict_factory =lambda1
+        self.edge_attr_dict_factory = lambda1 #lambda: EdgeData()
 
         # Replace the default dicts at the nodes to include `input` from the beginning.
         # `input` is required for storing the results of incoming edges.
 
         # self._nxgraph.node_attr_dict_factory = lambda: dict({'input': {}, 'comb_op': sum})
-        self.node_attr_dict_factory = lambda2
+        self.node_attr_dict_factory = lambda2 #lambda: dict({"input": {}, "comb_op": sum})
 
         # remember to add all members also in `unparse()`
         self.name = name
@@ -332,7 +332,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 if self.in_degree(node_idx) == 0:
                     self.nodes[node_idx]["input"] = {0: x[next(input_node_iterator)]}
 
-    def forward(self, x, *args, discretize=False):
+    def forward(self, x, *args):
         """
         Forward some data through the graph. This is done recursively
         in case there are graphs defined on nodes or as 'op' on edges.
@@ -367,7 +367,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 )
             # TODO: merge 'subgraph' and 'comb_op'. It is basicallly the same thing. Also in parse()
             if "subgraph" in node:
-                x = node["subgraph"].forward(node["input"],discretize)
+                x = node["subgraph"].forward(node["input"])
             else:
                 if len(node["input"].values()) == 1:
                     x = list(node["input"].values())[0]
@@ -401,15 +401,14 @@ class Graph(torch.nn.Module, nx.DiGraph):
                     edge_data = self.get_edge_data(node_idx, neigbor_idx)
                     # inject edge data only for AbstractPrimitive, not Graphs
                     if isinstance(edge_data.op, Graph):
-                        edge_output = edge_data.op.forward(x,discretize=discretize)
+                        edge_output = edge_data.op.forward(x)
                     elif isinstance(edge_data.op, AbstractPrimitive):
                         logger.debug(
                             "Processing op {} at edge {}-{}".format(
                                 edge_data.op, node_idx, neigbor_idx
                             )
                         )
-                        #print(edge_data)
-                        #print(edge_data.op)
+
                         edge_output = edge_data.op.forward(x, edge_data=edge_data)                        
                     else:
                         raise ValueError(
@@ -444,7 +443,6 @@ class Graph(torch.nn.Module, nx.DiGraph):
                     )
             for neigbor_idx in self.neighbors(node_idx):
                 edge_data = self.get_edge_data(node_idx, neigbor_idx)
-                #print(edge_data.op)
                 if isinstance(edge_data.op, Graph):
                     edge_data.op.parse()
                 elif edge_data.op.get_embedded_ops():
@@ -723,8 +721,6 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 for u, v, edge_data in graph.edges.data():
                     if not edge_data.is_final():
                         edge = AttrDict(head=u, tail=v, data=edge_data)
-                        #print(u)
-                        #print(v)
                         update_func(edge=edge)
         self._delete_flagged_edges()
 

@@ -11,7 +11,14 @@ from naslib.utils.utils import iter_flatten, AttrDict
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
-
+import os
+import torch
+from torch import nn
+import torch.nn.functional as F
+from torchvision import transforms
+from torchvision.datasets import MNIST
+from torch.utils.data import DataLoader, random_split
+import pytorch_lightning as pl
 from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
 
@@ -21,30 +28,34 @@ from .additional_primitives import DropPathWrapper
 logger = logging.getLogger(__name__)
 
 
-class Trainer(object):
+class Trainer(pl.LightningModule):
     """
     Default implementation that handles dataloading and preparing batches, the
     train loop, gathering statistics, checkpointing and doing the final
     final evaluation.
+
     If this does not fulfil your needs free do subclass it and implement your
     required logic.
     """
     def __init__(self, optimizer, config, lightweight_output=False):
         """
         Initializes the trainer.
+
         Args:
             optimizer: A NASLib optimizer
             config (AttrDict): The configuration loaded from a yaml file, e.g
                 via  `utils.get_config_from_args()`
         """
+        super().__init__()
+        self.automatic_optimization = False
         self.optimizer = optimizer
         self.config = config
         self.epochs = self.config.search.epochs
         self.lightweight_output = lightweight_output
-
+        self.model = self.optimizer.graph
         # preparations
-        self.device = torch.device(
-            "cuda:0" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device(
+        #    "cuda:0" if torch.cuda.is_available() else "cpu")
 
         # measuring stuff
         self.train_top1 = utils.AverageMeter()
@@ -55,7 +66,7 @@ class Trainer(object):
         self.val_loss = utils.AverageMeter()
 
         n_parameters = optimizer.get_model_size()
-        logger.info("param size = %fMB", n_parameters)
+        #logger.info("param size = %fMB", n_parameters)
         self.errors_dict = utils.AttrDict({
             "train_acc": [],
             "train_loss": [],
@@ -68,148 +79,66 @@ class Trainer(object):
             "arch_eval": [],
             "params": n_parameters,
         })
+        self.scheduler = self.build_search_scheduler(
+                self.optimizer.op_optimizer, self.config)
+        checkpoint_freq = self.config.search.checkpoint_freq
+        start_epoch = self._setup_checkpointers("",
+                                                    period=checkpoint_freq,
+                                                    scheduler=self.scheduler)
+        self.summary_writer = None
 
-    def search(self,
-               resume_from="",
-               summary_writer=None,
-               after_epoch: Callable[[int], None] = None,
-               report_incumbent=True):
+    def training_step(self,batch, batch_idx):
         """
-        Start the architecture search.
+        Start the architecture search. d
+
         Generates a json file with training statistics.
+
         Args:
             resume_from (str): Checkpoint file to resume from. If not given then
                 train from scratch.
         """
-        logger.info("Start training")
-
-        np.random.seed(self.config.search.seed)
-        torch.manual_seed(self.config.search.seed)
-
-        self.optimizer.before_training()
-        checkpoint_freq = self.config.search.checkpoint_freq
-        if self.optimizer.using_step_function:
-            self.scheduler = self.build_search_scheduler(
-                self.optimizer.op_optimizer, self.config)
-
-            start_epoch = self._setup_checkpointers(resume_from,
-                                                    period=checkpoint_freq,
-                                                    scheduler=self.scheduler)
-        else:
-            start_epoch = self._setup_checkpointers(resume_from,
-                                                    period=checkpoint_freq)
-
-        if self.optimizer.using_step_function:
-            self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(
-                self.config)
-
-        for e in range(start_epoch, self.epochs):
-
-            start_time = time.time()
-            self.optimizer.new_epoch(e)
-
-            if self.optimizer.using_step_function:
-                for step, data_train in enumerate(self.train_queue):
-                    data_train = (
-                        data_train[0].to(self.device),
-                        data_train[1].to(self.device, non_blocking=True),
-                    )
-                    data_val = next(iter(self.valid_queue))
-                    data_val = (
-                        data_val[0].to(self.device),
-                        data_val[1].to(self.device, non_blocking=True),
-                    )
-
-                    stats = self.optimizer.step(data_train, data_val)
-                    logits_train, logits_val, train_loss, val_loss = stats
-
-                    self._store_accuracies(logits_train, data_train[1],
+        #logger.info("Start training")
+        data_train, data_val = batch
+        start_time = time.time()
+        stats = self.optimizer.step(data_train, data_val)
+        logits_train, logits_val, train_loss, val_loss = stats
+        self._store_accuracies(logits_train, data_train[1],
                                            "train")
-                    self._store_accuracies(logits_val, data_val[1], "val")
+        self._store_accuracies(logits_val, data_val[1], "val")
+        #log_every_n_seconds(
+        #                logging.INFO,
+        #                "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}"
+        #                .format(self.current_epoch, self.global_step, train_loss, val_loss,0,n=5,))
+        #log_first_n(logging.INFO,
+        #            "cuda consumption\n {}".format(
+        #            torch.cuda.memory_summary()),
+        #            n=3,)
+        self.train_loss.update(float(train_loss.detach().cpu()))
+        self.val_loss.update(float(val_loss.detach().cpu()))
+        #self.scheduler.step()
+ 
 
-                    log_every_n_seconds(
-                        logging.INFO,
-                        "Epoch {}-{}, Train loss: {:.5f}, validation loss: {:.5f}, learning rate: {}"
-                        .format(e, step, train_loss, val_loss,
-                                self.scheduler.get_last_lr()),
-                        n=5,
-                    )
+    def training_epoch_end(self, outputs) -> None:
+            self.scheduler.step()
 
-                    if torch.cuda.is_available():
-                        log_first_n(
-                            logging.INFO,
-                            "cuda consumption\n {}".format(
-                                torch.cuda.memory_summary()),
-                            n=3,
-                        )
-
-                    self.train_loss.update(float(train_loss.detach().cpu()))
-                    self.val_loss.update(float(val_loss.detach().cpu()))
-                    #break
-
-                self.scheduler.step()
-
-                end_time = time.time()
-
-                self.errors_dict.train_acc.append(self.train_top1.avg)
-                self.errors_dict.train_loss.append(self.train_loss.avg)
-                self.errors_dict.valid_acc.append(self.val_top1.avg)
-                self.errors_dict.valid_loss.append(self.val_loss.avg)
-                self.errors_dict.runtime.append(end_time - start_time)
-                
-            else:
-                end_time = time.time()
-                # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
-                # train_acc, train_loss, valid_acc, valid_loss, test_acc, test_loss = self.optimizer.train_statistics()
-                (
-                    train_acc,
-                    valid_acc,
-                    test_acc,
-                    train_time,
-                ) = self.optimizer.train_statistics(report_incumbent)
-                train_loss, valid_loss, test_loss = -1, -1, -1
-
-                self.errors_dict.train_acc.append(train_acc)
-                self.errors_dict.train_loss.append(train_loss)
-                self.errors_dict.valid_acc.append(valid_acc)
-                self.errors_dict.valid_loss.append(valid_loss)
-                self.errors_dict.test_acc.append(test_acc)
-                self.errors_dict.test_loss.append(test_loss)
-                self.errors_dict.runtime.append(end_time - start_time)
-                self.errors_dict.train_time.append(train_time)
-                self.train_top1.avg = train_acc
-                self.val_top1.avg = valid_acc
-
-            self.periodic_checkpointer.step(e)
-
-            anytime_results = self.optimizer.test_statistics()
-            if anytime_results:
-                # record anytime performance
-                self.errors_dict.arch_eval.append(anytime_results)
-                log_every_n_seconds(
-                    logging.INFO,
-                    "Epoch {}, Anytime results: {}".format(e, anytime_results),
-                    n=5,
-                )
-            
+            self.errors_dict.train_acc.append(self.train_top1.avg)
+            self.errors_dict.train_loss.append(self.train_loss.avg)
+            self.errors_dict.valid_acc.append(self.val_top1.avg)
+            self.errors_dict.valid_loss.append(self.val_loss.avg)
+            print("Val acc", self.val_top1.avg)
+            for x in self.optimizer.architectural_weights:
+                print("Arch params",x.argmax(-1))
+            self.periodic_checkpointer.step(self.current_epoch)
             self._log_to_json()
-
-            self._log_and_reset_accuracies(e, summary_writer)
-
-            if after_epoch is not None:
-                after_epoch(e)
-
-        self.optimizer.after_training()
-
-        if summary_writer is not None:
-            summary_writer.close()
-
-        logger.info("Training finished")
-
+            self._log_and_reset_accuracies(self.current_epoch, self.summary_writer)
+    def configure_optimizers(self):
+        return self.optimizer.op_optimizer, self.optimizer.arch_optimizer
     def evaluate_oneshot(self, resume_from="", dataloader=None):
         """
         Evaluate the one-shot model on the specified dataset.
+
         Generates a json file with training statistics.
+
         Args:
             resume_from (str): Checkpoint file to resume from. If not given then
                 evaluate with the current one-shot weights.
@@ -228,8 +157,8 @@ class Trainer(object):
         with torch.no_grad():
             start_time = time.time()
             for step, data_val in enumerate(dataloader):
-                input_val = data_val[0].to(self.device)
-                target_val = data_val[1].to(self.device, non_blocking=True)
+                input_val = data_val[0], #.to(self.device)
+                target_val = data_val[1], #.to(self.device, non_blocking=True)
 
                 logits_val = self.optimizer.graph(input_val)
                 val_loss = loss(logits_val, target_val)
@@ -244,7 +173,7 @@ class Trainer(object):
             self.errors_dict.runtime.append(end_time - start_time)
 
             self._log_to_json()
-
+       
         logger.info("Evaluation finished")
         return self.val_top1.avg
 
@@ -259,8 +188,10 @@ class Trainer(object):
     ):
         """
         Evaluate the final architecture as given from the optimizer.
+
         If the search space has an interface to a benchmark then query that.
         Otherwise train as defined in the config.
+
         Args:
             retrain (bool)      : Reset the weights from the architecure search
             search_model (str)  : Path to checkpoint file that was created during search. If not provided,
@@ -291,11 +222,11 @@ class Trainer(object):
                                      dataset_api=dataset_api)
             logger.info("Queried results ({}): {}".format(metric, result))
         else:
-            #best_arch = torch.nn.DataParallel(best_arch)
-            #best_arch = best_arch.cuda()
+            #best_arch = torch.nn.DataParallel(best_arch).to(self.device)
+            #best_arch = best_arch.to(self.device)
             if retrain:
-                logger.info("Starting retraining from scratch")
-                best_arch.reset_weights(inplace=True)
+                #logger.info("Starting retraining from scratch")
+                #best_arch.reset_weights(inplace=True)
 
                 (
                     self.train_queue,
@@ -347,10 +278,10 @@ class Trainer(object):
 
                     # update drop path probability
                     #drop_path_prob = self.config.evaluation.drop_path_prob * e / epochs
-                    for u,v, edge_data in best_arch.edges.data():
-                        if not edge_data.is_final():
-                            edge = AttrDict(head=u, tail=v, data=edge_data)
-                            edge.data.set("discretize", True, shared=True)
+                    #for u,v, edge_data in best_arch.module.edges.data():
+                    #    if not edge_data.is_final():
+                    #        edge = AttrDict(head=u, tail=v, data=edge_data)
+                    #        edge.data.set("discretize", True, shared=True)
 
 
 
@@ -360,8 +291,8 @@ class Trainer(object):
                     #    #print(param.device)
                     for i, (input_train,
                             target_train) in enumerate(self.train_queue):
-                        input_train = input_train.to(self.device)
-                        target_train = target_train.to(self.device,non_blocking=True)
+                        #input_train = input_train.to(self.device)
+                        #target_train = target_train.to(self.device,non_blocking=True)
                         #print(input_train.shape)
                         optim.zero_grad()
                         logits_train = best_arch(input_train)
@@ -397,8 +328,8 @@ class Trainer(object):
                         for i, (input_valid,
                                 target_valid) in enumerate(self.valid_queue):
 
-                            input_valid = input_valid.to(self.device).float()
-                            target_valid = target_valid.to(self.device).float()
+                            #input_valid = input_valid.to(self.device).float()
+                            #target_valid = target_valid.to(self.device).float()
 
                             # just log the validation accuracy
                             with torch.no_grad():
@@ -411,12 +342,12 @@ class Trainer(object):
                     self._log_and_reset_accuracies(e)
 
             # Disable drop path
-            #best_arch.update_edges(
-            #    update_func=lambda edge: edge.data.set(
-            #        "op", edge.data.op.get_embedded_ops()),
-            #    scope=best_arch.OPTIMIZER_SCOPE,
-            #    private_edge_data=True,
-            #)
+            best_arch.module.update_edges(
+                update_func=lambda edge: edge.data.set(
+                    "op", edge.data.op.get_embedded_ops()),
+                scope=best_arch.OPTIMIZER_SCOPE,
+                private_edge_data=True,
+            )
 
             # measure final test accuracy
             top1 = utils.AverageMeter()
@@ -426,8 +357,8 @@ class Trainer(object):
 
             for i, data_test in enumerate(self.test_queue):
                 input_test, target_test = data_test
-                input_test = input_test.to(self.device)
-                target_test = target_test.to(self.device, non_blocking=True)
+                #input_test = input_test.to(self.device)
+                #target_test = target_test.to(self.device, non_blocking=True)
 
                 n = input_test.size(0)
 
@@ -538,6 +469,7 @@ class Trainer(object):
         """
         Prepare train, validation, and test dataloaders with the splits defined
         in the config.
+
         Args:
             config (AttrDict): config from config file.
         """
@@ -556,6 +488,7 @@ class Trainer(object):
         Sets up a periodic chechkpointer which can be used to save checkpoints
         at every epoch. It will call optimizer's `get_checkpointables()` as objects
         to store.
+
         Args:
             resume_from (str): A checkpoint file to resume the search or evaluation from.
             search (bool): Whether search or evaluation phase is checkpointed. This is required

@@ -55,7 +55,7 @@ class AutoformerSearchSpace(Graph):
 
     def __init__(self,
                  img_size=32,
-                 patch_size=4,
+                 patch_size=2,
                  in_chans=3,
                  num_classes=10,
                  embed_dim=768,
@@ -102,8 +102,8 @@ class AutoformerSearchSpace(Graph):
 
         #
         self.choices = {
-            'num_heads': [3, 4],
-            'mlp_ratio': [3.5, 4],
+            'num_heads': [3,4],
+            'mlp_ratio': [3.5,4],
             'embed_dim': [192,216,240],
             'depth': [12,13,14]
         }

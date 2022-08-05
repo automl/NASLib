@@ -1,17 +1,17 @@
 dataset: cifar10
 seed: 99
-search_space: darts
-out_dir: run_drnas
-optimizer: DrNAS
+search_space: autoformer
+out_dir: run_drnas_ddp_test
+optimizer: GDAS
 
 search:
   checkpoint_freq: 5
   batch_size: 64
-  learning_rate: 0.0001
-  learning_rate_min: 0.00001
+  learning_rate: 0.001
+  learning_rate_min: 0.0001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 10
+  epochs: 20
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
@@ -23,7 +23,7 @@ search:
   drop_path_prob: 0.0
 
   unrolled: False
-  arch_learning_rate: 0.0006
+  arch_learning_rate: 0.001
   arch_weight_decay: 0.001
   output_weights: True
   
@@ -32,6 +32,8 @@ search:
   # GDAS
   tau_max: 10
   tau_min: 0.1
+  arch_learning_rate: 0.0003
+  arch_weight_decay: 0.001
 
   # RE
   sample_size: 10
@@ -62,7 +64,7 @@ evaluation:
   learning_rate_min: 0.00
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 10
+  epochs: 100
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.8
