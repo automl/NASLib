@@ -84,7 +84,7 @@ class DataModule(LightningDataModule):
         return DataLoader(self.train_data, batch_size=self.batch_size, shuffle=True,
                           num_workers=self.workers, pin_memory=True)
 
-    def val_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
+    def test_dataloader(self) -> Union[DataLoader, List[DataLoader]]:
         if self.split_train:
             return DataLoader(self.train_data, batch_size=self.batch_size,
                               sampler=SubsetRandomSampler(self.valid_indices),

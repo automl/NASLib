@@ -1,7 +1,7 @@
 dataset: cifar10
 seed: 99
 search_space: autoformer
-out_dir: run_drnas_ddp_test
+out_dir: drnas
 optimizer: GDAS
 
 search:
