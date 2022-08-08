@@ -20,7 +20,7 @@ class ConfigurableOptimizer(MetaOptimizer):
         comb_op_modifier: AbstractCombOpModifier=None,
 
         # The rest are the same as the other optimizers
-        op_optimizer=torch.optim.SGD,
+        op_optimizer=torch.optim.Adam,
         arch_optimizer=torch.optim.Adam,
         loss_criteria=torch.nn.CrossEntropyLoss()
     ):
@@ -39,7 +39,7 @@ class ConfigurableOptimizer(MetaOptimizer):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         self.arch_sampler.set_device(self.device)
-
+        self.groups = {}
     def _init_architectural_weights(self, graph):
         arch_modifiers = [self.arch_sampler, self.comb_op_modifier]
         arch_weights = [item.get_arch_weights(graph) for item in arch_modifiers if item.get_arch_weights(graph) is not None]
@@ -61,7 +61,6 @@ class ConfigurableOptimizer(MetaOptimizer):
         self.op_optimizer = self.op_optimizer(
             graph.parameters(),
             lr=self.config.search.learning_rate,
-            momentum=self.config.search.momentum,
             weight_decay=self.config.search.weight_decay,
         )
 
@@ -160,7 +159,7 @@ class ConfigurableOptimizer(MetaOptimizer):
             step_fn = self.step_alternating
         elif self.arch_sampler.optimization_strategy == OptimizationStrategy.SIMULTANEOUS:
             step_fn = self.step_simultaneous
-
+        self.groups_sampled = {}
         return step_fn(data_train, data_val)
 
     def step_alternating(self, data_train, data_val):
@@ -234,6 +233,11 @@ class ConfigurableOptimizer(MetaOptimizer):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
                 edge.data.set("op", primitives[np.argmax(alphas)])
+            elif edge.data.has("alpha_p1"):
+                primitives = edge.data.op.get_embedded_ops()
+                alphas = torch.Tensor([x*y for x in torch.softmax(edge.data.alpha_p1,dim=-1) for y in torch.softmax(edge.data.alpha_p2,dim=-1)]).detach().cpu()
+                edge.data.set("op", primitives[np.argmax(alphas)])
+
 
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()

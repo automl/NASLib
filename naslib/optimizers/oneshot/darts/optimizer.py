@@ -58,7 +58,7 @@ class DARTSOptimizer(MetaOptimizer):
     def __init__(
         self,
         config,
-        op_optimizer=torch.optim.SGD,
+        op_optimizer=torch.optim.Adam,
         arch_optimizer=torch.optim.Adam,
         loss_criteria=torch.nn.CrossEntropyLoss(),
     ):

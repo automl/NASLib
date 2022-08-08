@@ -7,7 +7,7 @@ from naslib.optimizers.oneshot.darts.optimizer import DARTSMixedOp
 from naslib.optimizers.oneshot.drnas.optimizer import DrNASMixedOp
 from naslib.optimizers.oneshot.gdas.optimizer import GDASMixedOp
 from naslib.search_spaces.core.primitives import EdgeNormalizationCombOp, MixedOp, PartialConnectionOp
-
+from naslib.utils.utils import iter_flatten, AttrDict
 class OptimizationStrategy(Enum):
     ALTERNATING = auto() # Arch weights optimized using validation data, model weights using train data
     SIMULTANEOUS = auto() # Arch and model weights optimized simultaneously using train data (e.g., SNAS)
@@ -37,8 +37,8 @@ class SNASMixedOp(MixedOp):
     def process_weights(self, weights):
         return weights
 
-    def apply_weights(self, x, weights):
-        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
+    def apply_weights(self, x, weights,edge_data):
+        return sum(w * op(x, edge_data) for w, op in zip(weights, self.primitives))
 
 
 class AbstractGraphModifier(metaclass=ABCMeta):
@@ -171,9 +171,35 @@ class DARTSSampler(AbstractArchitectureSampler):
     mixed_op = DARTSMixedOp
     arch_weights_name = 'alpha'
     optimization_stratgey = OptimizationStrategy.ALTERNATING
+    def __init__(self,*args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.groups={}
 
     def update_graph_edges(self, graph, scope):
-        graph.update_edges(self._add_alphas, scope=scope, private_edge_data=False)
+        for u,v, edge_data in graph.edges.data():
+            if not edge_data.is_final():
+             edge = AttrDict(head=u, tail=v, data=edge_data)
+             #print(edge)
+             group = edge.data.group
+             if group not in self.groups.keys():
+                if group!="combi":
+                    self.add_group_alphas(group,len(edge.data.op))  
+                else:
+                    self.add_group_alphas("ratio",3)      
+
+        # 1. add alphas
+    
+        for u,v, edge_data in graph.edges.data():
+            if not edge_data.is_final():
+             edge = AttrDict(head=u, tail=v, data=edge_data)
+             self.add_alphas(edge)
+        #graph.update_edges(
+        #    self.__class__.add_alphas, scope=scope, private_edge_data=False
+        #)
+        for u,v, edge_data in graph.edges.data():
+            if not edge_data.is_final():
+             edge = AttrDict(head=u, tail=v, data=edge_data)
+             edge.data.set("discretize", False, shared=True)
         graph.update_edges(self._update_ops, scope=scope, private_edge_data=True)
 
     def get_arch_weights(self, graph):
@@ -182,16 +208,30 @@ class DARTSSampler(AbstractArchitectureSampler):
             arch_weights.append(weight)
 
         return arch_weights
-
-    def _add_alphas(self, edge):
+    def add_group_alphas(self,group_name,len_primitives):
+        alpha = torch.nn.Parameter(
+            1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
+        )
+        self.groups[group_name] = alpha #.cuda()
+    def add_alphas(self,edge):
         """
         Function to add the architectural weights to the edges.
         """
-        len_primitives = len(edge.data.op)
-        weights = torch.nn.Parameter(
-            1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
-        )
-        edge.data.set(self.arch_weights_name, weights, shared=True)
+        #print("Group",edge.data)
+        #print("Group",edge.data.op)
+        group = edge.data.group
+        if group in self.groups.keys():
+            edge.data.set("alpha", self.groups[group], shared=True)
+        elif group == "combi":
+            #alpha = torch.Tensor([x*y for x in torch.softmax(self.groups[edge.data.p1],dim=-1) for y in torch.softmax(self.groups[edge.data.p2],dim=-1)])
+            #alpha = alpha.to("cuda")
+            #print(alpha)
+            edge.data.set("alpha_p1", self.groups[edge.data.p1] , shared=True)
+            edge.data.set("alpha_p2", self.groups[edge.data.p2] , shared=True)
+        else:
+            len_primitives = len(edge.data.op)
+            alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
+            edge.data.set("alpha", alpha, shared=True)
 
     def update_graph_nodes(self, graph, scope):
         pass
@@ -308,13 +348,14 @@ class GDASSampler(DARTSSampler):
 
 class SNASSampler(DARTSSampler):
 
-    mixed_op = SNASMixedOp
-    optimization_stratgey = OptimizationStrategy.SIMULTANEOUS
+
 
     def __init__(self, temp, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.temp = temp
-
+        self.mixed_op = SNASMixedOp
+        self.optimization_strategy = OptimizationStrategy.SIMULTANEOUS
+        self.groups_sampled={}
     def new_epoch(self):
         super().new_epoch()
 
@@ -326,8 +367,22 @@ class SNASSampler(DARTSSampler):
         )
 
     def _sample_arch_weights(self, edge):
-        log_alpha = edge.data.alpha
-        u = torch.zeros_like(log_alpha).uniform_()
+        if edge.data.group=="combi":
+            log_alpha = torch.unsqueeze(torch.Tensor([x*y for x in torch.softmax(edge.data.alpha_p1,dim=-1) for y in torch.softmax(edge.data.alpha_p2,dim=-1)]), dim =0)
+        else:
+            log_alpha = edge.data.alpha
+        
+        if edge.data.group in self.groups_sampled.keys():
+           u = self.groups_sampled[edge.data.group]
+        elif edge.data.group=="combi":
+            if edge.data.p1+edge.data.p2 in  self.groups_sampled.keys():
+                u = self.groups_sampled[edge.data.p1+edge.data.p2]
+            else:
+                u = torch.zeros_like(log_alpha).uniform_()
+                self.groups_sampled[edge.data.p1+edge.data.p2]=u
+        else:
+            u = torch.zeros_like(log_alpha).uniform_()
+            self.groups_sampled[edge.data.group]=u
         softmax = torch.nn.Softmax(-1)
         weight = softmax((log_alpha + (-((-(u.log())).log()))) / self.temp)
 
