@@ -32,6 +32,7 @@ As a benchmark, `NAS-Bench-Suite-Zero` contains precomputed scores of 13 ZC prox
 
 [**Setup**](#setup)
 | [**Data**](#data)
+| [**Documentation**](#documentation)
 | [**Experiments**](#experiments)
 | [**Visualizations**](#visualizations)
 
@@ -77,6 +78,14 @@ Download the TransNAS-Bench-101 benchmark from [here](https://www.noahlab.com.hk
 
 If you face issues downloading the datasets please follow the steps [here](dataset_preparation/).
 -->
+
+# Documentation
+Here, we describe our dataset documentation. All of this information is available in our paper, but we repeat it here for convenience.
+- [Author Responsibility](docs/AUTHOR_RESPONSIBILITY.md)
+- [Code of Conduct](docs/CODE_OF_CONDUCT.md)
+- [Contributing](docs/CONTRIBUTING.md)
+- [Datasheet for NAS-Bench-Suite-Zero](docs/DATASHEET.md)
+- [Maintenance Plan](docs/MAINTENANCE_PLAN.md)
 
 # Experiments 
 See [`naslib/runners`](naslib/runners) for specific experiment scripts. Here we provide instructions for running experiments en masse. Note that the correlation experiments requires SLURM on your machine. Please contact us if you have any questions.
