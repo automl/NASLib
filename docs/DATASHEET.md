@@ -8,9 +8,9 @@ Jump to section:
 - [Motivation](#motivation)
 - [Dataset Composition](#dataset-composition)
 - [Collection Process](#collection-process)
-- [Data Preprocessing](data-preprocessing)
-- [Data Distribution](data-distribution)
-- [Dataset Maintenance](dataset-maintenance)
+- [Data Preprocessing](#data-preprocessing)
+- [Data Distribution](#data-distribution)
+- [Dataset Maintenance](#dataset-maintenance)
 - [Legal and Ethical Considerations](#legal-and-ethical-considerations)
 
 ## Motivation
