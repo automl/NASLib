@@ -1,0 +1,1 @@
+We, the authors, bear all responsibility in case of violation of rights.
