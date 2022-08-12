@@ -12,7 +12,6 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
 
-SPARSITY = 0.17
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +52,9 @@ class EdgePopUpOptimizer(MetaOptimizer):
         alpha = torch.nn.Parameter(
             1e-3 * torch.randn(size=[len_primitives], requires_grad=True)
         )
-        alpha.requires_grad = False
+
+        # alpha.requires_grad = False
+        # nn.init.kaiming_uniform_(alpha, a=math.sqrt(5))
         edge.data.set("alpha", alpha, shared=True)
 
 
@@ -216,8 +217,8 @@ class EdgePopUpOptimizer(MetaOptimizer):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
-                # TODO: change to be based on scores  bug in code
                 edge.data.set("op", primitives[np.argmax(alphas)])
+
 
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)
         graph.prepare_evaluation()
@@ -390,16 +391,6 @@ class EdgePopUpMixedOp(MixedOp):
     """
     def __init__(self, primitives):
         super().__init__(primitives)
-        # initialize the scores
-        #TODO: set the self.weights somewhere
-        self.scores = nn.Parameter(torch.Tensor(1, len(self.primitives)))
-        nn.init.kaiming_uniform_(self.scores, a=math.sqrt(5))
-
-        # NOTE: initialize the weights like this.
-        # nn.init.kaiming_normal_(self.primitives, mode="fan_in", nonlinearity="relu")
-
-        # NOTE: turn the gradient on the weights off
-
 
     def get_weights(self, edge_data):
         return edge_data.alpha
@@ -408,9 +399,9 @@ class EdgePopUpMixedOp(MixedOp):
         return torch.softmax(weights, dim=-1)
 
     def apply_weights(self, x, weights):
-        subnet = GetSubnet.apply(self.scores.abs(), SPARSITY) #TODO: remove abs()
+        # subnet = GetSubnet.apply(self.scores.abs(), SPARSITY) #TODO: remove abs()
+        sparsity = 1/len(weights) + 1e-6
+        masked_weights = GetSubnet.apply(weights, sparsity)
         # applying edge_popup to the alphas
-        weights = weights * subnet[0]
-        return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
-        # TODO: applying edge_popup to the weights
+        return sum(masked_w * op(x, None) for masked_w, op in zip(masked_weights, self.primitives))
 
