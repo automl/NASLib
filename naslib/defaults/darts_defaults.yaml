@@ -40,7 +40,7 @@ search:
   #LS
   num_init: 10
 
-  #GSparsity-> Uncomment this for GSparsity
+  #GSparsity-> Uncomment the lines below for GSparsity
   #seed: 50
   #grad_clip: 0
   #threshold: 0.000001
