@@ -40,21 +40,21 @@ search:
   #LS
   num_init: 10
 
-  #GSparsity
-  seed: 50
-  grad_clip: 0
-  threshold: 0.000001
-  weight_decay: 120
-  learning_rate: 0.01
-  momentum: 0.8
-  normalization: div
-  normalization_exponent: 0.5
-  batch_size: 256
-  learning_rate_min: 0.0001
-  epochs: 100
-  warm_start_epochs: 0
-  train_portion: 0.9
-  data_size: 25000
+  #GSparsity-> Uncomment this for GSparsity
+  #seed: 50
+  #grad_clip: 0
+  #threshold: 0.000001
+  #weight_decay: 120
+  #learning_rate: 0.01
+  #momentum: 0.8
+  #normalization: div
+  #normalization_exponent: 0.5
+  #batch_size: 256
+  #learning_rate_min: 0.0001
+  #epochs: 100
+  #warm_start_epochs: 0
+  #train_portion: 0.9
+  #data_size: 25000
 
   
   # BANANAS
