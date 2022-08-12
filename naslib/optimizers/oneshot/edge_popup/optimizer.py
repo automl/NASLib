@@ -216,7 +216,7 @@ class EdgePopUpOptimizer(MetaOptimizer):
             if edge.data.has("alpha"):
                 primitives = edge.data.op.get_embedded_ops()
                 alphas = edge.data.alpha.detach().cpu()
-                # TODO: change to be based on scores
+                # TODO: change to be based on scores  bug in code
                 edge.data.set("op", primitives[np.argmax(alphas)])
 
         graph.update_edges(discretize_ops, scope=self.scope, private_edge_data=True)

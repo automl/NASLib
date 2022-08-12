@@ -1,12 +1,12 @@
 dataset: cifar10
 seed: 99
-search_space: nasbench301 #changed from darts
+search_space: nasbench101 #changed from darts
 out_dir: run
-optimizer: darts #changed from darts
+optimizer: gdas #changed from darts
 
 search:
   checkpoint_freq: 5
-  batch_size: 64
+  batch_size: 32
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
