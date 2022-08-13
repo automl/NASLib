@@ -62,6 +62,15 @@ source scripts/bash_scripts/download_nbs_zero.sh nb201
 source scripts/bash_scripts/download_nbs_zero.sh all
 ```
 
+Alternative to gdown, here are the google drive links to the ZC proxy evaluations:
+- [NB101](https://drive.google.com/file/d/1uT3tuIDMVaB4U1N8l9imEYHWPOLls3FD/view?usp=sharing)
+- [NB201](https://drive.google.com/file/d/1k2EUtVJ4JqoJCnuyJEVgZs6vAmbg6XVB/view?usp=sharing)
+- [NB301](https://drive.google.com/file/d/11kIyLr7LwFB_fXGDk3ic5yjiYMY5JLXG/view?usp=sharing)
+- [TNB101-Macro](https://drive.google.com/file/d/1nMaa3LjlP1d_umgudX7abKSdDMeoBNb5/view?usp=sharing)
+- [TNB101-Micro](https://drive.google.com/file/d/1i8N2n7yflN33xAuQVzlTYM4E7W1Cwn1S/view?usp=sharing)
+
+
+
 Download all the NAS benchmarks and their associated datasets ( for mac users, please make sure you have wget installed).
 ```bash
 source scripts/bash_scripts/download_data.sh all 
