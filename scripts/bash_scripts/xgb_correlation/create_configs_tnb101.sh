@@ -13,17 +13,17 @@ datasets=(autoencoder) # class_object class_scene normal jigsaw room_layout segm
 
 ks=(1 2 3 4 5 6 7 8 9 10 11)
 proxies=(
-"l2_norm"
-"l2_norm plain"
-"l2_norm plain params"
-"l2_norm plain params snip"
-"l2_norm plain params snip nwot"
-"l2_norm plain params snip nwot grad_norm"
-"l2_norm plain params snip nwot grad_norm flops"
-"l2_norm plain params snip nwot grad_norm flops grasp"
-"l2_norm plain params snip nwot grad_norm flops grasp fisher"
-"l2_norm plain params snip nwot grad_norm flops grasp fisher zen"
-"l2_norm plain params snip nwot grad_norm flops grasp fisher zen jacov"
+"flops"
+"flops l2_norm"
+"flops l2_norm plain"
+"flops l2_norm plain jacov"
+"flops l2_norm plain jacov grad_norm"
+"flops l2_norm plain jacov grad_norm nwot"
+"flops l2_norm plain jacov grad_norm nwot params"
+"flops l2_norm plain jacov grad_norm nwot params fisher"
+"flops l2_norm plain jacov grad_norm nwot params fisher zen"
+"flops l2_norm plain jacov grad_norm nwot params fisher zen snip"
+"flops l2_norm plain jacov grad_norm nwot params fisher zen snip grasp"
 )
 
 for i in "${!proxies[@]}"
