@@ -16,7 +16,7 @@ train_size=train_size_$3
 start_seed=$4
 experiment=$5
 k=k_$6
-n_seeds=5
+n_seeds=100
 
 if [ -z "$searchspace" ]
 then
