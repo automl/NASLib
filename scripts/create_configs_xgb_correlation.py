@@ -25,7 +25,7 @@ def main(args):
             'search_space': args.search_space,
             'dataset': args.dataset,
             'out_dir': args.out_dir,
-            'predictor': args.train_size,
+            'predictor': args.k,
             'test_size': args.test_size,
             'train_size': args.train_size,
             'batch_size': args.batch_size,
