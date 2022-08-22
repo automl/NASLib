@@ -1,10 +1,11 @@
 #!/bin/bash
 
-train_sizes=(5 8 14 24 42 71 121 205 347 589 1000) #(1000) #(10 15 23 36 56 87 135 209 323 500)
-searchspaces=(transbench101_micro transbench101_macro)
-datasets=(jigsaw class_object class_scene autoencoder normal room_layout segmentsemantic)
+# train_sizes=(5 8 14 24 42 71 121 205 347 589 1000) #(1000) #(10 15 23 36 56 87 135 209 323 500)
+train_sizes=(1000) #(1000) #(10 15 23 36 56 87 135 209 323 500)
+searchspaces=(transbench101_micro) # transbench101_macro)
+ks=(1 2 3 4 5 6 7 8 9 10 11)
+datasets=(autoencoder) # class_object class_scene autoencoder normal room_layout segmentsemantic)
 start_seed=9000
-n_seeds=10
 
 experiment=$1
 
@@ -14,15 +15,17 @@ then
     exit 1
 fi
 
-for searchspace in "${searchspaces[@]}"
+for k in "${ks[@]}"
 do
-    for dataset in "${datasets[@]}"
+    for searchspace in "${searchspaces[@]}"
     do
-        for size in "${train_sizes[@]}"
+        for dataset in "${datasets[@]}"
         do
-            sbatch ./scripts/cluster/xgb_correlation/run.sh $searchspace $dataset $size $start_seed $experiment --bosch
-        done
+            for size in "${train_sizes[@]}"
+            do
+                sbatch ./scripts/cluster/xgb_correlation/run.sh $searchspace $dataset $size $start_seed $experiment $k --bosch
+            done
 
-        echo ""
+        done
     done
 done

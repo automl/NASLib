@@ -3,6 +3,7 @@
 train_sizes=(5 8 14 24 42 71 121 205 347 589 1000) #(1000) #(10 15 23 36 56 87 135 209 323 500)
 searchspace=nasbench101
 datasets=(cifar10)
+ks=(1 2 3 4 5 6 7 8 9 10 11 12 13)
 start_seed=9000
 n_seeds=10
 
@@ -14,12 +15,14 @@ then
     exit 1
 fi
 
-for dataset in "${datasets[@]}"
+for k in "${ks[@]}"
 do
-    for size in "${train_sizes[@]}"
+    for dataset in "${datasets[@]}"
     do
-        sbatch ./scripts/cluster/xgb_correlation/run.sh $searchspace $dataset $size $start_seed $experiment --bosch
-    done
+        for size in "${train_sizes[@]}"
+        do
+            sbatch ./scripts/cluster/xgb_correlation/run.sh $searchspace $dataset $size $start_seed $experiment $k --bosch
+        done
 
-    echo ""
+    done
 done

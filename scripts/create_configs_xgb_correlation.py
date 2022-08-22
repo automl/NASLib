@@ -8,6 +8,7 @@ def main(args):
         args.config_root,
         args.experiment,
         f'train_size_{args.train_size}',
+        f'k_{args.k}',
         f'{args.search_space}-{args.start_seed}',
         args.dataset
     )
@@ -49,6 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--start_seed", type=int, default=9000, help="Starting seed")
     parser.add_argument("--trials", type=int, default=500, help="Number of trials")
     parser.add_argument("--predictor", type=str, default='xgb', help="Predictor to evaluate")
+    parser.add_argument("--k", type=int, default=1, help="Number of proxies")
     parser.add_argument("--train_size", type=int, default=400, help="Train set size for predictor")
     parser.add_argument("--test_size", type=int, default=200, help="Test set size for predictor")
     parser.add_argument("--dataset", type=str, default='cifar10', help="Which dataset")
