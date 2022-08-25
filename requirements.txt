@@ -35,3 +35,8 @@ scikit-learn==1.0.2
 scikit-image==0.19.2
 pytorch-msssim==0.2.1
 tensorwatch==0.9.1
+
+# from zerocost
+transforms3d
+seaborn
+gdown
