@@ -12,6 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # =============================================================================
+"""
+This contains implementations of jacov based on
+https://github.com/BayesWatch/nas-without-training (jacov).
+This script was based on
+https://github.com/SamsungLabs/zero-cost-nas/blob/main/foresight/pruners/measures/jacob_cov.py
+We found this version of jacov tends to perform
+better.
+Author: Robin Ru @ University of Oxford
+"""
 
 import torch
 import numpy as np
@@ -19,18 +28,16 @@ import numpy as np
 from . import measure
 
 
-def get_batch_jacobian(net, x, target, device, split_data):
+def get_batch_jacobian(net, x, target):
+    net.zero_grad()
+
     x.requires_grad_(True)
 
-    N = x.shape[0]
-    for sp in range(split_data):
-        st = sp * N // split_data
-        en = (sp + 1) * N // split_data
-        y = net(x[st:en])
-        y.backward(torch.ones_like(y))
+    y = net(x)
 
+    y.backward(torch.ones_like(y))
     jacob = x.grad.detach()
-    x.requires_grad_(False)
+
     return jacob, target.detach()
 
 
@@ -43,16 +50,10 @@ def eval_score(jacob, labels=None):
 
 @measure("jacov", bn=True)
 def compute_jacob_cov(net, inputs, targets, split_data=1, loss_fn=None):
-    device = inputs.device
-    # Compute gradients (but don't apply them)
-    net.zero_grad()
-
-    jacobs, labels = get_batch_jacobian(
-        net, inputs, targets, device, split_data=split_data
-    )
-    jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
-
     try:
+        # Compute gradients (but don't apply them)
+        jacobs, labels = get_batch_jacobian(net, inputs, targets)
+        jacobs = jacobs.reshape(jacobs.size(0), -1).cpu().numpy()
         jc = eval_score(jacobs, labels)
     except Exception as e:
         print(e)
