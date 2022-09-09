@@ -10,3 +10,4 @@ from .discrete.ls.optimizer import LocalSearch
 from .discrete.bananas.optimizer import Bananas
 from .discrete.bp.optimizer import BasePredictor
 from .discrete.npenas.optimizer import Npenas
+from .oneshot.move.optimizer import MovementOptimizer

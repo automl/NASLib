@@ -286,9 +286,22 @@ class Trainer(object):
             best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
+        if best_arch.QUERYABLE and self.config.search_space=='nasbench201':
+            from nas_201_api import NASBench201API as API #pip install nas-bench-201
+            from naslib.search_spaces.nasbench201.conversions import convert_naslib_to_str
+            api = API("/work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/data/NAS-Bench-201-v1_1-096897.pth") #path to the API please refer to https://github.com/D-X-Y/NAS-Bench-201 for downloading
+            #api = API("/work/dlclarge2/agnihotr-ml/NASLib/naslib/data/NAS-Bench-201-v1_0-e61699.pth")
+            index = api.query_index_by_arch(convert_naslib_to_str(best_arch))
+            #import ipdb;ipdb.set_trace()
+            cifar10_acc = api.get_more_info(index, 'cifar10', hp='200', is_random=False)['test-accuracy']
+            cifar100_acc = api.get_more_info(index, 'cifar100', hp='200', is_random=False)['test-accuracy']
+            img_acc = api.get_more_info(index, 'ImageNet16-120', hp='200', is_random=False)['test-accuracy']
+            logger.info("TEST ACCURACIES: \n\t{}: {}\n\t{}: {}\n\t{}: {}".format('cifar10', cifar10_acc, 'cifar100', cifar100_acc, 'ImageNet16-120', img_acc))
+
         if best_arch.QUERYABLE:
             if metric is None:
                 metric = Metric.TEST_ACCURACY
+            #import ipdb;ipdb.set_trace()
             result = best_arch.query(
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
@@ -374,6 +387,7 @@ class Trainer(object):
                             train_loss += (
                                 self.config.evaluation.auxiliary_weight * auxiliary_loss
                             )
+                        import ipdb;ipdb.set_trace()
                         train_loss.backward()
                         if grad_clip:
                             torch.nn.utils.clip_grad_norm_(
