@@ -39,7 +39,7 @@ class Ensemble(Predictor):
 
     def get_ensemble(self):
         # TODO: if encoding_type is not None, set the encoding type
-
+    
         trainable_predictors = {
             "bananas": MLPPredictor(ss_type=self.ss_type, encoding_type="path"),
             "bayes_lin_reg": BayesianLinearRegression(

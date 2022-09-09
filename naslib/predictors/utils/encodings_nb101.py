@@ -185,3 +185,25 @@ def encode_101(arch, encoding_type="path"):
             )
         )
         raise NotImplementedError()
+
+
+def encode_101_spec(spec,  encoding_type='path'):
+    if encoding_type == 'path':
+        return encode_paths(spec=spec)
+    
+    elif encoding_type == 'adjacency_one_hot':
+        return encode_adj(spec=spec)
+
+    elif encoding_type == 'gcn':
+        return encode_gcn(spec=spec)
+    
+    elif encoding_type == 'seminas':
+        return encode_seminas(spec=spec)
+
+    elif encoding_type == 'bonas':
+        return encode_bonas(spec=spec)
+
+    else:
+        print('{} is not yet implemented as an encoding type \
+         for nb101'.format(encoding_type))
+        raise NotImplementedError()

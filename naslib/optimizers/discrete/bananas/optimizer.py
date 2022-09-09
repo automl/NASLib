@@ -11,6 +11,7 @@ from naslib.optimizers.discrete.bananas.acquisition_functions import (
 
 from naslib.predictors.ensemble import Ensemble
 from naslib.predictors.zerocost import ZeroCost
+from naslib.predictors.utils.encodings import encode_spec
 
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -26,7 +27,7 @@ class Bananas(MetaOptimizer):
     # training the models is not implemented
     using_step_function = False
 
-    def __init__(self, config):
+    def __init__(self, config, zc_api=None, use_zc_api=None):
         super().__init__()
         self.config = config
         self.epochs = config.search.epochs
@@ -50,8 +51,12 @@ class Bananas(MetaOptimizer):
         self.next_batch = []
         self.history = torch.nn.ModuleList()
 
-        self.zc = "omni" in self.predictor_type
-        self.semi = "semi" in self.predictor_type
+        self.zc = config.search.zc_ensemble
+        self.semi = "semi" in self.predictor_type # FIXME go through configs?
+        self.zc_api = zc_api
+        self.use_zc_api = use_zc_api
+        self.zc_names = config.search.zc_names
+        self.sample_from_zc_api = zc_api is not None
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -69,75 +74,140 @@ class Bananas(MetaOptimizer):
         if self.semi:
             self.unlabeled = []
 
-    def get_zc_method(self):
-        return ZeroCost(method_type="jacov")
+
+    def get_zero_cost_predictors(self):
+        return {zc_name: ZeroCost(method_type=zc_name) for zc_name in self.zc_names}
+
+
+    def query_zc_scores(self, arch):
+        zc_scores = {}
+        zc_methods = self.get_zero_cost_predictors()
+
+        for zc_name, zc_method in zc_methods.items():
+            if self.use_zc_api:
+                arch_hash = arch.get_hash()
+                score = self.zc_api[str(arch_hash)][zc_name]['score']
+            else:
+                zc_method.train_loader = copy.deepcopy(self.train_loader)
+                score = zc_method.query([arch])
+
+            if float("-inf") == score:
+                score = -1e9
+            elif float("inf") == score:
+                score = 1e9
+
+            zc_scores[zc_name] = score
+
+        return zc_scores
+
+
+    def _set_scores(self, model):
+
+        model.accuracy = model.arch.query( # FIXME use of ZC api?
+            self.performance_metric, self.dataset, dataset_api=self.dataset_api
+        )
+        
+        if self.zc:
+            model.zc_scores = self.query_zc_scores(model.arch)
+
+        self.train_data.append(model)
+        self._update_history(model)
+
+
+    def _sample_new_model(self):
+        self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
+
+        model = torch.nn.Module()
+        model.arch_hash = self.search_space.get_hash()
+        model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
+
+        return model
+    
+    def _get_train(self):
+        xtrain = [m.arch for m in self.train_data]
+        ytrain = [m.accuracy for m in self.train_data]
+        return xtrain, ytrain
+
+    
+    def _get_ensemble(self): # FIXME extend to Zero Cost case
+        ensemble = Ensemble(
+            num_ensemble=self.num_ensemble,
+            ss_type=self.ss_type,
+            predictor_type=self.predictor_type,
+            config=self.config,
+        )
+        return ensemble
+
+
+    def _get_new_candidates(self, ytrain):
+        # optimize the acquisition function to output k new architectures
+        candidates = []
+        if self.acq_fn_optimization == 'random_sampling':
+
+            for _ in range(self.num_candidates):
+                self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
+                model = self._sample_new_model()
+                model.accuracy = model.arch.query(
+                    self.performance_metric, self.dataset, dataset_api=self.dataset_api
+                )
+                candidates.append(model.arch)
+
+        elif self.acq_fn_optimization == 'mutation':
+            # mutate the k best architectures by x
+            best_arch_indices = np.argsort(ytrain)[-self.num_arches_to_mutate:]
+            best_archs = [self.train_data[i].arch for i in best_arch_indices]
+            candidates = []
+            for arch in best_archs:
+                for _ in range(int(self.num_candidates / len(best_archs) / self.max_mutations)):
+                    candidate = arch.clone()
+                    for __ in range(int(self.max_mutations)):
+                        arch = self.search_space.clone()
+                        arch.mutate(candidate, dataset_api=self.dataset_api)
+                        candidate = arch
+                    candidates.append(candidate)
+
+        else:
+            logger.info('{} is not yet supported as a acq fn optimizer'.format(self.encoding_type))
+            raise NotImplementedError()
+
+        return candidates
+
 
     def new_epoch(self, epoch):
 
         if epoch < self.num_init:
-            # randomly sample initial architectures
-            model = (
-                torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
-            model.arch = self.search_space.clone()
-            model.arch.sample_random_architecture(dataset_api=self.dataset_api)
-            model.accuracy = model.arch.query(
-                self.performance_metric, self.dataset, dataset_api=self.dataset_api
-            )
-            if self.zc and len(self.train_data) <= self.max_zerocost:
-                zc_method = self.get_zc_method()
-                zc_method.train_loader = copy.deepcopy(self.train_loader)
-                score = zc_method.query([model.arch])
-                model.zc_score = np.squeeze(score)
-
-            self.train_data.append(model)
-            self._update_history(model)
-
+            model = self._sample_new_model()
+            self.set_scores(model)
         else:
             if len(self.next_batch) == 0:
                 # train a neural predictor
-                xtrain = [m.arch for m in self.train_data]
-                ytrain = [m.accuracy for m in self.train_data]
-                ensemble = Ensemble(
-                    num_ensemble=self.num_ensemble,
-                    ss_type=self.ss_type,
-                    predictor_type=self.predictor_type,
-                    config=self.config,
-                )
-
-                if self.zc and len(self.train_data) <= self.max_zerocost:
-                    # pass the zero-cost scores to the predictor
-                    train_info = {"jacov_scores": [m.zc_score for m in self.train_data]}
-                    ensemble.set_pre_computations(xtrain_zc_info=train_info)
+                xtrain, ytrain = self._get_train()
+                ensemble = self._get_ensemble() # FIXME extend to Zero Cost case
 
                 if self.semi:
                     # create unlabeled data and pass it to the predictor
                     while len(self.unlabeled) < len(xtrain):
-                        model = torch.nn.Module()
-                        model.arch = self.search_space.clone()
-                        model.arch.sample_random_architecture(
-                            dataset_api=self.dataset_api
-                        )
+                        model = self._sample_new_model()
+                        
                         if self.zc and len(self.train_data) <= self.max_zerocost:
-                            zc_method = self.get_zc_method()
-                            zc_method.train_loader = copy.deepcopy(self.train_loader)
-                            score = zc_method.query([model.arch])
-                            model.zc_score = np.squeeze(score)
+                            model.zc_scores = self.query_zc_scores(model.arch)
 
                         self.unlabeled.append(model)
+                    
                     ensemble.set_pre_computations(
                         unlabeled=[m.arch for m in self.unlabeled]
                     )
+                
+                if self.zc and len(self.train_data) <= self.max_zerocost:
+                    # pass the zero-cost scores to the predictor
+                    train_info = {'zero_cost_scores': [m.zc_scores for m in self.train_data]}
+                    ensemble.set_pre_computations(xtrain_zc_info=train_info)
 
-                if self.semi and (
-                    self.zc and len(self.train_data) <= self.max_zerocost
-                ):
-                    unlabeled_zc_info = {
-                        "jacov_scores": [m.zc_score for m in self.unlabeled]
-                    }
-                    ensemble.set_pre_computations(unlabeled_zc_info=unlabeled_zc_info)
+                    if self.semi:
+                        unlabeled_zc_info = {'zero_cost_scores': [m.zc_scores for m in self.unlabeled]}
+                        ensemble.set_pre_computations(unlabeled_zc_info=unlabeled_zc_info)
 
-                train_error = ensemble.fit(xtrain, ytrain)
+                ensemble.fit(xtrain, ytrain)
 
                 # define an acquisition function
                 acq_fn = acquisition_function(
@@ -145,73 +215,51 @@ class Bananas(MetaOptimizer):
                 )
 
                 # optimize the acquisition function to output k new architectures
-                candidates = []
-                zc_scores = []
-                if self.acq_fn_optimization == "random_sampling":
+                candidates = self._get_new_candidates(ytrain=ytrain) # FIXME whether to store models or architectures?
 
-                    for _ in range(self.num_candidates):
-                        arch = self.search_space.clone()
-                        arch.sample_random_architecture(dataset_api=self.dataset_api)
-                        candidates.append(arch)
-
-                elif self.acq_fn_optimization == "mutation":
-                    # mutate the k best architectures by x
-                    best_arch_indices = np.argsort(ytrain)[-self.num_arches_to_mutate :]
-                    best_arches = [self.train_data[i].arch for i in best_arch_indices]
-                    candidates = []
-                    for arch in best_arches:
-                        for _ in range(
-                            int(
-                                self.num_candidates
-                                / len(best_arches)
-                                / self.max_mutations
-                            )
-                        ):
-                            candidate = arch.clone()
-                            for edit in range(int(self.max_mutations)):
-                                arch = self.search_space.clone()
-                                arch.mutate(candidate, dataset_api=self.dataset_api)
-                                candidate = arch
-                            candidates.append(candidate)
-
-                else:
-                    logger.info(
-                        "{} is not yet supported as a acq fn optimizer".format(
-                            encoding_type
-                        )
-                    )
-                    raise NotImplementedError()
-
-                if self.zc and len(self.train_data) <= self.max_zerocost:
-                    zc_method = self.get_zc_method()
-                    zc_method.train_loader = copy.deepcopy(self.train_loader)
-                    zc_scores = zc_method.query(candidates)
-                    values = [
-                        acq_fn(enc, {"jacov_scores": [score]})
-                        for enc, score in zip(candidates, zc_scores)
-                    ]
-                else:
-                    values = [acq_fn(encoding) for encoding in candidates]
-                sorted_indices = np.argsort(values)
-                choices = [candidates[i] for i in sorted_indices[-self.k :]]
-                self.next_batch = [*choices]
+                self.next_batch = self._get_best_candidates(candidates, acq_fn)
 
             # train the next architecture chosen by the neural predictor
-            model = (
-                torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
             model.arch = self.next_batch.pop()
             model.accuracy = model.arch.query(
                 self.performance_metric, self.dataset, dataset_api=self.dataset_api
             )
             if self.zc and len(self.train_data) <= self.max_zerocost:
-                zc_method = self.get_zc_method()
-                zc_method.train_loader = copy.deepcopy(self.train_loader)
-                score = zc_method.query([model.arch])
-                model.zc_score = np.squeeze(score)
+                model.zc_scores = self.query_zc_scores(model.arch)
 
             self._update_history(model)
             self.train_data.append(model)
+
+    def _get_best_candidates(self, candidates, acq_fn):
+        if self.zc and len(self.train_data) <= self.max_zerocost:
+            for model in candidates:
+                model.zc_scores = self.query_zc_scores(model.arch)
+
+            values = [acq_fn(arch, [{'zero_cost_scores' : model.zc_scores}]) for arch in candidates]
+        else:
+            values = [acq_fn(arch) for arch in candidates]
+
+        sorted_indices = np.argsort(values)
+        choices = [candidates[i] for i in sorted_indices[-self.k:]]
+
+        return choices
+
+    
+    def _get_best_candidates(self, candidates, acq_fn):
+        if self.zc:
+            for model in candidates:
+                model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
+
+            values = [acq_fn(model.arch, [{'zero_cost_scores' : model.zc_scores}]) for model in candidates]
+        else:
+            values = [acq_fn(model.arch) for model in candidates]
+
+        sorted_indices = np.argsort(values)
+        choices = [candidates[i] for i in sorted_indices[-self.k:]]
+
+        return choices
+
 
     def _update_history(self, child):
         if len(self.history) < 100:
@@ -258,3 +306,10 @@ class Bananas(MetaOptimizer):
 
     def get_model_size(self):
         return count_parameters_in_MB(self.history)
+
+    def get_arch_as_string(self, arch):
+        if self.search_space.get_type() == 'nasbench301':
+            str_arch = str(list((list(arch[0]), list(arch[1]))))
+        else:
+            str_arch = str(arch)
+        return str_arch

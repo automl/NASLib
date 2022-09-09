@@ -19,6 +19,7 @@ CONV1X1 = 'conv1x1-bn-relu'
 CONV3X3 = 'conv3x3-bn-relu'
 MAXPOOL3X3 = 'maxpool3x3'
 NODES_IN_DEGREE = [1, 1, 1, 2, 2, 2] # Search space 3 as defined in NAS-Bench-1Shot1 (https://arxiv.org/abs/2001.10422)
+all_ops = ["input", "output", "maxpool3x3", "conv1x1-bn-relu", "conv3x3-bn-relu"]
 
 
 def _truncate_input_edges(node: Tuple[int, object], in_edges: List[object], out_edges: List[object]) -> None:
@@ -156,3 +157,15 @@ def convert_spec_to_tuple(spec):
     ops = [op_dict.index(s) for s in spec["ops"]]
     tup = tuple([*matrix, *ops])
     return tup
+
+
+def convert_tuple_to_spec(tup):
+    l = len(tup)
+    # l = n*n + n
+    n = int(-0.5 + np.sqrt(1 + 4*l)/2)
+    matrix_vals = tup[:-n]
+    matrix = np.array(matrix_vals).reshape(n, n)
+    ops = [all_ops[t] for t in tup[-n:]]
+
+    return {"matrix": matrix, "ops": ops}
+

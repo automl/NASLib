@@ -268,33 +268,30 @@ def encode_gcn(arch):
     return dic
 
 
-def encode_darts(arch, encoding_type="path"):
-
+def encode_darts(arch, encoding_type='path'):
     compact = arch.get_compact()
+    return encode_darts_compact(compact, encoding_type)
 
-    if encoding_type == "path":
+
+def encode_darts_compact(compact, encoding_type='path'):
+    if encoding_type == 'path':
         return encode_paths(arch=compact)
-
-    elif encoding_type == "adjacency_one_hot":
+    
+    elif encoding_type == 'adjacency_one_hot':
         return encode_adj(arch=compact)
-
-    elif encoding_type == "compact":
+    
+    elif encoding_type == 'compact':
         return compact
-
-    elif encoding_type == "bonas":
+    
+    elif encoding_type == 'bonas':
         return encode_bonas(arch=compact)
 
-    elif encoding_type == "seminas":
+    elif encoding_type == 'seminas':
         return encode_seminas(arch=compact)
 
-    elif encoding_type == "gcn":
+    elif encoding_type == 'gcn':
         return encode_gcn(arch=compact)
 
     else:
-        print(
-            "{} is not yet implemented as an encoding type \
-         for darts".format(
-                encoding_type
-            )
-        )
-        raise NotImplementedError()
+        print('{} is not yet implemented as an encoding type \
+         for darts'.format(encoding_type))
