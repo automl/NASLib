@@ -1,16 +1,16 @@
 dataset: cifar10
 seed: 10
 search_space: nasbench201
-out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/not_abs2_nb201_warm_5_mask_5_train_0.1_inst_False
-optimizer: movement_test
+out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/abs/find_nb201
+optimizer: movement
 
 search:
  
   # MOVEMENT
-  instantenous: False
-  epochs: 30
-  warm_start_epochs: 5
-  masking_interval: 5
+  instantenous: True
+  epochs: 14
+  warm_start_epochs: 2
+  masking_interval: 3
   train_portion: 0.1
   data_size: 5000
   batch_size: 128

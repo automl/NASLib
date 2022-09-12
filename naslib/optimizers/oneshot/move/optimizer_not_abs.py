@@ -466,7 +466,7 @@ class MovementOptimizer_test(MetaOptimizer):
             
         weights_str = [
             ", ".join(["{:+.10f}".format(x) for x in a])
-            + ", {}".format(np.max(torch.abs(a).detach().cpu().numpy()))
+            + ", {}".format(np.max(a.detach().cpu().numpy()))
             for a in self.score
         ]
         logger.info(

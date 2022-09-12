@@ -514,10 +514,11 @@ class MovementOptimizer(MetaOptimizer):
             """
             self.mask = torch.nn.ParameterList()
             self.graph.update_edges(reinitialize_scores, scope=self.scope, private_edge_data=True)
-            self.count_masking += 1
-            
+                
             for mask in self.graph.get_all_edge_data("mask"):
                 self.mask.append(mask)
+        if epoch >= self.warm_start_epochs:
+            self.count_masking += 1
         super().new_epoch(epoch)
 
     def after_training(self):
