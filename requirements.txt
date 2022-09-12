@@ -2,6 +2,7 @@ ConfigSpace==0.4.19
 cython==0.29.23
 hyperopt==0.2.5
 pyyaml==5.4.1
+networkx==2.6.3
 numpy==1.21.5; python_version <= '3.7'
 numpy>=1.22.0; python_version > '3.7'
 torch==1.9.0
