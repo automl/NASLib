@@ -18,6 +18,7 @@ from naslib.optimizers import (
     GSparseOptimizer,
     MovementOptimizer,
     DrNASOptimizer,
+    MovementOptimizer_test
 )
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace, NasBench101SearchSpace, NATSBenchSizeSearchSpace
@@ -45,6 +46,7 @@ supported_optimizers = {
     "gsparsity": GSparseOptimizer(config),
     "movement": MovementOptimizer(config),
     "drnas": DrNASOptimizer(config),
+    "movement_test" : MovementOptimizer_test(config)
 }
 
 if config.dataset =='cifar100':
