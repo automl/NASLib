@@ -130,12 +130,13 @@ class Bananas(MetaOptimizer):
 
     
     def _get_ensemble(self): # FIXME extend to Zero Cost case
-        ensemble = Ensemble(
-            num_ensemble=self.num_ensemble,
-            ss_type=self.ss_type,
-            predictor_type=self.predictor_type,
-            config=self.config,
-        )
+        ensemble = Ensemble(num_ensemble=self.num_ensemble,
+                            ss_type=self.ss_type,
+                            predictor_type=self.predictor_type,
+                            zc=self.config.search.zc_ensemble,
+                            zc_only=self.config.search.zc_only,
+                            config=self.config)
+        
         return ensemble
 
 

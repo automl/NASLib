@@ -27,6 +27,8 @@ class Ensemble(Predictor):
         ss_type=None,
         hpo_wrapper=True,
         config=None,
+        zc=None,
+        zc_only=None
     ):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
@@ -36,6 +38,8 @@ class Ensemble(Predictor):
         self.config = config
         self.hyperparams = None
         self.ensemble = None
+        self.zc = zc
+        self.zc_only = zc_only
 
     def get_ensemble(self):
         # TODO: if encoding_type is not None, set the encoding type
@@ -86,7 +90,7 @@ class Ensemble(Predictor):
                 zc=False,
             ),
             "xgb": XGBoost(
-                ss_type=self.ss_type, zc=False, encoding_type="adjacency_one_hot"
+                ss_type=self.ss_type, zc=self.zc, encoding_type="adjacency_one_hot", zc_only=self.zc_only
             ),
             "omni_ngb": OmniNGBPredictor(
                 zero_cost=["jacov"],
