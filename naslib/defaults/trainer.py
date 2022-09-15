@@ -123,8 +123,29 @@ class Trainer(object):
                         data_val[1].to(self.device, non_blocking=True),
                     )
 
-                    stats = self.optimizer.step(data_train, data_val)
+                    # if e < start_epoch + 10:
+                    #     stats = self.optimizer.step_inner(data_train, data_val)
+                    # else:
+                    #     stats = self.optimizer.step(data_train, data_val)
+
+
+
+                    stats = self.optimizer.step(data_train, data_val, k=e) # remove , k=step
                     logits_train, logits_val, train_loss, val_loss = stats
+
+                    # stats_outer = self.optimizer.step_outer(data_train, data_val)
+                    # logits_train, logits_val, train_loss, val_loss = stats_outer
+
+                    # print('val_loss (outer) =', val_loss)
+                    # print('train_loss (outer) =', train_loss)
+
+                    # stats_inner = self.optimizer.step_inner(data_train, data_val)
+                    # logits_train, logits_val, train_loss, val_loss = stats_inner
+
+                    # print('val_loss (inner) =', val_loss)
+                    # print('train_loss (inner) =', train_loss)
+
+
 
                     self._store_accuracies(logits_train, data_train[1], "train")
                     self._store_accuracies(logits_val, data_val[1], "val")
@@ -288,7 +309,8 @@ class Trainer(object):
 
         if best_arch.QUERYABLE:
             if metric is None:
-                metric = Metric.TEST_ACCURACY
+                # metric = Metric.TEST_ACCURACY
+                metric = Metric.VAL_ACCURACY
             result = best_arch.query(
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )

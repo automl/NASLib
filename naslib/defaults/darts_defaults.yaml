@@ -1,8 +1,8 @@
 dataset: cifar10
 seed: 99
-search_space: darts
+search_space: nasbench201
 out_dir: run
-optimizer: darts
+optimizer: epnas
 
 search:
   seed: 0 

@@ -9,6 +9,7 @@ from networkx.algorithms.dag import lexicographical_topological_sort
 
 from naslib.utils.utils import iter_flatten, AttrDict
 from naslib.utils.logging import log_formats, log_first_n
+# from naslib.optimizers.oneshot.epnas.optimizer import EPMixedOp
 from .primitives import Identity, AbstractPrimitive
 from .query_metrics import Metric
 
@@ -81,6 +82,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
     If this is set to true then `query()` should be implemented.
     """
     QUERYABLE = False
+    # mask = None
 
     def __init__(self, name: str = None, scope: str = None):
         """
@@ -134,6 +136,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
         self.input_node_idxs = None
         self.is_parsed = False
         self._id = random.random()  # pytorch expects unique modules in `add_module()`
+        # self.mask = False
 
     def __eq__(self, other):
         return self.name == other.name and self.scope == other.scope
@@ -401,6 +404,18 @@ class Graph(torch.nn.Module, nx.DiGraph):
                             )
                         )
 
+                        # print('edge_data.op ===============', edge_data.op)
+                        # print('self.mask ===============', self.mask)
+                        # print('----->>>>>', hasattr(edge_data.op, 'attr'))
+                        # if hasattr(edge_data.op, "attr"):
+                        #     # print("--------<>--------")
+                        #     print('YESSSSSS')
+                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data, mask=mask)
+                        # else:
+                        #     print('NOOOOOOO')
+                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data)
+
+
                         edge_output = edge_data.op.forward(x, edge_data=edge_data)
                     else:
                         raise ValueError(
@@ -414,6 +429,103 @@ class Graph(torch.nn.Module, nx.DiGraph):
 
         logger.debug("Graph {} exiting. Output {}.".format(self.name, log_formats(x)))
         return x
+
+    
+    def forward_modified(self, x, *args):
+        """
+        Forward some data through the graph. This is done recursively
+        in case there are graphs defined on nodes or as 'op' on edges.
+
+        Args:
+            x (Tensor or dict): The input. If the graph sits on a node the
+                input can be a dict with {source_idx: Tensor} to be routed
+                to the defined input nodes. If the graph sits on an edge,
+                x is the feature tensor.
+            args: This is only required to handle cases where the graph sits
+                on an edge and receives an EdgeData object which will be ignored
+        """
+        logger.debug("Graph {} called. Input {}.".format(self.name, log_formats(x)))
+
+        # Assign x to the corresponding input nodes
+        self._assign_x_to_nodes(x)
+
+        for node_idx in lexicographical_topological_sort(self):
+            node = self.nodes[node_idx]
+            logger.debug(
+                "Node {}-{}, current data {}, start processing...".format(
+                    self.name, node_idx, log_formats(node)
+                )
+            )
+
+            # node internal: process input if necessary
+            if ("subgraph" in node and "comb_op" not in node) or (
+                "comb_op" in node and "subgraph" not in node
+            ):
+                log_first_n(
+                    logging.WARN, "Comb_op is ignored if subgraph is defined!", n=1
+                )
+            # TODO: merge 'subgraph' and 'comb_op'. It is basicallly the same thing. Also in parse()
+            if "subgraph" in node:
+                x = node["subgraph"].forward_modified(node["input"])
+            else:
+                if len(node["input"].values()) == 1:
+                    x = list(node["input"].values())[0]
+                else:
+                    x = node["comb_op"](
+                        [node["input"][k] for k in sorted(node["input"].keys())]
+                    )
+            node["input"] = {}  # clear the input as we have processed it
+
+            if (
+                len(list(self.neighbors(node_idx))) == 0
+                and node_idx < list(lexicographical_topological_sort(self))[-1]
+            ):
+                # We have more than one output node. This is e.g. the case for
+                # auxillary losses. Attach them to the graph, handling must done
+                # by the user.
+                logger.debug(
+                    "Graph {} has more then one output node. Storing output of non-maximum index node {} at graph dict".format(
+                        self, node_idx
+                    )
+                )
+                self.graph["out_from_{}".format(node_idx)] = x
+            else:
+                # outgoing edges: process all outgoing edges
+                for neigbor_idx in self.neighbors(node_idx):
+                    edge_data = self.get_edge_data(node_idx, neigbor_idx)
+                    # inject edge data only for AbstractPrimitive, not Graphs
+                    if isinstance(edge_data.op, Graph):
+                        edge_output = edge_data.op.forward_modified(x)
+                    elif isinstance(edge_data.op, AbstractPrimitive):
+                        logger.debug(
+                            "Processing op {} at edge {}-{}".format(
+                                edge_data.op, node_idx, neigbor_idx
+                            )
+                        )
+
+                        print('edge_data.op ===============', edge_data.op)
+                        # print('self.mask ===============', self.mask)
+                        # print('----->>>>>', hasattr(edge_data.op, 'attr'))
+                        # if hasattr(edge_data.op, "attr"):
+                        #     print("--------<>--------")
+                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data, mask=self.mask)
+                        # else:
+                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data)
+
+                        edge_output = edge_data.op.forward_modified(x, edge_data=edge_data)
+                    else:
+                        raise ValueError(
+                            "Unknown class as op: {}. Expected either Graph or AbstactPrimitive".format(
+                                edge_data.op
+                            )
+                        )
+                    self.nodes[neigbor_idx]["input"].update({node_idx: edge_output})
+
+            logger.debug("Node {}-{}, processing done.".format(self.name, node_idx))
+
+        logger.debug("Graph {} exiting. Output {}.".format(self.name, log_formats(x)))
+        return x
+
 
     def parse(self):
         """
