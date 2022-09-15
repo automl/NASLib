@@ -1,49 +1,75 @@
-
-# The experiment type can be single, vary_train_size, vary_fidelity, or vary_both
-# single will use train_size_single and fidleity_single 
-# vary_train_size will use train_size_list and fidelity_single
-# vary_fidelity will use train_size_single and fidelity_list
-# vary_both will use train_size_list and fidelity_list
-experiment_type: single
-
-# nasbench101, nasbench201, darts, or nlp
-search_space: nasbench201
-
-# cifar10, cifar100, or ImageNet16-120 (only important for nasbench201)
 dataset: cifar10
-
-# one of the 31 predictors in benchmarks/predictors/runner.py
-predictor: xgb
-
-# 0: mutation-based, or 1: uniformly random, train/test sets
-uniform_random: 1
-
-# test set size
-test_size: 100
-
-# size of the training set (used by model-based predictors)
-train_size_single: 50
-train_size_list: [5, 8, 14, 24, 42, 71, 121, 205]
-
-# num. epochs to train the test set arches (used by learning curve methods)
-fidelity_single: 5
-fidelity_list: [1, 2, 3, 5, 7, 9, 13, 19, 26, 37, 52, 73]
-
-# output results to this directory
+seed: 99
+search_space: nasbench201
 out_dir: run
+optimizer: epnas
 
-# maximum number of seconds to run cross-validation (for model-based predictors)
-max_hpo_time: 0
-
-# random seed
-seed: 1000
-
-# these are used by the zero-cost methods
 search:
-  seed: 1000
-  batch_size: 256
+  seed: 0 
+  checkpoint_freq: 5
+  batch_size: 64
+  learning_rate: 0.025
+  learning_rate_min: 0.001
+  momentum: 0.9
+  weight_decay: 0.0003
+  epochs: 50
+  warm_start_epochs: 0
+  grad_clip: 5
+  train_portion: 0.5
   data_size: 25000
+
   cutout: False
   cutout_length: 16
   cutout_prob: 1.0
-  train_portion: 0.7
+  drop_path_prob: 0.0
+
+  unrolled: False
+  arch_learning_rate: 0.0003
+  arch_weight_decay: 0.001
+  output_weights: True
+  
+  fidelity: 200
+
+  # GDAS
+  tau_max: 10
+  tau_min: 0.1
+
+  # RE
+  sample_size: 10
+  population_size: 100
+  
+  #LS
+  num_init: 10
+  
+  # BANANAS
+  k: 10
+  num_ensemble: 3
+  acq_fn_type: its
+  acq_fn_optimization: mutation
+  encoding_type: path
+  num_arches_to_mutate: 2
+  max_mutations: 1
+  num_candidates: 100
+  
+  # BasePredictor
+  predictor_type: var_sparse_gp
+  debug_predictor: False
+
+evaluation:
+  checkpoint_freq: 30
+  batch_size: 96
+  learning_rate: 0.025
+  learning_rate_min: 0.00
+  momentum: 0.9
+  weight_decay: 0.0003
+  epochs: 600
+  warm_start_epochs: 0
+  grad_clip: 5
+  train_portion: 1.
+  data_size: 50000
+
+  cutout: True
+  cutout_length: 16
+  cutout_prob: 1.0
+  drop_path_prob: 0.2
+  auxiliary_weight: 0.4

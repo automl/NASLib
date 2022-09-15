@@ -4,7 +4,8 @@ import sys
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import RandomSearch, Npenas, \
-RegularizedEvolution, LocalSearch, Bananas, BasePredictor
+RegularizedEvolution, LocalSearch, Bananas, BasePredictor, \
+EPNASOptimizer, DrNASOptimizer
 
 from naslib.search_spaces import NasBench101SearchSpace, NasBench201SearchSpace, \
 DartsSearchSpace, NasBenchNLPSearchSpace, TransBench101SearchSpace
@@ -23,6 +24,8 @@ supported_optimizers = {
     'bananas': Bananas(config),
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
+    'epnas': EPNASOptimizer(config),
+    'drnas': DrNASOptimizer(config),
 }
 
 supported_search_spaces = {
