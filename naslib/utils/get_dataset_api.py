@@ -28,39 +28,55 @@ def get_nasbench101_api(dataset=None):
     return {"api": api, "nb101_data": nb101_data}
 
 
-def get_nasbench201_api(dataset=None):
-    """
-    Load the NAS-Bench-201 data
-    """
-    if dataset == "cifar10":
-        with open(
-            os.path.join(
-                get_project_root(), "data", "nb201_cifar10_full_training.pickle"
-            ),
-            "rb",
-        ) as f:
-            data = pickle.load(f)
+# def get_nasbench201_api(dataset=None):
+#     """
+#     Load the NAS-Bench-201 data
+#     """
+#     if dataset == "cifar10":
+#         with open(
+#             os.path.join(
+#                 get_project_root(), "data", "nb201_cifar10_full_training.pickle"
+#             ),
+#             "rb",
+#         ) as f:
+#             data = pickle.load(f)
 
-    elif dataset == "cifar100":
-        with open(
-            os.path.join(
-                get_project_root(), "data", "nb201_cifar100_full_training.pickle"
-            ),
-            "rb",
-        ) as f:
-            data = pickle.load(f)
+#     elif dataset == "cifar100":
+#         with open(
+#             os.path.join(
+#                 get_project_root(), "data", "nb201_cifar100_full_training.pickle"
+#             ),
+#             "rb",
+#         ) as f:
+#             data = pickle.load(f)
 
-    elif dataset == "ImageNet16-120":
-        with open(
-            os.path.join(
-                get_project_root(), "data", "nb201_ImageNet16_full_training.pickle"
-            ),
-            "rb",
-        ) as f:
-            data = pickle.load(f)
+#     elif dataset == "ImageNet16-120":
+#         with open(
+#             os.path.join(
+#                 get_project_root(), "data", "nb201_ImageNet16_full_training.pickle"
+#             ),
+#             "rb",
+#         ) as f:
+#             data = pickle.load(f)
 
-    return {"nb201_data": data}
+#     return {"nb201_data": data}
 
+def get_nasbench201_api(dataset):
+    """ Load the NAS-Bench-201 data """
+    datafile_path = os.path.join(get_project_root(), 'data', 'NAS-Bench-201-v1_0-e61699.pth')# assert os.path.exists(datafile_path), f'Could not find {datafile_path}. Please download {datafiles[dataset]} from \# https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
+    api = API(datafile_path)
+    def data(arch_str, dataset='cifar10', hp='200'): # works only for hp='200' result = api.query_by_arch(arch_str, hp=hp)
+        if dataset=='cifar10': 
+            result = result.split('\n')[5].replace(' ', '').split(':') 
+            test_acc = float(result[2][-7:-2].strip('=')) 
+        elif dataset=='cifar100': 
+            result = result.split('\n')[7].replace(' ', '').split(':') 
+            test_acc = float(result[3][-7:-2].strip('=')) 
+        elif dataset=='ImageNet16-120': 
+            result = result.split('\n')[9].replace(' ', '').split(':') 
+            test_acc = float(result[3][-7:-2].strip('=')) 
+        else: print(f'Invalid dataset {dataset}') 
+    return test_acc
 
 def get_darts_api(dataset=None, 
                   nb301_model_path='~/nb_models/xgb_v1.0', 
