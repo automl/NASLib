@@ -4,6 +4,7 @@ import pickle
 from naslib.utils.utils import get_project_root
 from naslib.utils.utils_asr import from_folder
 
+
 """
 This file loads any dataset files or api's needed by the Trainer or PredictorEvaluator object.
 They must be loaded outside of the search space object, because search spaces are copied many times
@@ -76,7 +77,8 @@ def get_nasbench201_api(dataset):
             result = result.split('\n')[9].replace(' ', '').split(':') 
             test_acc = float(result[3][-7:-2].strip('=')) 
         else: print(f'Invalid dataset {dataset}') 
-    return test_acc
+        return test_acc
+    return {"nb201_data": data}
 
 def get_darts_api(dataset=None, 
                   nb301_model_path='~/nb_models/xgb_v1.0', 

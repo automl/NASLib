@@ -429,26 +429,26 @@ class EPNASOptimizer(MetaOptimizer):
         return criterion(pred, target)
 
 
-# top k ops
-class GetSubnet(autograd.Function):
-    @staticmethod
-    def forward(ctx, scores, k):
-        # Get the supermask by sorting the scores and using the top k%
-        out = scores.clone()
-        _, idx = scores.flatten().sort()
-        j = int((1 - k) * scores.numel())
+# # top k ops
+# class GetSubnet(autograd.Function):
+#     @staticmethod
+#     def forward(ctx, scores, k):
+#         # Get the supermask by sorting the scores and using the top k%
+#         out = scores.clone()
+#         _, idx = scores.flatten().sort()
+#         j = int((1 - k) * scores.numel())
 
-        # flat_out and out access the same memory.
-        flat_out = out.flatten()
-        flat_out[idx[:j]] = 0
-        flat_out[idx[j:]] = 1
+#         # flat_out and out access the same memory.
+#         flat_out = out.flatten()
+#         flat_out[idx[:j]] = 0
+#         flat_out[idx[j:]] = 1
 
-        return out
+#         return out
 
-    @staticmethod
-    def backward(ctx, g):
-        # send the gradient g straight-through on the backward pass.
-        return g, None
+#     @staticmethod
+#     def backward(ctx, g):
+#         # send the gradient g straight-through on the backward pass.
+#         return g, None
 
 # # only top op
 # class GetSubnet(autograd.Function):
@@ -470,29 +470,29 @@ class GetSubnet(autograd.Function):
 #         # send the gradient g straight-through on the backward pass.
 #         return g, None
 
-# # only one op - randomly according to op categorical probs
-# class GetSubnet(autograd.Function):
-#     @staticmethod
-#     def forward(ctx, scores, k):
-#         # Get the supermask by sorting the scores and using the top k%
-#         out = scores.clone() * 5
-#         # _, idx = scores.flatten().sort()
+# only one op - randomly according to op categorical probs
+class GetSubnet(autograd.Function):
+    @staticmethod
+    def forward(ctx, scores, k):
+        # Get the supermask by sorting the scores and using the top k%
+        out = scores.clone() * 5
+        # _, idx = scores.flatten().sort()
 
-#         probs = out.softmax(dim=-1)
-#         m = torch.distributions.one_hot_categorical.OneHotCategorical(probs)
-#         sampled = m.sample()
+        probs = out.softmax(dim=-1)
+        m = torch.distributions.one_hot_categorical.OneHotCategorical(probs)
+        sampled = m.sample()
 
-#         # # idx = out.argmax()
+        # # idx = out.argmax()
 
-#         # flat_out = torch.zeros_like(out)
-#         # flat_out[idx] = 1
+        # flat_out = torch.zeros_like(out)
+        # flat_out[idx] = 1
 
-#         return sampled
+        return sampled
 
-#     @staticmethod
-#     def backward(ctx, g):
-#         # send the gradient g straight-through on the backward pass.
-#         return g, None
+    @staticmethod
+    def backward(ctx, g):
+        # send the gradient g straight-through on the backward pass.
+        return g, None
 
 
 # # only one op - randomly according to op dirichlet probs
@@ -522,34 +522,7 @@ class GetSubnet(autograd.Function):
 #         return g, None
     
 
-# # normal mixed op
-# class MixedOp(AbstractPrimitive):
-#     """
-#     Continous relaxation of the discrete search space.
-#     """
-
-#     def __init__(self, primitives):
-#         super().__init__(locals())
-#         self.primitives = primitives
-#         for i, primitive in enumerate(primitives):
-#             self.add_module("primitive-{}".format(i), primitive)
-
-#     def forward(self, x, edge_data):
-#         sparsity = 1 / len(edge_data.alpha)
-#         if EPNASOptimizer.mask:
-#             # normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
-#             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
-#             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
-#         else:
-#             mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
-
-#         return mixed_op
-
-#     def get_embedded_ops(self):
-#         return self.primitives
-
-
-# interpolating mixed op
+# normal mixed op
 class MixedOp(AbstractPrimitive):
     """
     Continous relaxation of the discrete search space.
@@ -562,9 +535,7 @@ class MixedOp(AbstractPrimitive):
             self.add_module("primitive-{}".format(i), primitive)
 
     def forward(self, x, edge_data):
-        sparsity = (1 - EPNASOptimizer.k / 50) * (1 - 1 / len(edge_data.alpha)) + (EPNASOptimizer.k / 50) * 1 / len(edge_data.alpha)
-        print('sparsity =', sparsity)
-        # print('EPNASOptimizer.k =', EPNASOptimizer.k)
+        sparsity = 1 / len(edge_data.alpha)
         if EPNASOptimizer.mask:
             # normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
@@ -576,3 +547,32 @@ class MixedOp(AbstractPrimitive):
 
     def get_embedded_ops(self):
         return self.primitives
+
+
+# # interpolating mixed op
+# class MixedOp(AbstractPrimitive):
+#     """
+#     Continous relaxation of the discrete search space.
+#     """
+
+#     def __init__(self, primitives):
+#         super().__init__(locals())
+#         self.primitives = primitives
+#         for i, primitive in enumerate(primitives):
+#             self.add_module("primitive-{}".format(i), primitive)
+
+#     def forward(self, x, edge_data):
+#         sparsity = (1 - EPNASOptimizer.k / 50) * (1 - 1 / len(edge_data.alpha)) + (EPNASOptimizer.k / 50) * 1 / len(edge_data.alpha)
+#         print('sparsity =', sparsity)
+#         # print('EPNASOptimizer.k =', EPNASOptimizer.k)
+#         if EPNASOptimizer.mask:
+#             # normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
+#             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
+#             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
+#         else:
+#             mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
+
+#         return mixed_op
+
+#     def get_embedded_ops(self):
+#         return self.primitives
