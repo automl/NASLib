@@ -56,7 +56,12 @@ class Ensemble(Predictor):
             "dngo": DNGOPredictor(
                 ss_type=self.ss_type, encoding_type="adjacency_one_hot"
             ),
-            "lgb": LGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
+            "lgb": LGBoost(
+                ss_type=self.ss_type,
+                zc=self.zc,
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only
+            ),
             "gcn": GCNPredictor(ss_type=self.ss_type, encoding_type="gcn"),
             "gp": GPPredictor(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
             "gpwl": GPWLPredictor(
@@ -71,9 +76,17 @@ class Ensemble(Predictor):
             "nao": SemiNASPredictor(
                 ss_type=self.ss_type, semi=False, encoding_type="seminas"
             ),
-            "ngb": NGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
+            "ngb": NGBoost(
+                ss_type=self.ss_type,
+                zc=self.zc,
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only    
+            ),
             "rf": RandomForestPredictor(
-                ss_type=self.ss_type, encoding_type="adjacency_one_hot"
+                ss_type=self.ss_type,
+                zc=self.zc,
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only
             ),
             "seminas": SemiNASPredictor(
                 ss_type=self.ss_type, semi=True, encoding_type="seminas"
@@ -90,7 +103,10 @@ class Ensemble(Predictor):
                 zc=False,
             ),
             "xgb": XGBoost(
-                ss_type=self.ss_type, zc=self.zc, encoding_type="adjacency_one_hot", zc_only=self.zc_only
+                ss_type=self.ss_type, 
+                zc=self.zc, 
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only
             ),
             "omni_ngb": OmniNGBPredictor(
                 zero_cost=["jacov"],

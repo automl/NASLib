@@ -81,6 +81,7 @@ class Bananas(MetaOptimizer):
 
     def query_zc_scores(self, arch):
         zc_scores = {}
+        
         zc_methods = self.get_zero_cost_predictors()
 
         for zc_name, zc_method in zc_methods.items():
@@ -103,11 +104,14 @@ class Bananas(MetaOptimizer):
 
     def _set_scores(self, model):
 
-        model.accuracy = model.arch.query( # FIXME use of ZC api?
-            self.performance_metric, self.dataset, dataset_api=self.dataset_api
-        )
+        if self.use_zc_api:
+            model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
+        else:
+            model.accuracy = model.arch.query(
+                self.performance_metric, self.dataset, dataset_api=self.dataset_api
+            )
         
-        if self.zc:
+        if self.zc and len(self.train_data) <= self.max_zerocost:
             model.zc_scores = self.query_zc_scores(model.arch)
 
         self.train_data.append(model)
@@ -151,7 +155,7 @@ class Bananas(MetaOptimizer):
                 model.accuracy = model.arch.query(
                     self.performance_metric, self.dataset, dataset_api=self.dataset_api
                 )
-                candidates.append(model.arch)
+                candidates.append(model)
 
         elif self.acq_fn_optimization == 'mutation':
             # mutate the k best architectures by x
@@ -165,14 +169,18 @@ class Bananas(MetaOptimizer):
                         arch = self.search_space.clone()
                         arch.mutate(candidate, dataset_api=self.dataset_api)
                         candidate = arch
-                    candidates.append(candidate)
+
+                    model = torch.nn.Module()
+                    model.arch = candidate
+                    model.arch_hash = candidate.get_hash()
+                    candidates.append(model)
 
         else:
             logger.info('{} is not yet supported as a acq fn optimizer'.format(self.encoding_type))
             raise NotImplementedError()
 
         return candidates
-
+        
 
     def new_epoch(self, epoch):
 
@@ -221,34 +229,11 @@ class Bananas(MetaOptimizer):
                 self.next_batch = self._get_best_candidates(candidates, acq_fn)
 
             # train the next architecture chosen by the neural predictor
-            model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
-            model.arch = self.next_batch.pop()
-            model.accuracy = model.arch.query(
-                self.performance_metric, self.dataset, dataset_api=self.dataset_api
-            )
-            if self.zc and len(self.train_data) <= self.max_zerocost:
-                model.zc_scores = self.query_zc_scores(model.arch)
-
-            self._update_history(model)
-            self.train_data.append(model)
+            model = self.next_batch.pop()
+            self._set_scores(model) # FIXME
 
     def _get_best_candidates(self, candidates, acq_fn):
         if self.zc and len(self.train_data) <= self.max_zerocost:
-            for model in candidates:
-                model.zc_scores = self.query_zc_scores(model.arch)
-
-            values = [acq_fn(arch, [{'zero_cost_scores' : model.zc_scores}]) for arch in candidates]
-        else:
-            values = [acq_fn(arch) for arch in candidates]
-
-        sorted_indices = np.argsort(values)
-        choices = [candidates[i] for i in sorted_indices[-self.k:]]
-
-        return choices
-
-    
-    def _get_best_candidates(self, candidates, acq_fn):
-        if self.zc:
             for model in candidates:
                 model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
 
@@ -260,7 +245,6 @@ class Bananas(MetaOptimizer):
         choices = [candidates[i] for i in sorted_indices[-self.k:]]
 
         return choices
-
 
     def _update_history(self, child):
         if len(self.history) < 100:
