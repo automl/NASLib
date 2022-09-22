@@ -133,7 +133,7 @@ class Bananas(MetaOptimizer):
         return xtrain, ytrain
 
     
-    def _get_ensemble(self): # FIXME extend to Zero Cost case
+    def _get_ensemble(self):
         ensemble = Ensemble(num_ensemble=self.num_ensemble,
                             ss_type=self.ss_type,
                             predictor_type=self.predictor_type,
@@ -224,13 +224,13 @@ class Bananas(MetaOptimizer):
                 )
 
                 # optimize the acquisition function to output k new architectures
-                candidates = self._get_new_candidates(ytrain=ytrain) # FIXME whether to store models or architectures?
+                candidates = self._get_new_candidates(ytrain=ytrain)
 
                 self.next_batch = self._get_best_candidates(candidates, acq_fn)
 
             # train the next architecture chosen by the neural predictor
             model = self.next_batch.pop()
-            self._set_scores(model) # FIXME
+            self._set_scores(model)
 
     def _get_best_candidates(self, candidates, acq_fn):
         if self.zc and len(self.train_data) <= self.max_zerocost:
