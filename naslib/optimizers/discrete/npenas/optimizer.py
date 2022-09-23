@@ -9,7 +9,6 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.optimizers.discrete.bananas.acquisition_functions import (
     acquisition_function,
 )
-)
 
 from naslib.predictors.ensemble import Ensemble
 from naslib.predictors.zerocost import ZeroCost
@@ -50,11 +49,11 @@ class Npenas(MetaOptimizer):
         self.next_batch = []
         self.history = torch.nn.ModuleList()
 
-        self.zc = config.search.zc_ensemble
+        self.zc = config.search.zc_ensemble if hasattr(config.search, 'zc_ensemble') else None 
         self.semi = "semi" in self.predictor_type # FIXME go through configs?
         self.zc_api = zc_api
         self.use_zc_api = use_zc_api
-        self.zc_names = config.search.zc_names
+        self.zc_names = config.search.zc_names if hasattr(config.search, 'zc_names') else None 
         self.sample_from_zc_api = zc_api is not None
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
