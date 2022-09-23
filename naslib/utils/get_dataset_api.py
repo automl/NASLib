@@ -4,8 +4,7 @@ import pickle
 from naslib.utils.utils import get_project_root
 from naslib.utils.utils_asr import from_folder
 
-from naslib.utils.nas_201_api import API
-
+from naslib.utils.nb_201_api.api_201 import NASBench201API as API
 
 """
 This file loads any dataset files or api's needed by the Trainer or PredictorEvaluator object.
@@ -64,11 +63,12 @@ def get_nasbench101_api(dataset=None):
 
 #     return {"nb201_data": data}
 
-def get_nasbench201_api(dataset):
+def get_nasbench201_api(dataset): 
     """ Load the NAS-Bench-201 data """
     datafile_path = os.path.join(get_project_root(), 'data', 'NAS-Bench-201-v1_0-e61699.pth')# assert os.path.exists(datafile_path), f'Could not find {datafile_path}. Please download {datafiles[dataset]} from \# https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
     api = API(datafile_path)
-    def data(arch_str, dataset='cifar10', hp='200'): # works only for hp='200' result = api.query_by_arch(arch_str, hp=hp)
+    def data(arch_str, dataset=dataset, hp='200'): # works only for hp='200' 
+        result = api.query_by_arch(arch_str, hp=hp)
         if dataset=='cifar10': 
             result = result.split('\n')[5].replace(' ', '').split(':') 
             test_acc = float(result[2][-7:-2].strip('=')) 

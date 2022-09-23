@@ -5,6 +5,8 @@ import logging
 from torch.autograd import Variable
 import torch.autograd as autograd
 
+import torch.nn.functional as F
+
 
 from naslib.search_spaces.core.primitives import AbstractPrimitive
 from naslib.optimizers.core.metaclasses import MetaOptimizer
@@ -470,15 +472,16 @@ class EPNASOptimizer(MetaOptimizer):
 #         # send the gradient g straight-through on the backward pass.
 #         return g, None
 
-# only one op - randomly according to op categorical probs
+# only one op - randomly according to op one_hot_categorical softmax probs
 class GetSubnet(autograd.Function):
     @staticmethod
     def forward(ctx, scores, k):
         # Get the supermask by sorting the scores and using the top k%
-        out = scores.clone() * 5
+        out = scores.clone() * 10
         # _, idx = scores.flatten().sort()
 
         probs = out.softmax(dim=-1)
+        # print('probs =', probs)
         m = torch.distributions.one_hot_categorical.OneHotCategorical(probs)
         sampled = m.sample()
 
@@ -486,6 +489,7 @@ class GetSubnet(autograd.Function):
 
         # flat_out = torch.zeros_like(out)
         # flat_out[idx] = 1
+        # print('sampled =', sampled)
 
         return sampled
 
@@ -494,8 +498,36 @@ class GetSubnet(autograd.Function):
         # send the gradient g straight-through on the backward pass.
         return g, None
 
+    
+# # only one op - randomly according to op one_hot_categorical ... 1 probs
+# class GetSubnet(autograd.Function):
+#     @staticmethod
+#     def forward(ctx, scores, k):
+#         # Get the supermask by sorting the scores and using the top k%
+#         out = scores.clone() * 100
+#         # _, idx = scores.flatten().sort()
 
-# # only one op - randomly according to op dirichlet probs
+#         out_positive = (F.elu(out) + 1)
+#         probs = out_positive / out_positive.sum(dim=-1)
+#         print('probs =', probs)
+#         m = torch.distributions.one_hot_categorical.OneHotCategorical(probs)
+#         sampled = m.sample()
+
+#         # # idx = out.argmax()
+
+#         # flat_out = torch.zeros_like(out)
+#         # flat_out[idx] = 1
+#         print('sampled =', sampled)
+
+#         return sampled
+
+#     @staticmethod
+#     def backward(ctx, g):
+#         # send the gradient g straight-through on the backward pass.
+#         return g, None
+
+
+# # top k ops - randomly according to op dirichlet probs
 # class GetSubnet(autograd.Function):
 #     @staticmethod
 #     def forward(ctx, scores, k):
@@ -562,7 +594,7 @@ class MixedOp(AbstractPrimitive):
 #             self.add_module("primitive-{}".format(i), primitive)
 
 #     def forward(self, x, edge_data):
-#         sparsity = (1 - EPNASOptimizer.k / 50) * (1 - 1 / len(edge_data.alpha)) + (EPNASOptimizer.k / 50) * 1 / len(edge_data.alpha)
+#         sparsity = (1 - EPNASOptimizer.k / 49) * (1 - 1 / len(edge_data.alpha)) + (EPNASOptimizer.k / 49) * 1 / len(edge_data.alpha)
 #         print('sparsity =', sparsity)
 #         # print('EPNASOptimizer.k =', EPNASOptimizer.k)
 #         if EPNASOptimizer.mask:
@@ -571,6 +603,36 @@ class MixedOp(AbstractPrimitive):
 #             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
 #         else:
 #             mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
+
+#         return mixed_op
+
+#     def get_embedded_ops(self):
+#         return self.primitives
+
+# # interpolating mixed op
+# class MixedOp(AbstractPrimitive):
+#     """
+#     Continous relaxation of the discrete search space.
+#     """
+
+#     def __init__(self, primitives):
+#         super().__init__(locals())
+#         self.primitives = primitives
+#         for i, primitive in enumerate(primitives):
+#             self.add_module("primitive-{}".format(i), primitive)
+
+#     def forward(self, x, edge_data):
+#         # print('EPNASOptimizer.k =', EPNASOptimizer.k)
+#         if EPNASOptimizer.k < 10:
+#             mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
+#         elif EPNASOptimizer.k < 40:
+#             sparsity = (1 - (EPNASOptimizer.k - 10) / 30) * (1 - 1 / len(edge_data.alpha)) + ((EPNASOptimizer.k - 10) / 30) * 1 / len(edge_data.alpha)
+#             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
+#             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
+#         else:
+#             sparsity = 1 / len(edge_data.alpha)
+#             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
+#             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
 
 #         return mixed_op
 

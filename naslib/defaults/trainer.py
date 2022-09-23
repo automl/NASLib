@@ -130,7 +130,7 @@ class Trainer(object):
 
 
 
-                    stats = self.optimizer.step(data_train, data_val, k=e) # remove , k=step
+                    stats = self.optimizer.step(data_train, data_val, k=e) # remove , k=e
                     logits_train, logits_val, train_loss, val_loss = stats
 
                     # stats_outer = self.optimizer.step_outer(data_train, data_val)
@@ -523,6 +523,14 @@ class Trainer(object):
                 self.val_top5.avg,
             )
         )
+
+        # logger.info(
+        #     "Test accuracy = {}".format(
+        #         self.optimizer.get_final_architecture().query(
+        #         metric=Metric.VAL_ACCURACY, dataset=self.config.dataset, dataset_api=api)))
+
+
+
 
         if writer is not None:
             writer.add_scalar('Train accuracy (top 1)', self.train_top1.avg, epoch)

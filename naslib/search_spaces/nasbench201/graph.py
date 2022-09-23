@@ -174,7 +174,8 @@ class NasBench201SearchSpace(Graph):
             return dataset_api["nb201_data"][arch_str]
 
         if dataset in ["cifar10", "cifar10-valid"]:
-            query_results = dataset_api["nb201_data"][arch_str]
+            # query_results = dataset_api["nb201_data"][arch_str]
+            query_results = dataset_api["nb201_data"](arch_str)
             # set correct cifar10 dataset
             dataset = "cifar10-valid"
         elif dataset == "cifar100":
@@ -196,7 +197,8 @@ class NasBench201SearchSpace(Graph):
             return query_results[dataset][metric_to_nb201[metric]][:epoch]
         else:
             # return the value of the metric only at the specified epoch
-            return query_results[dataset][metric_to_nb201[metric]][epoch]
+            # return query_results[dataset][metric_to_nb201[metric]][epoch]
+            return query_results
 
     def get_op_indices(self):
         if self.op_indices is None:
