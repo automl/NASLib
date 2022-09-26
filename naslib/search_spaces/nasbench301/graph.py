@@ -498,6 +498,11 @@ class NasBench301SearchSpace(Graph):
                 [(nodes_in_reduce[0], ops[2]), (nodes_in_reduce[1], ops[3])]
             )
 
+        # convert the lists to tuples
+        compact[0] = tuple(compact[0])
+        compact[1] = tuple(compact[1])
+        compact = tuple(compact)
+
         self.set_compact(compact)
 
     def mutate(self, parent, mutation_rate=1, dataset_api=None):
