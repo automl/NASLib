@@ -36,7 +36,6 @@ from naslib.search_spaces import NasBench201SearchSpace
 
 logger = logging.getLogger(__name__)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("device:", device)
 
 # default parameters from the paper
 n = 1100
