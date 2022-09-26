@@ -466,6 +466,8 @@ class NasBench301SearchSpace(Graph):
 
     def set_compact(self, compact):
         # This will update the edges in the naslib object to match compact
+        assert compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+
         self.compact = compact
         convert_compact_to_naslib(compact, self)
 
