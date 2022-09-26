@@ -14,7 +14,7 @@ from naslib.optimizers import (
 )
 
 from naslib.search_spaces import (
-    DartsSearchSpace,
+    NasBench301SearchSpace,
     SimpleCellSearchSpace,
     NasBench201SearchSpace,
     HierarchicalSearchSpace,
@@ -48,7 +48,7 @@ supported_optimizers = {
 search_space = SimpleCellSearchSpace()
 # search_space = graph.NasBench101SearchSpace()
 # search_space = HierarchicalSearchSpace()
-# search_space = DartsSearchSpace()
+# search_space = NasBench301SearchSpace()
 # search_space = NasBench201SearchSpace()
 
 # Changing the optimizer is one line of code

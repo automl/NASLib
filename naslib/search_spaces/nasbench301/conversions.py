@@ -5,7 +5,7 @@ Genotype = namedtuple("Genotype", "normal normal_concat reduce reduce_concat")
 
 """
 NASLib uses four representations of darts architectures:
-'naslib': the DARTSSearchSpace object
+'naslib': the NasBench301SearchSpace object
 'genotype': representation used in the original DARTS paper
 'compact': representation used in [Li and Talwalkar] and BANANAS (smallest size)
 'config': representation used in nasbench301, based on ConfigSpace
@@ -73,7 +73,7 @@ def convert_genotype_to_naslib(genotype, naslib_object):
     """
     Converts the genotype representation to a naslib object
     input: genotype is the genotype representation
-    naslib_object is an empty DARTSSearchSpace() object.
+    naslib_object is an empty NasBench301SearchSpace() object.
     Do not call this method with a naslib object that has already been
     discretized (i.e., all but 2 incoming edges for each node are pruned).
 

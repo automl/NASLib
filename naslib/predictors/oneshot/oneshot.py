@@ -6,7 +6,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
 from naslib.predictors import Predictor
-from naslib.search_spaces.darts.conversions import convert_naslib_to_genotype
+from naslib.search_spaces.nasbench301.conversions import convert_naslib_to_genotype
 from naslib.search_spaces.nasbench201.conversions import convert_naslib_to_op_indices
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

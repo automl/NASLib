@@ -33,7 +33,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
-    DartsSearchSpace,
+    NasBench301SearchSpace,
     NasBenchNLPSearchSpace,
     TransBench101SearchSpaceMicro,
     TransBench101SearchSpaceMacro,
@@ -150,7 +150,7 @@ supported_predictors = {
 supported_search_spaces = {
     "nasbench101": NasBench101SearchSpace(),
     "nasbench201": NasBench201SearchSpace(),
-    "darts": DartsSearchSpace(),
+    "darts": NasBench301SearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
     'transbench101_macro': TransBench101SearchSpaceMacro(),

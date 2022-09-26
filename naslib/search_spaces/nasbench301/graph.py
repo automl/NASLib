@@ -14,7 +14,7 @@ from ConfigSpace.read_and_write import json as config_space_json_r_w
 from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.darts.conversions import (
+from naslib.search_spaces.nasbench301.conversions import (
     convert_compact_to_naslib,
     convert_naslib_to_compact,
     convert_naslib_to_genotype,
@@ -32,7 +32,7 @@ NUM_VERTICES = 4
 NUM_OPS = 7
 
 
-class DartsSearchSpace(Graph):
+class NasBench301SearchSpace(Graph):
     """
     The search space for CIFAR-10 as defined in
 
@@ -370,7 +370,7 @@ class DartsSearchSpace(Graph):
 
     def load_labeled_architecture(self, dataset_api=None):
         """
-        This is meant to be called by a new DartsSearchSpace() object
+        This is meant to be called by a new NasBench301SearchSpace() object
         (one that has not already been discretized).
         It samples a random architecture from the nasbench301 training data,
         and updates the graph object to match the architecture.
@@ -532,7 +532,7 @@ class DartsSearchSpace(Graph):
                 for op in available:
                     nbr_compact = make_compact_mutable(self.compact)
                     nbr_compact[i][j][1] = op
-                    nbr = DartsSearchSpace()
+                    nbr = NasBench301SearchSpace()
                     nbr.set_compact(nbr_compact)
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr
@@ -549,7 +549,7 @@ class DartsSearchSpace(Graph):
                 for edge in available:
                     nbr_compact = make_compact_mutable(self.compact)
                     nbr_compact[i][j][0] = edge
-                    nbr = DartsSearchSpace()
+                    nbr = NasBench301SearchSpace()
                     nbr.set_compact(nbr_compact)
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr

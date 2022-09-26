@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
-from naslib.search_spaces.darts.primitives import FactorizedReduce
+from naslib.search_spaces.nasbench301.primitives import FactorizedReduce
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.core.primitives import Sequential
 from naslib.search_spaces.core.query_metrics import Metric

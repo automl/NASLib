@@ -6,7 +6,7 @@ import contextlib
 from naslib.search_spaces import (
         NasBench101SearchSpace,
         NasBench201SearchSpace,
-        DartsSearchSpace,
+        NasBench301SearchSpace,
         NasBenchNLPSearchSpace,
         NasBenchASRSearchSpace,
         TransBench101SearchSpaceMacro,
@@ -18,7 +18,7 @@ from naslib.utils import get_dataset_api
 search_spaces = {
     'nasbench101': NasBench101SearchSpace,
     'nasbench201': NasBench201SearchSpace,
-    'darts': DartsSearchSpace,
+    'darts': NasBench301SearchSpace,
     'nlp': NasBenchNLPSearchSpace,
     'asr': NasBenchASRSearchSpace,
     'transbench101_micro': TransBench101SearchSpaceMicro,

@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from naslib.search_spaces.core.primitives import MixedOp
-from naslib.search_spaces.darts.conversions import Genotype
+from naslib.search_spaces.nasbench301.conversions import Genotype
 from naslib.optimizers import DARTSOptimizer
 
 logger = logging.getLogger(__name__)

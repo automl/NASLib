@@ -2,7 +2,7 @@ import torch
 import logging
 
 from naslib.optimizers import OneShotNASOptimizer
-from naslib.search_spaces.darts.conversions import convert_compact_to_genotype
+from naslib.search_spaces.nasbench301.conversions import convert_compact_to_genotype
 
 logger = logging.getLogger(__name__)
 
