@@ -47,7 +47,7 @@ supported_optimizers = {
 supported_search_spaces = {
     'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
-    'darts': NasBench301SearchSpace(),
+    'nasbench301': NasBench301SearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
     'transbench101_macro': TransBench101SearchSpaceMacro(),

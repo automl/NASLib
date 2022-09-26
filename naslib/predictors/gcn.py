@@ -131,7 +131,7 @@ class GCNPredictor(Predictor):
             initial_hidden = 5
         elif self.ss_type == "nasbench201":
             initial_hidden = 7
-        elif self.ss_type == "darts":
+        elif self.ss_type == "nasbench301":
             initial_hidden = 9
         elif self.ss_type == "nlp":
             initial_hidden = 8

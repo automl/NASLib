@@ -145,7 +145,7 @@ def convert_naslib_to_spec(naslib_object) -> Tuple[np.ndarray, List[str]]:
 
 
 def convert_spec_to_naslib(spec, naslib_object):
-    # TODO: write this method similar to how it was written for nasbench201 and darts
+    # TODO: write this method similar to how it was written for nasbench201 and nasbench301
     raise NotImplementedError("Cannot yet convert a spec to naslib object")
 
 

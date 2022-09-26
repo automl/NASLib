@@ -603,7 +603,7 @@ class SemiNASPredictor(Predictor):
             decoder_length = 35
             vocab_size = 9
 
-        elif self.ss_type == "darts":
+        elif self.ss_type == "nasbench301":
             self.max_n = 35
             encoder_length = 629
             decoder_length = 629

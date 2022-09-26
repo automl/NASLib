@@ -45,7 +45,7 @@ supported_optimizers = {
 
 supported_search_space ={
     "nasbench201" : NasBench201SearchSpace(),
-    "darts" : NasBench301SearchSpace()
+    "nasbench301" : NasBench301SearchSpace()
 }
 
 #search_space = NasBench201SearchSpace()

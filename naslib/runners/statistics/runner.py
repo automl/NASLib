@@ -23,7 +23,7 @@ utils.log_args(config)
 supported_search_spaces = {
     "nasbench101": NasBench101SearchSpace(),
     "nasbench201": NasBench201SearchSpace(),
-    "darts": NasBench301SearchSpace(),
+    "nasbench301": NasBench301SearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
     "transbench101_micro": TransBench101SearchSpaceMicro(config.dataset),
     "transbench101_macro": TransBench101SearchSpaceMacro(),
@@ -33,7 +33,7 @@ supported_search_spaces = {
 If the API did not evaluate *all* architectures in the search space, 
 set load_labeled=True
 """
-load_labeled = True if config.search_space in ["darts", "nlp"] else False
+load_labeled = True if config.search_space in ["nasbench301", "nlp"] else False
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 # initialize the search space

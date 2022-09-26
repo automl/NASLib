@@ -60,7 +60,7 @@ class PredictorEvaluator(object):
         if self.search_space.get_type() == "nasbench101":
             self.full_lc = False
             self.hyperparameters = False
-        elif self.search_space.get_type() in ["nasbench201", "darts", 
+        elif self.search_space.get_type() in ["nasbench201", "nasbench301",
                                               "nlp", "transbench101", 
                                               "asr"]:
             self.full_lc = True

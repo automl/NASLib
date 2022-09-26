@@ -16,7 +16,7 @@ class OneShotPredictor(Predictor):
     def __init__(self, config, trainer, model_path=None):
         self.config = config
         self.model = trainer
-        if trainer.optimizer.graph.get_type() == "darts":
+        if trainer.optimizer.graph.get_type() == "nasbench301":
             self.converter = convert_naslib_to_genotype
         else:
             self.converter = convert_naslib_to_op_indices

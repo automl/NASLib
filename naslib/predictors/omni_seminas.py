@@ -658,7 +658,7 @@ class OmniSemiNASPredictor(Predictor):
             self.encoder_length = 35
             self.decoder_length = 35
             self.vocab_size = 9
-        elif self.ss_type == "darts":
+        elif self.ss_type == "nasbench301":
             self.max_n = 35
             self.encoder_length = 629
             self.decoder_length = 629

@@ -53,7 +53,7 @@ class RandomNASOptimizer(OneShotNASOptimizer):
 
         if self.graph.get_type() == "nasbench201":
             sample = tmp_graph.get_op_indices()
-        elif self.graph.get_type() == "darts":
+        elif self.graph.get_type() == "nasbench301":
             sample = convert_compact_to_genotype(tmp_graph.get_compact())
 
         self.set_alphas_from_path(sample)

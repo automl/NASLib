@@ -74,7 +74,7 @@ class NasBench301SearchSpace(Graph):
         self.load_labeled = None
         self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
         self.max_epoch = 97
-        self.space_name = "darts"
+        self.space_name = "nasbench301"
 
         """
         Build the search space with the parameters specified in __init__.
@@ -579,7 +579,7 @@ class NasBench301SearchSpace(Graph):
         return config_space
 
     def get_type(self):
-        return "darts"
+        return "nasbench301"
 
 
 def _set_ops(edge, C, stride):

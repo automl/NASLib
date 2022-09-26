@@ -150,7 +150,7 @@ def get_dataset_api(search_space=None, dataset=None):
     elif search_space == "nasbench201":
         return get_nasbench201_api(dataset=dataset)
 
-    elif search_space == "darts":
+    elif search_space == "nasbench301":
         return get_darts_api(dataset=dataset)
 
     elif search_space == "nlp":
