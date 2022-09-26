@@ -180,7 +180,7 @@ class ToTensor(T.ToTensor):
         if self.new_scale:
             min_val, max_val = self.new_scale
             image *= (max_val - min_val)
-            image += min_valkm
+            image += min_val
         return {'image': image, 'label': label}
     
     

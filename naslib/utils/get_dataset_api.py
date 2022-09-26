@@ -132,7 +132,11 @@ def get_asr_api(dataset=None):
     }
 
 def get_natsbenchsize_api(dataset=None):
-    from nats_bench import create
+    try:
+        from nats_bench import create
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError('No module named \'nats_bench\'. \
+            Please install nats_bench from https://github.com/D-X-Y/NATS-Bench')
 
     # Create the API for size search space
     api = create(None, 'sss', fast_mode=True, verbose=True)

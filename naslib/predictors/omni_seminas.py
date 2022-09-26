@@ -39,7 +39,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # default parameters from the paper
 n = 1100
-# m = 10000
+m = 10000
 nodes = 8
 new_arch = 300
 k = 100
