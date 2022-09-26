@@ -4,9 +4,7 @@ import torch
 import logging
 import numpy as np
 import networkx as nx
-import pickle
 
-from collections import namedtuple
 from torch import nn
 from copy import deepcopy
 from ConfigSpace.read_and_write import json as config_space_json_r_w
@@ -392,6 +390,9 @@ class NasBench301SearchSpace(Graph):
         """
         Query results from nasbench 301
         """
+
+        assert dataset == 'cifar10' or dataset is None, "NAS-Bench-301 supports only CIFAR10 dataset"
+
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: "train_losses",
             Metric.VAL_ACCURACY: "val_accuracies",
@@ -412,7 +413,7 @@ class NasBench301SearchSpace(Graph):
                 Metric.TRAIN_LOSS,
                 Metric.TRAIN_TIME,
                 Metric.HP,
-            ]
+            ], "Only VAL_ACCURACY, TEST_ACCURACY, TRAIN_LOSS, TRAIN_TIME, and HP can be queried for the given model."
             query_results = dataset_api["nb301_data"][self.compact]
 
             if metric == Metric.TRAIN_TIME:
@@ -473,11 +474,16 @@ class NasBench301SearchSpace(Graph):
         # TODO: change it to set_spec on all search spaces
         self.set_compact(make_compact_immutable(compact))
 
-    def sample_random_architecture(self, dataset_api=None):
+    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
+        if load_labeled == True:
+            assert dataset_api is not None, "NAS-Bench-301 API must be passed as argument to sample a trained model"
+            self.load_labeled_architecture(dataset_api=dataset_api)
+            return
+
         compact = [[], []]
         for i in range(NUM_VERTICES):
             ops = np.random.choice(range(NUM_OPS), 4)
