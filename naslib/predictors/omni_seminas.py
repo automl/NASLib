@@ -36,11 +36,10 @@ from naslib.search_spaces import NasBench201SearchSpace
 
 logger = logging.getLogger(__name__)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("device:", device)
 
 # default parameters from the paper
 n = 1100
-# m = 10000
+m = 10000
 nodes = 8
 new_arch = 300
 k = 100
@@ -659,7 +658,7 @@ class OmniSemiNASPredictor(Predictor):
             self.encoder_length = 35
             self.decoder_length = 35
             self.vocab_size = 9
-        elif self.ss_type == "darts":
+        elif self.ss_type == "nasbench301":
             self.max_n = 35
             self.encoder_length = 629
             self.decoder_length = 629

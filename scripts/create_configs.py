@@ -116,7 +116,7 @@ def main(args):
             total_epochs = 108 - 1
         elif args.search_space == "nasbench201":
             total_epochs = 200 - 1
-        elif args.search_space == "darts":
+        elif args.search_space == "nasbench301":
             total_epochs = 96 - 1
         elif args.search_space == "nlp":
             total_epochs = 50 - 1
@@ -230,7 +230,7 @@ def main(args):
         elif args.search_space == "nasbench201":
             total_epochs = 200 - 1
             max_train_size = 1000
-        elif args.search_space == "darts":
+        elif args.search_space == "nasbench301":
             total_epochs = 96 - 1
             max_train_size = 500
         elif args.search_space == "nlp":
@@ -271,12 +271,12 @@ def main(args):
             fidelity_list.pop(0)
             fidelity_list.pop(0)
 
-        elif "omni" in args.predictor and args.search_space != "darts":
+        elif "omni" in args.predictor and args.search_space != "nasbench301":
             train_size_list.pop(0)
             train_size_list.pop(-1)
             fidelity_list.pop(1)
 
-        elif "omni" in args.predictor and args.search_space == "darts":
+        elif "omni" in args.predictor and args.search_space == "nasbench301":
             train_size_list.pop(0)
             train_size_list.pop(-1)
             fidelity_list.pop(1)
@@ -418,7 +418,7 @@ if __name__ == "__main__":
         "--config_type", type=str, default="nas", help="nas or predictor?"
     )
     parser.add_argument(
-        "--search_space", type=str, default="nasbench201", help="nasbench201 or darts?"
+        "--search_space", type=str, default="nasbench201", help="nasbench201 or nasbench301?"
     )
     parser.add_argument(
         "--experiment_type", type=str, default="single", help="type of experiment"

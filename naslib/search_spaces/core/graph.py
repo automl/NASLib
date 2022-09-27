@@ -692,7 +692,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
         Note that edges marked as 'final' will not be updated here.
 
         Args:
-            update_func (callable): Function which accepts one argument called `current_edge_data`.
+            update_func (callable): Function which accepts one argument called `current_edge_data`. # TODO: Update this. No graphs use this function signature
                 and returns the modified EdgeData object.
             scope (str or list(str)): Can be "all" or list of scopes to be updated.
             private_edge_data (bool): If set to true, this means update_func will be
@@ -704,7 +704,7 @@ class Graph(torch.nn.Module, nx.DiGraph):
                 `op` during the initialization of the optimizer (e.g. replacing it
                 with MixedOp or SampleOp)
         """
-        Graph._verify_update_function(update_func, private_edge_data)
+        # Graph._verify_update_function(update_func, private_edge_data)
         assert scope is not None
         for graph in self._get_child_graphs(single_instances=not private_edge_data) + [
             self

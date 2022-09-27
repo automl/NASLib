@@ -11,7 +11,7 @@ import collections.abc as cabc
 
 def get_model_graph(arch_vec, ops=None, minimize=True, keep_dims=False):
     if ops is None:
-        import search_space as ss
+        import search_space as ss # TODO: Fix this
         ops = ss.all_ops
     num_nodes = len(arch_vec)
     mat = np.zeros((num_nodes+2, num_nodes+2))

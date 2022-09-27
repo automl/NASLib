@@ -107,7 +107,7 @@ DARTS_SPACE = [
 SearchSpaceNames = {
     "connect-nas": CONNECT_NAS_BENCHMARK,
     "nas-bench-201": NAS_BENCH_201,
-    "darts": DARTS_SPACE,
+    "nasbench301": DARTS_SPACE,
 }
 
 

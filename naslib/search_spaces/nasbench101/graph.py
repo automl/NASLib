@@ -548,7 +548,7 @@ def get_utilized(matrix):
 
 def num_edges_and_vertices(matrix):
     # return the true number of edges and vertices
-    edges, nodes = self.get_utilized(matrix)
+    edges, nodes = get_utilized(matrix)
     return len(edges), len(nodes)
 
 

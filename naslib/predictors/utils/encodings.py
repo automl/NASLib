@@ -335,7 +335,7 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
         return encode_101(arch, encoding_type=encoding_type)
     elif ss_type == "nasbench201":
         return encode_201(arch, encoding_type=encoding_type)
-    elif ss_type == "darts":
+    elif ss_type == "nasbench301":
         return encode_darts(arch, encoding_type=encoding_type)
     elif ss_type == "nlp":
         return encode_nlp(arch, 
