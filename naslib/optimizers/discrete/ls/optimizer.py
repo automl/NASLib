@@ -1,17 +1,11 @@
-import collections
 import logging
 import torch
-import copy
-import random
-import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.search_spaces.nasbench201.graph import NasBench201SearchSpace
 
-from naslib.utils.utils import AttrDict, count_parameters_in_MB
-from naslib.utils.logging import log_every_n_seconds
+from naslib.utils.utils import count_parameters_in_MB
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +45,7 @@ class LocalSearch(MetaOptimizer):
             # randomly sample initial architectures
             model = (
                 torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            )
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.accuracy = model.arch.query(
@@ -74,7 +68,7 @@ class LocalSearch(MetaOptimizer):
 
                 model = (
                     torch.nn.Module()
-                )  # hacky way to get arch and accuracy checkpointable
+                )
                 model.arch = self.search_space.clone()
                 model.arch.sample_random_architecture(dataset_api=self.dataset_api)
                 model.accuracy = model.arch.query(
@@ -114,7 +108,7 @@ class LocalSearch(MetaOptimizer):
                     self.newest_child_idx = i
                     break
 
-    def train_statistics(self, report_incumbent=True):
+    def train_statistics(self, report_incumbent: bool=True):
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:

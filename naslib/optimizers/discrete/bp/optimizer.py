@@ -1,7 +1,5 @@
-import collections
 import logging
 import torch
-import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
@@ -10,8 +8,7 @@ from naslib.predictors.ensemble import Ensemble
 
 from naslib.search_spaces.core.query_metrics import Metric
 
-from naslib.utils.utils import AttrDict, count_parameters_in_MB
-from naslib.utils.logging import log_every_n_seconds
+from naslib.utils.utils import count_parameters_in_MB
 
 
 logger = logging.getLogger(__name__)
@@ -59,7 +56,7 @@ class BasePredictor(MetaOptimizer):
             # randomly sample initial architectures
             model = (
                 torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            )
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.accuracy = model.arch.query(
@@ -82,7 +79,8 @@ class BasePredictor(MetaOptimizer):
                     predictor_type=self.predictor_type,
                     ss_type=self.search_space.get_type(),
                 )
-                train_error = ensemble.fit(xtrain, ytrain)
+                # train_error = ensemble.fit(xtrain, ytrain)
+                ensemble.fit(xtrain, ytrain)
 
                 xtest = []
                 for i in range(self.test_size):
@@ -98,14 +96,14 @@ class BasePredictor(MetaOptimizer):
                         xtrain=xtrain, ytrain=ytrain, xtest=xtest, test_pred=test_pred
                     )
 
-                sorted_indices = np.argsort(test_pred)[-self.k :]
+                sorted_indices = np.argsort(test_pred)[-self.k:]
                 for i in sorted_indices:
                     self.choices.append(xtest[i])
 
             # train the next chosen architecture
             choice = (
                 torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            )
             choice.arch = self.choices[epoch - self.num_init]
             choice.accuracy = choice.arch.query(
                 self.performance_metric, self.dataset, dataset_api=self.dataset_api

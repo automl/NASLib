@@ -1,21 +1,20 @@
 import collections
 import logging
 import torch
-import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.core.graph import Graph
 
-from naslib.utils.utils import AttrDict, count_parameters_in_MB
+from naslib.utils.utils import count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
 
 logger = logging.getLogger(__name__)
 
 
 class RegularizedEvolution(MetaOptimizer):
-    # training the models is not implemented
     using_step_function = False
 
     def __init__(self, config):
@@ -31,7 +30,7 @@ class RegularizedEvolution(MetaOptimizer):
         self.population = collections.deque(maxlen=self.population_size)
         self.history = torch.nn.ModuleList()
 
-    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
+    def adapt_search_space(self, search_space: Graph, scope: str=None, dataset_api=None):
         assert (
             search_space.QUERYABLE
         ), "Regularized evolution is currently only implemented for benchmarks."
@@ -39,7 +38,7 @@ class RegularizedEvolution(MetaOptimizer):
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
 
-    def new_epoch(self, epoch):
+    def new_epoch(self, epoch: int):
         # We sample as many architectures as we need
         if epoch < self.population_size:
             logger.info("Start sampling architectures to fill the population")
@@ -47,7 +46,7 @@ class RegularizedEvolution(MetaOptimizer):
 
             model = (
                 torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            )
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.accuracy = model.arch.query(
@@ -69,7 +68,7 @@ class RegularizedEvolution(MetaOptimizer):
 
             child = (
                 torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            )
             child.arch = self.search_space.clone()
             child.arch.mutate(parent.arch, dataset_api=self.dataset_api)
             child.accuracy = child.arch.query(
