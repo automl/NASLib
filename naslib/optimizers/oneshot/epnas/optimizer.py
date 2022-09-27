@@ -33,8 +33,8 @@ class EPNASOptimizer(MetaOptimizer):
         Function to add the architectural weights to the edges.
         """
         len_primitives = len(edge.data.op)
-        alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
-        # alpha = torch.nn.Parameter(1e-1 * torch.randn(size=[len_primitives], requires_grad=True))
+        # alpha = torch.nn.Parameter(1e-3 * torch.randn(size=[len_primitives], requires_grad=True))
+        alpha = torch.nn.Parameter(1e-1 * torch.randn(size=[len_primitives], requires_grad=True))
         # alpha = torch.nn.Parameter(torch.randn(size=[len_primitives], requires_grad=True))
         # alpha = torch.nn.Parameter(1e-2 * torch.randn(size=[len_primitives], requires_grad=True))
         # alpha = torch.nn.Parameter(1e-3 * torch.ones(size=[len_primitives], requires_grad=True))
@@ -554,31 +554,31 @@ class GetSubnet(autograd.Function):
 #         return g, None
     
 
-# normal mixed op
-class MixedOp(AbstractPrimitive):
-    """
-    Continous relaxation of the discrete search space.
-    """
+# # normal mixed op
+# class MixedOp(AbstractPrimitive):
+#     """
+#     Continous relaxation of the discrete search space.
+#     """
 
-    def __init__(self, primitives):
-        super().__init__(locals())
-        self.primitives = primitives
-        for i, primitive in enumerate(primitives):
-            self.add_module("primitive-{}".format(i), primitive)
+#     def __init__(self, primitives):
+#         super().__init__(locals())
+#         self.primitives = primitives
+#         for i, primitive in enumerate(primitives):
+#             self.add_module("primitive-{}".format(i), primitive)
 
-    def forward(self, x, edge_data):
-        sparsity = 1 / len(edge_data.alpha)
-        if EPNASOptimizer.mask:
-            # normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
-            masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
-            mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
-        else:
-            mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
+#     def forward(self, x, edge_data):
+#         sparsity = 1 / len(edge_data.alpha)
+#         if EPNASOptimizer.mask:
+#             # normed_alphas = torch.softmax(edge_data.alpha, dim=-1)
+#             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
+#             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
+#         else:
+#             mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
 
-        return mixed_op
+#         return mixed_op
 
-    def get_embedded_ops(self):
-        return self.primitives
+#     def get_embedded_ops(self):
+#         return self.primitives
 
 
 # # interpolating mixed op
@@ -609,32 +609,32 @@ class MixedOp(AbstractPrimitive):
 #     def get_embedded_ops(self):
 #         return self.primitives
 
-# # interpolating mixed op
-# class MixedOp(AbstractPrimitive):
-#     """
-#     Continous relaxation of the discrete search space.
-#     """
+# interpolating mixed op
+class MixedOp(AbstractPrimitive):
+    """
+    Continous relaxation of the discrete search space.
+    """
 
-#     def __init__(self, primitives):
-#         super().__init__(locals())
-#         self.primitives = primitives
-#         for i, primitive in enumerate(primitives):
-#             self.add_module("primitive-{}".format(i), primitive)
+    def __init__(self, primitives):
+        super().__init__(locals())
+        self.primitives = primitives
+        for i, primitive in enumerate(primitives):
+            self.add_module("primitive-{}".format(i), primitive)
 
-#     def forward(self, x, edge_data):
-#         # print('EPNASOptimizer.k =', EPNASOptimizer.k)
-#         if EPNASOptimizer.k < 10:
-#             mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
-#         elif EPNASOptimizer.k < 40:
-#             sparsity = (1 - (EPNASOptimizer.k - 10) / 30) * (1 - 1 / len(edge_data.alpha)) + ((EPNASOptimizer.k - 10) / 30) * 1 / len(edge_data.alpha)
-#             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
-#             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
-#         else:
-#             sparsity = 1 / len(edge_data.alpha)
-#             masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
-#             mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
+    def forward(self, x, edge_data):
+        # print('EPNASOptimizer.k =', EPNASOptimizer.k)
+        if EPNASOptimizer.k < 10:
+            mixed_op = sum(w * op(x, None) for w, op in zip(edge_data.alpha, self.primitives))
+        elif EPNASOptimizer.k < 40:
+            sparsity = (1 - (EPNASOptimizer.k - 10) / 30) * (1 - 1 / len(edge_data.alpha)) + ((EPNASOptimizer.k - 10) / 30) * 1 / len(edge_data.alpha)
+            masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
+            mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
+        else:
+            sparsity = 1 / len(edge_data.alpha)
+            masked_alphas = GetSubnet.apply(edge_data.alpha, sparsity)
+            mixed_op = sum(w * op(x, None) for w, op in zip(masked_alphas, self.primitives))
 
-#         return mixed_op
+        return mixed_op
 
-#     def get_embedded_ops(self):
-#         return self.primitives
+    def get_embedded_ops(self):
+        return self.primitives
