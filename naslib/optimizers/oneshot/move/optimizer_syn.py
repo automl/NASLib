@@ -392,6 +392,10 @@ class Movement_Syn_Optimizer(MetaOptimizer):
             """           
             nonlocal graph_weights
             nonlocal weights_iterator
+            nonlocal epoch
+            nonlocal loss_copy
+            if epoch>0:
+                import ipdb;ipdb.set_trace()
             if edge.data.has("score"):                
                 weight=0
                 for i in range(len(edge.data.op.primitives)):
@@ -435,6 +439,23 @@ class Movement_Syn_Optimizer(MetaOptimizer):
                     except AttributeError:                           
                         size = 1
                         graph_weights.append(torch.abs(edge.data.op.primitives[i].weight).to(device=self.device))
+        
+        def abs_weights(edge):            
+            if edge.data.has("score"):                
+                with torch.no_grad():
+                    for i in range(len(edge.data.op.primitives)):
+                        try:
+                            for j in range(len(edge.data.op.primitives[i].op)):
+                                try:                                
+                                    edge.data.op.primitives[i].op[j].weight=torch.nn.Parameter(torch.abs(edge.data.op.primitives[i].op[j].weight).to(device=self.device))
+                                except (AttributeError, TypeError) as e:
+                                    try:
+                                        for k in range(len(edge.data.op.primitives[i].op[j].op)):                                        
+                                            edge.data.op.primitives[i].op[j].op[k].weight=torch.nn.Parameter(torch.abs(edge.data.op.primitives[i].op[j].op[k].weight).to(device=self.device))
+                                    except AttributeError:
+                                        continue                         
+                        except AttributeError:                           
+                            edge.data.op.primitives[i].weight=torch.nn.Parameter(torch.abs(edge.data.op.primitives[i].weight).to(device=self.device))
         
         def calculate_scores(edge):
             if edge.data.has("score"):
@@ -494,9 +515,11 @@ class Movement_Syn_Optimizer(MetaOptimizer):
             graph_copy = copy.deepcopy(self.graph)
             graph_copy.zero_grad()
             graph_copy.eval()
+            graph_copy.update_edges(abs_weights, scope=self.scope, private_edge_data=True)
             graph_copy.update_edges(save_weights, scope=self.scope, private_edge_data=True)
             loss_copy = graph_copy(ones)
-            torch.sum(loss_copy).backward()
+            logger.info('loss from ones: '+str(torch.sum(loss_copy)))
+            torch.sum(loss_copy).backward()                
             graph_copy.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
             graph_copy.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
             #graph_copy.update_edges(get_copy_scores, scope=self.scope, private_edge_data=True)             
@@ -504,14 +527,15 @@ class Movement_Syn_Optimizer(MetaOptimizer):
             graph_weights=[]
             #scores_from_copy = []
         if epoch >= self.warm_start_epochs and self.count_masking%self.masking_interval==0:
-            graph_copy = copy.deepcopy(self.graph)
-            graph_copy.zero_grad()
-            graph_copy.eval()
-            graph_copy.update_edges(save_weights, scope=self.scope, private_edge_data=True)
-            loss_copy = graph_copy(ones)
-            torch.sum(loss_copy).backward()
-            graph_copy.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
-            graph_copy.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
+            #graph_copy = copy.deepcopy(self.graph)
+            #graph_copy.zero_grad()
+            #graph_copy.eval()
+            #graph_copy.update_edges(abs_weights, scope=self.scope, private_edge_data=True)
+            #graph_copy.update_edges(save_weights, scope=self.scope, private_edge_data=True)
+            #loss_copy = graph_copy(ones)
+            #torch.sum(loss_copy).backward()
+            #graph_copy.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
+            #graph_copy.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
             graph_copy.update_edges(get_copy_scores, scope=self.scope, private_edge_data=True)              
             self.graph.update_edges(masking, scope=self.scope, private_edge_data=True)
             self.k_initialized = k_initialized
