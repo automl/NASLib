@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --output=slurm/nb201_%A_%a.out
 #SBATCH --error=slurm/nb201_%A_%a.err
-#SBATCH -a [1-240]%25
+#SBATCH -a [1-500]%10
 
 
 count=1
@@ -19,7 +19,7 @@ instantenous="True False"
 dataset="cifar10"
 masking_interval=(5 10 15 20)
 search_space="nasbench201"
-training_portion=(95)
+training_portion=(10 50)
 batch_size=128
 optimizer="movement movement_test"
 abs="False"
@@ -41,9 +41,9 @@ do
                                         do
                                                 for sd in $seed
                                                 do
-	                                                for opt in $optimizer
+                                                	for opt in $optimizer
 	                                                do
-	                                                        ((mask_epochs=m*5))
+	                                                        ((mask_epochs=m*4))
 	                                                        ((data_size=tp*500))
 	                                                        ((epochs=wst+mask_epochs))
 	                                                        if [[ tp -eq 10 ]]
@@ -58,7 +58,7 @@ do
 	                                                        if [[ $opt == 'movement' ]]                                                  
 	                                                        then
 	                                                                abs="True"
-	                                                        else
+		                                                        else
 	                                                                abs="False"
 	                                                        fi
 	                                                        out_dir="${base_path}/warm_${wst}_mask_${m}_train_${train_p}_inst_${ac}_abs_${abs}"

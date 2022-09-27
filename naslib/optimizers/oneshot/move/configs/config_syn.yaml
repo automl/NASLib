@@ -1,8 +1,8 @@
 dataset: cifar10
 seed: 10
 search_space: nasbench201
-out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/looping_500_40_1_nb201
-optimizer: movement
+out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/syn_warm_5_mask_1_inst_True
+optimizer: movement_syn
 
 search:
  
@@ -12,7 +12,7 @@ search:
   warm_start_epochs: 5
   masking_interval: 1
   train_portion: 0.1
-  data_size: 5000
+  data_size: 47500
   batch_size: 128
   
   # BANANAS

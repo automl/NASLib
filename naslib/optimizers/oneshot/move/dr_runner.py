@@ -15,11 +15,7 @@ from naslib.optimizers import (
     LocalSearch,
     Bananas,
     BasePredictor,
-    GSparseOptimizer,
-    MovementOptimizer,
     DrNASOptimizer,
-    MovementOptimizer_test,
-    Movement_Syn_Optimizer,
 )
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace, NasBench101SearchSpace, NATSBenchSizeSearchSpace
@@ -44,11 +40,7 @@ supported_optimizers = {
     "ls": RandomSearch(config),
     "bananas": Bananas(config),
     "bp": BasePredictor(config),
-    "gsparsity": GSparseOptimizer(config),
-    "movement": MovementOptimizer(config),
     "drnas": DrNASOptimizer(config),
-    "movement_test" : MovementOptimizer_test(config),
-    "movement_syn" : Movement_Syn_Optimizer(config)
 }
 
 if config.dataset =='cifar100':

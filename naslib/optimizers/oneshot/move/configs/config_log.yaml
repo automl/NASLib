@@ -1,7 +1,7 @@
 dataset: cifar10
 seed: 10
 search_space: nasbench201
-out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/looping_500_40_1_nb201
+out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/log_nb201
 optimizer: movement
 
 search:

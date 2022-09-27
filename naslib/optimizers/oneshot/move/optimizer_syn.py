@@ -21,13 +21,14 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.optimizers.oneshot.gsparsity.ProxSGD_for_groups import ProxSGD
 import naslib.search_spaces.core.primitives as primitives
 
+import copy
 import numpy as np
 import os
 
 logger = logging.getLogger(__name__)
 
 
-class MovementOptimizer(MetaOptimizer):
+class Movement_Syn_Optimizer(MetaOptimizer):
     """
     Implements a novel group pruning approach inspired by
     Victor Sanh, et. al.: Movement Pruning: Adaptive Sparsity by Fine-Tuning
@@ -56,7 +57,7 @@ class MovementOptimizer(MetaOptimizer):
             loss_criteria: The loss.
             grad_clip (float): Clipping of the gradients. Default None.
         """
-        super(MovementOptimizer, self).__init__()
+        super(Movement_Syn_Optimizer, self).__init__()
 
         self.config = config        
         self.op_optimizer = op_optimizer
@@ -374,6 +375,8 @@ class MovementOptimizer(MetaOptimizer):
         normalization_exponent=self.normalization_exponent
         instantenous = self.instantenous
         k_changed_this_epoch = False
+        graph_weights=[]
+        weights_iterator=0
 
         
         def update_l2_weights(edge):            
@@ -386,31 +389,52 @@ class MovementOptimizer(MetaOptimizer):
 
             edge.data.weights is being used to accumulate scores over all groups
             edge.data.scores is then used to store the scores of a group of operations across cells
-            """            
+            """           
+            nonlocal graph_weights
+            nonlocal weights_iterator
             if edge.data.has("score"):                
-                weight=0.0                
-                group_dim=torch.zeros(1)
+                weight=0
                 for i in range(len(edge.data.op.primitives)):
                     try:
                         for j in range(len(edge.data.op.primitives[i].op)):
                             try:                                
-                                group_dim += 1                                
-                                weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
+                                weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*graph_weights[weights_iterator]).to(device='cpu')
+                                weights_iterator+=1
                             except (AttributeError, TypeError) as e:
                                 try:
                                     for k in range(len(edge.data.op.primitives[i].op[j].op)):                                        
-                                        group_dim += 1                                        
-                                        weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
+                                        weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*graph_weights[weights_iterator]).to(device='cpu')
+                                        weights_iterator+=1
                                 except AttributeError:
                                     continue                         
                         edge.data.weights[i]+=weight
-                        edge.data.dimension[i]+=group_dim.item()                                                                         
                         weight=0.0                        
                         group_dim=torch.zeros(1)
                     except AttributeError:                           
                         size = 1
-                        edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
-                        edge.data.dimension[i]+=size
+                        edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*graph_weights[weights_iterator]).to(device='cpu')
+                        weights_iterator+=1
+        
+        def save_weights(edge):            
+            nonlocal graph_weights
+            if edge.data.has("score"):                
+                weight=0.0                
+                for i in range(len(edge.data.op.primitives)):
+                    try:
+                        for j in range(len(edge.data.op.primitives[i].op)):
+                            try:                                
+                                graph_weights.append(torch.abs(edge.data.op.primitives[i].op[j].weight).to(device=self.device))
+                            except (AttributeError, TypeError) as e:
+                                try:
+                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):                                        
+                                        graph_weights.append(torch.abs(edge.data.op.primitives[i].op[j].op[k].weight).to(device=self.device))
+                                except AttributeError:
+                                    continue                         
+                        edge.data.weights[i]+=weight
+                        weight=0.0                        
+                    except AttributeError:                           
+                        size = 1
+                        graph_weights.append(torch.abs(edge.data.op.primitives[i].weight).to(device=self.device))
         
         def calculate_scores(edge):
             if edge.data.has("score"):
@@ -427,14 +451,27 @@ class MovementOptimizer(MetaOptimizer):
 
         k_initialized = self.k_initialized
         k = self.k
+        scores_from_copy = []
+        iterate_copy = 0
+        ones = torch.ones([128,3,32,32]).cuda()
+
+        def get_copy_scores(edge):
+            nonlocal scores_from_copy
+            if edge.data.has("score"):
+                scores_from_copy.append(torch.clone(edge.data.score).detach().cpu())
+
         def masking(edge):
             nonlocal k_changed_this_epoch
             nonlocal epoch     
             nonlocal k_initialized
             nonlocal k
+            nonlocal scores_from_copy
+            nonlocal iterate_copy
             k_initialized = True
             if edge.data.has("score"):
-                scores = torch.clone(edge.data.score).detach().cpu()
+                #scores = torch.clone(edge.data.score).detach().cpu()
+                scores = scores_from_copy[iterate_copy]
+                iterate_copy += 1
                 edge.data.mask[torch.topk(torch.abs(scores), k=k, largest=False, sorted=False)[1]]=0                
                 if k < len(edge.data.op.primitives)-1 and not k_changed_this_epoch:
                     k += 1                                       
@@ -453,21 +490,44 @@ class MovementOptimizer(MetaOptimizer):
                     if instantenous:
                         edge.data.score[i]=0
 
-        if epoch > 0:
-            self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
-            self.graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
+        if epoch >= 0:
+            graph_copy = copy.deepcopy(self.graph)
+            graph_copy.zero_grad()
+            graph_copy.eval()
+            graph_copy.update_edges(save_weights, scope=self.scope, private_edge_data=True)
+            loss_copy = graph_copy(ones)
+            torch.sum(loss_copy).backward()
+            graph_copy.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
+            graph_copy.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
+            #graph_copy.update_edges(get_copy_scores, scope=self.scope, private_edge_data=True)             
+            weights_iterator=0
+            graph_weights=[]
+            #scores_from_copy = []
         if epoch >= self.warm_start_epochs and self.count_masking%self.masking_interval==0:
+            graph_copy = copy.deepcopy(self.graph)
+            graph_copy.zero_grad()
+            graph_copy.eval()
+            graph_copy.update_edges(save_weights, scope=self.scope, private_edge_data=True)
+            loss_copy = graph_copy(ones)
+            torch.sum(loss_copy).backward()
+            graph_copy.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
+            graph_copy.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
+            graph_copy.update_edges(get_copy_scores, scope=self.scope, private_edge_data=True)              
             self.graph.update_edges(masking, scope=self.scope, private_edge_data=True)
             self.k_initialized = k_initialized
-            self.k = k            
+            self.k = k           
+            scores_from_copy = []
+            iterate_copy = 0
+            weights_iterator=0
+            graph_weights=[]
 
-        for score in self.graph.get_all_edge_data("score"):                        
+        for score in graph_copy.get_all_edge_data("score"):                        
             with torch.no_grad():                
                 self.score.append(score)
             
         weights_str = [
             ", ".join(["{:+.10f}".format(x) for x in a])
-            + ", {}".format(np.max(torch.abs(a).detach().cpu().numpy()))
+            + ", {}".format(np.argmax(torch.abs(a).detach().cpu().numpy()))
             for a in self.score
         ]
         logger.info(
@@ -488,7 +548,7 @@ class MovementOptimizer(MetaOptimizer):
                 with torch.no_grad():
                     all_scores.append(edge.data.score)
 
-        self.graph.update_edges(save_score, scope=self.scope, private_edge_data=True)
+        graph_copy.update_edges(save_score, scope=self.scope, private_edge_data=True)
         mk_path = self.path.replace('/scores.pth','')
         os.makedirs(mk_path, exist_ok=True)
         torch.save(all_scores, self.path)

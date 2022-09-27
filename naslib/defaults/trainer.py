@@ -257,6 +257,7 @@ class Trainer(object):
         best_arch:Graph=None,
         dataset_api:object=None,
         metric:Metric=None,
+        api:object=None,
     ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -287,16 +288,25 @@ class Trainer(object):
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
         if best_arch.QUERYABLE and self.config.search_space=='nasbench201':
-            from nas_201_api import NASBench201API as API #pip install nas-bench-201
+            #from nas_201_api import NASBench201API as API #pip install nas-bench-201
             from naslib.search_spaces.nasbench201.conversions import convert_naslib_to_str
-            api = API("/work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/data/NAS-Bench-201-v1_1-096897.pth") #path to the API please refer to https://github.com/D-X-Y/NAS-Bench-201 for downloading
+            #api = API("/work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/data/NAS-Bench-201-v1_1-096897.pth") #path to the API please refer to https://github.com/D-X-Y/NAS-Bench-201 for downloading
             #api = API("/work/dlclarge2/agnihotr-ml/NASLib/naslib/data/NAS-Bench-201-v1_0-e61699.pth")
+            if api==None:
+                from nas_201_api import NASBench201API as API #pip install nas-bench-201
+                api = API("/work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/data/NAS-Bench-201-v1_1-096897.pth") #path to the API please refer to https://github.com/D-X-Y/NAS-Bench-201 for downloading
+
             index = api.query_index_by_arch(convert_naslib_to_str(best_arch))
             #import ipdb;ipdb.set_trace()
             cifar10_acc = api.get_more_info(index, 'cifar10', hp='200', is_random=False)['test-accuracy']
             cifar100_acc = api.get_more_info(index, 'cifar100', hp='200', is_random=False)['test-accuracy']
             img_acc = api.get_more_info(index, 'ImageNet16-120', hp='200', is_random=False)['test-accuracy']
             logger.info("TEST ACCURACIES: \n\t{}: {}\n\t{}: {}\n\t{}: {}".format('cifar10', cifar10_acc, 'cifar100', cifar100_acc, 'ImageNet16-120', img_acc))
+            self.best_c10_acc = cifar10_acc
+            self.best_c100_acc = cifar100_acc
+            self.best_img_acc = img_acc
+            self.model_path = search_model
+            self.architecture = best_arch.modules_str()
 
         if best_arch.QUERYABLE:
             if metric is None:
@@ -306,6 +316,7 @@ class Trainer(object):
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
             logger.info("Queried results ({}): {}".format(metric, result))
+            self.val_acc = result
         else:
             best_arch.to(self.device)
             if retrain:
