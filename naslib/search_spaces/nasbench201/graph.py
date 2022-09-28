@@ -220,6 +220,7 @@ class NasBench201SearchSpace(Graph):
 
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
+        assert self.op_indices is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
         self.op_indices = op_indices
 
         if self.instantiate_model == True:

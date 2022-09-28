@@ -151,6 +151,7 @@ class NasBench101SearchSpace(Graph):
     def set_spec(self, spec, dataset_api=None):
         # TODO: convert the naslib object to this spec
         # convert_spec_to_naslib(spec, self)
+        assert self.spec is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
 
         if isinstance(spec, str):
             """
