@@ -284,7 +284,7 @@ class Trainer(object):
             self._setup_checkpointers(search_model)  # required to load the architecture
 
             best_arch = self.optimizer.get_final_architecture()
-        logger.info("Final architecture:\n" + best_arch.modules_str())
+        logger.info(f"Final architecture hash: {best_arch.get_hash()}")
 
         if best_arch.QUERYABLE:
             if metric is None:
@@ -493,12 +493,10 @@ class Trainer(object):
 
     def _log_and_reset_accuracies(self, epoch, writer=None):
         logger.info(
-            "Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
+            "Epoch {} done. Train accuracy: {:.5f}, Validation accuracy: {:.5f}".format(
                 epoch,
                 self.train_top1.avg,
-                self.train_top5.avg,
                 self.val_top1.avg,
-                self.val_top5.avg,
             )
         )
 
