@@ -58,7 +58,7 @@ class Trainer(object):
 
         n_parameters = optimizer.get_model_size()
         logger.info("param size = %fMB", n_parameters)
-        self.errors_dict = utils.AttrDict(
+        self.search_trajectory = utils.AttrDict(
             {
                 "train_acc": [],
                 "train_loss": [],
@@ -151,11 +151,11 @@ class Trainer(object):
 
                 end_time = time.time()
 
-                self.errors_dict.train_acc.append(self.train_top1.avg)
-                self.errors_dict.train_loss.append(self.train_loss.avg)
-                self.errors_dict.valid_acc.append(self.val_top1.avg)
-                self.errors_dict.valid_loss.append(self.val_loss.avg)
-                self.errors_dict.runtime.append(end_time - start_time)
+                self.search_trajectory.train_acc.append(self.train_top1.avg)
+                self.search_trajectory.train_loss.append(self.train_loss.avg)
+                self.search_trajectory.valid_acc.append(self.val_top1.avg)
+                self.search_trajectory.valid_loss.append(self.val_loss.avg)
+                self.search_trajectory.runtime.append(end_time - start_time)
             else:
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
@@ -168,14 +168,14 @@ class Trainer(object):
                 ) = self.optimizer.train_statistics(report_incumbent)
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
-                self.errors_dict.train_acc.append(train_acc)
-                self.errors_dict.train_loss.append(train_loss)
-                self.errors_dict.valid_acc.append(valid_acc)
-                self.errors_dict.valid_loss.append(valid_loss)
-                self.errors_dict.test_acc.append(test_acc)
-                self.errors_dict.test_loss.append(test_loss)
-                self.errors_dict.runtime.append(end_time - start_time)
-                self.errors_dict.train_time.append(train_time)
+                self.search_trajectory.train_acc.append(train_acc)
+                self.search_trajectory.train_loss.append(train_loss)
+                self.search_trajectory.valid_acc.append(valid_acc)
+                self.search_trajectory.valid_loss.append(valid_loss)
+                self.search_trajectory.test_acc.append(test_acc)
+                self.search_trajectory.test_loss.append(test_loss)
+                self.search_trajectory.runtime.append(end_time - start_time)
+                self.search_trajectory.train_time.append(train_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
@@ -184,7 +184,7 @@ class Trainer(object):
             anytime_results = self.optimizer.test_statistics()
             if anytime_results:
                 # record anytime performance
-                self.errors_dict.arch_eval.append(anytime_results)
+                self.search_trajectory.arch_eval.append(anytime_results)
                 log_every_n_seconds(
                     logging.INFO,
                     "Epoch {}, Anytime results: {}".format(e, anytime_results),
@@ -240,9 +240,9 @@ class Trainer(object):
 
             end_time = time.time()
 
-            self.errors_dict.valid_acc.append(self.val_top1.avg)
-            self.errors_dict.valid_loss.append(self.val_loss.avg)
-            self.errors_dict.runtime.append(end_time - start_time)
+            self.search_trajectory.valid_acc.append(self.val_top1.avg)
+            self.search_trajectory.valid_loss.append(self.val_loss.avg)
+            self.search_trajectory.runtime.append(end_time - start_time)
 
             self._log_to_json()
 
@@ -597,12 +597,12 @@ class Trainer(object):
             with codecs.open(
                 os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                json.dump(self.errors_dict, file, separators=(",", ":"))
+                json.dump(self.search_trajectory, file, separators=(",", ":"))
         else:
             with codecs.open(
                 os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                lightweight_dict = copy.deepcopy(self.errors_dict)
+                lightweight_dict = copy.deepcopy(self.search_trajectory)
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(",", ":"))
