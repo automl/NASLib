@@ -293,6 +293,7 @@ class Trainer(object):
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
             logger.info("Queried results ({}): {}".format(metric, result))
+            return result
         else:
             best_arch.to(self.device)
             if retrain:
@@ -451,6 +452,8 @@ class Trainer(object):
                     top1.avg, top5.avg
                 )
             )
+
+            return top1.avg
 
     @staticmethod
     def build_search_dataloaders(config):
