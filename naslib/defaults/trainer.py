@@ -182,9 +182,10 @@ class Trainer(object):
             self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
-            if anytime_results:
+            # if anytime_results:
                 # record anytime performance
-                self.search_trajectory.arch_eval.append(anytime_results)
+                ...
+                # self.search_trajectory.arch_eval.append(anytime_results)
                 # log_every_n_seconds(
                 #     logging.INFO,
                 #     "Epoch {}, Anytime results: {}".format(e, anytime_results),
