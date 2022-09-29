@@ -184,7 +184,6 @@ class Trainer(object):
             anytime_results = self.optimizer.test_statistics()
             # if anytime_results:
                 # record anytime performance
-                ...
                 # self.search_trajectory.arch_eval.append(anytime_results)
                 # log_every_n_seconds(
                 #     logging.INFO,
