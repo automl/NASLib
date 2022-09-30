@@ -1,6 +1,7 @@
 export OMP_NUM_THREADS=2
 # optimizers=(rs)
-optimizers=(rs re ls npenas bananas)
+# optimizers=(rs re ls npenas bananas)
+optimizers=(npenas bananas)
 
 start_seed=$1
 if [ -z "$start_seed" ]

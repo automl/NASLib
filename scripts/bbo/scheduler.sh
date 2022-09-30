@@ -1,6 +1,6 @@
 search_space=$1
 
-dataset_dir="/home/mehtay/research/NASLib/naslib/configs/bbo/configs_cpu/$search_space/*"
+dataset_dir="/home/robertsj/NASLib/naslib/configs/bbo/configs_cpu/$search_space/*"
  
 for optimizer_dir in $dataset_dir/*
 do 
@@ -8,7 +8,8 @@ do
 	for config_dir in $optimizer_dir/*
 	do
 		echo starting to run ${config_dir} across 10 seeds ...
-		sbatch submit_folder.sh $config_dir
+		# sbatch submit_folder.sh $config_dir
+		bash submit_folder.sh $config_dir # for srun node testing
 		
 	done
 done
