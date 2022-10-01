@@ -1,5 +1,6 @@
 import os
 import pickle
+import json
 
 from naslib.utils.utils import get_project_root
 from naslib.utils.utils_asr import from_folder
@@ -10,8 +11,20 @@ They must be loaded outside of the search space object, because search spaces ar
 throughout the discrete NAS algos, which would lead to memory errors.
 """
 
+
+def get_zc_benchmark_api(search_space, dataset):
+
+    datafile_path = os.path.join(
+        get_project_root(), "data", f"zc_{search_space}.json")
+    with open(datafile_path) as f:
+        data = json.load(f)
+
+    return data[dataset]
+
+
 def get_transbench101_api(dataset=None):
-    datafile_path = os.path.join(get_project_root(), "data", "transnas-bench_v10141024.pth")
+    datafile_path = os.path.join(
+        get_project_root(), "data", "transnas-bench_v10141024.pth")
     assert os.path.exists(datafile_path), f"Could not fine {datafile_path}. Please download transnas-bench_v10141024.pth\
  from https://www.noahlab.com.hk/opensource/vega/page/doc.html?path=datasets/transnasbench101"
 
@@ -24,7 +37,8 @@ def get_nasbench101_api(dataset=None):
     # load nasbench101
     import naslib.utils.nb101_api as api
 
-    nb101_datapath = os.path.join(get_project_root(), "data", "nasbench_only108.pkl")
+    nb101_datapath = os.path.join(
+        get_project_root(), "data", "nasbench_only108.pkl")
     assert os.path.exists(nb101_datapath), f"Could not find {nb101_datapath}. Please download nasbench_only108.pk \
 from https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa"
 
@@ -42,7 +56,8 @@ def get_nasbench201_api(dataset=None):
         'ImageNet16-120': 'nb201_ImageNet16_full_training.pickle'
     }
 
-    datafile_path = os.path.join(get_project_root(), 'data', datafiles[dataset])
+    datafile_path = os.path.join(
+        get_project_root(), 'data', datafiles[dataset])
     assert os.path.exists(datafile_path), f'Could not find {datafile_path}. Please download {datafiles[dataset]} from \
 https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
 
@@ -67,8 +82,8 @@ def get_nasbench301_api(dataset):
     nb_models_path = os.path.join(download_path, "nb_models_1.0")
     os.makedirs(download_path, exist_ok=True)
 
-    nb301_model_path=os.path.join(nb_models_path, "xgb_v1.0")
-    nb301_runtime_path=os.path.join(nb_models_path, "lgb_runtime_v1.0")
+    nb301_model_path = os.path.join(nb_models_path, "xgb_v1.0")
+    nb301_runtime_path = os.path.join(nb_models_path, "lgb_runtime_v1.0")
     data_path = os.path.join(download_path, "nb301_full_training.pickle")
 
     if not all(os.path.exists(model) for model in [nb301_model_path,
@@ -80,9 +95,12 @@ def get_nasbench301_api(dataset):
 https://figshare.com/articles/software/nasbench301_models_v1_0_zip/13061510"
 
     # Verify the model and data files exist
-    assert os.path.exists(nb_models_path), f"Could not find {nb_models_path}. {models_not_found_msg}"
-    assert os.path.exists(nb301_model_path), f"Could not find {nb301_model_path}. {models_not_found_msg}"
-    assert os.path.exists(nb301_runtime_path), f"Could not find {nb301_runtime_path}. {models_not_found_msg}"
+    assert os.path.exists(
+        nb_models_path), f"Could not find {nb_models_path}. {models_not_found_msg}"
+    assert os.path.exists(
+        nb301_model_path), f"Could not find {nb301_model_path}. {models_not_found_msg}"
+    assert os.path.exists(
+        nb301_runtime_path), f"Could not find {nb301_runtime_path}. {models_not_found_msg}"
 
     performance_model = nasbench301.load_ensemble(nb301_model_path)
     runtime_model = nasbench301.load_ensemble(nb301_runtime_path)
@@ -98,14 +116,18 @@ https://figshare.com/articles/software/nasbench301_models_v1_0_zip/13061510"
         "nb301_model": nb301_model,
     }
 
+
 def get_nlp_api(dataset=None):
     nb_model_path = os.path.join(get_project_root(), "data", "nbnlp_v01")
-    nb_nlp_data_path = os.path.join(get_project_root(), "data", "nb_nlp.pickle")
+    nb_nlp_data_path = os.path.join(
+        get_project_root(), "data", "nb_nlp.pickle")
 
     data_not_found_msg = "Please download the files from https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa"
 
-    assert os.path.exists(nb_model_path), f"Could not find {nb_model_path}. {data_not_found_msg}"
-    assert os.path.exists(nb_nlp_data_path), f"Could not find {nb_nlp_data_path}. {data_not_found_msg}"
+    assert os.path.exists(
+        nb_model_path), f"Could not find {nb_model_path}. {data_not_found_msg}"
+    assert os.path.exists(
+        nb_nlp_data_path), f"Could not find {nb_nlp_data_path}. {data_not_found_msg}"
 
     # Load the NAS-Bench-NLP data
     with open(nb_nlp_data_path, "rb") as f:
@@ -124,7 +146,7 @@ def get_nlp_api(dataset=None):
     return {
         "nlp_data": nlp_data,
         "nlp_arches": nlp_arches,
-        "nlp_model":performance_model,
+        "nlp_model": performance_model,
     }
 
 
@@ -137,6 +159,7 @@ def get_asr_api(dataset=None):
         'asr_data': d,
     }
 
+
 def get_natsbenchsize_api(dataset=None):
     try:
         from nats_bench import create
@@ -147,6 +170,7 @@ def get_natsbenchsize_api(dataset=None):
     # Create the API for size search space
     api = create(None, 'sss', fast_mode=True, verbose=True)
     return api
+
 
 def get_dataset_api(search_space=None, dataset=None):
 
@@ -176,4 +200,3 @@ def get_dataset_api(search_space=None, dataset=None):
 
     else:
         raise NotImplementedError()
-
