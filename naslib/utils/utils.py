@@ -209,6 +209,8 @@ def get_config_from_args(args=None, config_type="nas"):
         )
 
     elif config_type == "bbo-bs":
+        if not hasattr(config, 'evaluation'):
+            config.evaluation = CfgNode()   
         config.search.seed = config.seed
         config.evaluation.world_size = args.world_size
         config.gpu = config.search.gpu = config.evaluation.gpu = args.gpu

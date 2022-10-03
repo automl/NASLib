@@ -54,6 +54,7 @@ dataset_api = get_dataset_api(config.search_space, config.dataset)
 utils.set_seed(config.seed)
 
 search_space = supported_search_spaces[config.search_space]
+search_space.instantiate_model = False
 
 metric = Metric.VAL_ACCURACY if config.search_space == 'nasbench301' else None
 

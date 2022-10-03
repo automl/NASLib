@@ -27,7 +27,7 @@ class Bananas(MetaOptimizer):
     # training the models is not implemented
     using_step_function = False
 
-    def __init__(self, config, zc_api=None, use_zc_api=None):
+    def __init__(self, config, zc_api=None, use_zc_api=False, zc_only=False):
         super().__init__()
         self.config = config
         self.epochs = config.search.epochs
@@ -56,7 +56,8 @@ class Bananas(MetaOptimizer):
         self.zc_api = zc_api
         self.use_zc_api = use_zc_api
         self.zc_names = config.search.zc_names if hasattr(config.search, 'zc_names') else None 
-        self.sample_from_zc_api = zc_api is not None
+        self.sample_from_zc_api = zc_api
+        self.zc_only = zc_only
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -119,11 +120,14 @@ class Bananas(MetaOptimizer):
 
 
     def _sample_new_model(self):
-        self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
+        # self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
 
         model = torch.nn.Module()
-        model.arch_hash = self.search_space.get_hash()
-        model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
+        model.arch = self.search_space.clone()
+        model.arch.sample_random_architecture(dataset_api=self.dataset_api,load_labeled=self.sample_from_zc_api)
+        model.arch_hash = model.arch.get_hash()
+        
+        # model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
 
         return model
     
@@ -137,8 +141,8 @@ class Bananas(MetaOptimizer):
         ensemble = Ensemble(num_ensemble=self.num_ensemble,
                             ss_type=self.ss_type,
                             predictor_type=self.predictor_type,
-                            zc=self.config.search.zc_ensemble,
-                            zc_only=self.config.search.zc_only,
+                            zc=self.zc,
+                            zc_only=self.zc_only,
                             config=self.config)
         
         return ensemble
@@ -186,12 +190,12 @@ class Bananas(MetaOptimizer):
 
         if epoch < self.num_init:
             model = self._sample_new_model()
-            self.set_scores(model)
+            self._set_scores(model)
         else:
             if len(self.next_batch) == 0:
                 # train a neural predictor
                 xtrain, ytrain = self._get_train()
-                ensemble = self._get_ensemble() # FIXME extend to Zero Cost case
+                ensemble = self._get_ensemble()
 
                 if self.semi:
                     # create unlabeled data and pass it to the predictor

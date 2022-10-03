@@ -12,7 +12,7 @@ echo "Workingdir: $PWD";
 echo "Started at $(date)";
 echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node with given JID $SLURM_JOB_ID on queue $SLURM_JOB_PARTITION";
 
-user="jhaa"
+user="robertsj"
 
 SCRIPT_DIR="/home/$user/NASLib/scripts/vscode_remote_debugging"
 while read var value
@@ -22,21 +22,21 @@ done < $SCRIPT_DIR/config.conf
 
 runner_dir="/home/$user/NASLib/naslib/runners/bbo"
 
-source $CONDA_SOURCE
-conda activate $CONDA_ENV
+# source $CONDA_SOURCE
+# conda activate $CONDA_ENV
 
 # python -u $runner_dir/runner.py --config-file $1
 
 for config_file_seed in $1/*
     do
         echo submitted ${config_file_seed}
-        python -u $runner_dir/runner.py --config-file $config_file_seed
-        # python -u -m debugpy --listen 0.0.0.0:$PORT --wait-for-client $runner_dir/runner.py --config-file $config_file_seed
+        # python -u $runner_dir/runner.py --config-file $config_file_seed
+        python -u -m debugpy --listen 0.0.0.0:$PORT --wait-for-client $runner_dir/runner.py --config-file $config_file_seed
     done
  
 # echo $COMMAND;
 # eval $COMMAND;
 
-conda deactivate
+# conda deactivate
 echo "DONE";
 echo "Finished at $(date)"; 
