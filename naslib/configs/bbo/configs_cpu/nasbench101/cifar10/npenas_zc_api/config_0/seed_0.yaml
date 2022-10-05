@@ -1,6 +1,6 @@
 config_id: 0
-dataset: TIMIT
-optimizer: rs
+dataset: cifar10
+optimizer: npenas_zc_api
 out_dir: run_cpu
 search:
   acq_fn_optimization: random_sampling
@@ -20,5 +20,14 @@ search:
   predictor: var_sparse_gp
   predictor_type: bananas
   sample_size: 10
-search_space: asr
+  use_zc_api: true
+  zc: true
+  zc_names:
+  - jacov
+  - snip
+  - synflow
+  - grad_norm
+  - fisher
+  - grasp
+search_space: nasbench101
 seed: 0
