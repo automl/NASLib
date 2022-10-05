@@ -50,6 +50,43 @@ class NasBench301SearchSpaceTest(unittest.TestCase):
 
         assert spec == retrieved_spec
 
+    def test_set_spec_twice_with_instantiation(self):
+        graph = NasBench301SearchSpace()
+        spec = (((0, 1), (1, 4), (0, 6), (2, 0), (2, 6), (1, 4), (0, 5), (2, 2)),
+                ((0, 5), (1, 6), (0, 1), (1, 5), (2, 5), (1, 2), (3, 3), (0, 3)))
+        graph.set_spec(spec)
+        retrieved_spec = graph.get_hash()
+
+        assert spec == retrieved_spec
+
+        new_spec = (((0, 4), (1, 4), (0, 6), (2, 0), (2, 6), (1, 4), (0, 5), (2, 2)),
+                    ((0, 4), (1, 4), (0, 1), (1, 5), (2, 5), (1, 2), (3, 3), (0, 3)))
+
+        try:
+            graph.set_spec(new_spec)
+        except Exception as e:
+            self.assertTrue(isinstance(e, AssertionError))
+            exception_raised = True
+
+        self.assertTrue(exception_raised)
+
+    def test_set_spec_twice_without_instantiation(self):
+        graph = NasBench301SearchSpace()
+        graph.instantiate_model = False
+        spec = (((0, 1), (1, 4), (0, 6), (2, 0), (2, 6), (1, 4), (0, 5), (2, 2)),
+                ((0, 5), (1, 6), (0, 1), (1, 5), (2, 5), (1, 2), (3, 3), (0, 3)))
+        graph.set_spec(spec)
+        retrieved_spec = graph.get_hash()
+
+        assert spec == retrieved_spec
+
+        new_spec = (((0, 4), (1, 4), (0, 6), (2, 0), (2, 6), (1, 4), (0, 5), (2, 2)),
+                    ((0, 4), (1, 4), (0, 1), (1, 5), (2, 5), (1, 2), (3, 3), (0, 3)))
+        graph.set_spec(new_spec)
+        retrieved_spec = graph.get_hash()
+
+        assert new_spec == retrieved_spec
+
     def test_sample_random_architecture(self):
         graph = NasBench301SearchSpace()
         np.random.seed(9001)

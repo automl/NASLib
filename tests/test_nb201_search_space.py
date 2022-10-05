@@ -50,6 +50,40 @@ class NasBench201SearchSpaceTest(unittest.TestCase):
 
         self.assertEqual(spec, retrieved_spec)
 
+    def test_set_spec_twice_with_instantiation(self):
+        graph = NasBench201SearchSpace()
+        spec = (2, 2, 3, 4, 3, 2)
+        graph.set_spec(spec)
+        retrieved_spec = graph.get_hash()
+
+        self.assertEqual(spec, retrieved_spec)
+
+        new_spec = (3, 3, 3, 4, 3, 2)
+
+        try:
+            graph.set_spec(new_spec)
+        except Exception as e:
+            self.assertTrue(isinstance(e, AssertionError))
+            exception_raised = True
+
+        self.assertTrue(exception_raised)
+
+    def test_set_spec_twice_without_instantiation(self):
+        graph = NasBench201SearchSpace()
+        graph.instantiate_model = False
+        spec = (2, 2, 3, 4, 3, 2)
+        graph.set_spec(spec)
+        retrieved_spec = graph.get_hash()
+
+        self.assertEqual(spec, retrieved_spec)
+
+        new_spec = (3, 3, 3, 3, 3, 3)
+        graph.set_spec(new_spec)
+        retrieved_spec = graph.get_hash()
+
+        self.assertEqual(new_spec, retrieved_spec)
+
+
     def test_sample_random_architecture(self):
         graph = NasBench201SearchSpace()
         np.random.seed(9001)
@@ -142,7 +176,6 @@ class NasBench201SearchSpaceTest(unittest.TestCase):
         graph = create_model(spec=SPEC)
         neighbours = graph.get_nbhd()
 
-        print(len(neighbours))
         self.assertEqual(len(neighbours), 24)
 
     def test_conversions(self):

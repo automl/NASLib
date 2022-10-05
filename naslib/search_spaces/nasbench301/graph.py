@@ -425,12 +425,12 @@ class NasBench301SearchSpace(Graph):
         return arch_list
 
     def set_compact(self, compact):
-        # This will update the edges in the naslib object to match compact
-        assert self.compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+        if self.instantiate_model == True:
+            assert self.compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+            convert_compact_to_naslib(compact, self)
+
         self.compact = compact
 
-        if self.instantiate_model == True:
-            convert_compact_to_naslib(compact, self)
 
     def set_spec(self, compact, dataset_api=None):
         self.set_compact(make_compact_immutable(compact))
