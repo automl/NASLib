@@ -168,10 +168,9 @@ class NasBench101SearchSpace(Graph):
         elif isinstance(spec, tuple):
             spec = convert_tuple_to_spec(spec)
 
-        self.spec = spec
-
-        if self.instantiate_model == True:
+        if self.instantiate_model:
             assert self.spec is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+            self.spec = spec
             model = convert_spec_to_model(self.spec)
             self.edges[1, 2].set('op', model)
 
