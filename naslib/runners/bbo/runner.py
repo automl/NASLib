@@ -6,7 +6,7 @@ from naslib.optimizers import (
     Npenas,
     RegularizedEvolution,
     LocalSearch,
-    Bananas
+    # Bananas
 )
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -35,7 +35,7 @@ writer = SummaryWriter(config.save)
 supported_optimizers = {
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
-    'bananas': Bananas(config),
+    # 'bananas': Bananas(config),
     'npenas': Npenas(config),
     'ls': LocalSearch(config),
 }

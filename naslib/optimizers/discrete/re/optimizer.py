@@ -11,13 +11,15 @@ from naslib.search_spaces.core.graph import Graph
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.utils.logging import log_every_n_seconds
 
+from fvcore.common.config import CfgNode
+
 logger = logging.getLogger(__name__)
 
 
 class RegularizedEvolution(MetaOptimizer):
     using_step_function = False
 
-    def __init__(self, config):
+    def __init__(self, config: CfgNode):
         super().__init__()
         self.config = config
         self.epochs = config.search.epochs
@@ -30,7 +32,7 @@ class RegularizedEvolution(MetaOptimizer):
         self.population = collections.deque(maxlen=self.population_size)
         self.history = torch.nn.ModuleList()
 
-    def adapt_search_space(self, search_space: Graph, scope: str=None, dataset_api=None):
+    def adapt_search_space(self, search_space: Graph, scope: str=None, dataset_api: dict=None):
         assert (
             search_space.QUERYABLE
         ), "Regularized evolution is currently only implemented for benchmarks."
@@ -87,7 +89,7 @@ class RegularizedEvolution(MetaOptimizer):
                     self.history[i] = child
                     break
 
-    def train_statistics(self, report_incumbent=True):
+    def train_statistics(self, report_incumbent: bool=True):
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:
