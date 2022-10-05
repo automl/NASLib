@@ -4,8 +4,11 @@ import torch
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.core.graph import Graph
 
 from naslib.utils.utils import count_parameters_in_MB
+
+from fvcore.common.config import CfgNode
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +18,7 @@ class LocalSearch(MetaOptimizer):
     # training the models is not implemented
     using_step_function = False
 
-    def __init__(self, config):
+    def __init__(self, config: CfgNode):
         super().__init__()
         self.config = config
         self.epochs = config.search.epochs
@@ -31,7 +34,7 @@ class LocalSearch(MetaOptimizer):
         self.history = torch.nn.ModuleList()
         self.newest_child_idx = -1
 
-    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
+    def adapt_search_space(self, search_space: Graph, scope: str = None, dataset_api: dict = None):
         assert (
             search_space.QUERYABLE
         ), "Local search is currently only implemented for benchmarks."
@@ -39,7 +42,7 @@ class LocalSearch(MetaOptimizer):
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
 
-    def new_epoch(self, epoch):
+    def new_epoch(self, epoch: int):
 
         if epoch < self.num_init:
             # randomly sample initial architectures
@@ -108,7 +111,7 @@ class LocalSearch(MetaOptimizer):
                     self.newest_child_idx = i
                     break
 
-    def train_statistics(self, report_incumbent: bool=True):
+    def train_statistics(self, report_incumbent: bool = True):
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:

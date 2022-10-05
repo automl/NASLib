@@ -32,7 +32,7 @@ class RegularizedEvolution(MetaOptimizer):
         self.population = collections.deque(maxlen=self.population_size)
         self.history = torch.nn.ModuleList()
 
-    def adapt_search_space(self, search_space: Graph, scope: str=None, dataset_api: dict=None):
+    def adapt_search_space(self, search_space: Graph, scope: str = None, dataset_api: dict = None):
         assert (
             search_space.QUERYABLE
         ), "Regularized evolution is currently only implemented for benchmarks."
@@ -89,7 +89,7 @@ class RegularizedEvolution(MetaOptimizer):
                     self.history[i] = child
                     break
 
-    def train_statistics(self, report_incumbent: bool=True):
+    def train_statistics(self, report_incumbent: bool = True):
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:

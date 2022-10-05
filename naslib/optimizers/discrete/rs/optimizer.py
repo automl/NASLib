@@ -4,6 +4,8 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
 
+from fvcore.common.config import CfgNode
+
 class RandomSearch(MetaOptimizer):
     """
     Random search in DARTS is done by randomly sampling `k` architectures
@@ -14,9 +16,9 @@ class RandomSearch(MetaOptimizer):
     using_step_function = False
 
     def __init__(
-        self,
-        config,
-        weight_optimizer=torch.optim.SGD,
+            self,
+            config: CfgNode,
+            weight_optimizer=torch.optim.SGD,
     ):
         """
         Initialize a random search optimizer.
@@ -37,7 +39,7 @@ class RandomSearch(MetaOptimizer):
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
 
-    def adapt_search_space(self, search_space: Graph, scope: str=None, dataset_api=None):
+    def adapt_search_space(self, search_space: Graph, scope: str = None, dataset_api: dict = None):
         assert (
             search_space.QUERYABLE
         ), "Random search is currently only implemented for benchmarks."
@@ -45,7 +47,7 @@ class RandomSearch(MetaOptimizer):
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
 
-    def new_epoch(self, epoch):
+    def new_epoch(self, epoch: int):
         """
         Sample a new architecture to train.
         """
@@ -78,7 +80,7 @@ class RandomSearch(MetaOptimizer):
         """
         return max(self.sampled_archs, key=lambda x: x.accuracy).arch
 
-    def train_statistics(self, report_incumbent=True):
+    def train_statistics(self, report_incumbent: bool = True):
 
         if report_incumbent:
             best_arch = self.get_final_architecture()
