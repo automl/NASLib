@@ -19,7 +19,7 @@ from naslib.search_spaces import (
     TransBench101SearchSpaceMacro,
     NasBenchASRSearchSpace
 )
-from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib.utils import utils, setup_logger, get_dataset_api, get_zc_benchmark_api
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -32,11 +32,17 @@ utils.log_args(config)
 
 writer = SummaryWriter(config.save)
 
+zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
+
 supported_optimizers = {
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
     'bananas': Bananas(config),
+    'bananas_zerocost': Bananas(config, zc_api=zc_api),
+    'bananas_zc_api': Bananas(config, zc_api=zc_api),
     'npenas': Npenas(config),
+    'npenas_zerocost': Npenas(config, zc_api=zc_api),
+    'npenas_zc_api': Npenas(config, zc_api=zc_api),
     'ls': LocalSearch(config),
 }
 
@@ -51,9 +57,14 @@ supported_search_spaces = {
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
+
 utils.set_seed(config.seed)
 
 search_space = supported_search_spaces[config.search_space]
+
+if config.search.zc == True:
+    search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
+
 search_space.instantiate_model = False
 
 metric = Metric.VAL_ACCURACY if config.search_space == 'nasbench301' else None

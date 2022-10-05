@@ -11,7 +11,7 @@ def main(args):
     if args.config_type == 'bbo-bs':
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
-        num_config = 100 
+        num_config = 1 # FIXME 10
         
         # first generate the default config at config 0
         config_id = 0
@@ -57,6 +57,12 @@ def main(args):
                 },
             }
 
+            if args.optimizer in ("npenas_zerocost", "bananas_zerocost", "npenas_zc_api", "bananas_zc_api"):
+                config["search"]["zc"] = True
+                config["search"]["zc_names"] = ["jacov", "snip", "synflow", "grad_norm", "fisher", "grasp"]
+
+                if args.optimizer in ("npenas_zc_api", "bananas_zc_api"):
+                    config["search"]["use_zc_api"] = True
 
             path = folder + f"/seed_{seed}.yaml"
 

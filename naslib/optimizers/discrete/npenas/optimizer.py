@@ -28,7 +28,7 @@ class Npenas(MetaOptimizer):
     # training the models is not implemented
     using_step_function = False
 
-    def __init__(self, config, zc_api=None, use_zc_api=None):
+    def __init__(self, config, zc_api=None):
         super().__init__()
         self.config = config
         self.epochs = config.search.epochs
@@ -52,9 +52,11 @@ class Npenas(MetaOptimizer):
         self.zc = config.search.zc_ensemble if hasattr(config.search, 'zc_ensemble') else None 
         self.semi = "semi" in self.predictor_type # FIXME go through configs?
         self.zc_api = zc_api
-        self.use_zc_api = use_zc_api
+        self.use_zc_api = config.search.use_zc_api if hasattr(config.search, 'use_zc_api') else False
         self.zc_names = config.search.zc_names if hasattr(config.search, 'zc_names') else None 
         self.sample_from_zc_api = zc_api is not None
+        self.num_ensemble = config.search.num_ensemble
+        self.zc_only = config.search.zc_only if hasattr(config.search, 'zc_only') else False
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -81,7 +83,7 @@ class Npenas(MetaOptimizer):
         zc_methods = self.get_zero_cost_predictors()
 
         for zc_name, zc_method in zc_methods.items():
-            if self.use_zc_api:
+            if self.use_zc_api and str(arch_hash) in self.zc_api:
                 arch_hash = arch.get_hash()
                 score = self.zc_api[str(arch_hash)][zc_name]['score']
             else:
@@ -99,7 +101,7 @@ class Npenas(MetaOptimizer):
 
     def _set_scores(self, model):
 
-        if self.use_zc_api:
+        if self.use_zc_api and str(model.arch_hash) in self.zc_api :
             model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
         else:
             model.accuracy = model.arch.query(
@@ -116,8 +118,9 @@ class Npenas(MetaOptimizer):
         self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
 
         model = torch.nn.Module()
-        model.arch_hash = self.search_space.get_hash()
-        model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
+        model.arch = self.search_space.clone()
+        model.arch.sample_random_architecture(dataset_api=self.dataset_api,load_labeled=self.sample_from_zc_api)
+        model.arch_hash = model.arch.get_hash()
 
         return model
     
@@ -131,8 +134,8 @@ class Npenas(MetaOptimizer):
         ensemble = Ensemble(num_ensemble=self.num_ensemble,
                             ss_type=self.ss_type,
                             predictor_type=self.predictor_type,
-                            zc=self.config.search.zc_ensemble,
-                            zc_only=self.config.search.zc_only,
+                            zc=self.zc,
+                            zc_only=self.zc_only,
                             config=self.config)
         
         return ensemble
@@ -178,7 +181,7 @@ class Npenas(MetaOptimizer):
 
         if epoch < self.num_init:
             model = self._sample_new_model()
-            self.set_scores(model)
+            self._set_scores(model)
         else:
             if len(self.next_batch) == 0:
                 # train a neural predictor
