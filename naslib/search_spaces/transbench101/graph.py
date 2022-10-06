@@ -16,6 +16,9 @@ from naslib.search_spaces.transbench101.conversions import (
     convert_naslib_to_transbench101_micro,
     convert_op_indices_micro_to_str,
     convert_op_indices_macro_to_str,
+    convert_op_indices_micro_to_model,
+    convert_op_indices_macro_to_model,
+
 )
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
@@ -303,7 +306,16 @@ class TransBench101SearchSpaceMicro(Graph):
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
-        convert_op_indices_to_naslib(op_indices, self)
+
+        if self.instantiate_model == True:
+            if self.create_graph == True:
+                convert_op_indices_to_naslib(op_indices, self)
+            else:
+                model = convert_op_indices_micro_to_model(self.op_indices, self.dataset)
+                self.edges[1, 2].set('op', model)
+
+    def set_spec(self, op_indices, dataset_api=None):
+        self.set_op_indices(op_indices)
 
     def get_arch_iterator(self, dataset_api=None):
         return itertools.product(range(4), repeat=6)
@@ -486,6 +498,10 @@ class TransBench101SearchSpaceMacro(Graph):
     def set_op_indices(self, op_indices):
         # This will update the edges in the naslib object to op_indices
         self.op_indices = op_indices
+
+        if self.instantiate_model == True:
+            model = convert_op_indices_macro_to_model(op_indices, self.dataset)
+            self.edges[1, 2].set('op', model)
 
     def sample_random_architecture(self, dataset_api=None):
         """
