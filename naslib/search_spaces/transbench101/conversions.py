@@ -142,3 +142,16 @@ def convert_naslib_to_transbench101_macro(op_indices):
     """
     ops_string = ''.join([str(e) for e in op_indices.tolist() if e!=0])
     return '64-{}-basic'.format(ops_string)
+
+def convert_op_indices_micro_to_str(op_indices):
+    """
+    Converts naslib object to string representation.
+    """
+    return '64-41414-{}_{}{}_{}{}{}'.format(*op_indices)
+
+def convert_op_indices_macro_to_str(op_indices):
+    """
+    Converts naslib object to string representation.
+    """
+    ops_string = ''.join([str(e) for e in op_indices if e!=0])
+    return '64-{}-basic'.format(ops_string)
