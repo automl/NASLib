@@ -8,7 +8,8 @@ from .utils import (
     cross_validation,
     parse_args,
     get_train_val_loaders,
-    get_project_root
+    get_project_root,
+    compute_scores
 )
 from .logging import setup_logger
 from .get_dataset_api import get_dataset_api
