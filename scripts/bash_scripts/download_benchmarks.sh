@@ -81,14 +81,6 @@ then
 fi
 if [ "$search_space" = "nb301" ] || [ "$search_space" = "all" ]
 then
-  if [ -e nb_models ]
-  then
-    echo "nb301 models exist"
-  else
-   wget https://figshare.com/ndownloader/files/24992018
-   unzip 24992018
-   mv nb_models nb_models_1.0
-  fi
   if [ -e nb301_full_training.pickle ]
   then
     echo "nb301 full training pickle exists"
