@@ -12,5 +12,5 @@ from .utils import (
     compute_scores
 )
 from .logging import setup_logger
-from .get_dataset_api import get_dataset_api
+from .get_dataset_api import get_dataset_api, get_zc_benchmark_api
 from .get_dataset_api import get_zc_benchmark_api
