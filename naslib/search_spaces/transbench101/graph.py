@@ -66,15 +66,17 @@ class TransBench101SearchSpaceMicro(Graph):
         self.in_channels = in_channels
         self.space_name = 'transbench101'
         self.dataset = dataset
-
         self.create_graph = create_graph
         self.labeled_archs = None
         self.instantiate_model = True
         self.sample_without_replacement = False
 
-        self.add_edge(1, 2)  # TODO Add condition to call a function to create super graph if create_graph == True
+        if self.create_graph == True:
+            self._create_graph()
+        else:
+            self.add_edge(1, 2)
 
-        return
+    def _create_graph(self):
         #
         # Cell definition
         #
@@ -99,9 +101,10 @@ class TransBench101SearchSpaceMicro(Graph):
         #
         self.name = "makrograph"
 
-        self.n_modules = 5  # short: 3
+        self.n_modules = 3 if self.use_small_model else 5  # short: 3
         self.blocks_per_module = [2] * self.n_modules  # Change to customize number of blocks per module
         self.module_stages = ["r_stage_1", "n_stage_1", "r_stage_2", "n_stage_2", "r_stage_3"]
+        # self.base_channels = 16 if self.use_small_model else 64
         self.base_channels = 64  # short: 16
 
         n_nodes = 1 + self.n_modules + 1  # Stem, modules, decoder
