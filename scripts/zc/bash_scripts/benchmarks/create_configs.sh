@@ -10,7 +10,7 @@ then
 fi
 
 # folders:
-config_root=configs
+config_root='naslib/configs'
 out_dir=run
 
 # predictors
@@ -23,9 +23,9 @@ train_size=100
 
 # create config files
 for i in $(seq 0 $((${#predictors[@]}-1)) )
-do
+  do
     predictor=${predictors[$i]}
-    python scripts/create_configs_benchmarks.py --predictor $predictor \
+    python scripts/zc/create_configs_benchmarks.py --predictor $predictor \
     --start_seed $start_seed --out_dir $out_dir --dataset=$dataset \
     --experiment benchmarks --search_space $search_space --config_root=$config_root
 done

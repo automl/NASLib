@@ -7,6 +7,6 @@ for searchspace in "${searchspaces[@]}"
 do
     for dataset in "${datasets[@]}"
     do
-        scripts/bash_scripts/benchmarks/create_configs.sh $searchspace $dataset 9000
+        scripts/zc/bash_scripts/benchmarks/create_configs.sh $searchspace $dataset 9000
     done
 done

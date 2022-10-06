@@ -33,7 +33,7 @@ do
     do
         for dataset in "${datasets[@]}"
         do
-            scripts/bash_scripts/xgb_correlation/create_configs.sh $experiment $searchspace $dataset 9000 "${ks[$i]}" "${proxies[$i]}"
+            scripts/zc/bash_scripts/xgb_correlation/create_configs.sh $experiment $searchspace $dataset 9000 "${ks[$i]}" "${proxies[$i]}"
         done
     done
 done

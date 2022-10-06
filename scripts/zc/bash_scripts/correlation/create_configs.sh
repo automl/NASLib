@@ -10,7 +10,7 @@ then
 fi
 
 # folders:
-config_root=configs
+config_root='naslib/configs'
 out_dir=run
 
 # predictors
@@ -25,7 +25,7 @@ test_size=1000
 for i in $(seq 0 $((${#predictors[@]}-1)) )
 do
     predictor=${predictors[$i]}
-    python scripts/create_configs_correlation.py --predictor $predictor \
+    python scripts/zc/create_configs_correlation.py --predictor $predictor \
     --test_size $test_size --start_seed $start_seed --trials $trials --out_dir $out_dir \
     --dataset=$dataset --experiment correlation --search_space $search_space \
     --config_root=$config_root
