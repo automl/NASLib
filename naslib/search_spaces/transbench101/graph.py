@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 
 from naslib.search_spaces.core import primitives as ops
+from naslib.search_spaces.nasbench101.primitives import ModelWrapper
 from naslib.search_spaces.nasbench301.primitives import FactorizedReduce
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.core.primitives import Sequential
@@ -285,7 +286,15 @@ class TransBench101SearchSpaceMicro(Graph):
 
     def get_op_indices(self):
         if self.op_indices is None:
-            self.op_indices = convert_naslib_to_op_indices(self)
+            if self.create_graph == True:
+                self.op_indices = convert_naslib_to_op_indices(self)
+            else:
+                # if there is a model, but it's simply the original implementation of the model put on edge 1-2
+                if isinstance(self.edges[1, 2]['op'], ModelWrapper):
+                    raise NotImplementedError('Conversion from original model to op_indices is not implemented')
+                # if there's no op indices set, and no model on edge 1-2 either
+                else:
+                    raise NotImplementedError('Neither op_indices nor the model is set')
         return self.op_indices
 
     def get_hash(self):
@@ -468,7 +477,7 @@ class TransBench101SearchSpaceMacro(Graph):
 
     def get_op_indices(self):
         if self.op_indices is None:
-            self.op_indices = convert_naslib_to_op_indices(self)
+            raise ValueError('op_indices not set')
         return self.op_indices
 
     def get_hash(self):
