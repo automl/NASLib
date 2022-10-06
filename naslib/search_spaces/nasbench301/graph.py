@@ -66,7 +66,7 @@ class NasBench301SearchSpace(Graph):
         """
         super().__init__()
 
-        self.channels = [32, 64, 128]
+        self.channels = [16, 32, 64]
         self.compact = None
         self.load_labeled = None
         self.num_classes = n_classes
