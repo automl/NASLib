@@ -13,7 +13,8 @@ from naslib.search_spaces.transbench101.conversions import (
     convert_op_indices_to_naslib,
     convert_naslib_to_op_indices,
     convert_naslib_to_transbench101_micro,
-    convert_naslib_to_transbench101_macro
+    convert_op_indices_micro_to_str,
+    convert_op_indices_macro_to_str,
 )
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
@@ -134,7 +135,7 @@ class TransBench101SearchSpaceMicro(Graph):
         else:
             return ops.Stem(C_in=self.in_channels, C_out=self.base_channels)
 
-    def _get_decoder_for_task(self, task, n_channels):  # TODO: Remove harcoding
+    def _get_decoder_for_task(self, task, n_channels):
         if task == "jigsaw":
             return ops.SequentialJigsaw(
                 nn.AdaptiveAvgPool2d(1),
@@ -212,7 +213,7 @@ class TransBench101SearchSpaceMicro(Graph):
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
 
-        arch_str = convert_naslib_to_transbench101_micro(self)
+        arch_str = convert_op_indices_micro_to_str(self.op_indices)
 
         query_results = dataset_api['api']
         task = dataset_api['task']
@@ -273,14 +274,14 @@ class TransBench101SearchSpaceMicro(Graph):
             # return hyperparameter info
             return query_results[dataset]['cost_info']
         elif metric == Metric.TRAIN_TIME:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
         if full_lc and epoch == -1:
             return query_results[dataset][metric_to_tb101[metric]]
         elif full_lc and epoch != -1:
             return query_results[dataset][metric_to_tb101[metric]][:epoch]
         else:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
     def get_op_indices(self):
         if self.op_indices is None:
@@ -395,7 +396,7 @@ class TransBench101SearchSpaceMacro(Graph):
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query transbench101')
 
-        arch_str = convert_naslib_to_transbench101_macro(self.op_indices)
+        arch_str = convert_op_indices_macro_to_str(self.op_indices)
 
         query_results = dataset_api['api']
         task = dataset_api['task']
@@ -456,14 +457,14 @@ class TransBench101SearchSpaceMacro(Graph):
             # return hyperparameter info
             return query_results[dataset]['cost_info']
         elif metric == Metric.TRAIN_TIME:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
         if full_lc and epoch == -1:
             return query_results[dataset][metric_to_tb101[metric]]
         elif full_lc and epoch != -1:
             return query_results[dataset][metric_to_tb101[metric]][:epoch]
         else:
-            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric])
+            return query_results.get_single_metric(arch_str, task, metric_to_tb101[metric], mode='final')
 
     def get_op_indices(self):
         if self.op_indices is None:
