@@ -406,6 +406,54 @@ class TransBench101SearchSpaceMicro(Graph):
 
         return loss_fn
 
+    def _forward_before_global_avg_pool(self, x):
+        outputs = []
+        def hook_fn(module, inputs, output_t):
+            # print(f'Input tensor shape: {inputs[0].shape}')
+            # print(f'Output tensor shape: {output_t.shape}')
+            outputs.append(inputs[0])
+
+        for m in self.modules():
+            if isinstance(m, torch.nn.AdaptiveAvgPool2d):
+                m.register_forward_hook(hook_fn)
+
+        self.forward(x, None)
+
+        assert len(outputs) == 1
+        return outputs[0]
+
+    def _forward_before_last_conv(self, x):
+        outputs = []
+        def hook_fn(module, inputs, output_t):
+            # print(f'Input tensor shape: {inputs[0].shape}')
+            # print(f'Output tensor shape: {output_t.shape}')
+            outputs.append(inputs[0])
+
+        model = self.edges[1, 2]['op'].model
+        decoder = model.decoder
+
+        if self.dataset == 'segmentsemantic':
+            conv = decoder.model[-1]
+        else:
+            conv = decoder.conv14
+
+        conv.register_forward_hook(hook_fn)
+
+        self.forward(x, None)
+
+        assert len(outputs) == 1
+        return outputs[0]
+
+    def forward_before_global_avg_pool(self, x):
+        if (self.create_graph == True and self.dataset in ['ninapro', 'svhn', 'scifar100']) or \
+           (self.dataset in ['class_scene', 'class_object', 'room_layout', 'jigsaw']):
+            return self._forward_before_global_avg_pool(x)
+        elif self.create_graph == False:
+            return self._forward_before_last_conv(x)
+        else:
+            raise Exception(f"forward_before_global_avg_pool method not implemented for NASLib graph for dataset {self.dataset}")
+
+
 
 class TransBench101SearchSpaceMacro(Graph):
     """
@@ -670,6 +718,51 @@ class TransBench101SearchSpaceMacro(Graph):
             loss_fn = F.cross_entropy
 
         return loss_fn
+
+    def _forward_before_global_avg_pool(self, x):
+        outputs = []
+        def hook_fn(module, inputs, output_t):
+            # print(f'Input tensor shape: {inputs[0].shape}')
+            # print(f'Output tensor shape: {output_t.shape}')
+            outputs.append(inputs[0])
+
+        for m in self.modules():
+            if isinstance(m, torch.nn.AdaptiveAvgPool2d):
+                m.register_forward_hook(hook_fn)
+
+        self.forward(x, None)
+
+        assert len(outputs) == 1
+        return outputs[0]
+
+    def _forward_before_last_conv(self, x):
+        outputs = []
+        def hook_fn(module, inputs, output_t):
+            # print(f'Input tensor shape: {inputs[0].shape}')
+            # print(f'Output tensor shape: {output_t.shape}')
+            outputs.append(inputs[0])
+
+        model = self.edges[1, 2]['op'].model
+        decoder = model.decoder
+
+        if self.dataset == 'segmentsemantic':
+            conv = decoder.model[-1]
+        else:
+            conv = decoder.conv14
+
+        conv.register_forward_hook(hook_fn)
+
+        self.forward(x, None)
+
+        assert len(outputs) == 1
+        return outputs[0]
+
+    def forward_before_global_avg_pool(self, x):
+
+        if self.dataset in ['class_scene', 'class_object', 'room_layout', 'jigsaw']:
+            return self._forward_before_global_avg_pool(x)
+        else:
+            return self._forward_before_last_conv(x)
 
 
 def _set_op(edge, C_in, downsample):
