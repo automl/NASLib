@@ -143,7 +143,8 @@ def load_default_config(config_type="nas"):
         "bbo-bs": "runners/bbo/discrete_config.yaml",
         "nas_predictor": "runners/nas_predictors/discrete_config.yaml",
         "oneshot": "runners/nas_predictors/nas_predictor_config.yaml",
-        "statistics": "runners/statistics/statistics_config.yaml"
+        "statistics": "runners/statistics/statistics_config.yaml",
+        "zc": "runners/zc/zc_config.yaml",
     }
 
     config_path_full = os.path.join(
