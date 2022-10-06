@@ -148,11 +148,17 @@ class TransBench101SearchSpaceMicro(Graph):
                 nn.Linear(n_channels, self.num_classes)
             )
         elif task == "autoencoder":
-            # return ops.GenerativeDecoder((64, 32), (256, 2048)) # Short
-            return ops.GenerativeDecoder((512, 32), (512, 2048))  # Full TNB
+            if self.use_small_model:
+                return ops.GenerativeDecoder((64, 32), (256, 2048))  # Short
+            else:
+                return ops.GenerativeDecoder((512, 32), (512, 2048))  # Full TNB
 
         else:
-            return None  # TODO: handle other tasks
+            return ops.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(n_channels, self.num_classes)
+            )
 
     def _get_module_n_output_channels(self, module):
         last_cell_in_module = module.edges[1, 2]['op'].op[-1]
