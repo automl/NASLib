@@ -126,13 +126,13 @@ class TransBench101SearchSpaceMicro(Graph):
 
     def _get_stem_for_task(self, task):
         if task == "jigsaw":
-            return ops.StemJigsaw(self.base_channels)
+            return ops.StemJigsaw(C_out=self.base_channels)
         elif task in ["class_object", "class_scene"]:
-            return ops.Stem(self.base_channels)
+            return ops.Stem(C_out=self.base_channels)
         elif task == "autoencoder":
-            return ops.Stem(self.base_channels)
+            return ops.Stem(C_out=self.base_channels)
         else:
-            return None  # TODO: handle other tasks
+            return ops.Stem(C_in=self.in_channels, C_out=self.base_channels)
 
     def _get_decoder_for_task(self, task, n_channels):  # TODO: Remove harcoding
         if task == "jigsaw":
