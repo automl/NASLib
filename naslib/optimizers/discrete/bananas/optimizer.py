@@ -154,7 +154,7 @@ class Bananas(MetaOptimizer):
         if self.acq_fn_optimization == 'random_sampling':
 
             for _ in range(self.num_candidates):
-                self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
+                #self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
                 model = self._sample_new_model()
                 model.accuracy = model.arch.query(
                     self.performance_metric, self.dataset, dataset_api=self.dataset_api
