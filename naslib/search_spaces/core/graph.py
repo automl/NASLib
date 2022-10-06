@@ -359,9 +359,10 @@ class Graph(torch.nn.Module, nx.DiGraph):
             if ("subgraph" in node and "comb_op" not in node) or (
                 "comb_op" in node and "subgraph" not in node
             ):
-                log_first_n(
-                    logging.WARN, "Comb_op is ignored if subgraph is defined!", n=1
-                )
+                # log_first_n(
+                #     logging.WARN, "Comb_op is ignored if subgraph is defined!", n=1
+                # )
+                pass
             # TODO: merge 'subgraph' and 'comb_op'. It is basicallly the same thing. Also in parse()
             if "subgraph" in node:
                 x = node["subgraph"].forward(node["input"])
