@@ -1,3 +1,10 @@
+"""
+Title: TransNAS-Bench-101: Improving Transferability and Generalizability of Cross-Task Neural Architecture Search
+Author: Duan, Yawen and Chen, Xin and Xu, Hang and Chen, Zewei and Liang, Xiaodan and Zhang, Tong and Li, Zhenguo
+Date: 2021
+Availability: https://github.com/yawen-d/TransNASBench
+"""
+
 import numpy as np
 import random
 import itertools
@@ -408,6 +415,7 @@ class TransBench101SearchSpaceMicro(Graph):
 
     def _forward_before_global_avg_pool(self, x):
         outputs = []
+
         def hook_fn(module, inputs, output_t):
             # print(f'Input tensor shape: {inputs[0].shape}')
             # print(f'Output tensor shape: {output_t.shape}')
@@ -424,6 +432,7 @@ class TransBench101SearchSpaceMicro(Graph):
 
     def _forward_before_last_conv(self, x):
         outputs = []
+
         def hook_fn(module, inputs, output_t):
             # print(f'Input tensor shape: {inputs[0].shape}')
             # print(f'Output tensor shape: {output_t.shape}')
@@ -446,13 +455,13 @@ class TransBench101SearchSpaceMicro(Graph):
 
     def forward_before_global_avg_pool(self, x):
         if (self.create_graph == True and self.dataset in ['ninapro', 'svhn', 'scifar100']) or \
-           (self.dataset in ['class_scene', 'class_object', 'room_layout', 'jigsaw']):
+                (self.dataset in ['class_scene', 'class_object', 'room_layout', 'jigsaw']):
             return self._forward_before_global_avg_pool(x)
         elif self.create_graph == False:
             return self._forward_before_last_conv(x)
         else:
-            raise Exception(f"forward_before_global_avg_pool method not implemented for NASLib graph for dataset {self.dataset}")
-
+            raise Exception(
+                f"forward_before_global_avg_pool method not implemented for NASLib graph for dataset {self.dataset}")
 
 
 class TransBench101SearchSpaceMacro(Graph):
@@ -721,6 +730,7 @@ class TransBench101SearchSpaceMacro(Graph):
 
     def _forward_before_global_avg_pool(self, x):
         outputs = []
+
         def hook_fn(module, inputs, output_t):
             # print(f'Input tensor shape: {inputs[0].shape}')
             # print(f'Output tensor shape: {output_t.shape}')
@@ -737,6 +747,7 @@ class TransBench101SearchSpaceMacro(Graph):
 
     def _forward_before_last_conv(self, x):
         outputs = []
+
         def hook_fn(module, inputs, output_t):
             # print(f'Input tensor shape: {inputs[0].shape}')
             # print(f'Output tensor shape: {output_t.shape}')
