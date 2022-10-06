@@ -314,9 +314,6 @@ class TransBench101SearchSpaceMicro(Graph):
                 model = convert_op_indices_micro_to_model(self.op_indices, self.dataset)
                 self.edges[1, 2].set('op', model)
 
-    def set_spec(self, op_indices, dataset_api=None):
-        self.set_op_indices(op_indices)
-
     def get_arch_iterator(self, dataset_api=None):
         return itertools.product(range(4), repeat=6)
 
@@ -502,6 +499,9 @@ class TransBench101SearchSpaceMacro(Graph):
         if self.instantiate_model == True:
             model = convert_op_indices_macro_to_model(op_indices, self.dataset)
             self.edges[1, 2].set('op', model)
+
+    def set_spec(self, op_indices, dataset_api=None):
+        self.set_op_indices(op_indices)
 
     def sample_random_architecture(self, dataset_api=None):
         """
