@@ -12,6 +12,7 @@ from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.nasbench301.conversions import (
+    convert_compact_to_genotype,
     convert_compact_to_naslib,
     convert_naslib_to_compact,
     convert_naslib_to_genotype,
@@ -66,7 +67,7 @@ class NasBench301SearchSpace(Graph):
         """
         super().__init__()
 
-        self.channels = [32, 64, 128]
+        self.channels = [16, 32, 64]
         self.compact = None
         self.load_labeled = None
         self.num_classes = n_classes
@@ -396,7 +397,10 @@ class NasBench301SearchSpace(Graph):
             """
             assert not epoch or epoch in [-1, 100]
             # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]
-            genotype = convert_naslib_to_genotype(self)
+            if self.instantiate_model == True:
+                genotype = convert_naslib_to_genotype(self)
+            else:
+                genotype = convert_compact_to_genotype(self.compact)
             if metric == Metric.VAL_ACCURACY:
                 val_acc = dataset_api["nb301_model"][0].predict(
                     config=genotype, representation="genotype"
@@ -411,7 +415,7 @@ class NasBench301SearchSpace(Graph):
                 return -1
 
     def get_compact(self):
-        if self.compact is None:
+        if self.compact is None and self.instantiate_model == True:
             self.compact = convert_naslib_to_compact(self)
         return self.compact
 
@@ -425,12 +429,12 @@ class NasBench301SearchSpace(Graph):
         return arch_list
 
     def set_compact(self, compact):
-        # This will update the edges in the naslib object to match compact
-        assert self.compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+        if self.instantiate_model == True:
+            assert self.compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+            convert_compact_to_naslib(compact, self)
+
         self.compact = compact
 
-        if self.instantiate_model == True:
-            convert_compact_to_naslib(compact, self)
 
     def set_spec(self, compact, dataset_api=None):
         self.set_compact(make_compact_immutable(compact))

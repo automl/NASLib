@@ -10,12 +10,16 @@ SPEC = (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 
         0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 4, 2, 3, 3, 3, 1)
 SAMPLED_SPEC = (0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0,
                 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 2, 3, 3, 1)
+HASHSPEC = 'ff940d27cbe9ed0a639a68a9c3f87283'  # Random HASH from NB101
+FIXED_ARCH = (0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+              0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 3, 3, 4, 1)
 
 
 def create_dummy_api():
     # TODO: Complete
     nb101_datapath = os.path.join(os.getcwd(), "assets", "nb101_dummy.pkl")
     nb101_data = api.NASBench(nb101_datapath)
+
     return {"api": api, "nb101_data": nb101_data}
 
 
@@ -33,6 +37,14 @@ class NasBench101SearchSpaceTest(unittest.TestCase):
         graph.set_spec(SPEC)
         retrieved_spec = graph.get_hash()
         self.assertEqual(SPEC, retrieved_spec)
+
+    def test_set_and_get_spec_hash(self):
+        graph = NasBench101SearchSpace()
+        dummy_api = create_dummy_api()
+        graph.set_spec(HASHSPEC, dummy_api)
+        retrieved_spec = graph.get_hash()
+        print(retrieved_spec)
+        self.assertEqual(FIXED_ARCH, retrieved_spec)
 
     def test_forward_pass(self):
         torch.manual_seed(9001)
@@ -69,10 +81,10 @@ class NasBench101SearchSpaceTest(unittest.TestCase):
 
         archs = set(it)
 
-        self.assertEqual(len(archs), 25)
-        self.assertIn('ff91e10b9512cbe4efeec6bd926941a1', archs)
-        self.assertIn('ff97666e74e3bb5aff1a0463e81c99b5', archs)
-        self.assertIn('ff9a2953ee1d258de0ce944cb761aa30', archs)
+        self.assertEqual(len(archs), 30)
+        self.assertIn('ff97db031fa41552d437b079b2befd80', archs)
+        self.assertIn('ff968f800464555f97c776c71481826d', archs)
+        self.assertIn('ff940d27cbe9ed0a639a68a9c3f87283', archs)
 
     def test_mutate(self):
         graph_parent = create_model(spec=SPEC)

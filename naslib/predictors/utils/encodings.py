@@ -369,7 +369,7 @@ def encode_spec(spec, encoding_type='adjacency_one_hot', ss_type=None):
     elif ss_type == 'transbench101_macro' and encoding_type == 'adjacency_one_hot':
         return encode_adjacency_one_hot_transbench_macro_op_indices(spec)
     else:
-        raise NotImplementedError(f'No implementation found for encoding ss_type {ss_type} with {encoding_type}')
+        raise NotImplementedError(f'No implementation found for encoding search space {ss_type} with {encoding_type}')
 
 
 def encode_adjacency_one_hot_transbench_macro_op_indices(op_indices):

@@ -152,6 +152,7 @@ class NasBench101SearchSpace(Graph):
         # TODO: convert the naslib object to this spec
         # convert_spec_to_naslib(spec, self)
         # assert self.spec is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+        assert isinstance(spec, str) or isinstance(spec, tuple) or isinstance(spec, dict), "The spec has to be a string (hash of the architecture), a dict with the matrix and operations, or a tuple (NASLib representation)."
 
         if isinstance(spec, str):
             """
@@ -162,17 +163,18 @@ class NasBench101SearchSpace(Graph):
             space's methods. So the solution is to optionally pass in the dataset 
             api in set_spec and check whether `spec' is a string or a dict.
             """
+            assert dataset_api is not None, "To set the hash string as the spec, the NAS-Bench-101 API must be passed as the dataset_api argument"
             fix, comp = dataset_api["nb101_data"].get_metrics_from_hash(spec)
             spec = self.convert_to_cell(fix['module_adjacency'], fix['module_operations'])
-            self.set_spec(spec)
         elif isinstance(spec, tuple):
             spec = convert_tuple_to_spec(spec)
 
         if self.instantiate_model:
             assert self.spec is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
-            self.spec = spec
-            model = convert_spec_to_model(self.spec)
+            model = convert_spec_to_model(spec)
             self.edges[1, 2].set('op', model)
+
+        self.spec = spec
 
     def get_arch_iterator(self, dataset_api):
         return dataset_api["nb101_data"].hash_iterator()
