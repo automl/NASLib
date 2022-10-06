@@ -20,6 +20,7 @@ from naslib.search_spaces.transbench101.conversions import (
     convert_op_indices_macro_to_model,
 
 )
+from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
 
@@ -391,7 +392,19 @@ class TransBench101SearchSpaceMicro(Graph):
         return nbrs
 
     def get_type(self):
-        return 'transbench101'
+        return 'transbench101_micro'
+
+    def get_loss_fn(self):
+        if self.dataset in ['class_object', 'class_scene']:
+            loss_fn = SoftmaxCrossEntropyWithLogits()
+        elif self.dataset in ['autoencoder', 'normal']:
+            loss_fn = nn.L1Loss()
+        elif self.dataset == 'room_layout':
+            loss_fn = nn.MSELoss()
+        else:
+            loss_fn = F.cross_entropy
+
+        return loss_fn
 
 
 class TransBench101SearchSpaceMacro(Graph):
@@ -644,7 +657,19 @@ class TransBench101SearchSpaceMacro(Graph):
         return nbrs
 
     def get_type(self):
-        return 'transbench101'
+        return 'transbench101_macro'
+
+    def get_loss_fn(self):
+        if self.dataset in ['class_object', 'class_scene']:
+            loss_fn = SoftmaxCrossEntropyWithLogits()
+        elif self.dataset in ['autoencoder', 'normal']:
+            loss_fn = nn.L1Loss()
+        elif self.dataset == 'room_layout':
+            loss_fn = nn.MSELoss()
+        else:
+            loss_fn = F.cross_entropy
+
+        return loss_fn
 
 
 def _set_op(edge, C_in, downsample):
