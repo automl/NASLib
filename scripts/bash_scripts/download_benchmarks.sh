@@ -125,15 +125,15 @@ then
        done="False"
 
        drive_ids=('1qd9Fkg7MdIe3MMbHtIJC8eZ8OsWcqPYA'
-       '1pQBJ9exwpSG2E7m6aVvcOlJBGRhVhtg9'
-       '175we9AOjnGam0j4sG5Vn0SHFyBvyv2Ia'
-       '1FNBkOavsAP6Hvi7-41yLZwojdWfPub-R'
-       '1HujB1GyiBjrSdAA0he5kZtkO9WEDAwCn'
-       '1_vaYBQpbP6bx-G0_EiNysohqOJBJ_Ept'
-       '1JwQk4TE21KqvrfvnOfVcdqnEB32ULWTr'
-       '1T00JaN09RlNZPod8dQnF_Xdz0BWtjCWr'
-       '1fB2JYSZRfd8uKfKLBO9P3mn9HWIWtMOH'
-       '19Qvrqt-wi0UOCZBwI_Jw6-bLIXCYcPyl'
+      #  '1pQBJ9exwpSG2E7m6aVvcOlJBGRhVhtg9'
+      #  '175we9AOjnGam0j4sG5Vn0SHFyBvyv2Ia'
+      #  '1FNBkOavsAP6Hvi7-41yLZwojdWfPub-R'
+      #  '1HujB1GyiBjrSdAA0he5kZtkO9WEDAwCn'
+      #  '1_vaYBQpbP6bx-G0_EiNysohqOJBJ_Ept'
+      #  '1JwQk4TE21KqvrfvnOfVcdqnEB32ULWTr'
+      #  '1T00JaN09RlNZPod8dQnF_Xdz0BWtjCWr'
+      #  '1fB2JYSZRfd8uKfKLBO9P3mn9HWIWtMOH'
+      #  '19Qvrqt-wi0UOCZBwI_Jw6-bLIXCYcPyl'
        )
 
        for idx in ${!drive_ids[@]}
