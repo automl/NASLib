@@ -363,7 +363,10 @@ def get_train_val_loaders(config, mode="train"):
     elif dataset == 'jigsaw':
         cfg = get_jigsaw_configs()
 
-        train_data, val_data, test_data = get_datasets(cfg)
+        try:
+            train_data, val_data, test_data = get_datasets(cfg)
+        except:
+            raise FileNotFoundError("The jigsaw dataset has not been downloaded, run scripts/bash_scripts/download_data.sh")
 
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
@@ -371,7 +374,10 @@ def get_train_val_loaders(config, mode="train"):
     elif dataset == 'class_object':
         cfg = get_class_object_configs()
 
-        train_data, val_data, test_data = get_datasets(cfg)
+        try:
+            train_data, val_data, test_data = get_datasets(cfg)
+        except:
+            raise FileNotFoundError("The class_object dataset has not been downloaded, run scripts/bash_scripts/download_data.sh")
 
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
@@ -379,7 +385,10 @@ def get_train_val_loaders(config, mode="train"):
     elif dataset == 'class_scene':
         cfg = get_class_scene_configs()
 
-        train_data, val_data, test_data = get_datasets(cfg)
+        try:
+            train_data, val_data, test_data = get_datasets(cfg)
+        except:
+            raise FileNotFoundError("The class_scene dataset has not been downloaded, run scripts/bash_scripts/download_data.sh")
 
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
@@ -387,7 +396,10 @@ def get_train_val_loaders(config, mode="train"):
     elif dataset == 'autoencoder':
         cfg = get_autoencoder_configs()
     
-        train_data, val_data, test_data = get_datasets(cfg)
+        try:
+            train_data, val_data, test_data = get_datasets(cfg)
+        except:
+            raise FileNotFoundError("The autoencoder dataset has not been downloaded, run scripts/bash_scripts/download_data.sh")
         
         train_transform = cfg['train_transform_fn']
         valid_transform = cfg['val_transform_fn']
