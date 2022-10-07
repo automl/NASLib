@@ -108,7 +108,7 @@ then
         gdown 1hV6-mCUKInIK1iqZ0jfBkcKaFmftlBtp
      fi
   fi
-  if [ "$dataset" = "Imagenet16-120" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
+  if [ "$dataset" = "ImageNet16-120" ] || [ "$search_space" = "all" ] || [ "$dataset" = "all" ]
   then
      if [ -e nb201_ImageNet16_full_training.pickle ]
      then
