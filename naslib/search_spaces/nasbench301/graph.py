@@ -8,6 +8,7 @@ from torch import nn
 from copy import deepcopy
 from ConfigSpace.read_and_write import json as config_space_json_r_w
 
+from typing import *
 from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
@@ -208,17 +209,18 @@ class NasBench301SearchSpace(Graph):
         self._set_cell_ops(reduction_cell_indices)
 
     def _set_makrograph_ops(
-        self,
-        channel_map_from,
-        channel_map_to,
-        reduction_cell_indices,
-        max_index,
-        affine=True,
-    ):
+            self,
+            channel_map_from: dict,
+            channel_map_to: dict,
+            reduction_cell_indices: list,
+            max_index: int,
+            affine: bool = True,
+    ) -> None:
         # pre-processing
         # In darts there is a hardcoded multiplier of 3 for the output of the stem
         stem_multiplier = 3
-        self.edges[1, 2].set("op", ops.Stem(C_in=self.in_channels, # TODO_ARJUN: Make Stem use C_in. Currently, it is hardcoded to 3.
+        self.edges[1, 2].set("op", ops.Stem(C_in=self.in_channels,
+                                            # TODO_ARJUN: Make Stem use C_in. Currently, it is hardcoded to 3.
                                             C_out=self.channels[0] * stem_multiplier))
 
         # edges connecting cells
@@ -256,7 +258,7 @@ class NasBench301SearchSpace(Graph):
             ),
         )
 
-    def _set_cell_ops(self, reduction_cell_indices):
+    def _set_cell_ops(self, reduction_cell_indices: list) -> None:
         # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
 
@@ -284,7 +286,7 @@ class NasBench301SearchSpace(Graph):
             if cell:
                 cell.nodes[7]["comb_op"] = channel_concat
 
-    def prepare_discretization(self):
+    def prepare_discretization(self) -> None:
         """
         In DARTS a node can have a maximum of two incoming edges.
         This is handled here.
@@ -295,7 +297,7 @@ class NasBench301SearchSpace(Graph):
             single_instances=True
         )
 
-    def prepare_evaluation(self):
+    def prepare_evaluation(self) -> None:
         """
         In DARTS the evaluation model has 32 channels after the Stem
         and 3 normal cells at each stage.
@@ -322,10 +324,10 @@ class NasBench301SearchSpace(Graph):
                 ),
             )
 
-    def auxiliary_logits(self):
+    def auxiliary_logits(self) -> torch.Tensor:
         return self.graph["out_from_12"]
 
-    def load_labeled_architecture(self, dataset_api=None):
+    def load_labeled_architecture(self, dataset_api: dict = None) -> None:
         """
         This is meant to be called by a new NasBench301SearchSpace() object
         (one that has not already been discretized).
@@ -338,14 +340,13 @@ class NasBench301SearchSpace(Graph):
         self.set_compact(compact)
 
     def query(
-        self,
-        metric=None,
-        dataset=None,
-        path=None,
-        epoch=-1,
-        full_lc=False,
-        dataset_api=None,
-    ):
+            self,
+            metric: Metric = None,
+            dataset: str = None,
+            path: str = None,
+            epoch: int = -1,
+            full_lc: bool = False,
+            dataset_api: dict = None) -> Union[float, dict]:
         """
         Query results from nasbench 301
         """
@@ -414,32 +415,31 @@ class NasBench301SearchSpace(Graph):
             else:
                 return -1
 
-    def get_compact(self):
+    def get_compact(self) -> tuple:
         if self.compact is None and self.instantiate_model == True:
             self.compact = convert_naslib_to_compact(self)
         return self.compact
 
-    def get_hash(self):
+    def get_hash(self) -> tuple:
         return self.get_compact()
 
-    def get_arch_iterator(self, dataset_api):
+    def get_arch_iterator(self, dataset_api: dict) -> Iterator:
         # currently set up for nasbench301 data, not surrogate
         arch_list = np.array(dataset_api["nb301_arches"])
         random.shuffle(arch_list)
         return arch_list
 
-    def set_compact(self, compact):
+    def set_compact(self, compact: tuple) -> None:
         if self.instantiate_model == True:
             assert self.compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
             convert_compact_to_naslib(compact, self)
 
         self.compact = compact
 
-
-    def set_spec(self, compact, dataset_api=None):
+    def set_spec(self, compact: tuple, dataset_api: dict = None):
         self.set_compact(make_compact_immutable(compact))
 
-    def sample_random_labeled_architecture(self):
+    def sample_random_labeled_architecture(self) -> None:
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
@@ -449,7 +449,7 @@ class NasBench301SearchSpace(Graph):
 
         self.set_spec(op_indices)
 
-    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
+    def sample_random_architecture(self, dataset_api: dict = None, load_labeled: bool = False) -> None:
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
@@ -480,7 +480,7 @@ class NasBench301SearchSpace(Graph):
 
         self.set_spec(compact)
 
-    def mutate(self, parent, mutation_rate=1, dataset_api=None):
+    def mutate(self, parent: Graph, mutation_rate: int = 1, dataset_api: dict = None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -512,7 +512,7 @@ class NasBench301SearchSpace(Graph):
 
         self.set_spec(compact)
 
-    def get_nbhd(self, dataset_api=None):
+    def get_nbhd(self, dataset_api: dict = None) -> list:
         # return all neighbors of the architecture
         self.get_compact()
         nbrs = []
@@ -553,9 +553,9 @@ class NasBench301SearchSpace(Graph):
 
     @staticmethod
     def get_configspace(
-        path_to_configspace_obj=os.path.join(
-            get_project_root(), "search_spaces/nasbench301/configspace.json"
-        )
+            path_to_configspace_obj=os.path.join(
+                get_project_root(), "search_spaces/nasbench301/configspace.json"
+            )
     ):
         """
         Returns the ConfigSpace object for the search space
@@ -571,14 +571,15 @@ class NasBench301SearchSpace(Graph):
             config_space = config_space_json_r_w.read(json_string)
         return config_space
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "nasbench301"
 
-    def get_loss_fn(self):
+    def get_loss_fn(self) -> Callable:
         return F.cross_entropy
 
-    def forward_before_global_avg_pool(self, x):
+    def forward_before_global_avg_pool(self, x: torch.Tensor) -> list:
         outputs = []
+
         def hook_fn(module, inputs, output_t):
             # print(f'Input tensor shape: {inputs[0].shape}')
             # print(f'Output tensor shape: {output_t.shape}')
@@ -593,7 +594,8 @@ class NasBench301SearchSpace(Graph):
         assert len(outputs) == 1
         return outputs[0]
 
-def _set_ops(edge, C, stride):
+
+def _set_ops(edge, C: int, stride: int) -> None:
     """
     Replace the 'op' at the edges with the ones defined here.
     This function is called by the framework for every edge in
@@ -628,7 +630,7 @@ def _set_ops(edge, C, stride):
     )
 
 
-def _truncate_input_edges(node, in_edges, out_edges):
+def _truncate_input_edges(node: tuple, in_edges: list, out_edges: list) -> None:
     """
     Removes input edges if there are more than k.
     """
@@ -674,7 +676,7 @@ def channel_concat(tensors):
     return torch.cat(tensors, dim=1)
 
 
-def channel_maps(reduction_cell_indices, max_index):
+def channel_maps(reduction_cell_indices: list, max_index: int) -> [dict, dict]:
     # calculate the mapping from edge indices to the respective channel
 
     assert len(reduction_cell_indices) == 2
