@@ -3,10 +3,12 @@ import copy
 import random
 import torch
 import torch.nn.functional as F
+from typing import *
 
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.search_spaces.nasbench101.conversions import convert_spec_to_model, convert_spec_to_tuple, convert_tuple_to_spec
+from naslib.search_spaces.nasbench101.conversions import convert_spec_to_model, convert_spec_to_tuple, \
+    convert_tuple_to_spec
 from naslib.utils import get_dataset_api
 
 INPUT = "input"
@@ -39,7 +41,7 @@ class NasBench101SearchSpace(Graph):
 
         self.add_edge(1, 2)
 
-    def convert_to_cell(self, matrix, ops):
+    def convert_to_cell(self, matrix: np.ndarray, ops: list) -> dict:
 
         if len(matrix) < 7:
             # the nasbench spec can have an adjacency matrix of n x n for n<7, 
@@ -74,15 +76,13 @@ class NasBench101SearchSpace(Graph):
                 'ops': ops
             }
 
-    def query(
-        self,
-        metric,
-        dataset="cifar10",
-        path=None,
-        epoch=-1,
-        full_lc=False,
-        dataset_api=None,
-    ):
+    def query(self,
+              metric: Metric,
+              dataset: str = "cifar10",
+              path: str = None,
+              epoch: int = -1,
+              full_lc: bool = False,
+              dataset_api: dict = None) -> Union[list, float]:
         """
         Query results from nasbench 101
         """
@@ -142,17 +142,18 @@ class NasBench101SearchSpace(Graph):
         else:
             return query_results[metric_to_nb101[metric]] * 100
 
-    def get_spec(self):
+    def get_spec(self) -> dict:
         return self.spec
 
-    def get_hash(self):
+    def get_hash(self) -> tuple:
         return convert_spec_to_tuple(self.get_spec())
 
-    def set_spec(self, spec, dataset_api=None):
+    def set_spec(self, spec: Union[str, dict, tuple], dataset_api: dict = None) -> None:
         # TODO: convert the naslib object to this spec
         # convert_spec_to_naslib(spec, self)
         # assert self.spec is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
-        assert isinstance(spec, str) or isinstance(spec, tuple) or isinstance(spec, dict), "The spec has to be a string (hash of the architecture), a dict with the matrix and operations, or a tuple (NASLib representation)."
+        assert isinstance(spec, str) or isinstance(spec, tuple) or isinstance(spec,
+                                                                              dict), "The spec has to be a string (hash of the architecture), a dict with the matrix and operations, or a tuple (NASLib representation)."
 
         if isinstance(spec, str):
             """
@@ -176,10 +177,10 @@ class NasBench101SearchSpace(Graph):
 
         self.spec = spec
 
-    def get_arch_iterator(self, dataset_api):
+    def get_arch_iterator(self, dataset_api: dict) -> Iterator:
         return dataset_api["nb101_data"].hash_iterator()
 
-    def sample_random_labeled_architecture(self):
+    def sample_random_labeled_architecture(self) -> None:
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         while True:
@@ -192,7 +193,7 @@ class NasBench101SearchSpace(Graph):
 
         self.set_spec(op_indices)
 
-    def sample_random_architecture(self, dataset_api, load_labeled=False):
+    def sample_random_architecture(self, dataset_api: dict, load_labeled: bool = False) -> None:
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
@@ -217,7 +218,7 @@ class NasBench101SearchSpace(Graph):
 
         self.set_spec({"matrix": matrix, "ops": ops})
 
-    def mutate(self, parent, dataset_api, edits=1):
+    def mutate(self, parent: Graph, dataset_api: dict, edits: int = 1) -> None:
         """
         This will mutate the parent architecture spec.
         Code inspird by https://github.com/google-research/nasbench
@@ -230,7 +231,7 @@ class NasBench101SearchSpace(Graph):
                 new_matrix = copy.deepcopy(matrix)
                 new_ops = copy.deepcopy(ops)
                 for src in range(0, NUM_VERTICES - 1):
-                    for dst in range(src+1, NUM_VERTICES):
+                    for dst in range(src + 1, NUM_VERTICES):
                         if np.random.random() < 1 / NUM_VERTICES:
                             new_matrix[src][dst] = 1 - new_matrix[src][dst]
                 for ind in range(1, NUM_VERTICES - 1):
@@ -240,16 +241,16 @@ class NasBench101SearchSpace(Graph):
                 new_spec = dataset_api['api'].ModelSpec(new_matrix, new_ops)
                 if dataset_api['nb101_data'].is_valid(new_spec):
                     break
-        
-        self.set_spec({'matrix':new_matrix, 'ops':new_ops})
 
-    def get_nbhd(self, dataset_api):
+        self.set_spec({'matrix': new_matrix, 'ops': new_ops})
+
+    def get_nbhd(self, dataset_api: dict) -> list:
         # return all neighbors of the architecture
         spec = self.get_spec()
         matrix, ops = spec["matrix"], spec["ops"]
         nbhd = []
 
-        def add_to_nbhd(new_matrix, new_ops, nbhd):
+        def add_to_nbhd(new_matrix: np.ndarray, new_ops: list, nbhd: list) -> list:
             new_spec = {"matrix": new_matrix, "ops": new_ops}
             model_spec = dataset_api["api"].ModelSpec(new_matrix, new_ops)
             if dataset_api["nb101_data"].is_valid(model_spec):
@@ -287,14 +288,15 @@ class NasBench101SearchSpace(Graph):
         random.shuffle(nbhd)
         return nbhd
 
-    def get_loss_fn(self):
+    def get_loss_fn(self) -> Callable:
         return F.cross_entropy
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "nasbench101"
 
-    def forward_before_global_avg_pool(self, x):
+    def forward_before_global_avg_pool(self, x: torch.Tensor) -> list:
         outputs = []
+
         def hook_fn(module, input_t, output_t):
             # print(f'Input tensor shape: {input_t[0].shape}')
             # print(f'Output tensor shape: {output_t.shape}')
@@ -308,7 +310,8 @@ class NasBench101SearchSpace(Graph):
         assert len(outputs) == 1
         return outputs[0]
 
-def get_utilized(matrix):
+
+def get_utilized(matrix) -> [list, list]:
     # return the sets of utilized edges and nodes
     # first, compute all paths
     n = np.shape(matrix)[0]
@@ -338,14 +341,16 @@ def get_utilized(matrix):
 
     return utilized_edges, utilized_nodes
 
-def is_valid_vertex(matrix, vertex):
+
+def is_valid_vertex(matrix: np.ndarray, vertex: int) -> bool:
     edges, nodes = get_utilized(matrix)
     return vertex in nodes
 
 
-def is_valid_edge(matrix, edge):
+def is_valid_edge(matrix: np.ndarray, edge: tuple) -> bool:
     edges, nodes = get_utilized(matrix)
     return edge in edges
+
 
 if __name__ == '__main__':
     dataset_api = get_dataset_api('nasbench101', None)
