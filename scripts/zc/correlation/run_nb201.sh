@@ -26,7 +26,6 @@ do
     do
         sed -i "s/THE_JOB_NAME/${searchspace}-${dataset}-${pred}/" ./scripts/zc/correlation/run.sh
         echo $searchspace $dataset $pred
-        # bash ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment
         sbatch ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
         sed -i "s/${searchspace}-${dataset}-${pred}/THE_JOB_NAME/" ./scripts/zc/correlation/run.sh
     done

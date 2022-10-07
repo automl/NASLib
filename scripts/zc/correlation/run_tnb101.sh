@@ -12,15 +12,13 @@ fi
 
 if [ -z "$predictor" ];
 then
-    predictors=(fisher 
-    # grad_norm grasp jacov snip flops params plain l2_norm nwot zen
-    )
+    predictors=(fisher grad_norm grasp jacov snip flops params plain l2_norm nwot zen)
 else
     predictors=($predictor)
 fi
 
 searchspaces=(transbench101_micro transbench101_macro)
-datasets=(autoencoder class_object class_scene normal jigsaw room_layout segmentsemantic)
+datasets=(autoencoder class_object class_scene normal jigsaw  room_layout segmentsemantic)
 
 
 for searchspace in "${searchspaces[@]}"
@@ -31,8 +29,7 @@ do
         do
             sed -i "s/THE_JOB_NAME/${searchspace}-${dataset}-${pred}/" ./scripts/zc/correlation/run.sh
             echo $searchspace $dataset $pred
-            bash ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment
-            # sbatch ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
+            sbatch ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
             sed -i "s/${searchspace}-${dataset}-${pred}/THE_JOB_NAME/" ./scripts/zc/correlation/run.sh
         done
 
