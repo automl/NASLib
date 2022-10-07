@@ -12,6 +12,7 @@ from naslib.search_spaces.nasbench201.conversions import (
     convert_op_indices_to_naslib,
     convert_naslib_to_op_indices,
     convert_naslib_to_str,
+    convert_op_indices_to_str,
 )
 
 from .primitives import ResNetBasicblock
@@ -176,7 +177,10 @@ class NasBench201SearchSpace(Graph):
             Metric.EPOCH: "epochs",
         }
 
-        arch_str = convert_naslib_to_str(self)
+        if self.instantiate_model == True:
+            arch_str = convert_naslib_to_str(self)
+        else:
+            arch_str = convert_op_indices_to_str(self.get_hash())
 
         if metric == Metric.RAW:
             # return all data
