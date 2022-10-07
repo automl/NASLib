@@ -17,19 +17,15 @@ class RandomSearch(MetaOptimizer):
 
     def __init__(
             self,
-            config: CfgNode,
-            weight_optimizer=torch.optim.SGD,
+            config: CfgNode
     ):
         """
         Initialize a random search optimizer.
 
         Args:
-            config
-            weight_optimizer (torch.optim.Optimizer): The optimizer to
-                train the (convolutional) weights.
+            config: Config file
         """
         super(RandomSearch, self).__init__()
-        self.weight_optimizer = weight_optimizer
 
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
@@ -107,7 +103,7 @@ class RandomSearch(MetaOptimizer):
         return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
     def get_op_optimizer(self):
-        return self.weight_optimizer
+        raise NotImplementedError
 
     def get_checkpointables(self):
         return {"model": self.history}
