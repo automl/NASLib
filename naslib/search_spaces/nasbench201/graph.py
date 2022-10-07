@@ -4,6 +4,7 @@ import itertools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from typing import *
 
 from naslib.search_spaces.core import primitives as ops
 from naslib.search_spaces.core.graph import Graph
@@ -128,7 +129,7 @@ class NasBench201SearchSpace(Graph):
 
         self._set_cell_ops()
 
-    def _set_cell_ops(self):
+    def _set_cell_ops(self) -> None:
         # set the ops at the cells (channel dependent)
         for scope, c in zip(self.OPTIMIZER_SCOPE, self.channels):
             self.update_edges(
@@ -138,14 +139,13 @@ class NasBench201SearchSpace(Graph):
             )
 
     def query(
-        self,
-        metric,
-        dataset,
-        path=None,
-        epoch=-1,
-        full_lc=False,
-        dataset_api=None,
-    ):
+            self,
+            metric: Metric,
+            dataset: str,
+            path: str = None,
+            epoch: int = -1,
+            full_lc: bool = False,
+            dataset_api: dict = None) -> float:
         """
         Query results from nasbench 201
         """
@@ -177,7 +177,7 @@ class NasBench201SearchSpace(Graph):
             Metric.EPOCH: "epochs",
         }
 
-        if self.instantiate_model == True:
+        if self.instantiate_model:
             arch_str = convert_naslib_to_str(self)
         else:
             arch_str = convert_op_indices_to_str(self.get_hash())
@@ -211,28 +211,28 @@ class NasBench201SearchSpace(Graph):
             # return the value of the metric only at the specified epoch
             return query_results[dataset][metric_to_nb201[metric]][epoch]
 
-    def get_op_indices(self):
+    def get_op_indices(self) -> list:
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
 
-    def get_hash(self):
+    def get_hash(self) -> tuple:
         return tuple(self.get_op_indices())
 
-    def get_arch_iterator(self, dataset_api=None):
+    def get_arch_iterator(self, dataset_api=None) -> Iterator:
         return itertools.product(range(NUM_OPS), repeat=NUM_EDGES)
 
-    def set_op_indices(self, op_indices):
+    def set_op_indices(self, op_indices: list) -> None:
         if self.instantiate_model == True:
             assert self.op_indices is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
             convert_op_indices_to_naslib(op_indices, self)
 
         self.op_indices = op_indices
 
-    def set_spec(self, op_indices, dataset_api=None):
+    def set_spec(self, op_indices: list, dataset_api=None) -> None:
         self.set_op_indices(op_indices)
 
-    def sample_random_labeled_architecture(self):
+    def sample_random_labeled_architecture(self) -> None:
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
@@ -242,7 +242,7 @@ class NasBench201SearchSpace(Graph):
 
         self.set_spec(op_indices)
 
-    def sample_random_architecture(self, dataset_api=None, load_labeled=False):
+    def sample_random_architecture(self, dataset_api: dict = None, load_labeled: bool = False) -> None:
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
@@ -251,8 +251,8 @@ class NasBench201SearchSpace(Graph):
         if load_labeled == True:
             return self.sample_random_labeled_architecture()
 
-        def is_valid_arch(op_indices):
-            return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or \
+        def is_valid_arch(op_indices: list) -> bool:
+            return not ((op_indices[0] == op_indices[1] == op_indices[2] == 1) or
                         (op_indices[2] == op_indices[4] == op_indices[5] == 1))
 
         while True:
@@ -265,7 +265,7 @@ class NasBench201SearchSpace(Graph):
             break
         self.compact = self.get_op_indices()
 
-    def mutate(self, parent, dataset_api=None):
+    def mutate(self, parent: Graph, dataset_api: dict = None) -> None:
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -279,7 +279,7 @@ class NasBench201SearchSpace(Graph):
         op_indices[edge] = op_index
         self.set_op_indices(op_indices)
 
-    def get_nbhd(self, dataset_api=None):
+    def get_nbhd(self, dataset_api: dict = None) -> list:
         # return all neighbors of the architecture
         self.get_op_indices()
         nbrs = []
@@ -298,14 +298,15 @@ class NasBench201SearchSpace(Graph):
         random.shuffle(nbrs)
         return nbrs
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "nasbench201"
 
-    def get_loss_fn(self):
+    def get_loss_fn(self) -> Callable:
         return F.cross_entropy
 
-    def forward_before_global_avg_pool(self, x):
+    def forward_before_global_avg_pool(self, x: torch.Tensor) -> list:
         outputs = []
+
         def hook_fn(module, inputs, output_t):
             # print(f'Input tensor shape: {inputs[0].shape}')
             # print(f'Output tensor shape: {output_t.shape}')
@@ -320,7 +321,8 @@ class NasBench201SearchSpace(Graph):
         assert len(outputs) == 1
         return outputs[0]
 
-def _set_ops(edge, C):
+
+def _set_ops(edge, C: int) -> None:
     edge.data.set(
         "op",
         [
