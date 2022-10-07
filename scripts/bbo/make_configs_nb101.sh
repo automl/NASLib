@@ -1,7 +1,8 @@
 export OMP_NUM_THREADS=2
 # optimizers=(rs)
 # optimizers=(rs re ls npenas bananas)
-optimizers=(npenas bananas npenas_zerocost bananas_zerocost npenas_zc_api bananas_zc_api)
+optimizers=(npenas bananas)
+zerocosts=(none predictor api)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -38,17 +39,21 @@ end_seed=$(($start_seed + $trials - 1))
 # create config files
 for i in $(seq 0 $((${#dataset[@]}-1)) )
 do 
-     dataset=${dataset[$i]}
-     echo $dataset
-     for i in $(seq 0 $((${#optimizers[@]}-1)) )
+    dataset=${dataset[$i]}
+    echo $dataset
+    for i in $(seq 0 $((${#optimizers[@]}-1)) )
 	do
-	optimizer=${optimizers[$i]}
-	python create_configs.py \
-	--start_seed $start_seed --trials $trials \
-	--out_dir $out_dir --dataset=$dataset --config_type $config_type \
-	--search_space $search_space --optimizer $optimizer \
-	--acq_fn_optimization $acq_fn_optimization --predictor $predictor \
-	--fidelity $fidelity --epochs $epochs
+		for j in $(seq 0 $((${#zerocosts[@]}-1)) )
+		do
+			optimizer=${optimizers[$i]}
+			zerocost=${zerocosts[$j]}
+			python create_configs.py \
+			--start_seed $start_seed --trials $trials \
+			--out_dir $out_dir --dataset=$dataset --config_type $config_type \
+			--search_space $search_space --optimizer $optimizer \
+			--acq_fn_optimization $acq_fn_optimization --predictor $predictor \
+			--fidelity $fidelity --epochs $epochs --zerocost $zerocost
+		done
 	done
 done
 

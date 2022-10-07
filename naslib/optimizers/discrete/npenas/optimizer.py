@@ -83,7 +83,7 @@ class Npenas(MetaOptimizer):
         zc_methods = self.get_zero_cost_predictors()
 
         for zc_name, zc_method in zc_methods.items():
-            if self.use_zc_api and str(arch_hash) in self.zc_api:
+            if self.use_zc_api and str(arch_hash) in self.zc_api.keys():
                 arch_hash = arch.get_hash()
                 score = self.zc_api[str(arch_hash)][zc_name]['score']
             else:
@@ -101,7 +101,7 @@ class Npenas(MetaOptimizer):
 
     def _set_scores(self, model):
 
-        if self.use_zc_api and str(model.arch_hash) in self.zc_api :
+        if self.use_zc_api and str(model.arch_hash) in self.zc_api.keys():
             model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
         else:
             model.accuracy = model.arch.query(

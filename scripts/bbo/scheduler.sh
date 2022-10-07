@@ -4,8 +4,7 @@ user="robertsj"
 dataset_dir="/home/$user/NASLib/naslib/configs/bbo/configs_cpu/$search_space/*"
 
 for optimizer_dir in $dataset_dir/*
-do 
-    echo $config_dir    
+do
     for config_dir in $optimizer_dir/*
     do
         echo starting to run ${config_dir} across 10 seeds ...

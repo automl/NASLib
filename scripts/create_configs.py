@@ -17,7 +17,7 @@ def main(args):
         config_id = 0
         
         base_folder = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-        folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
+        folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}_{args.zerocost}/config_{config_id}"
         os.makedirs(folder, exist_ok=True)       
             
         for seed in range(args.start_seed, args.start_seed + args.trials):
@@ -57,11 +57,10 @@ def main(args):
                 },
             }
 
-            if args.optimizer in ("npenas_zerocost", "bananas_zerocost", "npenas_zc_api", "bananas_zc_api"):
+            if args.zerocost != 'none':
                 config["search"]["zc"] = True
                 config["search"]["zc_names"] = ["jacov", "snip", "synflow", "grad_norm", "fisher", "grasp"]
-
-                if args.optimizer in ("npenas_zc_api", "bananas_zc_api"):
+                if args.zerocost == 'api':
                     config["search"]["use_zc_api"] = True
 
             path = folder + f"/seed_{seed}.yaml"
@@ -455,6 +454,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--max_hpo_time", type=int, default=3000, help="HPO time"
+    )
+
+    parser.add_argument(
+        "--zerocost", type=str, default='none', help="ZeroCost proxy source"
     )
     
     args = parser.parse_args()

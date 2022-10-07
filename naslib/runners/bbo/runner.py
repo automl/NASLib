@@ -32,17 +32,15 @@ utils.log_args(config)
 
 writer = SummaryWriter(config.save)
 
-zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
+zc_api = None
+if hasattr(config.search, 'use_zc_api'):
+    zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
 
 supported_optimizers = {
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
-    'bananas': Bananas(config),
-    'bananas_zerocost': Bananas(config, zc_api=zc_api),
-    'bananas_zc_api': Bananas(config, zc_api=zc_api),
-    'npenas': Npenas(config),
-    'npenas_zerocost': Npenas(config, zc_api=zc_api),
-    'npenas_zc_api': Npenas(config, zc_api=zc_api),
+    'bananas': Bananas(config, zc_api=zc_api),
+    'npenas': Npenas(config, zc_api=zc_api),
     'ls': LocalSearch(config),
 }
 
@@ -62,7 +60,7 @@ utils.set_seed(config.seed)
 
 search_space = supported_search_spaces[config.search_space]
 
-if config.search.zc == True:
+if hasattr(config.search, 'zc'):
     search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
 
 search_space.instantiate_model = False
