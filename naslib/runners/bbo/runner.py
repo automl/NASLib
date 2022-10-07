@@ -39,8 +39,12 @@ if hasattr(config.search, 'use_zc_api'):
 supported_optimizers = {
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
-    'bananas': Bananas(config, zc_api=zc_api),
-    'npenas': Npenas(config, zc_api=zc_api),
+    'bananas': Bananas(config),
+    'bananas_zc': Bananas(config),
+    'bananas_zc_api': Bananas(config, zc_api=zc_api),
+    'npenas': Npenas(config),
+    'npenas_zc': Npenas(config),
+    'npenas_zc_api': Npenas(config, zc_api=zc_api),
     'ls': LocalSearch(config),
 }
 

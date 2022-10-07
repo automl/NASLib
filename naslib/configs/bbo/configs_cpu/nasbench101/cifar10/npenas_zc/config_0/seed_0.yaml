@@ -1,6 +1,6 @@
 config_id: 0
 dataset: cifar10
-optimizer: bananas
+optimizer: npenas_zc
 out_dir: run_cpu
 search:
   acq_fn_optimization: random_sampling
@@ -20,13 +20,5 @@ search:
   predictor: var_sparse_gp
   predictor_type: bananas
   sample_size: 10
-  zc: true
-  zc_names:
-  - jacov
-  - snip
-  - synflow
-  - grad_norm
-  - fisher
-  - grasp
 search_space: nasbench101
 seed: 0

@@ -17,7 +17,12 @@ def main(args):
         config_id = 0
         
         base_folder = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-        folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}_{args.zerocost}/config_{config_id}"
+        if args.zerocost is 'none':
+            optimizer_arg = args.optimizer
+        else:
+            optimizer_arg = f"{args.optimizer}_{args.zerocost}"
+
+        folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{optimizer_arg}/config_{config_id}"
         os.makedirs(folder, exist_ok=True)       
             
         for seed in range(args.start_seed, args.start_seed + args.trials):
