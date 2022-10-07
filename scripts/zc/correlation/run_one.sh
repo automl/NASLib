@@ -48,7 +48,7 @@ fi
 
 start=`date +%s`
 
-python naslib/runners/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-9000/${dataset}/config_${seed}.yaml
+python naslib/runners/zc/runner.py --config-file configs/${experiment}/${predictor}/${searchspace}-9000/${dataset}/config_${seed}.yaml
 
 end=`date +%s`
 runtime=$((end-start))

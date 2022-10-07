@@ -4,7 +4,7 @@
 #SBATCH -e logs/%x.%A-%a.%N.err       # STDERR  %A will be replaced by the SLURM_ARRAY_JOB_ID value
 #SBATCH -a 0-4 # array size
 #SBATCH --mem=5G
-#SBATCH --job-name="THE_JOB_NAME"
+#SBATCH --job-name="transbench101_micro-autoencoder-grad_norm"
 
 echo "Workingdir: $PWD";
 echo "Started at $(date)";
@@ -57,7 +57,7 @@ test_id=0
 # seed=$(($start_seed + ${SLURM_ARRAY_TASK_ID}))
 seed=$(($start_seed + ${test_id}))
 python -m debugpy --listen 0.0.0.0:$PORT --wait-for-client naslib/runners/zc/runner.py --config-file naslib/configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
-
+# python naslib/runners/zc/runner.py --config-file naslib/configs/${experiment}/${predictor}/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
 end=`date +%s`
 runtime=$((end-start))
 

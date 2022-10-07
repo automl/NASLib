@@ -24,10 +24,11 @@ for dataset in "${datasets[@]}"
 do
     for pred in "${predictors[@]}"
     do
-        sed -i "s/THE_JOB_NAME/${searchspace}-${dataset}-${pred}/" ./scripts/correlation/run.sh
+        sed -i "s/THE_JOB_NAME/${searchspace}-${dataset}-${pred}/" ./scripts/zc/correlation/run.sh
         echo $searchspace $dataset $pred
-        sbatch ./scripts/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
-        sed -i "s/${searchspace}-${dataset}-${pred}/THE_JOB_NAME/" ./scripts/correlation/run.sh
+        # bash ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment
+        sbatch ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
+        sed -i "s/${searchspace}-${dataset}-${pred}/THE_JOB_NAME/" ./scripts/zc/correlation/run.sh
     done
 
     echo ""

@@ -5,7 +5,7 @@ from  fvcore.common.config import CfgNode
 from naslib.evaluators.zc_evaluator import ZeroCostPredictorEvaluator
 from naslib.predictors import ZeroCost
 from naslib.search_spaces import get_search_space
-from naslib.utils import utils, setup_logger, get_dataset_api, get_zc_benchmark_api, parse_args, load_config
+from naslib.utils import utils, setup_logger, get_dataset_api, get_zc_benchmark_api
 
 # Get the configs from naslib/configs/predictor_config.yaml and the command line arguments
 # The configs include the zero-cost method to use, the search space and dataset/task to use,
@@ -20,7 +20,7 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 # Get the benchmark API for this search space and dataset
-dataset_api = None #get_dataset_api(config.search_space, config.dataset)
+dataset_api = get_dataset_api(config.search_space, config.dataset)
 zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
 
 # Initialize the search space and predictor
