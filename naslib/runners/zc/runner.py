@@ -20,6 +20,7 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 # Get the benchmark API for this search space and dataset
+# dataset_api = None
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
 

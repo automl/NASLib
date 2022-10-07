@@ -12,8 +12,7 @@ fi
 
 if [ -z "$predictor" ];
 then
-    predictors=(fisher # grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot zen
-    )
+    predictors=(fisher grad_norm grasp jacov snip synflow epe_nas flops params plain l2_norm nwot zen)
 else
     predictors=($predictor)
 fi
@@ -27,8 +26,7 @@ do
     do
         sed -i "s/THE_JOB_NAME/${searchspace}-${dataset}-${pred}/" scripts/zc/correlation/run.sh
         echo $searchspace $dataset $pred
-        # sbatch ./scripts/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
-        bash ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment 
+        sbatch ./scripts/zc/correlation/run.sh $searchspace $dataset $pred $start_seed $experiment --bosch
         sed -i "s/${searchspace}-${dataset}-${pred}/THE_JOB_NAME/" scripts/zc/correlation/run.sh
     done
 
