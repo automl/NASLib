@@ -57,7 +57,7 @@ class Trainer(object):
         self.val_loss = utils.AverageMeter()
 
         n_parameters = optimizer.get_model_size()
-        logger.info("param size = %fMB", n_parameters)
+        # logger.info("param size = %fMB", n_parameters)
         self.search_trajectory = utils.AttrDict(
             {
                 "train_acc": [],
@@ -83,7 +83,7 @@ class Trainer(object):
             resume_from (str): Checkpoint file to resume from. If not given then
                 train from scratch.
         """
-        logger.info("Start training")
+        logger.info("Beginning search")
 
         np.random.seed(self.config.search.seed)
         torch.manual_seed(self.config.search.seed)
