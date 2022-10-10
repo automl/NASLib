@@ -8,8 +8,7 @@ do
     for config_dir in $optimizer_dir/*
     do
         echo starting to run ${config_dir} across 10 seeds ...
-        # sbatch submit_folder.sh $config_dir
-        bash ./scripts/bbo/submit_folder.sh $config_dir # for srun node testing
+        sbatch ./scripts/bbo/submit_folder.sh $config_dir # for srun node testing
         
     done
 done
