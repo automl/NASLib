@@ -2,11 +2,11 @@ dataset: cifar10
 seed: 99
 search_space: nasbench201 #changed from darts
 out_dir: run
-optimizer: edge_popup #changed from darts
+optimizer: darts #changed from darts
 
 search:
   checkpoint_freq: 5
-  batch_size: 32
+  batch_size: 64
   learning_rate: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
