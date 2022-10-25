@@ -18,6 +18,6 @@ do
     for dataset in "${datasets[@]}"
     do
         echo $searchspace $dataset
-        bash ./scripts/cluster/zc_ensembles/run.sh $searchspace $dataset $start_seed $n_seeds $experiment 
+        bash ./scripts/zc/zc_ensembles/run.sh $searchspace $dataset $start_seed $n_seeds $experiment 
     done
 done

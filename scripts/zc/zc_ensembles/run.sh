@@ -16,6 +16,11 @@ n_seeds=10
 experiment=$5
 optimizer=bananas
 
+SCRIPT_DIR="/home/jhaa/NASLib/scripts/vscode_remote_debugging"
+while read var value
+do
+    export "$var"="$value"
+done < $SCRIPT_DIR/config.conf
 
 if [ -z "$searchspace" ]
 then
@@ -52,7 +57,8 @@ start=`date +%s`
 for i in $(seq 0 $(($n_seeds - 1)))
 do
     echo "running experiment for config_$(($start_seed + $i)).yaml"
-    python naslib/runners/bbo/runner.py --config-file configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
+    #python naslib/runners/bbo/runner.py --config-file naslib/configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
+    python -m debugpy --listen 0.0.0.0:$PORT --wait-for-client naslib/runners/bbo/runner.py --config-file naslib/configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
 done
 
 end=`date +%s`
