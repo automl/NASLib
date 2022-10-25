@@ -311,7 +311,7 @@ class NasBench101SearchSpace(Graph):
         return outputs[0]
 
 
-def get_utilized(matrix) -> [list, list]:
+def get_utilized(matrix):
     # return the sets of utilized edges and nodes
     # first, compute all paths
     n = np.shape(matrix)[0]
