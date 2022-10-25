@@ -2,11 +2,12 @@ import argparse
 import os
 import yaml
 
-
 def main(args):
     folder = os.path.join(
         args.config_root,
         args.config_type,
+        "zc_only" if args.zc_only else "zc_architecture",
+        "use_zc_api" if args.use_zc_api else "use_predictor",
         args.optimizer,
         f'{args.search_space}-{args.start_seed}',
         args.dataset
@@ -25,6 +26,7 @@ def main(args):
             'config_type': args.config_type,
             'predictor': args.predictor,
             'out_dir': args.out_dir,
+            'fidelity': -1, # Needed by runner in case RS is taking in this config
             'test_size': args.test_size,
             'train_portion': args.train_portion,
             'batch_size': args.batch_size,
@@ -44,7 +46,6 @@ def main(args):
         search_config['seed'] = i
 
         config['search'] = search_config
-
         with open(folder + f'/config_{i}.yaml', 'w') as fh:
             yaml.dump(config, fh)
 
@@ -86,7 +87,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--config_type", type=str, default='zc_and_adjacency', help="Type of experiment")
     parser.add_argument("--zc_ensemble", type=bool, default=True, help="True to use ensemble of ZC predictors")
-    parser.add_argument("--zc_only", default=False, action='store_true', help="Root config directory")
+    parser.add_argument("--zc", type= lambda x : (True if x == "True" else False), default=True, help="Whether zerocost is used or not")
+    parser.add_argument("--zc_only", type= lambda x : (True if x == "True" else False), default=False, help="Specify how to define zerocost features into the tree")
+    parser.add_argument("--use_zc_api", type= lambda x : (True if x == "True" else False), default=False, help="Whether to use zc_api (True) or zc_predictor (False)")
 
     args = parser.parse_args()
 
