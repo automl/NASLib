@@ -51,13 +51,15 @@ class Bananas(MetaOptimizer):
         self.next_batch = []
         self.history = torch.nn.ModuleList()
 
-        self.zc = config.search.zc_ensemble if hasattr(config.search, 'zc_ensemble') else None 
-        self.semi = "semi" in self.predictor_type # FIXME go through configs?
+        self.zc = config.search.zc if hasattr(config.search, 'zc') else None
+        self.semi = "semi" in self.predictor_type  # FIXME go through configs?
         self.zc_api = zc_api
-        self.use_zc_api = config.search.use_zc_api if hasattr(config.search, 'use_zc_api') else False
-        self.zc_names = config.search.zc_names if hasattr(config.search, 'zc_names') else None 
-        self.sample_from_zc_api = config.search.zc_api if hasattr(config.search, 'zc_api') else False
-        self.zc_only = config.search.zc_only if hasattr(config.search, 'zc_only') else False
+        self.use_zc_api = config.search.use_zc_api if hasattr(
+            config.search, 'use_zc_api') else False
+        self.zc_names = config.search.zc_names if hasattr(
+            config.search, 'zc_names') else None
+        self.zc_only = config.search.zc_only if hasattr(
+            config.search, 'zc_only') else False
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -70,28 +72,25 @@ class Bananas(MetaOptimizer):
         self.ss_type = self.search_space.get_type()
         if self.zc:
             self.train_loader, _, _, _, _ = get_train_val_loaders(
-                self.config, mode="train"
-            )
+                self.config, mode="train")
         if self.semi:
             self.unlabeled = []
-
 
     def get_zero_cost_predictors(self):
         return {zc_name: ZeroCost(method_type=zc_name) for zc_name in self.zc_names}
 
-
     def query_zc_scores(self, arch):
+        arch.parse()
         zc_scores = {}
-        
-        zc_methods = self.get_zero_cost_predictors()
 
+        zc_methods = self.get_zero_cost_predictors()
+        arch_hash = arch.get_hash()
         for zc_name, zc_method in zc_methods.items():
             if self.use_zc_api and str(arch_hash) in self.zc_api.keys():
-                arch_hash = arch.get_hash()
                 score = self.zc_api[str(arch_hash)][zc_name]['score']
             else:
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
-                score = zc_method.query([arch])
+                score = zc_method.query(arch, dataloader=zc_method.train_loader)
 
             if float("-inf") == score:
                 score = -1e9
@@ -102,7 +101,6 @@ class Bananas(MetaOptimizer):
 
         return zc_scores
 
-
     def _set_scores(self, model):
 
         if self.use_zc_api and str(model.arch_hash) in self.zc_api.keys():
@@ -111,32 +109,31 @@ class Bananas(MetaOptimizer):
             model.accuracy = model.arch.query(
                 self.performance_metric, self.dataset, dataset_api=self.dataset_api
             )
-        
+
         if self.zc and len(self.train_data) <= self.max_zerocost:
             model.zc_scores = self.query_zc_scores(model.arch)
 
         self.train_data.append(model)
         self._update_history(model)
 
-
     def _sample_new_model(self):
         # self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
 
         model = torch.nn.Module()
         model.arch = self.search_space.clone()
-        model.arch.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
+        model.arch.sample_random_architecture(
+            dataset_api=self.dataset_api, load_labeled=self.use_zc_api)
         model.arch_hash = model.arch.get_hash()
-        
+
         # model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
 
         return model
-    
+
     def _get_train(self):
         xtrain = [m.arch for m in self.train_data]
         ytrain = [m.accuracy for m in self.train_data]
         return xtrain, ytrain
 
-    
     def _get_ensemble(self):
         ensemble = Ensemble(num_ensemble=self.num_ensemble,
                             ss_type=self.ss_type,
@@ -144,9 +141,8 @@ class Bananas(MetaOptimizer):
                             zc=self.zc,
                             zc_only=self.zc_only,
                             config=self.config)
-        
-        return ensemble
 
+        return ensemble
 
     def _get_new_candidates(self, ytrain):
         # optimize the acquisition function to output k new architectures
@@ -154,7 +150,7 @@ class Bananas(MetaOptimizer):
         if self.acq_fn_optimization == 'random_sampling':
 
             for _ in range(self.num_candidates):
-                #self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
+                # self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
                 model = self._sample_new_model()
                 model.accuracy = model.arch.query(
                     self.performance_metric, self.dataset, dataset_api=self.dataset_api
@@ -180,11 +176,11 @@ class Bananas(MetaOptimizer):
                     candidates.append(model)
 
         else:
-            logger.info('{} is not yet supported as a acq fn optimizer'.format(self.encoding_type))
+            logger.info('{} is not yet supported as a acq fn optimizer'.format(
+                self.encoding_type))
             raise NotImplementedError()
 
         return candidates
-        
 
     def new_epoch(self, epoch):
 
@@ -201,24 +197,27 @@ class Bananas(MetaOptimizer):
                     # create unlabeled data and pass it to the predictor
                     while len(self.unlabeled) < len(xtrain):
                         model = self._sample_new_model()
-                        
+
                         if self.zc and len(self.train_data) <= self.max_zerocost:
                             model.zc_scores = self.query_zc_scores(model.arch)
 
                         self.unlabeled.append(model)
-                    
+
                     ensemble.set_pre_computations(
                         unlabeled=[m.arch for m in self.unlabeled]
                     )
-                
+
                 if self.zc and len(self.train_data) <= self.max_zerocost:
                     # pass the zero-cost scores to the predictor
-                    train_info = {'zero_cost_scores': [m.zc_scores for m in self.train_data]}
+                    train_info = {'zero_cost_scores': [
+                        m.zc_scores for m in self.train_data]}
                     ensemble.set_pre_computations(xtrain_zc_info=train_info)
 
                     if self.semi:
-                        unlabeled_zc_info = {'zero_cost_scores': [m.zc_scores for m in self.unlabeled]}
-                        ensemble.set_pre_computations(unlabeled_zc_info=unlabeled_zc_info)
+                        unlabeled_zc_info = {'zero_cost_scores': [
+                            m.zc_scores for m in self.unlabeled]}
+                        ensemble.set_pre_computations(
+                            unlabeled_zc_info=unlabeled_zc_info)
 
                 ensemble.fit(xtrain, ytrain)
 
@@ -239,9 +238,9 @@ class Bananas(MetaOptimizer):
     def _get_best_candidates(self, candidates, acq_fn):
         if self.zc and len(self.train_data) <= self.max_zerocost:
             for model in candidates:
-                model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
+                model.zc_scores = self.query_zc_scores(model.arch)
 
-            values = [acq_fn(model.arch, [{'zero_cost_scores' : model.zc_scores}]) for model in candidates]
+            values = [acq_fn(model.arch, [{'zero_cost_scores': model.zc_scores}]) for model in candidates]
         else:
             values = [acq_fn(model.arch) for model in candidates]
 
