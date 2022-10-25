@@ -219,6 +219,9 @@ def get_config_from_args(args=None, config_type="nas"):
         config.evaluation.dist_url = args.dist_url
         config.evaluation.dist_backend = args.dist_backend
         config.evaluation.multiprocessing_distributed = args.multiprocessing_distributed
+
+        if not hasattr(config, "config_id"): #FIXME
+            config.config_id = 0
         config.save = "{}/{}/{}/{}/config_{}/{}".format(
             config.out_dir, config.search_space, config.dataset, config.optimizer, config.config_id, config.seed
         )
@@ -318,6 +321,8 @@ def get_train_val_loaders(config, mode="train"):
     data = config.data
     dataset = config.dataset
     seed = config.search.seed
+    batch_size = config.batch_size
+    train_portion = config.train_portion
     config = config.search if mode == "train" else config.evaluation
     if dataset == "cifar10":
         train_transform, valid_transform = _data_transforms_cifar10(config)
@@ -433,11 +438,11 @@ def get_train_val_loaders(config, mode="train"):
 
     num_train = len(train_data)
     indices = list(range(num_train))
-    split = int(np.floor(config.train_portion * num_train))
+    split = int(np.floor(train_portion * num_train))
 
     train_queue = torch.utils.data.DataLoader(
         train_data,
-        batch_size=config.batch_size,
+        batch_size=batch_size,
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
         pin_memory=True,
         num_workers=0,
@@ -446,7 +451,7 @@ def get_train_val_loaders(config, mode="train"):
 
     valid_queue = torch.utils.data.DataLoader(
         train_data,
-        batch_size=config.batch_size,
+        batch_size=batch_size,
         sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
         pin_memory=True,
         num_workers=0,
@@ -455,7 +460,7 @@ def get_train_val_loaders(config, mode="train"):
 
     test_queue = torch.utils.data.DataLoader(
         test_data,
-        batch_size=config.batch_size,
+        batch_size=batch_size,
         shuffle=False,
         pin_memory=True,
         num_workers=0,
