@@ -11,18 +11,14 @@ def main(args):
     if args.config_type == 'bbo-bs':
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
-        num_config = 1 # FIXME 10
+        num_config = 10
         
         # first generate the default config at config 0
         config_id = 0
         
         base_folder = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-        if args.zerocost is 'none':
-            optimizer_arg = args.optimizer
-        else:
-            optimizer_arg = f"{args.optimizer}_{args.zerocost}"
 
-        folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{optimizer_arg}/config_{config_id}"
+        folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
         os.makedirs(folder, exist_ok=True)       
             
         for seed in range(args.start_seed, args.start_seed + args.trials):
@@ -61,12 +57,6 @@ def main(args):
                     "debug_predictor": False,
                 },
             }
-
-            if args.zerocost != 'none':
-                config["search"]["zc"] = True
-                config["search"]["zc_names"] = ["jacov", "snip", "synflow", "grad_norm", "fisher", "grasp"]
-                if args.zerocost == 'api':
-                    config["search"]["use_zc_api"] = True
 
             path = folder + f"/seed_{seed}.yaml"
 
