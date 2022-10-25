@@ -1,7 +1,6 @@
 export OMP_NUM_THREADS=2
 # optimizers=(rs)
-# optimizers=(rs re ls npenas bananas)
-optimizers=(npenas npenas_zc npenas_zc_api bananas bananas_zc bananas_zc_api)
+optimizers=(rs re ls npenas bananas)
 
 start_seed=$1
 if [ -z "$start_seed" ]
@@ -48,7 +47,7 @@ do
 		--out_dir $out_dir --dataset=$dataset --config_type $config_type \
 		--search_space $search_space --optimizer $optimizer \
 		--acq_fn_optimization $acq_fn_optimization --predictor $predictor \
-		--fidelity $fidelity --epochs $epochs
+		--fidelity $fidelity --epochs $epochs 
 	done
 done
 
