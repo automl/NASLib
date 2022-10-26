@@ -15,8 +15,10 @@ start_seed=$3
 n_seeds=10
 experiment=$5
 optimizer=bananas
+zc_usage=$6
+zc_source=$7
 
-SCRIPT_DIR="/home/jhaa/NASLib/scripts/vscode_remote_debugging"
+SCRIPT_DIR="/home/robertsj/NASLib/scripts/vscode_remote_debugging"
 while read var value
 do
     export "$var"="$value"
@@ -52,13 +54,25 @@ then
     exit 1
 fi
 
+if [ -z "$zc_usage" ]
+then
+    echo "zc_usage not provided"
+    exit 1
+fi
+
+if [ -z "$zc_source" ]
+then
+    echo "zc_source not provided"
+    exit 1
+fi
+
 start=`date +%s`
 
 for i in $(seq 0 $(($n_seeds - 1)))
 do
     echo "running experiment for config_$(($start_seed + $i)).yaml"
-    #python naslib/runners/bbo/runner.py --config-file naslib/configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
-    python -m debugpy --listen 0.0.0.0:$PORT --wait-for-client naslib/runners/bbo/runner.py --config-file naslib/configs/${experiment}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
+    python naslib/runners/bbo/runner.py --config-file naslib/configs/${experiment}/${zc_usage}/${zc_source}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
+    # python -m debugpy --listen 0.0.0.0:$PORT --wait-for-client naslib/runners/bbo/runner.py --config-file naslib/configs/${experiment}/${zc_usage}/${zc_source}/${optimizer}/${searchspace}-${start_seed}/${dataset}/config_$(($start_seed + $i)).yaml
 done
 
 end=`date +%s`
