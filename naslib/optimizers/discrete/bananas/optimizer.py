@@ -80,12 +80,12 @@ class Bananas(MetaOptimizer):
         return {zc_name: ZeroCost(method_type=zc_name) for zc_name in self.zc_names}
 
     def query_zc_scores(self, arch):
-        arch.parse()
         zc_scores = {}
 
         zc_methods = self.get_zero_cost_predictors()
         arch_hash = arch.get_hash()
         for zc_name, zc_method in zc_methods.items():
+
             if self.use_zc_api and str(arch_hash) in self.zc_api.keys():
                 score = self.zc_api[str(arch_hash)][zc_name]['score']
             else:
@@ -117,15 +117,12 @@ class Bananas(MetaOptimizer):
         self._update_history(model)
 
     def _sample_new_model(self):
-        # self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api)
-
         model = torch.nn.Module()
         model.arch = self.search_space.clone()
         model.arch.sample_random_architecture(
             dataset_api=self.dataset_api, load_labeled=self.use_zc_api)
         model.arch_hash = model.arch.get_hash()
-
-        # model.arch = encode_spec(model.arch_hash, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type())
+        model.arch.parse()
 
         return model
 
@@ -168,6 +165,7 @@ class Bananas(MetaOptimizer):
                     for __ in range(int(self.max_mutations)):
                         arch = self.search_space.clone()
                         arch.mutate(candidate, dataset_api=self.dataset_api)
+                        arch.parse()
                         candidate = arch
 
                     model = torch.nn.Module()

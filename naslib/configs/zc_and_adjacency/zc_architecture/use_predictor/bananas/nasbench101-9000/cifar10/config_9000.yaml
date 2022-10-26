@@ -13,13 +13,13 @@ search:
   acq_fn_type: its
   checkpoint_freq: 1001
   encoding_type: adjacency
-  epochs: 500
+  epochs: 2
   k: 10
   max_mutations: 1
   num_arches_to_mutate: 2
-  num_candidates: 100
+  num_candidates: 10
   num_ensemble: 1
-  num_init: 10
+  num_init: 1
   predictor_type: xgb
   seed: 9000
   use_zc_api: false

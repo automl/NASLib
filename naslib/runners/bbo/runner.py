@@ -63,7 +63,8 @@ search_space = supported_search_spaces[config.search_space]
 if hasattr(config.search, 'zc'):
     search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
 
-search_space.instantiate_model = False
+if config.search.acq_fn_optimization == 'mutation' or config.search.use_zc_api == False:
+    search_space.instantiate_model = True
 
 metric = Metric.VAL_ACCURACY if config.search_space == 'nasbench301' else None
 
