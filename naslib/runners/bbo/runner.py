@@ -63,9 +63,11 @@ search_space = supported_search_spaces[config.search_space]
 if hasattr(config.search, 'zc'):
     search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
 
-if config.search.acq_fn_optimization == 'mutation' or config.search.use_zc_api == False:
+if config.search.acq_fn_optimization == 'random_sampling' and config.search.use_zc_api == True:
+    search_space.instantiate_model = False
+
+if config.search.acq_fn_optimization != 'random_sampling' and config.search.use_zc_api == True:
     logging.warning("Using ZC API with a acquisition optimization strategy that is not Random Sampling")
-    search_space.instantiate_model = True
 
 metric = Metric.VAL_ACCURACY if config.search_space == 'nasbench301' else None
 

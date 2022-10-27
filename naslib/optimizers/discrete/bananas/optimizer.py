@@ -122,7 +122,9 @@ class Bananas(MetaOptimizer):
         model.arch.sample_random_architecture(
             dataset_api=self.dataset_api, load_labeled=self.use_zc_api)
         model.arch_hash = model.arch.get_hash()
-        model.arch.parse()
+        
+        if self.search_space.instantiate_model == True:
+            model.arch.parse()
 
         return model
 
