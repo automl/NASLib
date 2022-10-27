@@ -8,6 +8,7 @@ from torch.utils.data import Dataset
 from sklearn import metrics
 from scipy import stats
 import copy
+import json
 
 from collections import OrderedDict
 
@@ -182,7 +183,7 @@ def get_config_from_args(args=None, config_type="nas"):
                 arg1, arg2 = arg.split(".")
                 config[arg1][arg2] = type(config[arg1][arg2])(value)
             else:
-                config[arg] = type(config[arg])(value) if arg in config else value
+                config[arg] = type(config[arg])(value) if arg in config else eval(value)
 
         config.eval_only = args.eval_only
         config.resume = args.resume
