@@ -26,7 +26,6 @@ def main(args):
             'config_type': args.config_type,
             'predictor': args.predictor,
             'out_dir': args.out_dir,
-            'fidelity': -1, # Needed by runner in case RS is taking in this config
             'test_size': args.test_size,
             'train_portion': args.train_portion,
             'batch_size': args.batch_size,
@@ -72,6 +71,9 @@ if __name__ == "__main__":
 
     # Search options
     parser.add_argument("--epochs", type=int, default=200, help="Number of search epochs")
+    parser.add_argument("--fidelity", type=int, default=-1, help="Number of epochs")
+    parser.add_argument("--sample_size", type=int, default=10, help="Number of samples")
+    parser.add_argument("--population_size", type=int, default=50, help="Number of individuals")
     parser.add_argument("--checkpoint_freq", type=int, default=1001, help="Checkpoint frequency")
     parser.add_argument("--zc_names", nargs='+', default=['params', 'flops', 'jacov', 'plain', 'grasp', 'snip', 'fisher', 'grad_norm', 'epe_nas', 'synflow', 'l2_norm'], help="Names of ZC predictors to use")
     parser.add_argument("--k", type=int, default=10, help="Top k candidates to choose in each batch")

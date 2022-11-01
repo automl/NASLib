@@ -52,11 +52,14 @@ class Npenas(MetaOptimizer):
         self.zc = config.search.zc_ensemble if hasattr(config.search, 'zc_ensemble') else None 
         self.semi = "semi" in self.predictor_type # FIXME go through configs?
         self.zc_api = zc_api
-        self.use_zc_api = config.search.use_zc_api if hasattr(config.search, 'use_zc_api') else False
-        self.zc_names = config.search.zc_names if hasattr(config.search, 'zc_names') else None 
+        self.use_zc_api = config.search.use_zc_api if hasattr(config.search, 
+            'use_zc_api') else False
+        self.zc_names = config.search.zc_names if hasattr(config.search, 
+            'zc_names') else None 
         self.sample_from_zc_api = zc_api is not None
         self.num_ensemble = config.search.num_ensemble
-        self.zc_only = config.search.zc_only if hasattr(config.search, 'zc_only') else False
+        self.zc_only = config.search.zc_only if hasattr(config.search, 
+            'zc_only') else False
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -81,14 +84,14 @@ class Npenas(MetaOptimizer):
         zc_scores = {}
         
         zc_methods = self.get_zero_cost_predictors()
-
+        arch_hash = arch.get_hash()
         for zc_name, zc_method in zc_methods.items():
+            
             if self.use_zc_api and str(arch_hash) in self.zc_api.keys():
-                arch_hash = arch.get_hash()
                 score = self.zc_api[str(arch_hash)][zc_name]['score']
             else:
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
-                score = zc_method.query([arch])
+                score = zc_method.query(arch, dataloader=zc_method.train_loader)
 
             if float("-inf") == score:
                 score = -1e9
@@ -115,12 +118,14 @@ class Npenas(MetaOptimizer):
         self._update_history(model)
 
     def _sample_new_model(self):
-        self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=self.sample_from_zc_api) # FIXME extend to Zero Cost case
-
         model = torch.nn.Module()
         model.arch = self.search_space.clone()
-        model.arch.sample_random_architecture(dataset_api=self.dataset_api,load_labeled=self.sample_from_zc_api)
+        model.arch.sample_random_architecture(
+            dataset_api=self.dataset_api, load_labeled=self.use_from_zc_api)
         model.arch_hash = model.arch.get_hash()
+
+        if self.search_space.instantiate_model == True:
+            model.arch.parse()
 
         return model
     
@@ -153,6 +158,8 @@ class Npenas(MetaOptimizer):
                 for __ in range(int(self.max_mutations)):
                     arch = self.search_space.clone()
                     arch.mutate(candidate, dataset_api=self.dataset_api)
+                    if self.search_space.instantiate_model == True:
+                        arch.parse()
                     candidate = arch
 
                 model = torch.nn.Module()
@@ -186,7 +193,7 @@ class Npenas(MetaOptimizer):
             if len(self.next_batch) == 0:
                 # train a neural predictor
                 xtrain, ytrain = self._get_train()
-                ensemble = self._get_ensemble() # FIXME extend to Zero Cost case
+                ensemble = self._get_ensemble()
 
                 if self.semi:
                     # create unlabeled data and pass it to the predictor

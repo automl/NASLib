@@ -167,7 +167,8 @@ class Bananas(MetaOptimizer):
                     for __ in range(int(self.max_mutations)):
                         arch = self.search_space.clone()
                         arch.mutate(candidate, dataset_api=self.dataset_api)
-                        arch.parse()
+                        if self.search_space.instantiate_model == True:
+                            arch.parse()
                         candidate = arch
 
                     model = torch.nn.Module()
