@@ -37,7 +37,7 @@ except ImportError:
         subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
             git_nasbench301], check=False)
 
-git_nasbench_pytorch = "git+https://github.com/romulus0914/NASBench-PyTorch@master"
+git_nasbench_pytorch = "git+https://github.com/abhash-er/NASBench-PyTorch@fix-model-cast"
 
 try:
     import nasbench_pytorch
