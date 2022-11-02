@@ -28,6 +28,7 @@ from naslib.search_spaces.transbench101.conversions import (
 
 )
 from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
+import torch.nn.functional as F
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
 
