@@ -812,7 +812,7 @@ def accuracy_class_scene(output, target, topk=(1,)):
     return res
 
 
-def accuracy_autoencoder(output, target, topk=(1,)):
+def accuracy_autoencoderaccuracy_autoencoder(output, target, topk=(1,)):
     ssim_loss= SSIM(data_range=1, size_average=True, channel=3)
     res = ssim_loss(output, target)
     """
