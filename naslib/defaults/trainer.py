@@ -113,13 +113,11 @@ class Trainer(object):
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
-                                                    
                     data_train = (
                         data_train[0].to(self.device),
                         data_train[1].to(self.device, non_blocking=True),
                     )
                     data_val = next(iter(self.valid_queue))
-                    
                     data_val = (
                         data_val[0].to(self.device),
                         data_val[1].to(self.device, non_blocking=True),
@@ -523,16 +521,7 @@ class Trainer(object):
         """Update the accuracy counters"""
         logits = logits.clone().detach().cpu()
         target = target.clone().detach().cpu()
-        
-        if self.config.dataset == 'class_object':
-            prec1, prec5 = utils.accuracy_class_object(logits, target, topk=(1, 5))
-        elif self.config.dataset == 'class_scene':
-            prec1, prec5 = utils.accuracy_class_scene(logits, target, topk=(1, 5))
-        elif self.config.dataset == 'autoencoder':
-            prec1, prec5 = utils.accuracy_autoencoder(logits, target, topk=(1, 5))
-        else:
-            prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
-    
+        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
         n = logits.size(0)
 
         if split == "train":
