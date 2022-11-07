@@ -14,7 +14,7 @@ def translate_str(s, replace_str='[]', with_str='()'):
     table = str.maketrans(replace_str, with_str)
     return str.translate(s, table)
 
-config = utils.get_config_from_args()
+config = utils.get_config_from_args(config_type="zc")
 logger = setup_logger(config.save + "/log.log")
 logger.setLevel(logging.INFO)
 
