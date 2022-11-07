@@ -380,7 +380,7 @@ class TransBench101SearchSpaceMicro(Graph):
         available = [o for o in range(len(OP_NAMES)) if o != parent_op_indices[edge]]
         op_index = np.random.choice(available)
         op_indices[edge] = op_index
-        print('op_indices mu =', op_indices)
+        # print('op_indices mu =', op_indices)
         self.set_op_indices(op_indices)
 
     def get_nbhd(self, dataset_api=None):
