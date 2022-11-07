@@ -342,7 +342,7 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
                           encoding_type=encoding_type, 
                           max_nodes=12, 
                           accs=None)
-    elif ss_type == 'transbench101':
+    elif ss_type == 'transbench101_micro' or 'transbench101_macro':
         return encode_tb101(arch, encoding_type=encoding_type)
     elif ss_type == "asr":
         return encode_asr(arch,
