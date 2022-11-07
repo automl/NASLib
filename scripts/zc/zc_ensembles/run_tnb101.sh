@@ -1,6 +1,6 @@
 #!/bin/bash
 
-searchspaces=(transbench101_micro) # transbench101_macro)
+searchspace=(transbench101_micro) # transbench101_macro)
 datasets=(autoencoder class_object class_scene normal jigsaw room_layout segmentsemantic)
 start_seed=9000
 

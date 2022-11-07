@@ -6,16 +6,6 @@
 #SBATCH --mem=5G
 #SBATCH --job-name="XGB_ZC_CORRELATION"
 
-echo "Workingdir: $PWD";
-echo "Started at $(date)";
-echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node with given JID $SLURM_JOB_ID on queue $SLURM_JOB_PARTITION";
-
-SCRIPT_DIR="/home/jhaa/NASLib/scripts/vscode_remote_debugging"
-while read var value
-do
-    export "$var"="$value"
-done < $SCRIPT_DIR/config.conf
-
 searchspace=$1
 dataset=$2
 train_size=train_size_$3
@@ -59,7 +49,6 @@ for t in $(seq 0 $n_seeds)
 do
     seed=$(($start_seed + $t))
     python naslib/runners/zc/bbo/xgb_runner.py --config-file naslib/configs/${experiment}/${train_size}/$k/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
-    # python -m debugpy --listen 0.0.0.0:$PORT --wait-for-client naslib/runners/zc/bbo/xgb_runner.py --config-file naslib/configs/${experiment}/${train_size}/$k/${searchspace}-${start_seed}/${dataset}/config_${seed}.yaml
 done
 
 end=`date +%s`
