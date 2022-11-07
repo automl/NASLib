@@ -81,7 +81,6 @@ class Bananas(MetaOptimizer):
 
     def query_zc_scores(self, arch):
         zc_scores = {}
-
         zc_methods = self.get_zero_cost_predictors()
         arch_hash = arch.get_hash()
         for zc_name, zc_method in zc_methods.items():
@@ -264,25 +263,42 @@ class Bananas(MetaOptimizer):
             best_arch = self.get_final_architecture()
         else:
             best_arch = self.train_data[-1].arch
-
-        return (
-            best_arch.query(
-                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
-            ),
-        )
+        
+        if self.search_space.space_name != "nasbench301":
+            return (
+                best_arch.query(
+                    Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+                ),
+            )
+        else:
+            return (
+                -1, 
+                best_arch.query(
+                    Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+                ),
+            ) 
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
+        if self.search_space.space_name != "nasbench301":
+            return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
+        else:
+            return -1
 
     def get_final_architecture(self):
         return max(self.history, key=lambda x: x.accuracy).arch
