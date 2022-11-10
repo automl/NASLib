@@ -9,6 +9,7 @@ from sklearn import metrics
 from scipy import stats
 
 from collections import OrderedDict
+from json import JSONEncoder 
 
 import random
 import os
@@ -1073,3 +1074,10 @@ class Checkpointer(fvCheckpointer):
 
         # return any further checkpoint data
         return checkpoint
+    
+
+class NumpyArrayEncoder(JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, np.ndarray):
+                return obj.tolist()
+            return JSONEncoder.default(self, obj)

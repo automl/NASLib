@@ -1,8 +1,8 @@
 dataset: cifar10
 seed: 99
-search_space: nasbench201
+search_space: nasbench101
 out_dir: run
-optimizer: darts
+optimizer: Bananas
 
 search:
   checkpoint_freq: 5
@@ -11,11 +11,11 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 50
+  epochs: 5
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 0.5
-  data_size: 25000
+  data_size: 250
 
   cutout: False
   cutout_length: 16
@@ -78,7 +78,7 @@ evaluation:
   learning_rate_min: 0.00
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 600
+  epochs: 6
   warm_start_epochs: 0
   grad_clip: 5
   train_portion: 1.
