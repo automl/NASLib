@@ -312,7 +312,7 @@ class NasBench101SearchSpace(Graph):
         return outputs[0]
 
     def encode(self, encoding_type="adjacency_one_hot"):
-        encode_101(arch=self, encoding_type=encoding_type)
+        return encode_101(arch=self, encoding_type=encoding_type)
 
     def encode_spec(self, encoding_type='adjacency_one_hot'):
         spec = convert_tuple_to_spec(self.spec)

@@ -21,6 +21,7 @@ from naslib.search_spaces.nasbench301.conversions import (
     make_compact_immutable,
 )
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.nasbench301.encodings import encode_darts, encode_darts_compact
 from .primitives import FactorizedReduce
 
 import torch.nn.functional as F
@@ -593,6 +594,12 @@ class NasBench301SearchSpace(Graph):
 
         assert len(outputs) == 1
         return outputs[0]
+
+    def encode(self, encoding_type="adjacency_one_hot"):
+        return encode_darts(self, encoding_type=encoding_type)
+
+    def encode_spec(self, encoding_type='adjacency_one_hot'):
+        return encode_darts_compact(self, encoding_type=encoding_type)
 
 
 def _set_ops(edge, C: int, stride: int) -> None:

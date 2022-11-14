@@ -12,6 +12,7 @@ from naslib.search_spaces.nasbenchasr.primitives import CellLayerNorm, Head, ops
 from naslib.utils.utils import get_project_root
 from naslib.search_spaces.nasbenchasr.conversions import flatten, \
 copy_structure, make_compact_mutable, make_compact_immutable
+from naslib.search_spaces.nasbenchasr.encodings import encode_asr
 
 
 OP_NAMES = ['linear', 'conv5', 'conv5d2', 'conv7', 'conv7d2', 'zero']
@@ -294,6 +295,9 @@ class NasBenchASRSearchSpace(Graph):
 
     def get_max_epochs(self):
         return 39
+
+    def encode(self, encoding_type="adjacency_one_hot"):
+        return encode_asr(self, encoding_type=encoding_type)
 
 
 def _set_cell_edge_ops(edge, filters, use_norm):
