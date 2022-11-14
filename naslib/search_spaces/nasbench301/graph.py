@@ -400,7 +400,7 @@ class NasBench301SearchSpace(Graph):
                 genotype = convert_naslib_to_genotype(self)
             else:
                 genotype = convert_compact_to_genotype(self.compact)
-            if metric == Metric.VAL_ACCURACY:
+            if metric == Metric.VAL_ACCURACY or metric == Metric.TEST_ACCURACY:
                 val_acc = dataset_api["nb301_model"][0].predict(
                     config=genotype, representation="genotype"
                 )
