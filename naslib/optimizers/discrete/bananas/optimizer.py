@@ -52,7 +52,7 @@ class Bananas(MetaOptimizer):
         self.history = torch.nn.ModuleList()
 
         self.zc = config.search.zc if hasattr(config.search, 'zc') else None
-        self.semi = "semi" in self.predictor_type  # FIXME go through configs?
+        self.semi = "semi" in self.predictor_type 
         self.zc_api = zc_api
         self.use_zc_api = config.search.use_zc_api if hasattr(
             config.search, 'use_zc_api') else False
@@ -85,7 +85,7 @@ class Bananas(MetaOptimizer):
         arch_hash = arch.get_hash()
         for zc_name, zc_method in zc_methods.items():
 
-            if self.use_zc_api and str(arch_hash) in self.zc_api.keys():
+            if self.use_zc_api and str(arch_hash) in self.zc_api:
                 score = self.zc_api[str(arch_hash)][zc_name]['score']
             else:
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
@@ -102,7 +102,7 @@ class Bananas(MetaOptimizer):
 
     def _set_scores(self, model):
 
-        if self.use_zc_api and str(model.arch_hash) in self.zc_api.keys():
+        if self.use_zc_api and str(model.arch_hash) in self.zc_api:
             model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
         else:
             model.accuracy = model.arch.query(

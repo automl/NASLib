@@ -38,6 +38,7 @@ class Npenas(MetaOptimizer):
 
         self.k = config.search.k
         self.num_init = config.search.num_init
+        self.num_ensemble = config.search.num_ensemble
         self.predictor_type = config.search.predictor_type
         self.encoding_type = config.search.encoding_type  # currently not implemented
         self.num_arches_to_mutate = config.search.num_arches_to_mutate
@@ -50,16 +51,14 @@ class Npenas(MetaOptimizer):
         self.history = torch.nn.ModuleList()
 
         self.zc = config.search.zc_ensemble if hasattr(config.search, 'zc_ensemble') else None 
-        self.semi = "semi" in self.predictor_type # FIXME go through configs?
+        self.semi = "semi" in self.predictor_type
         self.zc_api = zc_api
-        self.use_zc_api = config.search.use_zc_api if hasattr(config.search, 
-            'use_zc_api') else False
-        self.zc_names = config.search.zc_names if hasattr(config.search, 
-            'zc_names') else None 
-        self.sample_from_zc_api = zc_api is not None
-        self.num_ensemble = config.search.num_ensemble
-        self.zc_only = config.search.zc_only if hasattr(config.search, 
-            'zc_only') else False
+        self.use_zc_api = config.search.use_zc_api if hasattr(
+            config.search, 'use_zc_api') else False
+        self.zc_names = config.search.zc_names if hasattr(
+            config.search, 'zc_names') else None 
+        self.zc_only = config.search.zc_only if hasattr(
+            config.search, 'zc_only') else False
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         assert (
@@ -82,12 +81,11 @@ class Npenas(MetaOptimizer):
 
     def query_zc_scores(self, arch):
         zc_scores = {}
-        
         zc_methods = self.get_zero_cost_predictors()
         arch_hash = arch.get_hash()
         for zc_name, zc_method in zc_methods.items():
             
-            if self.use_zc_api and str(arch_hash) in self.zc_api.keys():
+            if self.use_zc_api and str(arch_hash) in self.zc_api:
                 score = self.zc_api[str(arch_hash)][zc_name]['score']
             else:
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
@@ -104,7 +102,7 @@ class Npenas(MetaOptimizer):
 
     def _set_scores(self, model):
 
-        if self.use_zc_api and str(model.arch_hash) in self.zc_api.keys():
+        if self.use_zc_api and str(model.arch_hash) in self.zc_api:
             model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
         else:
             model.accuracy = model.arch.query(
@@ -121,7 +119,7 @@ class Npenas(MetaOptimizer):
         model = torch.nn.Module()
         model.arch = self.search_space.clone()
         model.arch.sample_random_architecture(
-            dataset_api=self.dataset_api, load_labeled=self.use_from_zc_api)
+            dataset_api=self.dataset_api, load_labeled=self.use_zc_api)
         model.arch_hash = model.arch.get_hash()
 
         if self.search_space.instantiate_model == True:
@@ -168,21 +166,6 @@ class Npenas(MetaOptimizer):
                 candidates.append(model)
 
         return candidates
-
-    def _get_best_candidates(self, candidates, acq_fn):
-        
-        if self.zc and len(self.train_data) <= self.max_zerocost:
-            for model in candidates:
-                model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
-
-            values = [acq_fn(model.arch, [{'zero_cost_scores' : model.zc_scores}]) for model in candidates]
-        else:
-            values = [acq_fn(model.arch) for model in candidates]
-
-        sorted_indices = np.argsort(values)
-        choices = [candidates[i] for i in sorted_indices[-self.k:]]
-
-        return choices
 
     def new_epoch(self, epoch):
 
@@ -233,6 +216,21 @@ class Npenas(MetaOptimizer):
             # train the next architecture chosen by the neural predictor
             model = self.next_batch.pop()
             self._set_scores(model)
+    
+    def _get_best_candidates(self, candidates, acq_fn):
+        
+        if self.zc and len(self.train_data) <= self.max_zerocost:
+            for model in candidates:
+                model.zc_scores = self.query_zc_scores(model.arch_hash, self.zc_names, self.zc_api)
+
+            values = [acq_fn(model.arch, [{'zero_cost_scores' : model.zc_scores}]) for model in candidates]
+        else:
+            values = [acq_fn(model.arch) for model in candidates]
+
+        sorted_indices = np.argsort(values)
+        choices = [candidates[i] for i in sorted_indices[-self.k:]]
+
+        return choices
 
     def _update_history(self, child):
         if len(self.history) < 100:
@@ -249,24 +247,41 @@ class Npenas(MetaOptimizer):
         else:
             best_arch = self.train_data[-1].arch
 
-        return (
-            best_arch.query(
-                Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
-            ),
-            best_arch.query(
-                Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
-            ),
-        )
+        if self.search_space.space_name != "nasbench301":
+            return (
+                best_arch.query(
+                    Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+                ),
+            )
+        else:
+            return (
+                -1, 
+                best_arch.query(
+                    Metric.VAL_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TEST_ACCURACY, self.dataset, dataset_api=self.dataset_api
+                ),
+                best_arch.query(
+                    Metric.TRAIN_TIME, self.dataset, dataset_api=self.dataset_api
+                ),
+            ) 
 
     def test_statistics(self):
         best_arch = self.get_final_architecture()
-        return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
+        if self.search_space.space_name != "nasbench301":
+            return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
+        else:
+            return -1
 
     def get_final_architecture(self):
         return max(self.history, key=lambda x: x.accuracy).arch
@@ -279,3 +294,11 @@ class Npenas(MetaOptimizer):
 
     def get_model_size(self):
         return count_parameters_in_MB(self.history)
+    
+    def get_arch_as_string(self, arch):
+        if self.search_space.get_type() == 'nasbench301':
+            str_arch = str(list((list(arch[0]), list(arch[1]))))
+        else:
+            str_arch = str(arch)
+        return str_arch
+        
