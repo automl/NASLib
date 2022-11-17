@@ -404,18 +404,6 @@ class Graph(torch.nn.Module, nx.DiGraph):
                             )
                         )
 
-                        # print('edge_data.op ===============', edge_data.op)
-                        # print('self.mask ===============', self.mask)
-                        # print('----->>>>>', hasattr(edge_data.op, 'attr'))
-                        # if hasattr(edge_data.op, "attr"):
-                        #     # print("--------<>--------")
-                        #     print('YESSSSSS')
-                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data, mask=mask)
-                        # else:
-                        #     print('NOOOOOOO')
-                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data)
-
-
                         edge_output = edge_data.op.forward(x, edge_data=edge_data)
                     else:
                         raise ValueError(
@@ -502,15 +490,6 @@ class Graph(torch.nn.Module, nx.DiGraph):
                                 edge_data.op, node_idx, neigbor_idx
                             )
                         )
-
-                        print('edge_data.op ===============', edge_data.op)
-                        # print('self.mask ===============', self.mask)
-                        # print('----->>>>>', hasattr(edge_data.op, 'attr'))
-                        # if hasattr(edge_data.op, "attr"):
-                        #     print("--------<>--------")
-                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data, mask=self.mask)
-                        # else:
-                        #     edge_output = edge_data.op.forward(x, edge_data=edge_data)
 
                         edge_output = edge_data.op.forward_modified(x, edge_data=edge_data)
                     else:
