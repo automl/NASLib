@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 import copy
+import torch.nn as nn
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils import utils
@@ -112,18 +113,15 @@ class ZeroCostPredictorEvaluator(object):
         while len(xdata) < data_size:
             arch = self.search_space.clone()
             arch.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
-            if self.search_space.instantiate_model:
-                arch.parse()
                 
             arch_hash = arch.get_hash()
-
             if self.use_zc_api and str(arch_hash) in self.zc_api:
                 accuracy = self.zc_api[str(arch_hash)]['val_accuracy']
             else:
                 accuracy = arch.query(self.metric,self.dataset, dataset_api=self.dataset_api)
             # accuracy, train_time, info_dict = self.get_full_arch_info(graph)
 
-            xdata.append(arch)
+            xdata.append(arch_hash)
             ydata.append(accuracy)
             # info.append(info_dict)
             # train_times.append(train_time)
@@ -144,16 +142,13 @@ class ZeroCostPredictorEvaluator(object):
 
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
-        for arch in xtest:
-            # FIXME Change arch from tuple to model for querying from zc proxies
-            if self.test_data_file:
-                arch_hash = arch
-            else:
-                arch_hash = arch.get_hash()
-
+        for arch_hash in xtest:
             if self.use_zc_api and str(arch_hash) in self.zc_api:
                 pred = zc_api[str(arch_hash)][self.predictor.method_type]['score']
             else:
+                arch = self.search_space.clone()
+                arch.set_spec(arch_hash, self.dataset_api)
+                arch.parse()
                 self.predictor.train_loader = copy.deepcopy(self.train_loader)
                 pred = self.predictor.query(arch, dataloader=self.predictor.train_loader)
             
