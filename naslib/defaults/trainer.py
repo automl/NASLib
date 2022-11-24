@@ -8,6 +8,7 @@ import copy
 import torch
 import numpy as np
 
+from pathlib import Path
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
@@ -106,6 +107,9 @@ class Trainer(object):
                 self.config
             )
 
+        if self.config.save_arch_weights:
+            Path(self.config.save_arch_weights_path).mkdir(parents=True, exist_ok=False)
+
         for e in range(start_epoch, self.epochs):
 
             start_time = time.time()
@@ -113,6 +117,8 @@ class Trainer(object):
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
+                    if self.config.save_arch_weights:  # and step % 10 == 0:
+                        print([i for i in self.optimizer.architectural_weights])
                     data_train = (
                         data_train[0].to(self.device),
                         data_train[1].to(self.device, non_blocking=True),
