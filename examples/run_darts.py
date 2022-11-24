@@ -7,7 +7,7 @@ from naslib.search_spaces import DartsSearchSpace, SimpleCellSearchSpace
 from naslib.utils import set_seed, setup_logger, get_config_from_args
 
 config = get_config_from_args()  # use --help so see the options
-config.search.batch_size = 128
+config.search.batch_size = 256
 config.search.epochs = 3
 config.save_arch_weights = True
 config.save_arch_weights_path = f"{os.getcwd()}/save_arch"
