@@ -74,7 +74,8 @@ class Trainer(object):
             }
         )
 
-    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None, report_incumbent=True):
+    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None] = None,
+               report_incumbent=True):
         """
         Start the architecture search.
 
@@ -118,7 +119,16 @@ class Trainer(object):
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
                     if self.config.save_arch_weights:  # and step % 10 == 0:
-                        print([i for i in self.optimizer.architectural_weights])
+                        if not Path(f'{self.config.save_arch_weights_path}/tensor.pt').exists():
+                            torch.save(torch.unsqueeze(
+                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=0),
+                                       f'{self.config.save_arch_weights_path}/tensor.pt')
+                        else:
+                            x = torch.load(f'{self.config.save_arch_weights_path}/tensor.pt')
+                            print(x.shape)
+                            y = torch.unsqueeze(torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=0)
+                            torch.save(torch.vstack((x, y)), f'{self.config.save_arch_weights_path}/tensor.pt')
+
                     data_train = (
                         data_train[0].to(self.device),
                         data_train[1].to(self.device, non_blocking=True),
@@ -256,13 +266,13 @@ class Trainer(object):
         return self.val_top1.avg
 
     def evaluate(
-        self,
-        retrain:bool=True,
-        search_model:str="",
-        resume_from:str="",
-        best_arch:Graph=None,
-        dataset_api:object=None,
-        metric:Metric=None,
+            self,
+            retrain: bool = True,
+            search_model: str = "",
+            resume_from: str = "",
+            best_arch: Graph = None,
+            dataset_api: object = None,
+            metric: Metric = None,
     ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -371,14 +381,14 @@ class Trainer(object):
                         logits_train = best_arch(input_train)
                         train_loss = loss(logits_train, target_train)
                         if hasattr(
-                            best_arch, "auxilary_logits"
+                                best_arch, "auxilary_logits"
                         ):  # darts specific stuff
                             log_first_n(logging.INFO, "Auxiliary is used", n=10)
                             auxiliary_loss = loss(
                                 best_arch.auxilary_logits(), target_train
                             )
                             train_loss += (
-                                self.config.evaluation.auxiliary_weight * auxiliary_loss
+                                    self.config.evaluation.auxiliary_weight * auxiliary_loss
                             )
                         train_loss.backward()
                         if grad_clip:
@@ -400,9 +410,8 @@ class Trainer(object):
                     if self.valid_queue:
                         best_arch.eval()
                         for i, (input_valid, target_valid) in enumerate(
-                            self.valid_queue
+                                self.valid_queue
                         ):
-
                             input_valid = input_valid.to(self.device).float()
                             target_valid = target_valid.to(self.device).float()
 
@@ -555,7 +564,7 @@ class Trainer(object):
         self.test_queue = test_queue
 
     def _setup_checkpointers(
-        self, resume_from="", search=True, period=1, **add_checkpointables
+            self, resume_from="", search=True, period=1, **add_checkpointables
     ):
         """
         Sets up a periodic chechkpointer which can be used to save checkpoints
@@ -601,12 +610,12 @@ class Trainer(object):
             os.makedirs(self.config.save)
         if not self.lightweight_output:
             with codecs.open(
-                os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
+                    os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
                 json.dump(self.errors_dict, file, separators=(",", ":"))
         else:
             with codecs.open(
-                os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
+                    os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
                 lightweight_dict = copy.deepcopy(self.errors_dict)
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
