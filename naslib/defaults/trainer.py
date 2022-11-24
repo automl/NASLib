@@ -111,6 +111,7 @@ class Trainer(object):
         if self.config.save_arch_weights:
             Path(self.config.save_arch_weights_path).mkdir(parents=True, exist_ok=False)
 
+        x = None
         for e in range(start_epoch, self.epochs):
 
             start_time = time.time()
@@ -118,17 +119,20 @@ class Trainer(object):
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
-                    # Todo save after epoch, not for every step
                     if self.config.save_arch_weights:  # and step % 10 == 0:
-                        if not Path(f'{self.config.save_arch_weights_path}/tensor.pt').exists():
-                            torch.save(torch.unsqueeze(
-                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=1),
-                                       f'{self.config.save_arch_weights_path}/tensor.pt')
+                        if x is None:
+                            x = torch.unsqueeze(
+                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)),
+                                dim=1)
+                            if not Path(f'{self.config.save_arch_weights_path}/tensor.pt').exists():
+                                logger.info(f"Create tensor file: {self.config.save_arch_weights_path}/tensor.pt")
+                                torch.save(x, f'{self.config.save_arch_weights_path}/tensor.pt')
                         else:
-                            x = torch.load(f'{self.config.save_arch_weights_path}/tensor.pt')
-                            print(x.shape)
-                            y = torch.unsqueeze(torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=1)
-                            torch.save(torch.cat((x, y), dim=1), f'{self.config.save_arch_weights_path}/tensor.pt')
+                            y = torch.unsqueeze(
+                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)),
+                                dim=1)
+                            x = torch.cat((x, y), dim=1)
+
 
                     data_train = (
                         data_train[0].to(self.device),
@@ -214,6 +218,12 @@ class Trainer(object):
 
             if after_epoch is not None:
                 after_epoch(e)
+
+            y = torch.load(f'{self.config.save_arch_weights_path}/tensor.pt')
+            x = torch.cat((y, x), dim=1)
+            print(x.shape)
+            logger.info(f"Merge saved tensors and cached tensors: {self.config.save_arch_weights_path}/tensor.pt")
+            torch.save(x, f'{self.config.save_arch_weights_path}/tensor.pt')
 
         self.optimizer.after_training()
 
