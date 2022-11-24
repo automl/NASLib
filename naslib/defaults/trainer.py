@@ -118,16 +118,17 @@ class Trainer(object):
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
+                    # Todo save after epoch, not for every step
                     if self.config.save_arch_weights:  # and step % 10 == 0:
                         if not Path(f'{self.config.save_arch_weights_path}/tensor.pt').exists():
                             torch.save(torch.unsqueeze(
-                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=0),
+                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=1),
                                        f'{self.config.save_arch_weights_path}/tensor.pt')
                         else:
                             x = torch.load(f'{self.config.save_arch_weights_path}/tensor.pt')
                             print(x.shape)
-                            y = torch.unsqueeze(torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=0)
-                            torch.save(torch.vstack((x, y)), f'{self.config.save_arch_weights_path}/tensor.pt')
+                            y = torch.unsqueeze(torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)), dim=1)
+                            torch.save(torch.cat((x, y), dim=1), f'{self.config.save_arch_weights_path}/tensor.pt')
 
                     data_train = (
                         data_train[0].to(self.device),
