@@ -1,3 +1,4 @@
+import os
 import logging
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, RandomSearch
@@ -6,6 +7,10 @@ from naslib.search_spaces import DartsSearchSpace, SimpleCellSearchSpace
 from naslib.utils import set_seed, setup_logger, get_config_from_args
 
 config = get_config_from_args()  # use --help so see the options
+config.search.batch_size = 32
+config.search.epochs = 4
+config.save_arch_weights = True
+config.save_arch_weights_path = f"{os.getcwd()}/save_arch"
 set_seed(config.seed)
 
 logger = setup_logger(config.save + "/log.log")
@@ -18,4 +23,4 @@ optimizer.adapt_search_space(search_space)
 
 trainer = Trainer(optimizer, config)
 trainer.search()  # Search for an architecture
-trainer.evaluate()  # Evaluate the best architecture
+# trainer.evaluate()  # Evaluate the best architecture
