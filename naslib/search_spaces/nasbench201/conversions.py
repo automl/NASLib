@@ -131,11 +131,11 @@ def convert_op_indices_to_str(op_indices):
     Converts op indices to string representation.
     """
     op_index_to_str = {
-        "0": "skip_connect",
-        "1": "none",
-        "2": "nor_conv_3x3",
-        "3": "nor_conv_1x1",
-        "4": "avg_pool_3x3",
+        0: "skip_connect",
+        1: "none",
+        2: "nor_conv_3x3",
+        3: "nor_conv_1x1",
+        4: "avg_pool_3x3",
     }
 
     edge_op_dict = {}
