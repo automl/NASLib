@@ -146,6 +146,7 @@ class NasBench201SearchSpace(Graph):
             raise NotImplementedError()
         if metric != Metric.RAW and metric != Metric.ALL:
             assert dataset in [
+                "cifar10-valid",
                 "cifar10",
                 "cifar100",
                 "ImageNet16-120",
@@ -153,16 +154,17 @@ class NasBench201SearchSpace(Graph):
         if dataset_api is None:
             raise NotImplementedError("Must pass in dataset_api to query nasbench201")
 
+# TODO: change avaliable and correct format of the metrics to pass.
         metric_to_nb201 = {
             Metric.TRAIN_ACCURACY: "train_acc1es",
-            Metric.VAL_ACCURACY: "eval_acc1es",
+            Metric.VAL_ACCURACY: "eval_acc1es", # TODO: could also return eval_acc5es
             Metric.TEST_ACCURACY: "eval_acc1es",
             Metric.TRAIN_LOSS: "train_losses",
             Metric.VAL_LOSS: "eval_losses",
-            Metric.TEST_LOSS: "eval_losses",
+            Metric.TEST_LOSS: "eval_losses", # TODO: not sure about this one
             Metric.TRAIN_TIME: "train_times",
             Metric.VAL_TIME: "eval_times",
-            Metric.TEST_TIME: "eval_times",
+            Metric.TEST_TIME: "eval_times", # TODO: not sure about this one
             Metric.FLOPS: "flop",
             Metric.LATENCY: "latency",
             Metric.PARAMETERS: "params",
@@ -170,7 +172,7 @@ class NasBench201SearchSpace(Graph):
         }
 
         arch_str = convert_naslib_to_str(self)
-
+        queried_index = dataset_api['nb201_api'].query_info_str_by_arch(arch_str)
         if metric == Metric.RAW:
             # return all data
             return dataset_api["nb201_data"][arch_str]
