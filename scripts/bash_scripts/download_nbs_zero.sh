@@ -5,8 +5,8 @@ if [ "$search_space" = "tnb101" ] || [ "$search_space" = "all" ]
 then
    filepath1=zc_transbench101_macro.json
    filepath2=zc_transbench101_micro.json
-   fileid1=1nMaa3LjlP1d_umgudX7abKSdDMeoBNb5
-   fileid2=1i8N2n7yflN33xAuQVzlTYM4E7W1Cwn1S
+   fileid1=1teH8JcQsamZngUD_DMQyNkCoUYYSTM0M
+   fileid2=1SBOVAyhLCBTAJiU_fo7hLRknNrGNqFk7
    if [ -f $filepath1 ] && [ -f $filepath2]
    then
       echo "tnb101 files exist"
@@ -23,7 +23,7 @@ then
   then
     echo "nb301 file exist"
   else
-   gdown 11kIyLr7LwFB_fXGDk3ic5yjiYMY5JLXG
+   gdown 1RddgmwqjWJ1czGT8gEPB8qqhUHazp92G
   fi
 fi
 if [ "$search_space" = "nb201" ] || [ "$search_space" = "all" ]
@@ -33,7 +33,7 @@ then
   then
     echo "nb201 file exist"
   else
-   gdown 1k2EUtVJ4JqoJCnuyJEVgZs6vAmbg6XVB
+   gdown 1R7n7GpFHAjUZpPISzbhxH0QjubnvZM5H
   fi
 fi
 if [ "$search_space" = "nb101" ] || [ "$search_space" = "all" ]
@@ -43,7 +43,7 @@ then
   then
     echo "nb101 file exist"
   else
-   gdown 1uT3tuIDMVaB4U1N8l9imEYHWPOLls3FD
+   gdown 1Rkse44EWgYdBS34iyhjSs9Y2l0fxPCpU
   fi
 fi
 cd ..
