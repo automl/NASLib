@@ -8,6 +8,9 @@ import copy
 import torch
 import numpy as np
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from pathlib import Path
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
@@ -111,28 +114,31 @@ class Trainer(object):
         if self.config.save_arch_weights:
             Path(self.config.save_arch_weights_path).mkdir(parents=True, exist_ok=False)
 
-        x = None
         for e in range(start_epoch, self.epochs):
+            x = None
 
             start_time = time.time()
             self.optimizer.new_epoch(e)
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
-                    if self.config.save_arch_weights:  # and step % 10 == 0:
+                    if self.config.save_arch_weights:
                         if x is None:
-                            x = torch.unsqueeze(
-                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)),
-                                dim=1)
-                            if not Path(f'{self.config.save_arch_weights_path}/tensor.pt').exists():
-                                logger.info(f"Create tensor file: {self.config.save_arch_weights_path}/tensor.pt")
-                                torch.save(x, f'{self.config.save_arch_weights_path}/tensor.pt')
-                        else:
-                            y = torch.unsqueeze(
-                                torch.stack(tuple(i.detach().cpu() for i in self.optimizer.architectural_weights)),
-                                dim=1)
-                            x = torch.cat((x, y), dim=1)
+                            # using a python list, because alpha weights are not guaranteed to have the same size and
+                            # concatenating tensors of different weights is not possible in torch
+                            x = []
+                            for idx, i in enumerate(self.optimizer.architectural_weights):
+                                x.append(torch.unsqueeze(i.detach(), dim=0))
 
+                            if not Path(
+                                    f'{self.config.save_arch_weights_path}/tensor_0.pt').exists():  # todo sketchy fix
+                                for idx, x_i in enumerate(x):
+                                    logger.info(
+                                        f"Create tensor file: {self.config.save_arch_weights_path}/tensor_{idx}.pt")
+                                    torch.save(x[idx], f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+                        else:
+                            for idx, i in enumerate(self.optimizer.architectural_weights):
+                                x[idx] = torch.cat((x[idx], torch.unsqueeze(i, dim=0)), dim=0)
 
                     data_train = (
                         data_train[0].to(self.device),
@@ -219,11 +225,29 @@ class Trainer(object):
             if after_epoch is not None:
                 after_epoch(e)
 
-            y = torch.load(f'{self.config.save_arch_weights_path}/tensor.pt')
-            x = torch.cat((y, x), dim=1)
-            print(x.shape)
-            logger.info(f"Merge saved tensors and cached tensors: {self.config.save_arch_weights_path}/tensor.pt")
-            torch.save(x, f'{self.config.save_arch_weights_path}/tensor.pt')
+            # save arch tensors after each epoch
+            if self.config.save_arch_weights:
+                for idx in range(len(self.optimizer.architectural_weights)):
+                    y = torch.load(f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+                    x[idx] = torch.cat((y, x[idx]), dim=0)
+                    logger.info(
+                        f"Merge saved tensors and cached tensors: {self.config.save_arch_weights_path}/tensor_{idx}.pt")
+                    # Todo think of saving the plots for each epoch and not at the end of the search
+                    torch.save(x[idx], f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+
+        if self.config.save_arch_weights:  # plot weights
+            for idx in range(len(self.optimizer.architectural_weights)):
+                x = torch.load(f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+                # Todo check if softmax is suitable here. In which range are the weights for e.g. GDAS
+                x = torch.softmax(x.detach(), dim=1).cpu().numpy()
+                g = sns.heatmap(x.T, cmap=sns.diverging_palette(230, 0, 90, 60, as_cmap=True))
+                g.set_xticklabels(g.get_xticklabels(), rotation=60)
+
+                plt.title(f"arch weights for operation {idx}")
+                plt.xlabel("steps")
+                plt.ylabel("alpha values")
+                plt.savefig(f"{self.config.save_arch_weights_path}/heatmap_{idx}.png")
+                plt.close()
 
         self.optimizer.after_training()
 
