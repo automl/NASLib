@@ -26,7 +26,7 @@ with open("requirements.txt", "r") as f:
         requirements.append(line.strip())
 
 git_nb301 = "git+https://github.com/automl/nasbench301.git@no_gin"
-git_archai = "git+https://github.com/microsoft/archai.git@eedc197fdb56db664968bba4f9b784482e6760f6"
+git_archai = "git+https://github.com/microsoft/archai.git@a46590cebd057c03b1d2591bf3e0bb4454ff0470"
 
 try:
     import nasbench301
