@@ -139,20 +139,8 @@ def convert_str_to_op_indices(str_encoding):
 
     return tuple(enc)
 
-def convert_op_indices_to_str(op_indices):
-    edge_op_dict = {
-        edge: OP_NAMES_NB201[op] for edge, op in zip(EDGE_LIST, op_indices)
-    }
 
-    op_edge_list = [
-        "{}~{}".format(edge_op_dict[(i, j)], i - 1)
-        for i, j in sorted(edge_op_dict, key=lambda x: x[1])
-    ]
-
-    return "|{}|+|{}|{}|+|{}|{}|{}|".format(*op_edge_list)
-
-
-def convert_op_indices_to_str(op_indices):
+def convert_tuple_to_spec(tup):
     """
     Converts op indices to string representation.
     """
@@ -165,7 +153,7 @@ def convert_op_indices_to_str(op_indices):
     }
 
     edge_op_dict = {}
-    for i, index in enumerate(op_indices):
+    for i, index in enumerate(tup):
         edge_op_dict[EDGE_LIST[i]] = op_index_to_str[index]
 
     op_edge_list = [
