@@ -172,7 +172,8 @@ class NasBench201SearchSpace(Graph):
         }
 
         arch_str = convert_naslib_to_str(self)
-        queried_index = dataset_api['nb201_api'].query_info_str_by_arch(arch_str)
+        index = dataset_api['nb201_api'].query_index_by_arch(arch=arch_str)
+        query_results = dataset_api['nb201_api'].query_index_by_arch(index=index, dataset=dataset, hp='200')
         if metric == Metric.RAW:
             # return all data
             return dataset_api["nb201_data"][arch_str]
