@@ -173,35 +173,40 @@ class NasBench201SearchSpace(Graph):
 
         arch_str = convert_naslib_to_str(self)
         index = dataset_api['nb201_api'].query_index_by_arch(arch=arch_str)
-        query_results = dataset_api['nb201_api'].query_index_by_arch(index=index, dataset=dataset, hp='200')
+        # query_results = dataset_api['nb201_api'].query_index_by_arch(index=index, dataset=dataset, hp='200')
         if metric == Metric.RAW:
             # return all data
             return dataset_api["nb201_data"][arch_str]
 
-        if dataset in ["cifar10", "cifar10-valid"]:
-            query_results = dataset_api["nb201_data"][arch_str]
-            # set correct cifar10 dataset
-            dataset = "cifar10-valid"
-        elif dataset == "cifar100":
-            query_results = dataset_api["nb201_data"][arch_str]
-        elif dataset == "ImageNet16-120":
-            query_results = dataset_api["nb201_data"][arch_str]
-        else:
-            raise NotImplementedError("Invalid dataset")
+        # if dataset in ["cifar10", "cifar10-valid"]:
+        #     query_results = dataset_api["nb201_data"][arch_str]
+        #     # set correct cifar10 dataset
+        #     dataset = "cifar10-valid"
+        # elif dataset == "cifar100":
+        #     query_results = dataset_api["nb201_data"][arch_str]
+        # elif dataset == "ImageNet16-120":
+        #     query_results = dataset_api["nb201_data"][arch_str]
+        # else:
+        #     raise NotImplementedError("Invalid dataset")
 
         if metric == Metric.HP:
             # return hyperparameter info
-            return query_results[dataset]["cost_info"]
+            # return query_results[dataset]["cost_info"]
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')
         elif metric == Metric.TRAIN_TIME:
-            return query_results[dataset]["cost_info"]["train_time"]
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')['train-all-time']
+        elif metric == Metric.TRAIN_ACCURACY:
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')['train-accuracy']
+        elif metric == Metric.TEST_ACCURACY:
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')['test-accuracy']
 
-        if full_lc and epoch == -1:
-            return query_results[dataset][metric_to_nb201[metric]]
-        elif full_lc and epoch != -1:
-            return query_results[dataset][metric_to_nb201[metric]][:epoch]
-        else:
-            # return the value of the metric only at the specified epoch
-            return query_results[dataset][metric_to_nb201[metric]][epoch]
+        # if full_lc and epoch == -1:
+        #     return query_results[dataset][metric_to_nb201[metric]]
+        # elif full_lc and epoch != -1:
+        #     return query_results[dataset][metric_to_nb201[metric]][:epoch]
+        # else:
+        #     # return the value of the metric only at the specified epoch
+        #     return query_results[dataset][metric_to_nb201[metric]][epoch]
 
     def get_op_indices(self):
         if self.op_indices is None:

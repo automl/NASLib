@@ -52,6 +52,25 @@ https://drive.google.com/file/d/16Y0UwGisiouVRxW-W5hEtbxmcHw_0hF_/view'
 
     return {"nb201_api": api}
 
+def get_nasbench201_naslib_api(dataset=None):
+    """
+    Load the NAS-Bench-201 data
+    """
+    datafiles = {
+        'cifar10': 'nb201_cifar10_full_training.pickle',
+        'cifar100': 'nb201_cifar100_full_training.pickle',
+        'ImageNet16-120': 'nb201_ImageNet16_full_training.pickle'
+    }
+
+    datafile_path = os.path.join(
+        get_project_root(), 'data', datafiles[dataset])
+    assert os.path.exists(datafile_path), f'Could not find {datafile_path}. Please download {datafiles[dataset]} from \
+    https://drive.google.com/drive/folders/1rwmkqyij3I24zn5GSO6fGv2mzdEfPIEa'
+
+    with open(datafile_path, 'rb') as f:
+        data = pickle.load(f)
+
+    return {"nb201_api": data}
 
 def get_nasbench301_api(dataset):
     if dataset != 'cifar10':
