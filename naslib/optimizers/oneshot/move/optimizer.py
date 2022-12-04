@@ -24,6 +24,8 @@ import naslib.search_spaces.core.primitives as primitives
 import numpy as np
 import os
 
+from naslib.optimizers.oneshot.move.utilities.vanilla import Vanilla
+
 logger = logging.getLogger(__name__)
 
 
@@ -71,6 +73,7 @@ class MovementOptimizer(MetaOptimizer):
         self.instantenous = config.search.instantenous
         self.mask = torch.nn.ParameterList()
         self.score = torch.nn.ParameterList()
+        self.primitives = []
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.warm_start_epochs = config.search.warm_start_epochs if hasattr(config.search, "warm_start_epochs") else 1
         self.k_initialized = False
@@ -79,6 +82,11 @@ class MovementOptimizer(MetaOptimizer):
         num_classes = 10 if config.dataset=="cifar10" else 100
         self.num_classes = 120 if config.dataset=="ImageNet16-120" else num_classes
         self.k=1
+        self.current_epoch=0
+        if hasattr(self.config.search, "large_nets_coefficient"):
+            self.config.search.large_nets_coefficient = self.config.search.large_nets_coefficient
+        else:
+            self.config.search.large_nets_coefficient=0.001
 
         # MAKE SURE TO GIVE THE CORRENT PATH OF THE SCORES.PTH
         self.path=self.config.out_dir+'/'+self.config.search_space+'/'+self.config.dataset+'/'+self.config.optimizer+'/'+ str(self.config.seed)+'/search/scores.pth'
@@ -126,7 +134,7 @@ class MovementOptimizer(MetaOptimizer):
         with the GSparse specific GSparseMixedOp.
         """
         primitives = edge.data.op
-        edge.data.set("op", GMoveMixedOp(primitives))
+        edge.data.set("op", GMoveMixedOp(primitives))        
     
     @staticmethod
     def add_alphas(edge):
@@ -179,7 +187,13 @@ class MovementOptimizer(MetaOptimizer):
                 stdv = 1. / math.sqrt(edge.data.op[i].weight.size(0))
                 edge.data.op[i].weight.data.uniform_(-stdv, stdv)                
     
-
+    def get_primitives(self, edge):
+        """
+        Get primitives
+        """        
+        primitives = edge.data.op.get_embedded_ops()
+        self.primitives.append(primitives)
+    
     def adapt_search_space(self, search_space, scope=None, **kwargs):
         """
         Modify the search space to fit the optimizer's needs,
@@ -209,6 +223,11 @@ class MovementOptimizer(MetaOptimizer):
         # 3. replace primitives with mixed_op
         graph.update_edges(
             self.__class__.update_ops, scope=scope, private_edge_data=True
+        )
+
+        # 4. replace primitives with mixed_op
+        graph.update_edges(
+            self.get_primitives, scope=scope, private_edge_data=False
         )
 
         for mask in graph.get_all_edge_data("mask"):
@@ -257,6 +276,64 @@ class MovementOptimizer(MetaOptimizer):
                 F.kl_div(p_mixture, p_aug2, reduction='batchmean')) / 3.
         return logits_train, augmix_loss
 
+    # FGSM attack code
+    def fgsm_attack(self, image, epsilon, data_grad):
+        # Collect the element-wise sign of the data gradient
+        sign_data_grad = data_grad.sign()
+        # Create the perturbed image by adjusting each pixel of the input image
+        perturbed_image = image + epsilon*sign_data_grad
+        # Adding clipping to maintain [0,1] range
+        #import ipdb;ipdb.set_trace()
+        perturbed_image = torch.clamp(perturbed_image, image.min(), image.max())
+        # Return the perturbed image
+        return perturbed_image
+    
+    def do_large_nets(self, train_loss):        
+        summed_sizes=torch.zeros(np.array(self.primitives).shape[0]).cuda()
+        for a, prims in zip(self.score, self.primitives):
+            sorted_rows = torch.argsort(a)
+            for i in range(len(sorted_rows)):                    
+                model=prims[sorted_rows[i]]
+                size = sum(p.numel() for p in model.parameters() if p.requires_grad)
+                summed_sizes[i] += size
+        #summed_sizes += 1.0000e-04
+        #import ipdb;ipdb.set_trace()
+        final_loss = train_loss * (1 + self.config.search.large_nets_coefficient*((self.config.search.epochs-self.current_epoch-2)*(math.e**(-summed_sizes))))
+        return torch.abs(final_loss).mean()
+        #import ipdb;ipdb.set_trace()
+        #return torch.abs(final_loss).mean().backward()#retain_graph=True)
+        #torch.sum(final_loss).backward()#retain_graph=True)
+        #else:
+        #    train_loss.backward()
+
+    def do_fgsm(self, input_train, data_grad, target_train):
+        perturbed_input = self.fgsm_attack(input_train, self.fgsm_epsilon, data_grad)
+        logits_train = self.graph(perturbed_input)
+        if self.augmix:
+            logits_train, augmix_loss = self.jsd_loss(logits_train)
+        if self.distill:
+            with torch.no_grad():
+                logits_teacher = self.teacher(perturbed_input)
+                teacher_augmix_loss = 0
+                if self.augmix:
+                    logits_teacher, teacher_augmix_loss = self.jsd_loss(logits_teacher)
+                teacher_loss = self.loss(logits_teacher, target_train) + teacher_augmix_loss
+        train_loss = self.loss(logits_train, target_train)
+        if self.augmix:
+            train_loss = train_loss + augmix_loss
+        if self.distill:
+            train_loss = train_loss + teacher_loss
+        if hasattr(self.config.search, 'large_nets'):
+            self.config.search.large_nets = self.config.search.large_nets
+        else:
+            self.config.search.large_nets = False
+        
+        if self.config.search.large_nets:
+            train_loss = self.do_large_nets(train_loss)
+        train_loss.backward()
+
+        #import ipdb;ipdb.set_trace()  
+
     def step(self, data_train, data_val):
         """
         Run one optimizer step with the batch of training and test data.
@@ -273,6 +350,17 @@ class MovementOptimizer(MetaOptimizer):
         """
         input_train, target_train = data_train
         input_val, target_val = data_val
+        self.perform_fgsm=False
+        self.fgsm_epsilon=0.0
+        if hasattr(self.config.search, 'perform_fgsm'):
+            self.perform_fgsm = self.config.search.perform_fgsm
+            if hasattr(self.config.search, 'fgsm_epsilon'):
+                self.fgsm_epsilon = self.config.search.fgsm_epsilon
+        else:
+            self.perform_fgsm=False
+        if self.perform_fgsm:
+            input_train.requires_grad=True
+
 
         self.graph.train()
         self.op_optimizer.zero_grad()
@@ -295,7 +383,30 @@ class MovementOptimizer(MetaOptimizer):
         if self.distill:
             train_loss = train_loss + teacher_loss
 
+        if hasattr(self.config.search, 'large_nets'):
+            self.config.search.large_nets = self.config.search.large_nets
+        else:
+            self.config.search.large_nets = False
+        
+        if self.config.search.large_nets:
+            train_loss = self.do_large_nets(train_loss)
+
         train_loss.backward()#retain_graph=True)
+
+        """
+        if self.perform_fgsm:
+            input_val.requires_grad=True
+        logits_val = self.graph(input_val)
+        if self.augmix:
+            logits_val, _, _ = torch.split(logits_val, len(logits_val) // 3)
+        val_loss = self.loss(logits_val, target_val)
+        val_loss.backward()
+        """
+
+        if self.perform_fgsm:
+            #self.do_fgsm(input_train, input_train.grad.data, target_train)
+            self.do_fgsm(input_train[:len(input_train)//1], input_train.grad.data[:len(input_train)//1], target_train[:len(input_train)//1])                                              
+
         if self.grad_clip:
             torch.nn.utils.clip_grad_norm_(self.graph.parameters(), self.grad_clip)
         self.op_optimizer.step()
@@ -306,7 +417,7 @@ class MovementOptimizer(MetaOptimizer):
             logits_val = self.graph(input_val)
             if self.augmix:
                 logits_val, _, _ = torch.split(logits_val, len(logits_val) // 3)
-            val_loss = self.loss(logits_val, target_val)
+            val_loss = self.loss(logits_val, target_val)            
         self.graph.train()
         
         return logits_train, logits_val, train_loss, val_loss
@@ -367,162 +478,28 @@ class MovementOptimizer(MetaOptimizer):
         self.score = self.score.to(self.device)
 
     
-    def new_epoch(self, epoch):
-        """
-        Just log the l2 norms of operation weights.
-        """
-        normalization_exponent=self.normalization_exponent
-        instantenous = self.instantenous
-        k_changed_this_epoch = False
+    def new_epoch(self, epoch):        
+        self.current_epoch = epoch
+        if hasattr(self.config, 'method'):
+            self.config.method = self.config.method
+        else:
+            self.config.method = "vanilla"
 
-        
-        def update_l2_weights(edge):            
-            """
-            For operations like SepConv etc that contain suboperations like Conv2d() etc. the square of 
-            l2 norm of the weights is stored in the corresponding weights shared attribute.
-            Suboperations like ReLU are ignored as they have no weights of their own.
-            For operations (not suboperations) like Identity() etc. that do not have weights,
-            the weights attached to them are used.
-
-            edge.data.weights is being used to accumulate scores over all groups
-            edge.data.scores is then used to store the scores of a group of operations across cells
-            """            
-            if edge.data.has("score"):                
-                weight=0.0                
-                group_dim=torch.zeros(1)
-                for i in range(len(edge.data.op.primitives)):
-                    try:
-                        for j in range(len(edge.data.op.primitives[i].op)):
-                            try:                                
-                                group_dim += 1                                
-                                weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
-                            except (AttributeError, TypeError) as e:
-                                try:
-                                    for k in range(len(edge.data.op.primitives[i].op[j].op)):                                        
-                                        group_dim += 1                                        
-                                        weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
-                                except AttributeError:
-                                    continue                         
-                        edge.data.weights[i]+=weight
-                        edge.data.dimension[i]+=group_dim.item()                                                                         
-                        weight=0.0                        
-                        group_dim=torch.zeros(1)
-                    except AttributeError:                           
-                        size = 1
-                        edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
-                        edge.data.dimension[i]+=size
-        
-        def calculate_scores(edge):
-            if edge.data.has("score"):
-                for i in range(len(edge.data.op.primitives)):
-                    with torch.no_grad():
-                        edge.data.score[i]+=edge.data.weights[i]#/edge.data.dimension[i]
-                        
-        # Currently not being used, just kept in case we plan to normalize scores.
-        def normalize_scores(edge):
-            if edge.data.has("score"):
-                for i in range(len(edge.data.op.primitives)):
-                    with torch.no_grad():
-                        edge.data.score[i] = edge.data.score[i]#/len(count)                        
-
-        k_initialized = self.k_initialized
-        k = self.k
-        def masking(edge):
-            nonlocal k_changed_this_epoch
-            nonlocal epoch     
-            nonlocal k_initialized
-            nonlocal k
-            k_initialized = True
-            if edge.data.has("score"):
-                scores = torch.clone(edge.data.score).detach().cpu()
-                edge.data.mask[torch.topk(torch.abs(scores), k=k, largest=False, sorted=False)[1]]=0                
-                if k < len(edge.data.op.primitives)-1 and not k_changed_this_epoch:
-                    k += 1                                       
-                    k_changed_this_epoch = True                
-
-        def reinitialize_scores(edge):
-            if edge.data.has("score"):                
-                for i in range(len(edge.data.weights)):                            
-                    edge.data.score[i]=0
-
-        def reinitialize_l2_weights(edge):
-            if edge.data.has("score"):                
-                for i in range(len(edge.data.weights)):                    
-                    edge.data.weights[i]=0
-                    edge.data.dimension[i]=0                    
-                    if instantenous:
-                        edge.data.score[i]=0
-
-        if epoch > 0:
-            self.graph.update_edges(update_l2_weights, scope=self.scope, private_edge_data=True)
-            self.graph.update_edges(calculate_scores, scope=self.scope, private_edge_data=True)              
-        if epoch >= self.warm_start_epochs and self.count_masking%self.masking_interval==0:
-            self.graph.update_edges(masking, scope=self.scope, private_edge_data=True)
-            self.k_initialized = k_initialized
-            self.k = k            
-
-        for score in self.graph.get_all_edge_data("score"):                        
-            with torch.no_grad():                
-                self.score.append(score)
-            
-        weights_str = [
-            ", ".join(["{:+.10f}".format(x) for x in a])
-            + ", {}".format(np.max(torch.abs(a).detach().cpu().numpy()))
-            for a in self.score
-        ]
-        logger.info(
-            "Group scores (importance scores, last column max): \n{}".format(
-                "\n".join(weights_str)
-            )
-        )
-        
-        """
-        - The next few lines are used to store the scores after each epoch.
-        - These scores are later used to recreate the found architecture.
-        - This has to be done because pytorch and NASLib do not store gradients
-          and out method is gradient's based.
-        """
-        all_scores=torch.nn.ParameterList()
-        def save_score(edge):
-            if edge.data.has("score"):
-                with torch.no_grad():
-                    all_scores.append(edge.data.score)
-
-        self.graph.update_edges(save_score, scope=self.scope, private_edge_data=True)
-        mk_path = self.path.replace('/scores.pth','')
-        os.makedirs(mk_path, exist_ok=True)
-        torch.save(all_scores, self.path)
-        all_scores=torch.nn.ParameterList()
-        self.score = torch.nn.ParameterList()
-        
-        if epoch > 0:
-            """
-            The parameter weights is being used to calculate the scores, as a buffer.
-            This buffer is reinitialized every epoch so that the scores are calculated correctly
-            """
-            self.graph.update_edges(reinitialize_l2_weights, scope=self.scope, private_edge_data=True)
-            count = []
-
-        if epoch >= self.warm_start_epochs and self.instantenous:
-            """
-            If the scores being used are instantenous i.e. if only the scores right before the
-            masking steps are being considered for masking then the scores are reinitialized
-            at the end of every epoch i.e. the scores are not accumulated over epochs.
-            """
-            self.graph.update_edges(reinitialize_scores, scope=self.scope, private_edge_data=True)
-        
-        if epoch >= self.warm_start_epochs and self.count_masking%self.masking_interval==0:
-            """
-            The scores are reinitialized after every masking step
-            """
-            self.mask = torch.nn.ParameterList()
-            self.graph.update_edges(reinitialize_scores, scope=self.scope, private_edge_data=True)
-                
-            for mask in self.graph.get_all_edge_data("mask"):
-                self.mask.append(mask)
-        if epoch >= self.warm_start_epochs:
-            self.count_masking += 1
-        super().new_epoch(epoch)
+        if self.config.method=='syn':
+            from naslib.optimizers.oneshot.move.utilities.syn import Syn
+            object1=Syn(logger, epoch, object_self=self)
+            self=object1.new_epoch(epoch)
+        elif self.config.method=='not_abs':
+            from naslib.optimizers.oneshot.move.utilities.not_abs import Notabs
+            object1=Notabs(logger, epoch, object_self=self)
+            self=object1.new_epoch(epoch)
+        elif self.config.method=='drop_one':
+            from naslib.optimizers.oneshot.move.utilities.drop_one import DropOne
+            object1=DropOne(logger, epoch, object_self=self)
+            self=object1.new_epoch(epoch)
+        else:
+            object1=Vanilla(logger, epoch, object_self=self)
+            self=object1.new_epoch(epoch)
 
     def after_training(self):
         print("save path: ", self.config.save)

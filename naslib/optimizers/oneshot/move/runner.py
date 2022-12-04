@@ -18,14 +18,16 @@ from naslib.optimizers import (
     GSparseOptimizer,
     MovementOptimizer,
     DrNASOptimizer,
-    MovementOptimizer_test,
-    Movement_Syn_Optimizer,
+    #MovementOptimizer_test,
+    #Movement_Syn_Optimizer,
 )
 
 from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace, NasBench101SearchSpace, NATSBenchSizeSearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.search_spaces.core.query_metrics import Metric
-
+from nas_201_api import NASBench201API as API #pip install nas-bench-201
+#api = API("/work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/data/NAS-Bench-201-v1_1-096897.pth") #path to the API please refer to https://github.com/D-X-Y/NAS-Bench-201 for downloading
+api=None
 config = utils.get_config_from_args()
 utils.set_seed(config.seed)
 
@@ -47,8 +49,8 @@ supported_optimizers = {
     "gsparsity": GSparseOptimizer(config),
     "movement": MovementOptimizer(config),
     "drnas": DrNASOptimizer(config),
-    "movement_test" : MovementOptimizer_test(config),
-    "movement_syn" : Movement_Syn_Optimizer(config)
+    #"movement_test" : MovementOptimizer_test(config),
+    #"movement_syn" : Movement_Syn_Optimizer(config)
 }
 
 if config.dataset =='cifar100':
@@ -92,5 +94,5 @@ best_nb301="/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movemen
 #model = best_nb301
 #model = "/work/dlclarge2/agnihotr-ml/NASLib/naslib/optimizers/oneshot/movement/run/darts/cifar10/darts/10/search/model_final.pth"
 #trainer.evaluate(dataset_api=dataset_api, metric=Metric.TEST_ACCURACY)#, search_model=model)
-trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY)
+trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY, api=api)
 #trainer.evaluate(dataset_api=dataset_api, metric=Metric.VAL_ACCURACY, search_model=best_nb301)

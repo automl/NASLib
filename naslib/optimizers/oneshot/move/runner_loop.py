@@ -4,6 +4,7 @@ import sys
 import naslib as nl
 import random
 import statistics as st
+import os
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import (
@@ -36,10 +37,11 @@ img_acc = -1
 model_path = ''
 architecture = ''
 val_acc = -1
+count = 0
 
 run_c10, run_c100, run_img, run_val = [], [], [], []
 
-random_seeds = random.sample(range(1,500), 40)
+random_seeds = random.sample(range(1,100), 5)
 term1 = '/'+str(config.seed)
 
 logger = setup_logger(config.save.replace(term1, '') + "/log.log")
@@ -50,6 +52,7 @@ for random_seed in random_seeds:
     config.save = config.save.replace(term1, term2)
     config.seed = random_seed
     utils.set_seed(random_seed)
+    os.makedirs(config.save, exist_ok=True)
     
     
     utils.log_args(config)
@@ -99,6 +102,10 @@ for random_seed in random_seeds:
     run_img.append(trainer.best_img_acc)
     run_val.append(trainer.val_acc)
 
+    #import ipdb;ipdb.set_trace()
+    if trainer.val_acc == 90.93:
+        count +=1
+
     if trainer.best_c10_acc > c10_acc:
         c10_acc = trainer.best_c10_acc
         c100_acc = trainer.best_c100_acc
@@ -110,4 +117,5 @@ for random_seed in random_seeds:
 logger.info('Final architecture from pool:\n' + architecture)
 logger.info("FINAL TEST ACCURACIES: \n\t{}: {}\n\t{}: {}\n\t{}: {}\n\t{}: {}".format('cifar10', c10_acc, 'cifar100', c100_acc, 'ImageNet16-120', img_acc, 'VAL ACC CIFAR-10', val_acc))
 logger.info("mean and std of the runs: \n\t{}: {} +/- {}\n\t{}: {} +/- {}\n\t{}: {} +/- {}\n\t{}: {} +/- {}".format('cifar10', st.mean(run_c10), st.stdev(run_c10), 'cifar100', st.mean(run_c100), st.stdev(run_c100), 'ImageNet16-120', st.mean(run_img), st.stdev(run_img), 'VAL ACC CIFAR-10', st.mean(run_val), st.stdev(run_val)))
+logger.info("\nFound the best architecture {} times.\n".format(count))
 logger.info("Final model saved at: " + model_path)
