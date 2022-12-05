@@ -1,20 +1,33 @@
+# options cifar10, cifar100, ImageNet reports on their test acc is avaliable
 dataset: cifar10
+# in the code base the deafult value for the seed is 2.
+# using random seeds that are logged but log files are not provided
+# not mentioned in the paper what are the random seeds are
 seed: 99
+# darts (or nb301)
+# nb201
 search_space: nasbench301
 out_dir: run
 optimizer: darts
 
 search:
   checkpoint_freq: 5
+  # default value batch size in code is 64
   batch_size: 64
+  # lr_rate for progressive and original: 0.025
   learning_rate: 0.025
+  # lr_rate for progressive and original: 0.025
   learning_rate_min: 0.001
   momentum: 0.9
+  # weight_decay for progressive and original: 0.0003
   weight_decay: 0.0003
+  # for cifar10 the learning process is 2 stages of 25 epochs
   epochs: 1
   warm_start_epochs: 0
   grad_clip: 5
+  # for cifar10 the train and optimization data (50k) is equally partitioned
   train_portion: 0.5
+  # for cifar10 the train and optimization data (50k) is equally partitioned
   data_size: 25000
 
   cutout: False
@@ -26,7 +39,7 @@ search:
   arch_learning_rate: 0.0003
   arch_weight_decay: 0.001
   output_weights: True
-  
+
   fidelity: 200
 
   # GDAS
@@ -36,7 +49,7 @@ search:
   # RE
   sample_size: 10
   population_size: 100
-  
+
   #LS
   num_init: 10
 
@@ -56,7 +69,7 @@ search:
   #train_portion: 0.9
   #data_size: 25000
 
-  
+
   # BANANAS
   k: 10
   num_ensemble: 3
@@ -66,26 +79,37 @@ search:
   num_arches_to_mutate: 2
   max_mutations: 1
   num_candidates: 100
-  
+
   # BasePredictor
   predictor_type: var_sparse_gp
   debug_predictor: False
 
 evaluation:
   checkpoint_freq: 30
+  # Neither the paper nor the code base indicates the batch size but the default value is 64
   batch_size: 96
+
   learning_rate: 0.025
   learning_rate_min: 0.00
+  # momentum is 0.9
   momentum: 0.9
+  # for cifar weight_decay is 3e-4
   weight_decay: 0.0003
+  # cifar's eval is 600 epochs
   epochs: 600
   warm_start_epochs: 0
   grad_clip: 5
+  # uses the whole training data of cifar10 (50K) to train from scratch for 600 epochs
   train_portion: 1.
   data_size: 50000
 
+  # cifar10 the cutout is done to have fair comparisons with previous work
   cutout: True
+  # cifar10 cutout length is 16
   cutout_length: 16
+  # cifar10 the cutout is done to have fair comparisons with previous work
   cutout_prob: 1.0
+  # cifar drop out is 0.3
   drop_path_prob: 0.2
+  # cifar auxiliary is 0.4
   auxiliary_weight: 0.4
