@@ -298,7 +298,7 @@ class MovementOptimizer(MetaOptimizer):
                 summed_sizes[i] += size
         #summed_sizes += 1.0000e-04
         #import ipdb;ipdb.set_trace()
-        final_loss = train_loss * (1 + self.config.search.large_nets_coefficient*((self.config.search.epochs-self.current_epoch-2)*(math.e**(-summed_sizes))))
+        final_loss = train_loss * (1 + self.config.search.large_nets_coefficient*((max(self.config.search.epochs-self.current_epoch-4, 0))*(math.e**(-summed_sizes))))
         return torch.abs(final_loss).mean()
         #import ipdb;ipdb.set_trace()
         #return torch.abs(final_loss).mean().backward()#retain_graph=True)

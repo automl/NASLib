@@ -1,7 +1,7 @@
 dataset: cifar10
 seed: 0
 search_space: nasbench201
-out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/testing
+out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/testing/again_0.95
 optimizer: movement
 method: vanilla
 
@@ -9,16 +9,16 @@ search:
  
   # MOVEMENT
   instantenous: True
-  epochs: 25
+  epochs: 24
   warm_start_epochs: 5
   masking_interval: 1
-  train_portion: 0.1
-  data_size: 5000
+  train_portion: 0.95
+  data_size: 47500
   batch_size: 128
   perform_fgsm: True
   fgsm_epsilon: 0.2
-  large_nets: False
-  large_nets_coefficient: 0.02
+  large_nets: True
+  large_nets_coefficient: 1.0
   
   # BANANAS
   k: 10
