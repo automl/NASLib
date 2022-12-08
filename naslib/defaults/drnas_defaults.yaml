@@ -6,9 +6,9 @@ dataset: cifar10
 seed: 2
 # darts (or nb301)
 # nb201
-search_space: nasbench301
+search_space: nasbench201
 out_dir: run
-optimizer: darts
+optimizer: drnas
 
 search:
   checkpoint_freq: 5
@@ -91,7 +91,7 @@ search:
 evaluation:
   checkpoint_freq: 30
   # Neither the paper nor the code base indicates the batch size but the default value is 64
-  batch_size: 96
+  batch_size: 64
 
   learning_rate: 0.025
   learning_rate_min: 0.00

@@ -72,5 +72,5 @@ elif config.dataset == 'autoencoder':
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
-# trainer.search(resume_from="")
+trainer.search(resume_from="")
 trainer.evaluate(resume_from="", dataset_api=dataset_api)

@@ -170,13 +170,14 @@ def get_config_from_args(args=None, config_type="nas"):
     if args is None:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
-
+    print("~~~~~~~~~~", args)
     if args.config_file is None:
         config = load_default_config(config_type=config_type)
     else:
         config = load_config(path=args.config_file)
 
     # Override file args with ones from command line
+    print("~~~~~~~~~", config)
     try:
         for arg, value in pairwise(args.opts):
             if "." in arg:
@@ -322,8 +323,12 @@ def get_train_val_loaders(config, mode="train"):
     data = config.data
     dataset = config.dataset
     seed = config.search.seed
-    batch_size = config.batch_size
-    train_portion = config.train_portion
+    if mode == "train":
+        batch_size = config.search.batch_size #changed this to config.search.batch_size
+        train_portion = config.search.train_portion #changed this to config.search.train_portion
+    elif mode == "val":
+        batch_size = config.evaluation.batch_size
+        train_portion = config.evaluation.batch_size
     config = config.search if mode == "train" else config.evaluation
     if dataset == "cifar10":
         train_transform, valid_transform = _data_transforms_cifar10(config)
