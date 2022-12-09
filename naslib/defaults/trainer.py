@@ -111,34 +111,28 @@ class Trainer(object):
                 self.config
             )
 
-        if self.config.save_arch_weights:
+        if self.config.save_arch_weights:  # check if save path exist (do not overwrite previous runs)
             Path(self.config.save_arch_weights_path).mkdir(parents=True, exist_ok=False)
 
         for e in range(start_epoch, self.epochs):
-            x = None
+            arch_weights_lst = None
 
             start_time = time.time()
             self.optimizer.new_epoch(e)
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
-                    if self.config.save_arch_weights:
-                        if x is None:
+                    if self.config.save_arch_weights:  # Todo add this variable to config (default: False)
+                        if arch_weights_lst is None:
                             # using a python list, because alpha weights are not guaranteed to have the same size and
                             # concatenating tensors of different weights is not possible in torch
-                            x = []
-                            for idx, i in enumerate(self.optimizer.architectural_weights):
-                                x.append(torch.unsqueeze(i.detach(), dim=0))
+                            arch_weights_lst = []
+                            for alpha_i in self.optimizer.architectural_weights:
+                                arch_weights_lst.append(torch.unsqueeze(alpha_i.detach(), dim=0))
 
-                            if not Path(
-                                    f'{self.config.save_arch_weights_path}/tensor_0.pt').exists():  # todo sketchy fix
-                                for idx, x_i in enumerate(x):
-                                    logger.info(
-                                        f"Create tensor file: {self.config.save_arch_weights_path}/tensor_{idx}.pt")
-                                    torch.save(x[idx], f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
                         else:
-                            for idx, i in enumerate(self.optimizer.architectural_weights):
-                                x[idx] = torch.cat((x[idx], torch.unsqueeze(i, dim=0)), dim=0)
+                            for idx, alpha_i in enumerate(self.optimizer.architectural_weights):
+                                arch_weights_lst[idx] = torch.cat((arch_weights_lst[idx], torch.unsqueeze(alpha_i, dim=0)), dim=0)
 
                     data_train = (
                         data_train[0].to(self.device),
@@ -227,20 +221,27 @@ class Trainer(object):
 
             # save arch tensors after each epoch
             if self.config.save_arch_weights:
-                for idx in range(len(self.optimizer.architectural_weights)):
-                    y = torch.load(f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
-                    x[idx] = torch.cat((y, x[idx]), dim=0)
-                    logger.info(
-                        f"Merge saved tensors and cached tensors: {self.config.save_arch_weights_path}/tensor_{idx}.pt")
-                    # Todo think of saving the plots for each epoch and not at the end of the search
-                    torch.save(x[idx], f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+                if not Path(
+                        f'{self.config.save_arch_weights_path}/tensor_0.pt').exists():  # todo sketchy fix
+                    for idx, x_i in enumerate(arch_weights_lst):
+                        logger.info(
+                            f"Create tensor file: {self.config.save_arch_weights_path}/tensor_{idx}.pt")
+                        torch.save(arch_weights_lst[idx], f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+                else:
+                    for idx in range(len(self.optimizer.architectural_weights)):
+                        y = torch.load(f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+                        arch_weights_lst[idx] = torch.cat((y, arch_weights_lst[idx]), dim=0)
+                        logger.info(
+                            f"Merge saved tensors and cached tensors: {self.config.save_arch_weights_path}/tensor_{idx}.pt")
+                        # Todo think of saving the plots for each epoch and not at the end of the search
+                        torch.save(arch_weights_lst[idx], f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
 
         if self.config.save_arch_weights:  # plot weights
             for idx in range(len(self.optimizer.architectural_weights)):
-                x = torch.load(f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
+                alpha_i = torch.load(f'{self.config.save_arch_weights_path}/tensor_{idx}.pt')
                 # Todo check if softmax is suitable here. In which range are the weights for e.g. GDAS
-                x = torch.softmax(x.detach(), dim=1).cpu().numpy()
-                g = sns.heatmap(x.T, cmap=sns.diverging_palette(230, 0, 90, 60, as_cmap=True))
+                alpha_i = torch.softmax(alpha_i.detach(), dim=1).cpu().numpy()
+                g = sns.heatmap(alpha_i.T, cmap=sns.diverging_palette(230, 0, 90, 60, as_cmap=True))
                 g.set_xticklabels(g.get_xticklabels(), rotation=60)
 
                 plt.title(f"arch weights for operation {idx}")
