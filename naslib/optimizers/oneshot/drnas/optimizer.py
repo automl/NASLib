@@ -65,6 +65,8 @@ class DrNASOptimizer(DARTSOptimizer):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def new_epoch(self, epoch):
+        #TODO: use this for the things that should be done for progressive learning
+        #at the beginning of each epoch
         super().new_epoch(epoch)
 
     def adapt_search_space(self, search_space, scope=None, **kwargs):
@@ -94,7 +96,7 @@ class DrNASOptimizer(DARTSOptimizer):
         self.arch_optimizer.zero_grad()
         logits_val = self.graph(input_val)
         val_loss = self.loss(logits_val, target_val)
-
+        # todo: this is the additional loss in eq2 in the paper
         if self.reg_type == "kl":
             val_loss += self._get_kl_reg()
 
@@ -182,6 +184,7 @@ class DrNASMixedOp(MixedOp):
         return weights
 
     def apply_weights(self, x, weights):
+        # TODO: have this changed based on the progressive formulation
         weighted_sum = sum(
             w * op(x, None)
             for w, op in zip(weights, self.primitives)

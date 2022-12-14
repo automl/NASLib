@@ -170,14 +170,12 @@ def get_config_from_args(args=None, config_type="nas"):
     if args is None:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
-    print("~~~~~~~~~~", args)
     if args.config_file is None:
         config = load_default_config(config_type=config_type)
     else:
         config = load_config(path=args.config_file)
 
     # Override file args with ones from command line
-    print("~~~~~~~~~", config)
     try:
         for arg, value in pairwise(args.opts):
             if "." in arg:
