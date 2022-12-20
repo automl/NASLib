@@ -111,6 +111,7 @@ class Trainer(object):
                 self.config
             )
 
+        arch_weights = []
         for e in range(start_epoch, self.epochs):
 
             # create the arch directory (without overwriting)
@@ -123,15 +124,14 @@ class Trainer(object):
             arch_weights_lst = []
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
-                    
-                    # save arch weights to array of tensors
-                    if self.config.save_arch_weights:
-                        if len(arch_weights_lst) == 0:
-                            for alpha_i in self.optimizer.architectural_weights:
-                                arch_weights_lst.append(torch.unsqueeze(alpha_i.detach(), dim=0))
+                     
+                    if hasattr(self.config, "save_arch_weights") and self.config.save_arch_weights:
+                        if len(arch_weights) == 0:
+                            for edge_weights in self.optimizer.architectural_weights:
+                                arch_weights.append(torch.unsqueeze(edge_weights.detach(), dim=0))
                         else:
-                            for idx, alpha_i in enumerate(self.optimizer.architectural_weights):
-                                arch_weights_lst[idx] = torch.cat((arch_weights_lst[idx], torch.unsqueeze(alpha_i.detach(), dim=0)), dim=0)
+                            for i, edge_weights in enumerate(self.optimizer.architectural_weights):
+                                arch_weights[i] = torch.cat((arch_weights[i], torch.unsqueeze(edge_weights.detach(), dim=0)), dim=0)
 
                     data_train = (
                         data_train[0].to(self.device),
@@ -239,6 +239,10 @@ class Trainer(object):
 
         if summary_writer is not None:
             summary_writer.close()
+
+        logger.info(f"Saving architectural weight tensors: {self.config.save}/arch_weights.pt")
+        if hasattr(self.config, "save_arch_weights") and self.config.save_arch_weights:
+            torch.save(arch_weights, f'{self.config.save}/arch_weights.pt')
 
         logger.info("Training finished")
 
