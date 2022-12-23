@@ -22,7 +22,6 @@ from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("device:", device)
 
 
 def normalize(mx):

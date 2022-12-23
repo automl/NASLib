@@ -1,0 +1,12 @@
+batch_size: 32
+config_type: correlation
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: cifar10
+out_dir: run
+predictor: fisher
+search_space: nasbench101 #nasbench201 #nasbench301
+seed: 0
+test_size: 1000
+train_portion: 0.7

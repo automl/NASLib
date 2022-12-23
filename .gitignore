@@ -151,3 +151,7 @@ Session.vim
 *~
 # Auto-generated tag files
 tags
+
+# individual configs
+configs/bananas500/*
+configs/npenas500/*

@@ -57,8 +57,8 @@ class Trainer(object):
         self.val_loss = utils.AverageMeter()
 
         n_parameters = optimizer.get_model_size()
-        logger.info("param size = %fMB", n_parameters)
-        self.errors_dict = utils.AttrDict(
+        # logger.info("param size = %fMB", n_parameters)
+        self.search_trajectory = utils.AttrDict(
             {
                 "train_acc": [],
                 "train_loss": [],
@@ -83,7 +83,7 @@ class Trainer(object):
             resume_from (str): Checkpoint file to resume from. If not given then
                 train from scratch.
         """
-        logger.info("Start training")
+        logger.info("Beginning search")
 
         np.random.seed(self.config.search.seed)
         torch.manual_seed(self.config.search.seed)
@@ -151,11 +151,11 @@ class Trainer(object):
 
                 end_time = time.time()
 
-                self.errors_dict.train_acc.append(self.train_top1.avg)
-                self.errors_dict.train_loss.append(self.train_loss.avg)
-                self.errors_dict.valid_acc.append(self.val_top1.avg)
-                self.errors_dict.valid_loss.append(self.val_loss.avg)
-                self.errors_dict.runtime.append(end_time - start_time)
+                self.search_trajectory.train_acc.append(self.train_top1.avg)
+                self.search_trajectory.train_loss.append(self.train_loss.avg)
+                self.search_trajectory.valid_acc.append(self.val_top1.avg)
+                self.search_trajectory.valid_loss.append(self.val_loss.avg)
+                self.search_trajectory.runtime.append(end_time - start_time)
             else:
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
@@ -168,28 +168,28 @@ class Trainer(object):
                 ) = self.optimizer.train_statistics(report_incumbent)
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
-                self.errors_dict.train_acc.append(train_acc)
-                self.errors_dict.train_loss.append(train_loss)
-                self.errors_dict.valid_acc.append(valid_acc)
-                self.errors_dict.valid_loss.append(valid_loss)
-                self.errors_dict.test_acc.append(test_acc)
-                self.errors_dict.test_loss.append(test_loss)
-                self.errors_dict.runtime.append(end_time - start_time)
-                self.errors_dict.train_time.append(train_time)
+                self.search_trajectory.train_acc.append(train_acc)
+                self.search_trajectory.train_loss.append(train_loss)
+                self.search_trajectory.valid_acc.append(valid_acc)
+                self.search_trajectory.valid_loss.append(valid_loss)
+                self.search_trajectory.test_acc.append(test_acc)
+                self.search_trajectory.test_loss.append(test_loss)
+                self.search_trajectory.runtime.append(end_time - start_time)
+                self.search_trajectory.train_time.append(train_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
             self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
-            if anytime_results:
+            # if anytime_results:
                 # record anytime performance
-                self.errors_dict.arch_eval.append(anytime_results)
-                log_every_n_seconds(
-                    logging.INFO,
-                    "Epoch {}, Anytime results: {}".format(e, anytime_results),
-                    n=5,
-                )
+                # self.search_trajectory.arch_eval.append(anytime_results)
+                # log_every_n_seconds(
+                #     logging.INFO,
+                #     "Epoch {}, Anytime results: {}".format(e, anytime_results),
+                #     n=5,
+                # )
 
             self._log_to_json()
 
@@ -240,9 +240,9 @@ class Trainer(object):
 
             end_time = time.time()
 
-            self.errors_dict.valid_acc.append(self.val_top1.avg)
-            self.errors_dict.valid_loss.append(self.val_loss.avg)
-            self.errors_dict.runtime.append(end_time - start_time)
+            self.search_trajectory.valid_acc.append(self.val_top1.avg)
+            self.search_trajectory.valid_loss.append(self.val_loss.avg)
+            self.search_trajectory.runtime.append(end_time - start_time)
 
             self._log_to_json()
 
@@ -284,7 +284,7 @@ class Trainer(object):
             self._setup_checkpointers(search_model)  # required to load the architecture
 
             best_arch = self.optimizer.get_final_architecture()
-        logger.info("Final architecture:\n" + best_arch.modules_str())
+        logger.info(f"Final architecture hash: {best_arch.get_hash()}")
 
         if best_arch.QUERYABLE:
             if metric is None:
@@ -293,6 +293,7 @@ class Trainer(object):
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
             logger.info("Queried results ({}): {}".format(metric, result))
+            return result
         else:
             best_arch.to(self.device)
             if retrain:
@@ -452,6 +453,8 @@ class Trainer(object):
                 )
             )
 
+            return top1.avg
+
     @staticmethod
     def build_search_dataloaders(config):
         train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(
@@ -493,12 +496,10 @@ class Trainer(object):
 
     def _log_and_reset_accuracies(self, epoch, writer=None):
         logger.info(
-            "Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
+            "Epoch {} done. Train accuracy: {:.5f}, Validation accuracy: {:.5f}".format(
                 epoch,
                 self.train_top1.avg,
-                self.train_top5.avg,
                 self.val_top1.avg,
-                self.val_top5.avg,
             )
         )
 
@@ -597,12 +598,12 @@ class Trainer(object):
             with codecs.open(
                 os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                json.dump(self.errors_dict, file, separators=(",", ":"))
+                json.dump(self.search_trajectory, file, separators=(",", ":"))
         else:
             with codecs.open(
                 os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                lightweight_dict = copy.deepcopy(self.errors_dict)
+                lightweight_dict = copy.deepcopy(self.search_trajectory)
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(",", ":"))

@@ -163,7 +163,7 @@ def convert_darts_arch_to_graph(
     genotype,
     return_reduction=True,
 ):
-    from naslib.search_spaces.darts.conversions import (
+    from naslib.search_spaces.nasbench301.conversions import (
         convert_naslib_to_genotype,
         Genotype,
     )

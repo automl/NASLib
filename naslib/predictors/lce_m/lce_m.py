@@ -20,7 +20,7 @@ class LCEMPredictor(Predictor):
         if self.ss_type == "nasbench201":
             final_epoch = 200
             default_guess = 85.0
-        elif self.ss_type == "darts":
+        elif self.ss_type == "nasbench301":
             final_epoch = 98
             default_guess = 93.0
         elif self.ss_type == "nlp":

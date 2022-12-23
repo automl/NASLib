@@ -277,7 +277,7 @@ class ModelSpec(object):
         """
         # Invert the operations back to integer label indices used in graph gen.
         labeling = [-1] + [canonical_ops.index(op) for op in self.ops[1:-1]] + [-2]
-        return graph_util.hash_module(self.matrix, labeling)
+        return hash_module(self.matrix, labeling)
 
     def visualize(self):
         """Creates a dot graph. Can be visualized in colab directly."""

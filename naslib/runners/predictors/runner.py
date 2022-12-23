@@ -25,8 +25,7 @@ from naslib.predictors import (
     SparseGPPredictor,
     VarSparseGPPredictor,
     XGBoost,
-    ZeroCostV1,
-    ZeroCostV2,
+    ZeroCost,
     GPWLPredictor,
 )
 
@@ -34,7 +33,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
-    DartsSearchSpace,
+    NasBench301SearchSpace,
     NasBenchNLPSearchSpace,
     TransBench101SearchSpaceMicro,
     TransBench101SearchSpaceMacro,
@@ -56,8 +55,8 @@ supported_predictors = {
                            hparams_from_file=config.hparams_from_file),
     "bonas": BonasPredictor(encoding_type="bonas", hpo_wrapper=True),
     "dngo": DNGOPredictor(encoding_type="adjacency_one_hot"),
-    "fisher": ZeroCostV2(config, batch_size=64, method_type="fisher"),
-    "flops": ZeroCostV2(config, batch_size=64, method_type="flops"),
+    "fisher": ZeroCost(method_type="fisher"),
+    "flops": ZeroCost(method_type="flops"),
     "gcn": GCNPredictor(encoding_type="gcn", hpo_wrapper=True),
     "gp": GPPredictor(encoding_type="adjacency_one_hot", 
                       hparams_from_file=config.hparams_from_file),
@@ -67,10 +66,9 @@ supported_predictors = {
         optimize_gp_hyper=True,
         h="auto",
     ),
-    "grad_norm": ZeroCostV2(config, batch_size=64, method_type="grad_norm"),
-    "grasp": ZeroCostV2(config, batch_size=64, method_type="grasp"),
-    "jacov": ZeroCostV1(config, batch_size=64, method_type="jacov"),
-    "jacov2": ZeroCostV2(config, batch_size=64, method_type="jacov"),
+    "grad_norm": ZeroCost(method_type="grad_norm"),
+    "grasp": ZeroCost(method_type="grasp"),
+    "jacov": ZeroCost(method_type="jacov"),
     "lce": LCEPredictor(metric=Metric.VAL_ACCURACY),
     "lce_m": LCEMPredictor(metric=Metric.VAL_ACCURACY),
     "lcsvr": SVR_Estimator(
@@ -82,19 +80,19 @@ supported_predictors = {
     "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False, 
                             hparams_from_file=config.hparams_from_file),
     "ngb": NGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
-    "params": ZeroCostV2(config, batch_size=64, method_type="params"),
+    "params": ZeroCost(method_type="params"),
     "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
                                 hparams_from_file=config.hparams_from_file),
     "seminas": SemiNASPredictor(encoding_type="seminas", semi=True, hpo_wrapper=False, 
                                 hparams_from_file=config.hparams_from_file),
-    "snip": ZeroCostV2(config, batch_size=64, method_type="snip"),
+    "snip": ZeroCost(method_type="snip"),
     "sotl": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTL"),
     "sotle": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLE"),
     "sotlema": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLEMA"),
     "sparse_gp": SparseGPPredictor(
         encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
     ),
-    "synflow": ZeroCostV2(config, batch_size=64, method_type="synflow"),
+    "synflow": ZeroCost(method_type="synflow"),
     "valacc": EarlyStopping(metric=Metric.VAL_ACCURACY),
     "valloss": EarlyStopping(metric=Metric.VAL_LOSS),
     "var_sparse_gp": VarSparseGPPredictor(
@@ -144,12 +142,15 @@ supported_predictors = {
     "omni_ngb_no_encoding": OmniNGBPredictor(
         encoding_type=None, config=config, zero_cost=["jacov"], lce=["sotle"]
     ),
+    "nwot": ZeroCost(method_type="nwot"),
+    "epe_nas": ZeroCost(method_type="epe_nas"),
+    "zen": ZeroCost(method_type="zen")
 }
 
 supported_search_spaces = {
     "nasbench101": NasBench101SearchSpace(),
     "nasbench201": NasBench201SearchSpace(),
-    "darts": DartsSearchSpace(),
+    "nasbench301": NasBench301SearchSpace(),
     "nlp": NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
     'transbench101_macro': TransBench101SearchSpaceMacro(),
@@ -160,7 +161,7 @@ supported_search_spaces = {
 If the API did not evaluate *all* architectures in the search space, 
 set load_labeled=True
 """
-load_labeled = True if config.search_space in ["darts", "nlp"] else False
+load_labeled = True if config.search_space in ["nasbench301", "nlp"] else False
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 
 # initialize the search space and predictor

@@ -18,7 +18,7 @@ from naslib.optimizers import (
     GSparseOptimizer
 )
 
-from naslib.search_spaces import NasBench201SearchSpace, DartsSearchSpace
+from naslib.search_spaces import NasBench201SearchSpace, NasBench301SearchSpace
 from naslib.utils import utils, setup_logger, get_dataset_api
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -45,7 +45,7 @@ supported_optimizers = {
 
 supported_search_space ={
     "nasbench201" : NasBench201SearchSpace(),
-    "darts" : DartsSearchSpace()
+    "nasbench301" : NasBench301SearchSpace()
 }
 
 #search_space = NasBench201SearchSpace()

@@ -5,7 +5,7 @@ Genotype = namedtuple("Genotype", "normal normal_concat reduce reduce_concat")
 
 """
 NASLib uses four representations of darts architectures:
-'naslib': the DARTSSearchSpace object
+'naslib': the NasBench301SearchSpace object
 'genotype': representation used in the original DARTS paper
 'compact': representation used in [Li and Talwalkar] and BANANAS (smallest size)
 'config': representation used in nasbench301, based on ConfigSpace
@@ -57,15 +57,9 @@ def convert_naslib_to_genotype(naslib_object):
 
     return Genotype(
         normal=converted_cells[0],
-        normal_concat=[
-            2,
-            3,
-            4,
-            5,
-            6,
-        ],  # Why is this [2, 3, 4, 5, 6] instead of [2, 3, 4, 5]?
+        normal_concat=[2, 3, 4, 5],
         reduce=converted_cells[1],
-        reduce_concat=[4, 5, 6],  # Why is this [4, 5, 6] instead of [2, 3, 4, 5]?
+        reduce_concat=[2, 3, 4, 5],
     )
 
 
@@ -73,7 +67,7 @@ def convert_genotype_to_naslib(genotype, naslib_object):
     """
     Converts the genotype representation to a naslib object
     input: genotype is the genotype representation
-    naslib_object is an empty DARTSSearchSpace() object.
+    naslib_object is an empty NasBench301SearchSpace() object.
     Do not call this method with a naslib object that has already been
     discretized (i.e., all but 2 incoming edges for each node are pruned).
 
@@ -90,7 +84,7 @@ def convert_genotype_to_naslib(genotype, naslib_object):
         "dil_conv_5x5": ("DilConv5x5"),
         "avg_pool_3x3": ("AvgPool"),
         "max_pool_3x3": ("MaxPool"),
-        "zero": ("Zero"),
+        #"zero": ("Zero"),
     }
     cell_names = ["normal_cell", "reduction_cell"]
 
@@ -206,9 +200,9 @@ def convert_config_to_genotype(config):
 
     return Genotype(
         normal=genotype[0],
-        normal_concat=[2, 3, 4, 5, 6],
+        normal_concat=[2, 3, 4, 5],
         reduce=genotype[1],
-        reduce_concat=[4, 5, 6],
+        reduce_concat=[2, 3, 4, 5],
     )
 
 
@@ -262,14 +256,6 @@ def convert_compact_to_genotype(compact):
         reduce=genotype[1],
         reduce_concat=[2, 3, 4, 5],
     )
-    # TODO: need to check with Colin and/or Arber
-    #  return Genotype(
-    #     normal = genotype[0],
-    #     normal_concat = [2, 3, 4, 5, 6],
-    #     reduce = genotype[1],
-    #     reduce_concat = [4, 5, 6]
-    # )
-
 
 def make_compact_mutable(compact):
     # convert tuple to list so that it is mutable

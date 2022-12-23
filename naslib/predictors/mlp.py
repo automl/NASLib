@@ -13,7 +13,6 @@ from naslib.predictors import Predictor
 
 # NOTE: faster on CPU
 device = torch.device("cpu")
-print("device:", device)
 
 
 def accuracy_mse(prediction, target, scale=100.0):

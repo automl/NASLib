@@ -1,9 +1,10 @@
-import numpy as np
 import torch
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.core.graph import Graph
 
+from fvcore.common.config import CfgNode
 
 class RandomSearch(MetaOptimizer):
     """
@@ -12,30 +13,19 @@ class RandomSearch(MetaOptimizer):
     DARTS paper: `k=24` and `n=100` for cifar-10.
     """
 
-    # training the models is not implemented
     using_step_function = False
 
     def __init__(
-        self,
-        config,
-        weight_optimizer=torch.optim.SGD,
-        loss_criteria=torch.nn.CrossEntropyLoss(),
-        grad_clip=None,
+            self,
+            config: CfgNode
     ):
         """
         Initialize a random search optimizer.
 
         Args:
-            config
-            weight_optimizer (torch.optim.Optimizer): The optimizer to
-                train the (convolutional) weights.
-            loss_criteria (TODO): The loss
-            grad_clip (float): Where to clip the gradients (default None).
+            config: Config file
         """
         super(RandomSearch, self).__init__()
-        self.weight_optimizer = weight_optimizer
-        self.loss = loss_criteria
-        self.grad_clip = grad_clip
 
         self.performance_metric = Metric.VAL_ACCURACY
         self.dataset = config.dataset
@@ -45,7 +35,7 @@ class RandomSearch(MetaOptimizer):
         self.sampled_archs = []
         self.history = torch.nn.ModuleList()
 
-    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
+    def adapt_search_space(self, search_space: Graph, scope: str = None, dataset_api: dict = None):
         assert (
             search_space.QUERYABLE
         ), "Random search is currently only implemented for benchmarks."
@@ -53,12 +43,12 @@ class RandomSearch(MetaOptimizer):
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
 
-    def new_epoch(self, e):
+    def new_epoch(self, epoch: int):
         """
         Sample a new architecture to train.
         """
 
-        model = torch.nn.Module()  # hacky way to get arch and accuracy checkpointable
+        model = torch.nn.Module()
         model.arch = self.search_space.clone()
         model.arch.sample_random_architecture(dataset_api=self.dataset_api)
         model.accuracy = model.arch.query(
@@ -70,13 +60,6 @@ class RandomSearch(MetaOptimizer):
 
         self.sampled_archs.append(model)
         self._update_history(model)
-
-        # required if we want to train the models and not only query.
-        # architecture_i.parse()
-        # architecture_i.train()
-        # architecture_i = architecture_i.to(self.device)
-        # self.sampled_archs.append(architecture_i)
-        # self.weight_optimizers.append(self.weight_optimizer(architecture_i.parameters(), 0.01))
 
     def _update_history(self, child):
         if len(self.history) < 100:
@@ -93,7 +76,7 @@ class RandomSearch(MetaOptimizer):
         """
         return max(self.sampled_archs, key=lambda x: x.accuracy).arch
 
-    def train_statistics(self, report_incumbent=True):
+    def train_statistics(self, report_incumbent: bool = True):
 
         if report_incumbent:
             best_arch = self.get_final_architecture()
@@ -120,7 +103,7 @@ class RandomSearch(MetaOptimizer):
         return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
 
     def get_op_optimizer(self):
-        return self.weight_optimizer
+        raise NotImplementedError
 
     def get_checkpointables(self):
         return {"model": self.history}

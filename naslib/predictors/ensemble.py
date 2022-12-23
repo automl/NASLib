@@ -27,6 +27,8 @@ class Ensemble(Predictor):
         ss_type=None,
         hpo_wrapper=True,
         config=None,
+        zc=None,
+        zc_only=None
     ):
         self.num_ensemble = num_ensemble
         self.predictor_type = predictor_type
@@ -36,10 +38,12 @@ class Ensemble(Predictor):
         self.config = config
         self.hyperparams = None
         self.ensemble = None
+        self.zc = zc
+        self.zc_only = zc_only
 
     def get_ensemble(self):
         # TODO: if encoding_type is not None, set the encoding type
-
+    
         trainable_predictors = {
             "bananas": MLPPredictor(ss_type=self.ss_type, encoding_type="path"),
             "bayes_lin_reg": BayesianLinearRegression(
@@ -52,7 +56,12 @@ class Ensemble(Predictor):
             "dngo": DNGOPredictor(
                 ss_type=self.ss_type, encoding_type="adjacency_one_hot"
             ),
-            "lgb": LGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
+            "lgb": LGBoost(
+                ss_type=self.ss_type,
+                zc=self.zc,
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only
+            ),
             "gcn": GCNPredictor(ss_type=self.ss_type, encoding_type="gcn"),
             "gp": GPPredictor(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
             "gpwl": GPWLPredictor(
@@ -67,9 +76,17 @@ class Ensemble(Predictor):
             "nao": SemiNASPredictor(
                 ss_type=self.ss_type, semi=False, encoding_type="seminas"
             ),
-            "ngb": NGBoost(ss_type=self.ss_type, encoding_type="adjacency_one_hot"),
+            "ngb": NGBoost(
+                ss_type=self.ss_type,
+                zc=self.zc,
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only    
+            ),
             "rf": RandomForestPredictor(
-                ss_type=self.ss_type, encoding_type="adjacency_one_hot"
+                ss_type=self.ss_type,
+                zc=self.zc,
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only
             ),
             "seminas": SemiNASPredictor(
                 ss_type=self.ss_type, semi=True, encoding_type="seminas"
@@ -86,7 +103,10 @@ class Ensemble(Predictor):
                 zc=False,
             ),
             "xgb": XGBoost(
-                ss_type=self.ss_type, zc=False, encoding_type="adjacency_one_hot"
+                ss_type=self.ss_type, 
+                zc=self.zc, 
+                encoding_type="adjacency_one_hot", 
+                zc_only=self.zc_only
             ),
             "omni_ngb": OmniNGBPredictor(
                 zero_cost=["jacov"],

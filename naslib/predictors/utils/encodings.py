@@ -1,10 +1,12 @@
 import numpy as np
 import logging
 
-from naslib.predictors.utils.encodings_nb101 import encode_101
-from naslib.predictors.utils.encodings_darts import encode_darts
 from naslib.predictors.utils.encodings_nlp import encode_nlp
+from naslib.predictors.utils.encodings_nb101 import encode_101, encode_101_spec
+from naslib.predictors.utils.encodings_darts import encode_darts, encode_darts_compact
 from naslib.predictors.utils.encodings_asr import encode_asr
+from naslib.search_spaces.nasbench101.conversions import convert_tuple_to_spec
+
 
 """
 Currently we need search space specific methods.
@@ -333,14 +335,14 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
         return encode_101(arch, encoding_type=encoding_type)
     elif ss_type == "nasbench201":
         return encode_201(arch, encoding_type=encoding_type)
-    elif ss_type == "darts":
+    elif ss_type == "nasbench301":
         return encode_darts(arch, encoding_type=encoding_type)
     elif ss_type == "nlp":
         return encode_nlp(arch, 
                           encoding_type=encoding_type, 
                           max_nodes=12, 
                           accs=None)
-    elif ss_type == 'transbench101':
+    elif ss_type == 'transbench101_micro' or 'transbench101_macro':
         return encode_tb101(arch, encoding_type=encoding_type)
     elif ss_type == "asr":
         return encode_asr(arch,
@@ -351,3 +353,57 @@ def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
         raise NotImplementedError(
             "{} is not yet supported for encodings".format(ss_type)
         )
+
+
+def encode_spec(spec, encoding_type='adjacency_one_hot', ss_type=None):
+    if ss_type == 'nasbench101':
+        if isinstance(spec, tuple):
+            spec = convert_tuple_to_spec(spec)
+        return encode_101_spec(spec, encoding_type=encoding_type)
+    elif ss_type == 'nasbench201' and encoding_type == 'adjacency_one_hot':
+        return encode_adjacency_one_hot_op_indices(spec)
+    elif ss_type == 'nasbench301':
+        return encode_darts_compact(spec, encoding_type=encoding_type)
+    elif ss_type == 'transbench101_micro' and encoding_type == 'adjacency_one_hot':
+        return encode_adjacency_one_hot_transbench_micro_op_indices(spec)
+    elif ss_type == 'transbench101_macro' and encoding_type == 'adjacency_one_hot':
+        return encode_adjacency_one_hot_transbench_macro_op_indices(spec)
+    else:
+        raise NotImplementedError(f'No implementation found for encoding search space {ss_type} with {encoding_type}')
+
+
+def encode_adjacency_one_hot_transbench_macro_op_indices(op_indices):
+    one_hot = []
+    one_hot_mapping = np.eye(5)
+
+    if len(op_indices) < 6:
+        op_indices = op_indices + tuple((0 for i in range(6-len(op_indices))))
+
+    for e in op_indices:
+        one_hot = [*one_hot, *one_hot_mapping[e]]
+    return one_hot
+
+
+def encode_adjacency_one_hot_transbench_micro(arch):
+    encoding = arch.get_op_indices()
+    return encode_adjacency_one_hot_transbench_micro_op_indices(encoding)
+
+
+one_hot_transnasbench201 = [[1,0,0,0],
+                            [0,1,0,0],
+                            [0,0,1,0],
+                            [0,0,0,1]]
+
+
+def encode_adjacency_one_hot_transbench_micro_op_indices(op_indices):
+    one_hot = []
+    for e in op_indices:
+        one_hot = [*one_hot, *one_hot_transnasbench201[e]]
+    return one_hot
+
+
+def encode_adjacency_one_hot_op_indices(op_indices):
+    one_hot = []
+    for e in op_indices:
+        one_hot = [*one_hot, *one_hot_nasbench201[e]]
+    return one_hot

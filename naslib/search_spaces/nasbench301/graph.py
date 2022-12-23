@@ -3,18 +3,17 @@ import random
 import torch
 import logging
 import numpy as np
-import networkx as nx
-import pickle
 
-from collections import namedtuple
 from torch import nn
 from copy import deepcopy
 from ConfigSpace.read_and_write import json as config_space_json_r_w
 
+from typing import *
 from naslib.search_spaces.core import primitives as ops
 from naslib.utils.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
-from naslib.search_spaces.darts.conversions import (
+from naslib.search_spaces.nasbench301.conversions import (
+    convert_compact_to_genotype,
     convert_compact_to_naslib,
     convert_naslib_to_compact,
     convert_naslib_to_genotype,
@@ -32,7 +31,7 @@ NUM_VERTICES = 4
 NUM_OPS = 7
 
 
-class DartsSearchSpace(Graph):
+class NasBench301SearchSpace(Graph):
     """
     The search space for CIFAR-10 as defined in
 
@@ -59,7 +58,7 @@ class DartsSearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self):
+    def __init__(self, n_classes=10, in_channels=3, auxiliary=True):
         """
         Initialize a new instance of the DARTS search space.
         Note:
@@ -72,9 +71,14 @@ class DartsSearchSpace(Graph):
         self.channels = [16, 32, 64]
         self.compact = None
         self.load_labeled = None
-        self.num_classes = self.NUM_CLASSES if hasattr(self, "NUM_CLASSES") else 10
-        self.max_epoch = 97
-        self.space_name = "darts"
+        self.num_classes = n_classes
+        self.max_epoch = 100
+        self.in_channels = in_channels
+        self.space_name = "nasbench301"
+        self.auxiliary_output = auxiliary
+        self.labeled_archs = None
+        self.instantiate_model = True
+        self.sample_without_replacement = False
 
         """
         Build the search space with the parameters specified in __init__.
@@ -164,12 +168,25 @@ class DartsSearchSpace(Graph):
         self.add_node(12)
 
         # chain connections
-        self.add_edges_from([(i, i + 1) for i in range(1, 12)])
+        self.add_edges_from([(i, i + 1) for i in range(1, 11)])
 
         # skip connections
         self.add_edges_from([(i, i + 2) for i in range(4, 10)])
         self.add_edge(2, 4)
         self.add_edge(2, 5)
+
+        if self.auxiliary_output:
+            # node 12 becomes aux head
+            self.add_node(13)
+
+            # auxiliary
+            self.add_edge(11, 12)
+
+            # final output
+            self.add_edge(11, 13)
+        else:
+            # final output
+            self.add_edge(11, 12)
 
         #
         # Operations at the makrograph edges
@@ -186,23 +203,25 @@ class DartsSearchSpace(Graph):
             channel_map_to,
             reduction_cell_indices,
             max_index=12,
-            affine=False,
+            affine=True,
         )
 
         self._set_cell_ops(reduction_cell_indices)
 
     def _set_makrograph_ops(
-        self,
-        channel_map_from,
-        channel_map_to,
-        reduction_cell_indices,
-        max_index,
-        affine=True,
-    ):
+            self,
+            channel_map_from: dict,
+            channel_map_to: dict,
+            reduction_cell_indices: list,
+            max_index: int,
+            affine: bool = True,
+    ) -> None:
         # pre-processing
         # In darts there is a hardcoded multiplier of 3 for the output of the stem
         stem_multiplier = 3
-        self.edges[1, 2].set("op", ops.Stem(self.channels[0] * stem_multiplier))
+        self.edges[1, 2].set("op", ops.Stem(C_in=self.in_channels,
+                                            # TODO_ARJUN: Make Stem use C_in. Currently, it is hardcoded to 3.
+                                            C_out=self.channels[0] * stem_multiplier))
 
         # edges connecting cells
         for u, v, data in sorted(self.edges(data=True)):
@@ -239,7 +258,7 @@ class DartsSearchSpace(Graph):
             ),
         )
 
-    def _set_cell_ops(self, reduction_cell_indices):
+    def _set_cell_ops(self, reduction_cell_indices: list) -> None:
         # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
 
@@ -267,110 +286,50 @@ class DartsSearchSpace(Graph):
             if cell:
                 cell.nodes[7]["comb_op"] = channel_concat
 
-    def prepare_discretization(self):
+    def prepare_discretization(self) -> None:
         """
         In DARTS a node can have a maximum of two incoming edges.
         This is handled here.
         """
 
         self.update_nodes(
-            _truncate_input_edges, scope=self.OPTIMIZER_SCOPE, single_instances=True
+            _truncate_input_edges, scope=self.OPTIMIZER_SCOPE,
+            single_instances=True
         )
 
-    def prepare_evaluation(self):
+    def prepare_evaluation(self) -> None:
         """
         In DARTS the evaluation model has 32 channels after the Stem
         and 3 normal cells at each stage.
         """
-        # this is called after the optimizer has discretized the graph
-        self._expand()
-
-        # Operations at the edges
-        self.channels = [36, 72, 144]
-        reduction_cell_indices = [10, 17]
-
-        channel_map_from, channel_map_to = channel_maps(
-            reduction_cell_indices, max_index=24
-        )
-        self._set_makrograph_ops(
-            channel_map_from,
-            channel_map_to,
-            reduction_cell_indices,
-            max_index=24,
-            affine=True,
-        )
 
         # Taken from DARTS implementation
         # assuming input size 8x8
-        self.edges[23, 24].set(
-            "op",
-            ops.Sequential(
-                nn.ReLU(inplace=True),
-                nn.AvgPool2d(
-                    5, stride=3, padding=0, count_include_pad=False
-                ),  # image size = 2 x 2
-                nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
-                nn.BatchNorm2d(128),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(128, 768, 2, bias=False),
-                nn.BatchNorm2d(768),
-                nn.ReLU(inplace=True),
-                nn.Flatten(),
-                nn.Linear(768, self.num_classes),
-            ),
-        )
-
-        self.update_edges(
-            update_func=_double_channels,
-            scope=self.OPTIMIZER_SCOPE,
-            private_edge_data=True,
-        )
-
-    def _expand(self):
-        # shift the node indices to make space for 4 more nodes at each stage
-        # and the auxiliary logits
-        mapping = {
-            6: 10,
-            7: 11,
-            8: 12,
-            9: 17,
-            10: 18,
-            11: 19,
-            12: 25,  # 24 is auxiliary
-        }
-        nx.relabel_nodes(self, mapping, copy=False)
-
-        # fix edges
-        self.remove_edges_from(list(self.edges()))
-        self.add_edges_from([(i, i + 1) for i in range(1, 23)])
-        self.add_edges_from([(i, i + 2) for i in range(4, 22)])
-        self.add_edges_from([(2, 4), (2, 5)])
-        self.add_edge(23, 24)  # auxiliary output
-        self.add_edge(23, 25)  # final output
-
-        to_insert = [] + list(range(6, 10)) + list(range(13, 17)) + list(range(20, 24))
-        for i in to_insert:
-            normal_cell = self.nodes[i - 1]["subgraph"]
-            self.add_node(
-                i,
-                subgraph=normal_cell.copy()
-                .set_scope(normal_cell.scope)
-                .set_input([i - 2, i - 1]),
+        if self.auxiliary_output:
+            self.edges[11, 12].set(
+                "op",
+                ops.Sequential(
+                    nn.ReLU(inplace=False),
+                    nn.AvgPool2d(
+                        5, stride=3, padding=0, count_include_pad=False
+                    ),  # image size = 2 x 2
+                    nn.Conv2d(self.channels[-1] * self.num_in_edges, 128, 1, bias=False),
+                    nn.BatchNorm2d(128),
+                    nn.ReLU(inplace=False),
+                    nn.Conv2d(128, 768, 2, bias=False),
+                    nn.BatchNorm2d(768),
+                    nn.ReLU(inplace=False),
+                    nn.Flatten(),
+                    nn.Linear(768, self.num_classes),
+                ),
             )
 
-        for i, cell in sorted(self.nodes(data="subgraph")):
-            if cell:
-                if i == 5:
-                    cell.input_node_idxs = [2, 4]
-                else:
-                    cell.input_node_idxs = [i - 2, i - 1]
+    def auxiliary_logits(self) -> torch.Tensor:
+        return self.graph["out_from_12"]
 
-    def auxilary_logits(self):
-        return self.graph["out_from_24"]
-
-    def load_labeled_architecture(self, dataset_api=None):
+    def load_labeled_architecture(self, dataset_api: dict = None) -> None:
         """
-        This is meant to be called by a new DartsSearchSpace() object
+        This is meant to be called by a new NasBench301SearchSpace() object
         (one that has not already been discretized).
         It samples a random architecture from the nasbench301 training data,
         and updates the graph object to match the architecture.
@@ -381,17 +340,21 @@ class DartsSearchSpace(Graph):
         self.set_compact(compact)
 
     def query(
-        self,
-        metric=None,
-        dataset=None,
-        path=None,
-        epoch=-1,
-        full_lc=False,
-        dataset_api=None,
-    ):
+            self,
+            metric: Metric = None,
+            dataset: str = None,
+            path: str = None,
+            epoch: int = -1,
+            full_lc: bool = False,
+            dataset_api: dict = None) -> Union[float, dict]:
         """
         Query results from nasbench 301
         """
+        if dataset_api is None:
+            raise NotImplementedError('Must pass in dataset_api to query NAS-Bench-301')
+
+        assert dataset == 'cifar10' or dataset is None, "NAS-Bench-301 supports only CIFAR10 dataset"
+
         metric_to_nb301 = {
             Metric.TRAIN_LOSS: "train_losses",
             Metric.VAL_ACCURACY: "val_accuracies",
@@ -412,7 +375,7 @@ class DartsSearchSpace(Graph):
                 Metric.TRAIN_LOSS,
                 Metric.TRAIN_TIME,
                 Metric.HP,
-            ]
+            ], "Only VAL_ACCURACY, TEST_ACCURACY, TRAIN_LOSS, TRAIN_TIME, and HP can be queried for the given model."
             query_results = dataset_api["nb301_data"][self.compact]
 
             if metric == Metric.TRAIN_TIME:
@@ -435,7 +398,10 @@ class DartsSearchSpace(Graph):
             """
             assert not epoch or epoch in [-1, 100]
             # assert metric in [Metric.VAL_ACCURACY, Metric.RAW]
-            genotype = convert_naslib_to_genotype(self)
+            if self.instantiate_model == True:
+                genotype = convert_naslib_to_genotype(self)
+            else:
+                genotype = convert_compact_to_genotype(self.compact)
             if metric == Metric.VAL_ACCURACY:
                 val_acc = dataset_api["nb301_model"][0].predict(
                     config=genotype, representation="genotype"
@@ -449,38 +415,53 @@ class DartsSearchSpace(Graph):
             else:
                 return -1
 
-    def get_compact(self):
-        if self.compact is None:
+    def get_compact(self) -> tuple:
+        if self.compact is None and self.instantiate_model == True:
             self.compact = convert_naslib_to_compact(self)
         return self.compact
 
-    def get_hash(self):
+    def get_hash(self) -> tuple:
         return self.get_compact()
 
-    def get_arch_iterator(self, dataset_api=None):
+    def get_arch_iterator(self, dataset_api: dict) -> Iterator:
         # currently set up for nasbench301 data, not surrogate
         arch_list = np.array(dataset_api["nb301_arches"])
         random.shuffle(arch_list)
         return arch_list
 
-    def set_compact(self, compact):
-        # This will update the edges in the naslib object to match compact
-        self.compact = compact
-        convert_compact_to_naslib(compact, self)
+    def set_compact(self, compact: tuple) -> None:
+        if self.instantiate_model == True:
+            assert self.compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
+            convert_compact_to_naslib(compact, self)
 
-    def set_spec(self, compact, dataset_api=None):
-        # this is just to unify the setters across search spaces
-        # TODO: change it to set_spec on all search spaces
+        self.compact = compact
+
+    def set_spec(self, compact: tuple, dataset_api: dict = None):
         self.set_compact(make_compact_immutable(compact))
 
-    def sample_random_architecture(self, dataset_api=None):
+    def sample_random_labeled_architecture(self) -> None:
+        assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
+
+        op_indices = random.choice(self.labeled_archs)
+
+        if self.sample_without_replacement == True:
+            self.labeled_archs.pop(self.labeled_archs.index(op_indices))
+
+        self.set_spec(op_indices)
+
+    def sample_random_architecture(self, dataset_api: dict = None, load_labeled: bool = False) -> None:
         """
         This will sample a random architecture and update the edges in the
         naslib object accordingly.
         """
+        if load_labeled == True:
+            assert dataset_api is not None, "NAS-Bench-301 API must be passed as argument to sample a trained model"
+            self.load_labeled_architecture(dataset_api=dataset_api)
+            return
+
         compact = [[], []]
         for i in range(NUM_VERTICES):
-            ops = np.random.choice(range(NUM_OPS), 4)
+            ops = np.random.choice(range(NUM_OPS), NUM_VERTICES)
 
             nodes_in_normal = np.random.choice(range(i + 2), 2, replace=False)
             nodes_in_reduce = np.random.choice(range(i + 2), 2, replace=False)
@@ -492,9 +473,14 @@ class DartsSearchSpace(Graph):
                 [(nodes_in_reduce[0], ops[2]), (nodes_in_reduce[1], ops[3])]
             )
 
-        self.set_compact(compact)
+        # convert the lists to tuples
+        compact[0] = tuple(compact[0])
+        compact[1] = tuple(compact[1])
+        compact = tuple(compact)
 
-    def mutate(self, parent, mutation_rate=1, dataset_api=None):
+        self.set_spec(compact)
+
+    def mutate(self, parent: Graph, mutation_rate: int = 1, dataset_api: dict = None):
         """
         This will mutate one op from the parent op indices, and then
         update the naslib object and op_indices
@@ -503,23 +489,30 @@ class DartsSearchSpace(Graph):
         parent_compact = make_compact_mutable(parent_compact)
         compact = parent_compact
 
-        for _ in range(int(mutation_rate)):
-            cell = np.random.choice(2)
-            pair = np.random.choice(8)
-            num = np.random.choice(2)
-            if num == 1:
-                compact[cell][pair][num] = np.random.choice(NUM_OPS)
-            else:
-                inputs = pair // 2 + 2
-                choice = np.random.choice(inputs)
-                if pair % 2 == 0 and compact[cell][pair + 1][num] != choice:
-                    compact[cell][pair][num] = choice
-                elif pair % 2 != 0 and compact[cell][pair - 1][num] != choice:
-                    compact[cell][pair][num] = choice
+        while True:
+            for _ in range(int(mutation_rate)):
+                cell = np.random.choice(2)
+                pair = np.random.choice(8)
+                num = np.random.choice(2)
+                if num == 1:
+                    compact[cell][pair][num] = np.random.choice(NUM_OPS)
+                else:
+                    inputs = pair // 2 + 2
+                    choice = np.random.choice(inputs)
+                    if pair % 2 == 0 and compact[cell][pair + 1][num] != choice:
+                        compact[cell][pair][num] = choice
+                    elif pair % 2 != 0 and compact[cell][pair - 1][num] != choice:
+                        compact[cell][pair][num] = choice
 
-        self.set_compact(compact)
+            if make_compact_immutable(parent_compact) != make_compact_immutable(compact):
+                break
 
-    def get_nbhd(self, dataset_api=None):
+            parent_compact = make_compact_mutable(parent_compact)
+            compact = make_compact_mutable(compact)
+
+        self.set_spec(compact)
+
+    def get_nbhd(self, dataset_api: dict = None) -> list:
         # return all neighbors of the architecture
         self.get_compact()
         nbrs = []
@@ -532,7 +525,7 @@ class DartsSearchSpace(Graph):
                 for op in available:
                     nbr_compact = make_compact_mutable(self.compact)
                     nbr_compact[i][j][1] = op
-                    nbr = DartsSearchSpace()
+                    nbr = NasBench301SearchSpace()
                     nbr.set_compact(nbr_compact)
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr
@@ -549,7 +542,7 @@ class DartsSearchSpace(Graph):
                 for edge in available:
                     nbr_compact = make_compact_mutable(self.compact)
                     nbr_compact[i][j][0] = edge
-                    nbr = DartsSearchSpace()
+                    nbr = NasBench301SearchSpace()
                     nbr.set_compact(nbr_compact)
                     nbr_model = torch.nn.Module()
                     nbr_model.arch = nbr
@@ -560,9 +553,9 @@ class DartsSearchSpace(Graph):
 
     @staticmethod
     def get_configspace(
-        path_to_configspace_obj=os.path.join(
-            get_project_root(), "search_spaces/darts/configspace.json"
-        )
+            path_to_configspace_obj=os.path.join(
+                get_project_root(), "search_spaces/nasbench301/configspace.json"
+            )
     ):
         """
         Returns the ConfigSpace object for the search space
@@ -578,11 +571,31 @@ class DartsSearchSpace(Graph):
             config_space = config_space_json_r_w.read(json_string)
         return config_space
 
-    def get_type(self):
-        return "darts"
+    def get_type(self) -> str:
+        return "nasbench301"
+
+    def get_loss_fn(self) -> Callable:
+        return F.cross_entropy
+
+    def forward_before_global_avg_pool(self, x: torch.Tensor) -> list:
+        outputs = []
+
+        def hook_fn(module, inputs, output_t):
+            # print(f'Input tensor shape: {inputs[0].shape}')
+            # print(f'Output tensor shape: {output_t.shape}')
+            outputs.append(inputs[0])
+
+        for m in self.modules():
+            if isinstance(m, torch.nn.AdaptiveAvgPool2d):
+                m.register_forward_hook(hook_fn)
+
+        self.forward(x, None)
+
+        assert len(outputs) == 1
+        return outputs[0]
 
 
-def _set_ops(edge, C, stride):
+def _set_ops(edge, C: int, stride: int) -> None:
     """
     Replace the 'op' at the edges with the ones defined here.
     This function is called by the framework for every edge in
@@ -617,7 +630,7 @@ def _set_ops(edge, C, stride):
     )
 
 
-def _truncate_input_edges(node, in_edges, out_edges):
+def _truncate_input_edges(node: tuple, in_edges: list, out_edges: list) -> None:
     """
     Removes input edges if there are more than k.
     """
@@ -659,22 +672,11 @@ def _truncate_input_edges(node, in_edges, out_edges):
                     in_edges[random.randint(0, len(in_edges) - 1)][1].delete()
 
 
-def _double_channels(edge):
-    init_params = edge.data.op.init_params
-    if "C_in" in init_params:
-        init_params["C_in"] = int(init_params["C_in"] * 2.25)
-    if "C_out" in init_params:
-        init_params["C_out"] = int(init_params["C_out"] * 2.25)
-    if "affine" in init_params:
-        init_params["affine"] = True
-    edge.data.set("op", edge.data.op.__class__(**init_params))
-
-
 def channel_concat(tensors):
     return torch.cat(tensors, dim=1)
 
 
-def channel_maps(reduction_cell_indices, max_index):
+def channel_maps(reduction_cell_indices: list, max_index: int) -> [dict, dict]:
     # calculate the mapping from edge indices to the respective channel
 
     assert len(reduction_cell_indices) == 2
