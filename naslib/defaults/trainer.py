@@ -18,6 +18,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.utils import utils
 from naslib.utils.logging import log_every_n_seconds, log_first_n
+from naslib.utils.vis import plot_architectural_weights
 
 from typing import Callable
 from .additional_primitives import DropPathWrapper
@@ -114,18 +115,14 @@ class Trainer(object):
         arch_weights = []
         for e in range(start_epoch, self.epochs):
 
-            # create the arch directory (without overwriting)
-            if self.config.save_arch_weights: 
-                Path(f"{self.config.save_arch_weights_path}/epoch_{e}").mkdir(parents=True, exist_ok=False)
-
             start_time = time.time()
             self.optimizer.new_epoch(e)
 
-            arch_weights_lst = []
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
-                     
-                    if hasattr(self.config, "save_arch_weights") and self.config.save_arch_weights:
+                    
+                    # save arch weights to array of tensors
+                    if self.config.save_arch_weights:
                         if len(arch_weights) == 0:
                             for edge_weights in self.optimizer.architectural_weights:
                                 arch_weights.append(torch.unsqueeze(edge_weights.detach(), dim=0))
@@ -218,31 +215,17 @@ class Trainer(object):
             if after_epoch is not None:
                 after_epoch(e)
 
-            logger.info(f"Saving architectural weight tensors: {self.config.save_arch_weights_path}/epoch_{e}")
+        # save and possibly plot architectural weights
+        logger.info(f"Saving architectural weight tensors: {self.config.save}/arch_weights.pt")
+        if hasattr(self.config, "save_arch_weights") and self.config.save_arch_weights:
+            torch.save(arch_weights, f'{self.config.save}/arch_weights.pt')
+            if hasattr(self.config, "plot_arch_weights") and self.config.plot_arch_weights:
+                plot_architectural_weights(self.config, self.optimizer)
 
-            # writing arch weights to file and plotting
-            if self.config.save_arch_weights:
-                if not Path(f'{self.config.save_arch_weights_path}/epoch_{e}/tensor_0.pt').exists():
-                    for idx in range(len(arch_weights_lst)):
-                        if self.config.plot_arch_weights:
-                            self._plot_architectural_weights(idx, alpha_i=arch_weights_lst[idx], epoch_num=e)
-                        torch.save(arch_weights_lst[idx], f'{self.config.save_arch_weights_path}/epoch_{e}/tensor_{idx}.pt')
-                else:
-                    for idx in range(len(self.optimizer.architectural_weights)):
-                        old_arch_weights = torch.load(f'{self.config.save_arch_weights_path}/epoch_{e}/tensor_{idx}.pt')
-                        arch_weights_lst[idx] = torch.cat((old_arch_weights, arch_weights_lst[idx]), dim=0)
-                        if self.config.plot_arch_weights:
-                            self._plot_architectural_weights(idx, alpha_i=arch_weights_lst[idx], epoch_num=e)
-                        torch.save(arch_weights_lst[idx], f'{self.config.save_arch_weights_path}/epoch_{e}/tensor_{idx}.pt')
-                
         self.optimizer.after_training()
 
         if summary_writer is not None:
             summary_writer.close()
-
-        logger.info(f"Saving architectural weight tensors: {self.config.save}/arch_weights.pt")
-        if hasattr(self.config, "save_arch_weights") and self.config.save_arch_weights:
-            torch.save(arch_weights, f'{self.config.save}/arch_weights.pt')
 
         logger.info("Training finished")
 
@@ -646,16 +629,3 @@ class Trainer(object):
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(",", ":"))
-
-    def _plot_architectural_weights(self, idx, alpha_i, epoch_num):
-        # Todo check if softmax is suitable here. In which range are the weights for e.g. GDAS
-        alpha_i = torch.softmax(alpha_i.detach(), dim=1).cpu().numpy()
-        g = sns.heatmap(alpha_i.T, cmap=sns.diverging_palette(230, 0, 90, 60, as_cmap=True))
-        g.set_xticklabels(g.get_xticklabels(), rotation=60)
-
-        plt.title(f"arch weights for operation {idx}")
-        plt.xlabel("steps")
-        plt.ylabel("alpha values")
-        plt.tight_layout()
-        plt.savefig(f"{self.config.save_arch_weights_path}/epoch_{epoch_num}/heatmap_{idx}.png")
-        plt.close()

@@ -322,8 +322,8 @@ def get_train_val_loaders(config, mode="train"):
     data = config.data
     dataset = config.dataset
     seed = config.search.seed
-    batch_size = config.batch_size
-    train_portion = config.train_portion
+    batch_size = config.batch_size if hasattr(config, "batch_size") else config.search.batch_size
+    train_portion = config.train_portion if hasattr(config, "train_portion") else config.search.train_portion
     config = config.search if mode == "train" else config.evaluation
     if dataset == "cifar10":
         train_transform, valid_transform = _data_transforms_cifar10(config)
