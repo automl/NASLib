@@ -56,7 +56,7 @@ class NasBench301SearchSpace(Graph):
 
     QUERYABLE = True
 
-    def __init__(self, n_classes=10, in_channels=3, auxiliary=True):
+    def __init__(self, n_classes=10, in_channels=3, auxiliary=False):
         """
         Initialize a new instance of the DARTS search space.
         Note:

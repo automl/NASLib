@@ -189,16 +189,18 @@ class NasBench201SearchSpace(Graph):
         # else:
         #     raise NotImplementedError("Invalid dataset")
 
+        #==== test from api
         if metric == Metric.HP:
             # return hyperparameter info
             # return query_results[dataset]["cost_info"]
-            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset=dataset, hp='200')
         elif metric == Metric.TRAIN_TIME:
-            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')['train-all-time']
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset=dataset, hp='200')['train-all-time']
         elif metric == Metric.TRAIN_ACCURACY:
-            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')['train-accuracy']
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset=dataset, hp='200')['train-accuracy']
         elif metric == Metric.TEST_ACCURACY:
-            return dataset_api['nb201_api'].get_more_info(index=index, dataset='cifar10', hp='200')['test-accuracy']
+            return dataset_api['nb201_api'].get_more_info(index=index, dataset=dataset, hp='200')['test-accuracy']
+        # =========
 
         # if full_lc and epoch == -1:
         #     return query_results[dataset][metric_to_nb201[metric]]

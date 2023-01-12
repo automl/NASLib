@@ -253,6 +253,7 @@ class Trainer(object):
         self,
         retrain:bool=True,
         search_model:str="",
+        query_benchmark:bool=True,
         resume_from:str="",
         best_arch:Graph=None,
         dataset_api:object=None,
@@ -273,8 +274,12 @@ class Trainer(object):
                                   from the optimizer.
             dataset_api         : Dataset API to use for querying model performance.
             metric              : Metric to query the benchmark for.
+            query_benchmark     : Retrain architecure instead of querying
         """
         logger.info("Start evaluation")
+
+        if dataset_api is None:
+            logger.info("Issue")
         if not best_arch:
 
             if not search_model:
@@ -286,7 +291,7 @@ class Trainer(object):
             best_arch = self.optimizer.get_final_architecture()
         logger.info("Final architecture:\n" + best_arch.modules_str())
 
-        if best_arch.QUERYABLE:
+        if best_arch.QUERYABLE and not query_benchmark:
             if metric is None:
                 metric = Metric.TEST_ACCURACY
             result = best_arch.query(

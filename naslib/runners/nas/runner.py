@@ -1,12 +1,8 @@
 import logging
 
 from naslib.defaults.trainer import Trainer
+from naslib.search_spaces.core.query_metrics import Metric
 from naslib.optimizers import (
-    RandomSearch,
-    Npenas,
-    RegularizedEvolution,
-    LocalSearch,
-    Bananas,
     DARTSOptimizer,
     DrNASOptimizer,
     GDASOptimizer,
@@ -17,11 +13,6 @@ from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
     NasBench301SearchSpace,
-    DartsSearchSpace,
-    NasBenchNLPSearchSpace,
-    TransBench101SearchSpaceMicro,
-    TransBench101SearchSpaceMacro,
-    NasBenchASRSearchSpace
 )
 
 from naslib.utils import utils, setup_logger, get_dataset_api
@@ -36,11 +27,6 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_optimizers = {
-    'rs': RandomSearch(config),
-    're': RegularizedEvolution(config),
-    'bananas': Bananas(config),
-    'npenas': Npenas(config),
-    'ls': LocalSearch(config),
     'darts': DARTSOptimizer(config),
     'drnas': DrNASOptimizer(config),
     'gdas': GDASOptimizer(config),
@@ -51,11 +37,6 @@ supported_search_spaces = {
     'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
     'nasbench301': NasBench301SearchSpace(),
-    'darts': DartsSearchSpace(),
-    'nlp': NasBenchNLPSearchSpace(),
-    'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
-    'transbench101_macro': TransBench101SearchSpaceMacro(),
-    'asr': NasBenchASRSearchSpace(),
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
@@ -77,4 +58,6 @@ elif config.dataset == 'autoencoder':
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
 trainer.search(resume_from="")
-trainer.evaluate(resume_from="", dataset_api=dataset_api)
+trainer.evaluate(resume_from="", query_benchmark=False, dataset_api=dataset_api)
+# run nb101 with validation acc
+# trainer.evaluate(resume_from="", query_benchmark=False, metric=Metric.VAL_ACCURACY, dataset_api=dataset_api)

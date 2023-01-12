@@ -292,7 +292,7 @@ def get_train_val_loaders(config, mode):
     dataset = config.dataset
     seed = config.search.seed
     config = config.search if mode == "train" else config.evaluation
-    if dataset == "cifar10":
+    if dataset == "cifar10" or dataset=="cifar10-valid":
         train_transform, valid_transform = _data_transforms_cifar10(config)
         train_data = dset.CIFAR10(
             root=data, train=True, download=True, transform=train_transform
