@@ -6,7 +6,7 @@ dataset: cifar10
 seed: 2
 # darts (or nb301)
 # nb201
-search_space: nasbench201
+search_space: nasbench301
 out_dir: run
 optimizer: drnas
 
@@ -23,7 +23,7 @@ search:
   weight_decay: 0.0003
   # for cifar10 the learning process is 2 stages of 25 epochs each
   # in code it states that the number of training epochs has the default value of 100 in nb201
-  epochs: 25
+  epochs: 1
   warm_start_epochs: 0
   grad_clip: 5
   # for cifar10 the train and optimization data (50k) is equally partitioned
