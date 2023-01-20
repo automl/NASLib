@@ -77,6 +77,7 @@ setup(
     license='Apache License 2.0',
     classifiers=['Development Status :: 1 - Beta'],
     packages=find_packages(),
+    include_package_data=True,
     python_requires='>=3.7',
     platforms=['Linux'],
     install_requires=requirements,
