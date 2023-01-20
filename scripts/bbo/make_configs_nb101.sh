@@ -31,23 +31,23 @@ epochs=200
 predictor=var_sparse_gp
 
 # trials / seeds:
-trials=1 # FIXME 10
+trials=10
 end_seed=$(($start_seed + $trials - 1))
 
 # create config files
 for i in $(seq 0 $((${#dataset[@]}-1)) )
 do 
-    dataset=${dataset[$i]}
-    echo $dataset
-    for i in $(seq 0 $((${#optimizers[@]}-1)) )
+     dataset=${dataset[$i]}
+     echo $dataset
+     for i in $(seq 0 $((${#optimizers[@]}-1)) )
 	do
-		optimizer=${optimizers[$i]}
-		python create_configs.py \
-		--start_seed $start_seed --trials $trials \
-		--out_dir $out_dir --dataset=$dataset --config_type $config_type \
-		--search_space $search_space --optimizer $optimizer \
-		--acq_fn_optimization $acq_fn_optimization --predictor $predictor \
-		--fidelity $fidelity --epochs $epochs 
+	optimizer=${optimizers[$i]}
+	python create_configs.py \
+	--start_seed $start_seed --trials $trials \
+	--out_dir $out_dir --dataset=$dataset --config_type $config_type \
+	--search_space $search_space --optimizer $optimizer \
+	--acq_fn_optimization $acq_fn_optimization --predictor $predictor \
+	--fidelity $fidelity --epochs $epochs
 	done
 done
 

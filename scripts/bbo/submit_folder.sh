@@ -13,13 +13,6 @@ echo "Started at $(date)";
 echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node with given JID $SLURM_JOB_ID on queue $SLURM_JOB_PARTITION";
 
 user="robertsj"
-
-SCRIPT_DIR="/home/$user/NASLib/scripts/vscode_remote_debugging"
-while read var value
-do
-    export "$var"="$value"
-done < $SCRIPT_DIR/config.conf
-
 runner_dir="/home/$user/NASLib/naslib/runners/bbo"
 
 # source $CONDA_SOURCE

@@ -6,6 +6,8 @@ import os
 import numpy as np
 import torch
 from tqdm import tqdm
+import copy
+import torch.nn as nn
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils import utils
@@ -18,7 +20,7 @@ class ZeroCostPredictorEvaluator(object):
     Evaluates a predictor.
     """
 
-    def __init__(self, predictor, zc_api=None, config=None, log_results=True):
+    def __init__(self, predictor, zc_api=None, use_zc_api=None, config=None, log_results=True):
         self.predictor = predictor
         self.config = config
         self.test_size = config.test_size
@@ -30,6 +32,10 @@ class ZeroCostPredictorEvaluator(object):
         self.test_data_file = config.test_data_file
         self.log_results_to_json = log_results
         self.zc_api = zc_api
+        self.use_zc_api = use_zc_api
+        if hasattr(config, "search"):
+            if hasattr(config.search, "use_zc_api"):
+                self.use_zc_api = self.use_zc_api or config.search.use_zc_api
 
     def adapt_search_space(
         self, search_space, load_labeled=False, scope=None, dataset_api=None
@@ -39,6 +45,18 @@ class ZeroCostPredictorEvaluator(object):
         self.predictor.set_ss_type(self.search_space.get_type())
         self.load_labeled = load_labeled
         self.dataset_api = dataset_api
+        if not self.use_zc_api:
+            self.train_loader, _, _, _, _ = utils.get_train_val_loaders(
+                self.config, mode="train")
+        else:
+            self.search_space.instantiate_model = False
+
+        if self.use_zc_api:
+            self.search_space.instantiate_model = False    
+        else:
+            self.train_loader, _, _, _, _ = utils.get_train_val_loaders(
+                self.config, mode="train")
+
 
     def get_full_arch_info(self, arch):
         """
@@ -93,17 +111,17 @@ class ZeroCostPredictorEvaluator(object):
         info = []
         train_times = []
         while len(xdata) < data_size:
-            if not load_labeled:
-                graph = self.search_space.clone()
-                graph.sample_random_architecture(dataset_api=self.dataset_api)
+            arch = self.search_space.clone()
+            arch.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
+                
+            arch_hash = arch.get_hash()
+            if self.use_zc_api and str(arch_hash) in self.zc_api:
+                accuracy = self.zc_api[str(arch_hash)]['val_accuracy']
             else:
-                self.search_space.sample_random_architecture(dataset_api=self.dataset_api, load_labeled=True)
-
-            encoding = self.search_space.get_hash()
-            accuracy = self.zc_api[str(encoding)]['val_accuracy']
+                accuracy = arch.query(self.metric,self.dataset, dataset_api=self.dataset_api)
             # accuracy, train_time, info_dict = self.get_full_arch_info(graph)
 
-            xdata.append(encoding)
+            xdata.append(arch_hash)
             ydata.append(accuracy)
             # info.append(info_dict)
             # train_times.append(train_time)
@@ -124,9 +142,16 @@ class ZeroCostPredictorEvaluator(object):
 
         # Iterate over the architectures, instantiate a graph with each architecture
         # and then query the predictor for the performance of that
-        for arch in xtest:
-            pred = zc_api[str(arch)][self.predictor.method_type]['score']
-
+        for arch_hash in xtest:
+            if self.use_zc_api and str(arch_hash) in self.zc_api:
+                pred = zc_api[str(arch_hash)][self.predictor.method_type]['score']
+            else:
+                arch = self.search_space.clone()
+                arch.set_spec(arch_hash, self.dataset_api)
+                arch.parse()
+                self.predictor.train_loader = copy.deepcopy(self.train_loader)
+                pred = self.predictor.query(arch, dataloader=self.predictor.train_loader)
+            
             if float("-inf") == pred:
                 pred = -1e9
             elif float("inf") == pred:
@@ -166,6 +191,8 @@ class ZeroCostPredictorEvaluator(object):
         if self.test_data_file is not None:
             logger.info('Loading the test set from file')
             test_data = self.load_dataset_from_file(self.test_data_file, self.test_size)
+            if self.use_zc_api:
+                logger.warning("Using test data from file is currently not supported without zc api")
         else:
             logger.info('Sampling from search space...')
             test_data = self.load_dataset(
