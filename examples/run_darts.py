@@ -13,8 +13,8 @@ logger.setLevel(logging.INFO)  # default DEBUG is very verbose
 
 search_space = DartsSearchSpace()  # use SimpleCellSearchSpace() for less heavy search
 
-optimizer = DARTSOptimizer(config)
-optimizer.adapt_search_space(search_space)
+optimizer = DARTSOptimizer(**config.search)
+optimizer.adapt_search_space(search_space, config.dataset) # Should this call be optim.adapt_s_s(s_s, config.dataset)?
 
 trainer = Trainer(optimizer, config)
 trainer.search()  # Search for an architecture
