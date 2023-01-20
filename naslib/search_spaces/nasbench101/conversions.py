@@ -21,7 +21,7 @@ def get_children(model):
     if children == []:
         return model
     else:
-       for child in children:
+        for child in children:
             try:
                 all_children.extend(get_children(child))
             except TypeError:
@@ -29,8 +29,8 @@ def get_children(model):
 
     return all_children
 
-def convert_spec_to_model(spec):
 
+def convert_spec_to_model(spec):
     spec = ModelSpec(spec['matrix'], spec['ops'])
     model = Network(spec,
                     num_labels=10,
@@ -40,13 +40,14 @@ def convert_spec_to_model(spec):
                     num_modules_per_stack=3)
 
     all_leaf_modules = get_children(model)
-    inplace_relus = [module for module in all_leaf_modules if (isinstance(module, nn.ReLU) and module.inplace == True) ]
+    inplace_relus = [module for module in all_leaf_modules if (isinstance(module, nn.ReLU) and module.inplace == True)]
 
     for relu in inplace_relus:
         relu.inplace = False
 
     model_wrapper = ModelWrapper(model)
     return model_wrapper
+
 
 def convert_spec_to_tuple(spec):
     matrix = spec["matrix"].flatten()
@@ -55,13 +56,13 @@ def convert_spec_to_tuple(spec):
 
     return tup
 
+
 def convert_tuple_to_spec(tup):
     l = len(tup)
     # l = n*n + n
-    n = int(-0.5 + np.sqrt(1 + 4*l)/2)
+    n = int(-0.5 + np.sqrt(1 + 4 * l) / 2)
     matrix_vals = tup[:-n]
     matrix = np.array(matrix_vals).reshape(n, n)
     ops = [all_ops[t] for t in tup[-n:]]
 
     return {"matrix": matrix, "ops": ops}
-

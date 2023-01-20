@@ -30,7 +30,6 @@ OPS_TO_NB201 = {
 
 
 def convert_naslib_to_op_indices(naslib_object):
-
     cell = naslib_object._get_child_graphs(single_instances=True)[0]
     ops = []
     for i, j in EDGE_LIST:
@@ -126,11 +125,13 @@ def convert_naslib_to_str(naslib_object):
 
     return "|{}|+|{}|{}|+|{}|{}|{}|".format(*op_edge_list)
 
+
 def convert_str_to_op_indices(str_encoding):
     """
     Converts NB201 string representation to op_indices
     """
     nodes = str_encoding.split('+')
+
     def get_op(x):
         return x.split('~')[0]
 
@@ -138,9 +139,10 @@ def convert_str_to_op_indices(str_encoding):
 
     enc = []
     for u, v in EDGE_LIST:
-        enc.append(OP_NAMES_NB201.index(node_ops[v-2][u-1]))
+        enc.append(OP_NAMES_NB201.index(node_ops[v - 2][u - 1]))
 
     return tuple(enc)
+
 
 def convert_op_indices_to_str(op_indices):
     edge_op_dict = {
