@@ -2,7 +2,7 @@ import numpy as np
 import logging
 
 from naslib.search_spaces.nasbench101.conversions import convert_tuple_to_spec
-from naslib.predictors.utils.encodings import EncodingType
+from naslib.utils.encodings import EncodingType
 
 """
 These are the encoding methods for nasbench101.

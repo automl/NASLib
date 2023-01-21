@@ -2,7 +2,7 @@ import logging
 
 import numpy as np
 
-from naslib.predictors.utils.encodings import EncodingType
+from naslib.utils.encodings import EncodingType
 
 logger = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ from naslib.utils.utils import get_project_root
 from naslib.search_spaces.nasbenchasr.conversions import flatten, \
     copy_structure, make_compact_mutable, make_compact_immutable
 from naslib.search_spaces.nasbenchasr.encodings import encode_asr
-from naslib.predictors.utils.encodings import EncodingType
+from naslib.utils.encodings import EncodingType
 
 OP_NAMES = ['linear', 'conv5', 'conv5d2', 'conv7', 'conv7d2', 'zero']
 

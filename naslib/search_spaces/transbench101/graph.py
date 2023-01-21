@@ -34,7 +34,7 @@ from naslib.search_spaces.transbench101.encodings import (
     encode_adjacency_one_hot_transbench_macro_op_indices
 
 )
-from naslib.predictors.utils.encodings import EncodingType
+from naslib.utils.encodings import EncodingType
 import torch.nn.functional as F
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']

@@ -20,16 +20,6 @@ TODO: clean up this file.
 logger = logging.getLogger(__name__)
 
 
-class EncodingType(Enum):
-    ADJACENCY_ONE_HOT = "adjacency_one_hot"
-    ADJACENCY_MIX = 'adjacency_mix'
-    PATH = "path"
-    GCN = "gcn"
-    BONAS = "bonas"
-    SEMINAS = "seminas"
-    COMPACT = 'compact'
-
-
 def encode(arch, encoding_type="adjacency_one_hot", ss_type=None):
     # this method calls either encode_201 or encode_darts based on the search space
 

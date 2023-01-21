@@ -2,7 +2,7 @@ import numpy as np
 import logging
 
 from naslib.search_spaces.nasbenchasr.conversions import flatten
-from naslib.predictors.utils.encodings import EncodingType
+from naslib.utils.encodings import EncodingType
 
 """
 These are the encoding methods for nas-bench-asr.
