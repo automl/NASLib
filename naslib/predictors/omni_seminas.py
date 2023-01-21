@@ -559,9 +559,7 @@ class OmniSemiNASPredictor(Predictor):
         if self.encoding_type is not None:
             # convert the architecture to a categorical encoding
             for i, arch in enumerate(xdata):
-                encoded = encode(
-                    arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-                )
+                encoded = arch.encode(encoding_type=self.encoding_type)
                 seq = convert_arch_to_seq(
                     encoded["adjacency"], encoded["operations"], max_n=self.max_n
                 )

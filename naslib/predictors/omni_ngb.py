@@ -165,7 +165,7 @@ class OmniNGBPredictor(Predictor):
         if self.encoding_type is not None:
             xdata_encoded = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xdata
                 ]
             )

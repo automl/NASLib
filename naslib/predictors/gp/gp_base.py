@@ -59,7 +59,7 @@ class BaseGPModel(Predictor):
         if self.encoding_type is not None:
             xtrain = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtrain
                 ]
             )
@@ -91,7 +91,7 @@ class BaseGPModel(Predictor):
         if self.encoding_type is not None:
             xtest = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtest
                 ]
             )

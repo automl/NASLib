@@ -535,9 +535,7 @@ class SemiNASPredictor(Predictor):
         # convert the architectures in self.unlabeled to the right encoding
         for i in range(num_synthetic):
             arch = self.unlabeled[i]
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )
@@ -635,9 +633,7 @@ class SemiNASPredictor(Predictor):
         train_seq_pool = []
         train_target_pool = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )
@@ -702,9 +698,7 @@ class SemiNASPredictor(Predictor):
 
         test_seq_pool = []
         for i, arch in enumerate(xtest):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )
