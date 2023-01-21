@@ -2,7 +2,6 @@ import numpy as np
 import os
 import json
 
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
 

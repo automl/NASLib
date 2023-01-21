@@ -3,7 +3,6 @@ import torch
 import pyro
 import pyro.contrib.gp as gp
 
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 
 

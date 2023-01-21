@@ -2,7 +2,6 @@ from typing import Dict, List, Union
 import numpy as np
 
 import torch.nn as nn
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 from naslib.utils.encodings import EncodingType
 

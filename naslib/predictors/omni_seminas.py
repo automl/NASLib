@@ -22,7 +22,6 @@ from torch.utils.data import DataLoader
 from naslib.utils import utils
 from naslib.utils.utils import AverageMeterGroup, AverageMeter
 
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.utils.bin_thresholds import discretize, get_bins, get_lce_bins
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
