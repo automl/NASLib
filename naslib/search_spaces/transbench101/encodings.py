@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 
+from naslib.predictors.utils.encodings import EncodingType
+
 logger = logging.getLogger(__name__)
 
 one_hot_nasbench201 = [
@@ -145,10 +147,10 @@ def encode_adjacency_one_hot_transbench_micro(arch):
     return encode_adjacency_one_hot_transbench_micro_op_indices(encoding)
 
 
-def encode_spec(spec, encoding_type='adjacency_one_hot', ss_type=None):
-    if ss_type == 'transbench101_micro' and encoding_type == 'adjacency_one_hot':
+def encode_spec(spec, encoding_type=EncodingType.ADJACENCY_ONE_HOT, ss_type=None):
+    if ss_type == 'transbench101_micro' and encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adjacency_one_hot_transbench_micro_op_indices(spec)
-    elif ss_type == 'transbench101_macro' and encoding_type == 'adjacency_one_hot':
+    elif ss_type == 'transbench101_macro' and encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adjacency_one_hot_transbench_macro_op_indices(spec)
     else:
         raise NotImplementedError(f'No implementation found for encoding search space {ss_type} with {encoding_type}')

@@ -10,6 +10,7 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench101.conversions import convert_spec_to_model, convert_spec_to_tuple, \
     convert_tuple_to_spec
 from naslib.search_spaces.nasbench101.encodings import encode_101, encode_101_spec
+from naslib.predictors.utils.encodings import EncodingType
 from naslib.utils import get_dataset_api
 
 INPUT = "input"
@@ -311,10 +312,10 @@ class NasBench101SearchSpace(Graph):
         assert len(outputs) == 1
         return outputs[0]
 
-    def encode(self, encoding_type="adjacency_one_hot"):
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_101(arch=self, encoding_type=encoding_type)
 
-    def encode_spec(self, encoding_type='adjacency_one_hot'):
+    def encode_spec(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         spec = convert_tuple_to_spec(self.spec)
         return encode_101_spec(spec, encoding_type=encoding_type)
 

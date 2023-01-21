@@ -16,6 +16,7 @@ from naslib.search_spaces.nasbench201.conversions import (
     convert_op_indices_to_str,
 )
 from naslib.search_spaces.nasbench201.encodings import encode_201, encode_adjacency_one_hot_op_indices
+from naslib.predictors.utils.encodings import EncodingType
 
 from .primitives import ResNetBasicblock
 
@@ -322,11 +323,11 @@ class NasBench201SearchSpace(Graph):
         assert len(outputs) == 1
         return outputs[0]
 
-    def encode(self, encoding_type="adjacency_one_hot"):
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_201(self, encoding_type=encoding_type)
 
-    def encode_spec(self, encoding_type='adjacency_one_hot'):
-        if encoding_type == 'adjacency_one_hot':
+    def encode_spec(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
             return encode_adjacency_one_hot_op_indices(self)
 
 

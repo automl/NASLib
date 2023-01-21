@@ -13,6 +13,7 @@ from naslib.search_spaces.nasbenchnlp.conversions import convert_recipe_to_compa
 make_compact_mutable, convert_compact_to_recipe
 from naslib.utils.utils import get_project_root
 from naslib.search_spaces.nasbenchnlp.encodings import encode_nlp
+from naslib.predictors.utils.encodings import EncodingType
 
 
 HIDDEN_TUPLE_SIZE = 2
@@ -368,5 +369,5 @@ class NasBenchNLPSearchSpace(Graph):
     def get_max_epochs(self):
         return 49
 
-    def encode(self, encoding_type="adjacency_one_hot"):
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_nlp(self, encoding_type=encoding_type)

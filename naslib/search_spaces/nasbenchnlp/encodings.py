@@ -1,6 +1,8 @@
 import numpy as np
 import logging
 
+from naslib.predictors.utils.encodings import EncodingType
+
 """
 These are the encoding methods for nas-bench-nlp.
 The plan is to unify encodings across all search spaces.
@@ -118,22 +120,22 @@ def encode_gcn(compact, max_nodes=25):
     return dic
 
 
-def encode_nlp(arch, encoding_type='path', max_nodes=25, accs=None):
+def encode_nlp(arch, encoding_type=EncodingType.PATH, max_nodes=25, accs=None):
     compact = arch.get_compact()
 
-    if encoding_type == 'adjacency_one_hot':
+    if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adj(compact=compact, max_nodes=max_nodes, one_hot=True)
 
-    elif encoding_type == 'adjacency_mix':
+    elif encoding_type == EncodingType.ADJACENCY_MIX:
         return encode_adj(compact=compact, max_nodes=max_nodes, one_hot=False, accs=accs)
 
-    elif encoding_type == 'seminas':
+    elif encoding_type == EncodingType.SEMINAS:
         return encode_seminas(compact=compact, max_nodes=max_nodes)
 
-    elif encoding_type == 'gcn':
+    elif encoding_type == EncodingType.GCN:
         return encode_gcn(compact=compact, max_nodes=max_nodes)
 
-    elif encoding_type == 'compact':
+    elif encoding_type == EncodingType.COMPACT:
         return compact
 
     else:

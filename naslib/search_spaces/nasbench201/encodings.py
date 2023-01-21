@@ -2,6 +2,8 @@ import logging
 
 import numpy as np
 
+from naslib.predictors.utils.encodings import EncodingType
+
 logger = logging.getLogger(__name__)
 
 one_hot_nasbench201 = [
@@ -184,25 +186,25 @@ def encode_seminas_nasbench201(arch):
     return dic
 
 
-def encode_201(arch, encoding_type="adjacency_one_hot"):
-    if encoding_type == "adjacency_one_hot":
+def encode_201(arch, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+    if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adjacency_one_hot(arch)
 
-    elif encoding_type == "path":
+    elif encoding_type == EncodingType.PATH:
         return encode_paths(arch)
 
-    elif encoding_type == "gcn":
+    elif encoding_type == EncodingType.GCN:
         return encode_gcn_nasbench201(arch)
 
-    elif encoding_type == "bonas":
+    elif encoding_type == EncodingType.BONAS:
         return encode_bonas_nasbench201(arch)
 
-    elif encoding_type == "seminas":
+    elif encoding_type == EncodingType.SEMINAS:
         return encode_seminas_nasbench201(arch)
 
     else:
         logger.info(
-            "{} is not yet supported as a predictor encoding".format(encoding_type)
+            "{} is not yet supported as an architecture encoding".format(encoding_type)
         )
         raise NotImplementedError()
 
@@ -214,8 +216,8 @@ def encode_adjacency_one_hot_op_indices(op_indices):
     return one_hot
 
 
-def encode_spec(spec, encoding_type='adjacency_one_hot'):
-    if encoding_type == 'adjacency_one_hot':
+def encode_spec(spec, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+    if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adjacency_one_hot_op_indices(spec)
     else:
         raise NotImplementedError(f'No implementation found for encoding search space nb201 with {encoding_type}')

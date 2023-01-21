@@ -2,6 +2,7 @@ import numpy as np
 import logging
 
 from naslib.search_spaces.nasbench101.conversions import convert_tuple_to_spec
+from naslib.predictors.utils.encodings import EncodingType
 
 """
 These are the encoding methods for nasbench101.
@@ -160,22 +161,22 @@ def encode_seminas(spec):
     return dic
 
 
-def encode_101(arch, encoding_type="path"):
+def encode_101(arch, encoding_type=EncodingType.PATH):
     spec = arch.get_spec()
 
-    if encoding_type == "path":
+    if encoding_type == EncodingType.PATH:
         return encode_paths(spec=spec)
 
-    elif encoding_type == "adjacency_one_hot":
+    elif encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adj(spec=spec)
 
-    elif encoding_type == "gcn":
+    elif encoding_type == EncodingType.GCN:
         return encode_gcn(spec=spec)
 
-    elif encoding_type == "seminas":
+    elif encoding_type == EncodingType.SEMINAS:
         return encode_seminas(spec=spec)
 
-    elif encoding_type == "bonas":
+    elif encoding_type == EncodingType.BONAS:
         return encode_bonas(spec=spec)
 
     else:
@@ -188,20 +189,20 @@ def encode_101(arch, encoding_type="path"):
         raise NotImplementedError()
 
 
-def encode_101_spec(spec, encoding_type='path'):
-    if encoding_type == 'path':
+def encode_101_spec(spec, encoding_type=EncodingType.PATH):
+    if encoding_type == EncodingType.PATH:
         return encode_paths(spec=spec)
 
-    elif encoding_type == 'adjacency_one_hot':
+    elif encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adj(spec=spec)
 
-    elif encoding_type == 'gcn':
+    elif encoding_type == EncodingType.GCN:
         return encode_gcn(spec=spec)
 
-    elif encoding_type == 'seminas':
+    elif encoding_type == EncodingType.SEMINAS:
         return encode_seminas(spec=spec)
 
-    elif encoding_type == 'bonas':
+    elif encoding_type == EncodingType.BONAS:
         return encode_bonas(spec=spec)
 
     else:
@@ -210,7 +211,7 @@ def encode_101_spec(spec, encoding_type='path'):
         raise NotImplementedError()
 
 
-def encode_spec(spec, encoding_type='adjacency_one_hot'):
+def encode_spec(spec, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
     if isinstance(spec, tuple):
         spec = convert_tuple_to_spec(spec)
         return encode_101_spec(spec, encoding_type=encoding_type)
