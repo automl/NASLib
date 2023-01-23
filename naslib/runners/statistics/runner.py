@@ -10,8 +10,8 @@ from naslib.search_spaces import (
     TransBench101SearchSpaceMicro,
     TransBench101SearchSpaceMacro
 )
-
-from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib import utils
+from naslib.utils import setup_logger, get_dataset_api
 
 
 config = utils.get_config_from_args(config_type="statistics")

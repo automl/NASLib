@@ -19,7 +19,8 @@ from naslib.optimizers import (
 )
 
 from naslib.search_spaces import NasBench201SearchSpace, NasBench301SearchSpace
-from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib import utils
+from naslib.utils import setup_logger, get_dataset_api
 from naslib.search_spaces.core.query_metrics import Metric
 
 config = utils.get_config_from_args()

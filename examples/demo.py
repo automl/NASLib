@@ -21,8 +21,8 @@ from naslib.search_spaces import (
 )
 
 # from naslib.search_spaces.nasbench101 import graph
-
-from naslib.utils import utils, setup_logger
+from naslib import utils
+from naslib.utils import setup_logger
 
 # Read args and config, setup logger
 config = utils.get_config_from_args()

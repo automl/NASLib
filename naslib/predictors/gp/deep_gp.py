@@ -5,7 +5,7 @@ import pyro.distributions as dist
 import numpy as np
 
 from naslib.predictors.gp import BaseGPModel
-from naslib.utils.utils import AverageMeterGroup, TensorDatasetWithTrans
+from naslib.utils import AverageMeterGroup, TensorDatasetWithTrans
 
 device = torch.device('cpu') #NOTE: faster on CPU
 

@@ -12,7 +12,7 @@ from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
 from naslib.predictors.zerocost import ZeroCost
 from naslib.predictors.utils.encodings import encode
-from naslib.utils import utils
+from naslib import utils
 from naslib.search_spaces.core.query_metrics import Metric
 
 logger = logging.getLogger(__name__)

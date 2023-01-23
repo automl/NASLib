@@ -19,7 +19,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from naslib.utils.utils import AverageMeterGroup, AverageMeter
+from naslib.utils import AverageMeterGroup, AverageMeter
 from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform

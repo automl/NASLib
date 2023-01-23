@@ -10,7 +10,7 @@ import copy
 import torch.nn as nn
 
 from naslib.search_spaces.core.query_metrics import Metric
-from naslib.utils import utils
+from naslib import utils
 
 logger = logging.getLogger(__name__)
 

@@ -16,7 +16,7 @@ from naslib.predictors.utils.encodings import encode_spec
 
 from naslib.search_spaces.core.query_metrics import Metric
 
-from naslib.utils.utils import AttrDict, count_parameters_in_MB, get_train_val_loaders
+from naslib.utils import AttrDict, count_parameters_in_MB, get_train_val_loaders
 from naslib.utils.logging import log_every_n_seconds
 
 

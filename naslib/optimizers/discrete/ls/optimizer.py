@@ -6,7 +6,7 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
 
-from naslib.utils.utils import count_parameters_in_MB
+from naslib.utils import count_parameters_in_MB
 
 from fvcore.common.config import CfgNode
 

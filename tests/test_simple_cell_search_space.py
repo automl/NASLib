@@ -5,7 +5,8 @@ import os
 
 from naslib.search_spaces import SimpleCellSearchSpace
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer
-from naslib.utils import utils, setup_logger
+from naslib import utils
+from naslib.utils import setup_logger
 
 logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
 logger.handlers[0].setLevel(logging.FATAL)

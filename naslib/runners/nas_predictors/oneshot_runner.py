@@ -12,8 +12,9 @@ from naslib.search_spaces import (
     NasBench201SearchSpace,
     NasBench301SearchSpace,
 )
-from naslib.utils import utils, setup_logger, get_dataset_api
-from naslib.utils.utils import get_project_root
+from naslib import utils
+from naslib.utils import setup_logger, get_dataset_api
+from naslib.utils import get_project_root
 
 
 config = utils.get_config_from_args(config_type="oneshot")

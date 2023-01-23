@@ -10,7 +10,7 @@ from ConfigSpace.read_and_write import json as config_space_json_r_w
 
 from typing import *
 from naslib.search_spaces.core import primitives as ops
-from naslib.utils.utils import get_project_root, AttrDict
+from naslib.utils import get_project_root, AttrDict
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.nasbench301.conversions import (
     convert_compact_to_genotype,
@@ -676,7 +676,7 @@ def channel_concat(tensors):
     return torch.cat(tensors, dim=1)
 
 
-def channel_maps(reduction_cell_indices: list, max_index: int) -> [dict, dict]:
+def channel_maps(reduction_cell_indices: list, max_index: int) -> List[dict, dict]:
     # calculate the mapping from edge indices to the respective channel
 
     assert len(reduction_cell_indices) == 2
