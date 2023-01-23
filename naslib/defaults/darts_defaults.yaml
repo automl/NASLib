@@ -1,8 +1,8 @@
-dataset: cifar10-valid # for nb201 with validation accuracy use cifar10-valid
+dataset: cifar10 # for nb201 with validation accuracy use cifar10-valid
 seed: 4
-search_space: nasbench301 #changed from darts
+search_space: nasbench101 #changed from darts
 out_dir: run
-optimizer: gdas #changed from darts, edge_popup, drnas, gdas
+optimizer: edge_popup #changed from darts, edge_popup, drnas, gdas
 
 search:
   checkpoint_freq: 5
@@ -11,8 +11,8 @@ search:
   learning_rate_min: 0.001
   momentum: 0.9
   weight_decay: 0.0003
-  epochs: 1
-  warm_start_epochs: 0
+  epochs: 100
+  warm_start_epochs: 5
   grad_clip: 5
   train_portion: 0.5
   data_size: 25000

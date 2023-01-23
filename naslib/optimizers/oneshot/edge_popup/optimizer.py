@@ -11,7 +11,7 @@ from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
-
+FINISHED_WARM_UP = False
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,7 @@ class EdgePopUpOptimizer(MetaOptimizer):
 
         self.perturb_alphas = None
         self.epsilon = 0
+        self.warm_start_epochs = 0
 
         self.dataset = config.dataset
 
@@ -139,6 +140,8 @@ class EdgePopUpOptimizer(MetaOptimizer):
             weight_decay=self.config.search.weight_decay,
         )
 
+        self.warm_start_epochs = self.config.search.warm_start_epochs
+
         graph.train()
 
         self.graph = graph
@@ -173,11 +176,19 @@ class EdgePopUpOptimizer(MetaOptimizer):
                 "\n".join(alpha_str)
             )
         )
+        if epoch == self.warm_start_epochs:
+            self.graph.update_edges(
+                self.set_warm_up_status, scope=self.scope, private_edge_data=False
+            )
         super().new_epoch(epoch)
+
+    def set_warm_up_status(self, edge):
+        edge.data['op'].finish_warm_up()
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train
         input_val, target_val = data_val
+
 
         unrolled = False  # what it this?
 
@@ -391,6 +402,7 @@ class EdgePopUpMixedOp(MixedOp):
     """
     def __init__(self, primitives):
         super().__init__(primitives)
+        self.warm_up_status = True
 
     def get_weights(self, edge_data):
         return edge_data.alpha
@@ -400,8 +412,14 @@ class EdgePopUpMixedOp(MixedOp):
 
     def apply_weights(self, x, weights):
         # subnet = GetSubnet.apply(self.scores.abs(), SPARSITY) #TODO: remove abs()
-        sparsity = 1/len(weights) + 1e-6
-        masked_weights = GetSubnet.apply(weights, sparsity)
-        # applying edge_popup to the alphas
-        return sum(masked_w * op(x, None) for masked_w, op in zip(masked_weights, self.primitives))
 
+        if self.warm_up_status:
+            return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
+        else:
+            sparsity = 1/len(weights) + 1e-6
+            masked_weights = GetSubnet.apply(weights, sparsity)
+            # applying edge_popup to the alphas
+            return sum(masked_w * op(x, None) for masked_w, op in zip(masked_weights, self.primitives))
+
+    def finish_warm_up(self):
+        self.warm_up_status = FINISHED_WARM_UP

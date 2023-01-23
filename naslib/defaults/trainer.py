@@ -284,7 +284,8 @@ class Trainer(object):
 
             if not search_model:
                 search_model = os.path.join(
-                    self.config.save, "search", "model_final.pth"
+                    # self.config.save, "search", "model_final.pth"
+                    self.config.save, "search", resume_from
                 )
             self._setup_checkpointers(search_model)  # required to load the architecture
 

@@ -1,0 +1,2 @@
+month,day,hour,minute,second,epoch,1,5,train_top1,train_top5,val_top1,val_top5
+
