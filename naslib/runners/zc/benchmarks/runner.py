@@ -7,7 +7,7 @@ from naslib.predictors.zerocost import ZeroCost
 from naslib.search_spaces import get_search_space
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.utils.get_dataset_api import get_dataset_api, load_sampled_architectures
-from naslib.utils.logging import setup_logger
+from naslib.utils.log import setup_logger
 from naslib import utils
 
 def translate_str(s, replace_str='[]', with_str='()'):

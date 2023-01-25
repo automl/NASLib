@@ -16,7 +16,7 @@ from fvcore.common.checkpoint import PeriodicCheckpointer
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib import utils
-from naslib.utils.logging import log_every_n_seconds, log_first_n
+from naslib.utils.log import log_every_n_seconds, log_first_n
 
 from .additional_primitives import DropPathWrapper
 
