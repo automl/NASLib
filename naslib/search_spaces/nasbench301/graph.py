@@ -676,7 +676,7 @@ def channel_concat(tensors):
     return torch.cat(tensors, dim=1)
 
 
-def channel_maps(reduction_cell_indices: list, max_index: int) -> List[dict, dict]:
+def channel_maps(reduction_cell_indices: list, max_index: int) -> List[dict]:
     # calculate the mapping from edge indices to the respective channel
 
     assert len(reduction_cell_indices) == 2
