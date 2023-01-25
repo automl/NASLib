@@ -17,7 +17,7 @@ import os.path
 from functools import partial
 from pathlib import Path
 from typing import List, Optional
-from .logging import setup_logger
+from naslib.utils.log import setup_logger
 
 from fvcore.common.checkpoint import Checkpointer as fvCheckpointer
 from fvcore.common.config import CfgNode
@@ -30,7 +30,6 @@ from pytorch_msssim import ssim, ms_ssim, SSIM, MS_SSIM
 
 # Expose apis
 from .taskonomy_dataset import get_datasets
-from . import load_ops
 
 from .get_dataset_api import get_dataset_api, get_zc_benchmark_api, load_sampled_architectures
 from .dataset import get_train_val_loaders
