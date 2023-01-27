@@ -1,0 +1,10 @@
+[general]
+contrib = contrib-title-conventional-commits
+ignore = body-is-missing
+
+[body-min-length]
+min-length=15
+
+[contrib-title-conventional-commits]
+# Specify allowed commit types. For details see: https://www.conventionalcommits.org/
+types = feat,fix,docs,refactor,style,perf,build,ci,test,chore,revert
