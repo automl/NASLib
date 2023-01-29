@@ -73,4 +73,7 @@ elif config.dataset == 'autoencoder':
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
 trainer.search(resume_from="")
-trainer.evaluate(resume_from="", dataset_api=dataset_api)
+if config.search_space == 'nasbench301':
+    trainer.evaluate(resume_from="", retrain=True, dataset_api=dataset_api)
+else:
+    trainer.evaluate(resume_from="", retrain=False, dataset_api=dataset_api)

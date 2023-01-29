@@ -286,7 +286,7 @@ class Trainer(object):
             best_arch = self.optimizer.get_final_architecture()
         logger.info(f"Final architecture hash: {best_arch.get_hash()}")
 
-        if best_arch.QUERYABLE:
+        if best_arch.QUERYABLE and (not retrain):
             if metric is None:
                 metric = Metric.TEST_ACCURACY
             result = best_arch.query(

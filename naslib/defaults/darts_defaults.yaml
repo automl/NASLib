@@ -1,6 +1,6 @@
-dataset: cifar10
+dataset: cifar100
 seed: 99
-search_space: nasbench301
+search_space: nasbench201
 out_dir: run
 optimizer: darts
 
@@ -26,7 +26,7 @@ search:
   arch_learning_rate: 0.0003
   arch_weight_decay: 0.001
   output_weights: True
-  
+
   fidelity: 200
 
   # GDAS
