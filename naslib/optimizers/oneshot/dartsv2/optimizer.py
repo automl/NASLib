@@ -250,7 +250,7 @@ class DARTSV2Optimizer(MetaOptimizer):
         return unrolled_model
 
     def _construct_model_from_theta(self, theta):
-
+        model_new = self.graph.clone()
         model_dict = self.graph.state_dict()
 
         params, offset = {}, 0
@@ -262,8 +262,8 @@ class DARTSV2Optimizer(MetaOptimizer):
         assert offset == len(theta)
         model_dict.update(params)
 
-        model_new = self.graph.clone()
-        model_new = model_new.to(self.device)
+        model_new.load_state_dict(model_dict)
+        model_new.to(self.device)
 
         return model_new
 
