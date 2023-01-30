@@ -2,7 +2,7 @@ dataset: cifar100
 seed: 99
 search_space: nasbench201
 out_dir: run
-optimizer: darts
+optimizer: drnas
 
 search:
   checkpoint_freq: 5
