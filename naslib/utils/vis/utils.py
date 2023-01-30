@@ -9,68 +9,70 @@ import seaborn as sns
 logger = logging.getLogger(__name__)
 
 def plot_architectural_weights(config, optimizer):
-    # load alphas
-    arch_weights = torch.load(f'{config.save}/arch_weights.pt')
-
-    # discretize and softmax alphas
-    for i, edge_weights in enumerate(arch_weights):
-        total_steps, num_alphas = edge_weights.shape
-        num_epochs = config.search.epochs
-        steps_per_epoch = total_steps // num_epochs
-        
-        disc_weights = torch.mean(edge_weights.detach().reshape(-1, steps_per_epoch, num_alphas), axis=1).cpu()    
-        arch_weights[i] = torch.softmax(disc_weights, dim=-1).numpy()
-
-    # define diverging colormap with NASLib colors
-    cmap = sns.diverging_palette(230, 0, 90, 60, as_cmap=True)
+    all_weights = torch.load(f'{config.save}/arch_weights.pt') # load alphas
 
     # unpack search space information
-    edge_names, op_names = [], []
+    alpha_dict = {}
+    min_soft, max_soft = np.inf, -np.inf
     for graph in optimizer.graph._get_child_graphs(single_instances=True):
-        for u, v, edge_data in graph.edges.data():
+        for edge_weights, (u, v, edge_data) in zip(all_weights, graph.edges.data()):
+
             if edge_data.has("alpha"):
-                edge_names.append((u, v))
-                op_names.append([op.get_op_name for op in edge_data.op.get_embedded_ops()])
+                total_steps, num_alphas = edge_weights.shape
+                steps_per_epoch = total_steps // config.search.epochs
+                disc_weights = torch.mean(edge_weights.detach().reshape(-1, steps_per_epoch, num_alphas), axis=1).cpu()    
+                soft_weights = torch.softmax(disc_weights, dim=-1).numpy()
 
-    # define figure and axes
-    fig, axes = plt.subplots(nrows=len(arch_weights), figsize=(10, np.array(op_names).size/10))
-    cax = fig.add_axes([.95, 0.12, 0.0075, 0.795])
-    cax.tick_params(labelsize=6)
-    cax.set_title('alphas', fontdict=dict(fontsize=6))
+                cell_name = edge_data['cell_name'] if hasattr(edge_data, 'cell_name') else ""
+                alpha_dict[(u, v, cell_name)] = {}
+                alpha_dict[(u, v, cell_name)]['op_names'] = [op.get_op_name for op in edge_data.op.get_embedded_ops()]
+                alpha_dict[(u, v, cell_name)]['alphas'] = soft_weights
 
-    # unpack number of epochs
-    num_epochs = config.search.epochs
+                min_soft = min(min_soft, np.min(soft_weights))
+                max_soft = max(max_soft, np.max(soft_weights))
 
-    # iterate over arch weights and create heatmaps
-    for (i, edge_weights) in enumerate(arch_weights):
-        num_steps, num_alphas = edge_weights.shape
+    max_rows = 4 # plot heatmaps in increments of n_rows edges
+    for start_id in range(0, len(alpha_dict.keys()), max_rows):
         
-        sns.heatmap(
-            edge_weights.T,
-            cmap=cmap, 
-            vmin=np.min(arch_weights),
-            vmax=np.max(arch_weights), 
-            ax=axes[i],
-            cbar=True,
-            cbar_ax=cax
-        )
+        # calculate number of rows in plot
+        n_rows = min(max_rows, len(alpha_dict.keys())-start_id)
+        logger.info(f"Creating plot {config.save}/arch_weights_{start_id+1}to{start_id+n_rows}.png")
 
-        if i == len(arch_weights) - 1:
-            # axes[i].set_xticks(np.arange(stop=num_steps+num_steps/num_epochs, step=num_steps/num_epochs)) 
-            # axes[i].set_xticklabels(np.arange(num_epochs+1), rotation=360, fontdict=dict(fontsize=6))
-            axes[i].xaxis.set_tick_params(labelsize=6)
-            axes[i].set_xlabel("Epoch", fontdict=dict(fontsize=6))
-        else:
-            axes[i].set_xticks([])
-        
-        axes[i].set_ylabel(edge_names[i], fontdict=dict(fontsize=6))
-        axes[i].set_yticks(np.arange(num_alphas) + 0.5)
-        axes[i].set_yticklabels(op_names[i], rotation=360, fontdict=dict(fontsize=5))
+        # define figure and axes and NASLib colormap
+        fig, axes = plt.subplots(nrows=n_rows, figsize=(10, max_rows))
+        cmap = sns.diverging_palette(230, 0, 90, 60, as_cmap=True)
 
-    fig.tight_layout(rect=[0, 0, 0.95, 0.925], pad=0.25)
-    
-    _, search_space, dataset, optimizer, seed = config.save.split('/')
-    fig.suptitle(f"optimizer: {optimizer}, search space: {search_space}, dataset: {dataset}, seed: {seed}")
+        # iterate over arch weights and create heatmaps
+        for ax_id, (u, v, cell_name) in enumerate(list(alpha_dict.keys())[start_id:start_id+n_rows]): 
+            map = sns.heatmap(
+                alpha_dict[u, v, cell_name]['alphas'].T,
+                cmap=cmap, 
+                vmin=min_soft,
+                vmax=max_soft, 
+                ax=axes[ax_id],
+                cbar=True
+            )
 
-    fig.savefig(f"{config.save}/arch_weights.pdf", dpi=300)
+            op_names = alpha_dict[(u, v, cell_name)]['op_names']
+
+            if ax_id < n_rows-1:        
+                axes[ax_id].set_xticks([])
+            axes[ax_id].set_ylabel(f"{u, v}", fontdict=dict(fontsize=6))
+            axes[ax_id].set_yticks(np.arange(len(op_names)) + 0.5)
+            fontsize = max(6, 40/len(op_names))
+            axes[ax_id].set_yticklabels(op_names, rotation=360, fontdict=dict(fontsize=fontsize))
+            if cell_name != "":
+                axes[ax_id].set_title(cell_name, fontdict=dict(fontsize=6))
+            cbar = map.collections[0].colorbar
+            cbar.ax.tick_params(labelsize=6)
+            cbar.ax.set_title('softmax', fontdict=dict(fontsize=6))
+
+        # axes[ax_id].set_xticks(np.arange(config.search.epochs+1))
+        # axes[ax_id].set_xticklabels(np.arange(config.search.epochs+1))
+        axes[ax_id].xaxis.set_tick_params(labelsize=6)
+        axes[ax_id].set_xlabel("Epoch", fontdict=dict(fontsize=6))
+
+        fig.suptitle(f"optimizer: {config.optimizer}, search space: {config.search_space}, dataset: {config.dataset}, seed: {config.seed}")
+        fig.tight_layout()
+        fig.savefig(f"{config.save}/arch_weights_{start_id+1}to{start_id+n_rows}.png", dpi=300)
 
