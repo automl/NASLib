@@ -8,9 +8,6 @@ import copy
 import torch
 import numpy as np
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from pathlib import Path
 from fvcore.common.checkpoint import PeriodicCheckpointer
 
@@ -63,7 +60,7 @@ class Trainer(object):
 
         n_parameters = optimizer.get_model_size()
         logger.info("param size = %fMB", n_parameters)
-        self.errors_dict = utils.AttrDict(
+        self.search_trajectory = utils.AttrDict(
             {
                 "train_acc": [],
                 "train_loss": [],
@@ -78,8 +75,7 @@ class Trainer(object):
             }
         )
 
-    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None] = None,
-               report_incumbent=True):
+    def search(self, resume_from="", summary_writer=None, after_epoch: Callable[[int], None]=None, report_incumbent=True):
         """
         Start the architecture search.
 
@@ -89,7 +85,7 @@ class Trainer(object):
             resume_from (str): Checkpoint file to resume from. If not given then
                 train from scratch.
         """
-        logger.info("Start training")
+        logger.info("Beginning search")
 
         np.random.seed(self.config.search.seed)
         torch.manual_seed(self.config.search.seed)
@@ -122,7 +118,7 @@ class Trainer(object):
                 for step, data_train in enumerate(self.train_queue):
                     
                     # save arch weights to array of tensors
-                    if self.config.save_arch_weights:
+                    if self.config.save_arch_weights is True:
                         if len(arch_weights) == 0:
                             for edge_weights in self.optimizer.architectural_weights:
                                 arch_weights.append(torch.unsqueeze(edge_weights.detach(), dim=0))
@@ -168,11 +164,11 @@ class Trainer(object):
 
                 end_time = time.time()
 
-                self.errors_dict.train_acc.append(self.train_top1.avg)
-                self.errors_dict.train_loss.append(self.train_loss.avg)
-                self.errors_dict.valid_acc.append(self.val_top1.avg)
-                self.errors_dict.valid_loss.append(self.val_loss.avg)
-                self.errors_dict.runtime.append(end_time - start_time)
+                self.search_trajectory.train_acc.append(self.train_top1.avg)
+                self.search_trajectory.train_loss.append(self.train_loss.avg)
+                self.search_trajectory.valid_acc.append(self.val_top1.avg)
+                self.search_trajectory.valid_loss.append(self.val_loss.avg)
+                self.search_trajectory.runtime.append(end_time - start_time)
             else:
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
@@ -185,28 +181,28 @@ class Trainer(object):
                 ) = self.optimizer.train_statistics(report_incumbent)
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
-                self.errors_dict.train_acc.append(train_acc)
-                self.errors_dict.train_loss.append(train_loss)
-                self.errors_dict.valid_acc.append(valid_acc)
-                self.errors_dict.valid_loss.append(valid_loss)
-                self.errors_dict.test_acc.append(test_acc)
-                self.errors_dict.test_loss.append(test_loss)
-                self.errors_dict.runtime.append(end_time - start_time)
-                self.errors_dict.train_time.append(train_time)
+                self.search_trajectory.train_acc.append(train_acc)
+                self.search_trajectory.train_loss.append(train_loss)
+                self.search_trajectory.valid_acc.append(valid_acc)
+                self.search_trajectory.valid_loss.append(valid_loss)
+                self.search_trajectory.test_acc.append(test_acc)
+                self.search_trajectory.test_loss.append(test_loss)
+                self.search_trajectory.runtime.append(end_time - start_time)
+                self.search_trajectory.train_time.append(train_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
             self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
-            if anytime_results:
-                # record anytime performance
-                self.errors_dict.arch_eval.append(anytime_results)
-                log_every_n_seconds(
-                    logging.INFO,
-                    "Epoch {}, Anytime results: {}".format(e, anytime_results),
-                    n=5,
-                )
+            # if anytime_results:
+            #     # record anytime performance
+            #     self.search_trajectory.arch_eval.append(anytime_results)
+            #     log_every_n_seconds(
+            #         logging.INFO,
+            #         "Epoch {}, Anytime results: {}".format(e, anytime_results),
+            #         n=5,
+            #     )
 
             self._log_to_json()
 
@@ -264,9 +260,9 @@ class Trainer(object):
 
             end_time = time.time()
 
-            self.errors_dict.valid_acc.append(self.val_top1.avg)
-            self.errors_dict.valid_loss.append(self.val_loss.avg)
-            self.errors_dict.runtime.append(end_time - start_time)
+            self.search_trajectory.valid_acc.append(self.val_top1.avg)
+            self.search_trajectory.valid_loss.append(self.val_loss.avg)
+            self.search_trajectory.runtime.append(end_time - start_time)
 
             self._log_to_json()
 
@@ -274,13 +270,13 @@ class Trainer(object):
         return self.val_top1.avg
 
     def evaluate(
-            self,
-            retrain: bool = True,
-            search_model: str = "",
-            resume_from: str = "",
-            best_arch: Graph = None,
-            dataset_api: object = None,
-            metric: Metric = None,
+        self,
+        retrain:bool=True,
+        search_model:str="",
+        resume_from:str="",
+        best_arch:Graph=None,
+        dataset_api:object=None,
+        metric:Metric=None,
     ):
         """
         Evaluate the final architecture as given from the optimizer.
@@ -308,7 +304,7 @@ class Trainer(object):
             self._setup_checkpointers(search_model)  # required to load the architecture
 
             best_arch = self.optimizer.get_final_architecture()
-        logger.info("Final architecture:\n" + best_arch.modules_str())
+        logger.info(f"Final architecture hash: {best_arch.get_hash()}")
 
         if best_arch.QUERYABLE:
             if metric is None:
@@ -317,6 +313,7 @@ class Trainer(object):
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
             logger.info("Queried results ({}): {}".format(metric, result))
+            return result
         else:
             best_arch.to(self.device)
             if retrain:
@@ -396,7 +393,7 @@ class Trainer(object):
                                 best_arch.auxilary_logits(), target_train
                             )
                             train_loss += (
-                                    self.config.evaluation.auxiliary_weight * auxiliary_loss
+                                self.config.evaluation.auxiliary_weight * auxiliary_loss
                             )
                         train_loss.backward()
                         if grad_clip:
@@ -418,8 +415,9 @@ class Trainer(object):
                     if self.valid_queue:
                         best_arch.eval()
                         for i, (input_valid, target_valid) in enumerate(
-                                self.valid_queue
+                            self.valid_queue
                         ):
+
                             input_valid = input_valid.to(self.device).float()
                             target_valid = target_valid.to(self.device).float()
 
@@ -475,6 +473,9 @@ class Trainer(object):
                 )
             )
 
+            return top1.avg
+
+
     @staticmethod
     def build_search_dataloaders(config):
         train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(
@@ -516,12 +517,10 @@ class Trainer(object):
 
     def _log_and_reset_accuracies(self, epoch, writer=None):
         logger.info(
-            "Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
+             "Epoch {} done. Train accuracy: {:.5f}, Validation accuracy: {:.5f}".format(
                 epoch,
                 self.train_top1.avg,
-                self.train_top5.avg,
-                self.val_top1.avg,
-                self.val_top5.avg,
+                self.val_top1.avg
             )
         )
 
@@ -572,7 +571,7 @@ class Trainer(object):
         self.test_queue = test_queue
 
     def _setup_checkpointers(
-            self, resume_from="", search=True, period=1, **add_checkpointables
+        self, resume_from="", search=True, period=1, **add_checkpointables
     ):
         """
         Sets up a periodic chechkpointer which can be used to save checkpoints
@@ -618,14 +617,14 @@ class Trainer(object):
             os.makedirs(self.config.save)
         if not self.lightweight_output:
             with codecs.open(
-                    os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
+                os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                json.dump(self.errors_dict, file, separators=(",", ":"))
+                json.dump(self.search_trajectory, file, separators=(",", ":"))
         else:
             with codecs.open(
-                    os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
+                os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                lightweight_dict = copy.deepcopy(self.errors_dict)
+                lightweight_dict = copy.deepcopy(self.search_trajectory)
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(",", ":"))
