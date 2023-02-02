@@ -3,12 +3,12 @@ dataset: ImageNet16-120
 # in the code base the deafult value for the seed is 2.
 # using random seeds that are logged but log files are not provided
 # not mentioned in the paper what are the random seeds are
-seed: 2
+seed: 99
 # darts (or nb301)
 # nb201
-search_space: nasbench201
+search_space: nasbench301
 out_dir: run
-optimizer: darts
+optimizer: drnas
 
 search:
   checkpoint_freq: 5
@@ -99,9 +99,10 @@ evaluation:
   momentum: 0.9
   # for cifar weight_decay is 3e-4
   weight_decay: 0.0003
-  # cifar's eval is 600 epochs
-  epochs: 600
-  warm_start_epochs: 0
+  # cifar's eval is 600 epochs, for imagenet it is 250
+  epochs: 250
+  # for image net it has 5 epochs of warm starting
+  warm_start_epochs: 5
   grad_clip: 5
   # uses the whole training data of cifar10 (50K) to train from scratch for 600 epochs
   train_portion: 1.

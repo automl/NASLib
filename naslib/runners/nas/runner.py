@@ -25,8 +25,8 @@ supported_optimizers = {
 }
 
 supported_search_spaces = {
-    'nasbench201': NasBench201SearchSpace(),
-    'nasbench301': NasBench301SearchSpace(auxiliary=False),
+    'nasbench201': NasBench201SearchSpace(n_classes=config.n_classes),
+    'nasbench301': NasBench301SearchSpace(n_classes=config.n_classes, auxiliary=False),
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
