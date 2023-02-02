@@ -67,8 +67,6 @@ def plot_architectural_weights(config, optimizer):
             cbar.ax.tick_params(labelsize=6)
             cbar.ax.set_title('softmax', fontdict=dict(fontsize=6))
 
-        # axes[ax_id].set_xticks(np.arange(config.search.epochs+1))
-        # axes[ax_id].set_xticklabels(np.arange(config.search.epochs+1))
         axes[ax_id].xaxis.set_tick_params(labelsize=6)
         axes[ax_id].set_xlabel("Epoch", fontdict=dict(fontsize=6))
 

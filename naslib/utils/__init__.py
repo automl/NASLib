@@ -9,7 +9,8 @@ from .utils import (
     parse_args,
     get_train_val_loaders,
     get_project_root,
-    compute_scores
+    compute_scores,
+    create_exp_dir
 )
 from .logging import setup_logger
 from .get_dataset_api import get_dataset_api, get_zc_benchmark_api, load_sampled_architectures
