@@ -1,6 +1,33 @@
 # Contributing to NASLib
 
-- [Commit Message Guidelines](#commit-message-format)
+- [Tools](#tools)
+  - [Pre-Commit Hooks](#pre-commit-hooks)
+  - [Gitlint](#gitlint)
+- [Styleguide](#styleguide)
+  - [Commit Message Guidelines](#commit-message-format)
+
+## Tools
+
+### Pre-Commit Hooks
+
+Git hook scripts are useful for identifying simple issues before submission to code review. Pre-commit hooks run before committing and are used for fixing minor problems, linting or type checking. See [.pre-commit-config.yaml](/.pre-commit-config.yaml) for further information.
+
+Installation:
+
+```bash
+pre-commit install
+```
+
+### Gitlint
+
+A commit message linter, which enforces the defined [commit message format](#commit-message-format).
+It can be used as `commit-msg hook`:
+
+```bash
+gitlint install-hook
+
+gitlint uninstall-hook
+```
 
 ## Styleguide
 
