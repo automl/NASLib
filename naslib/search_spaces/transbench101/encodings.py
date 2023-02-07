@@ -119,19 +119,17 @@ def encode_seminas_transbench101(arch):
 
 
 def encode_tb101(arch, encoding_type='adjacency_one_hot'):
-    if encoding_type == "adjacency_one_hot":
+    if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adjacency_one_hot_tb101(arch)
 
-    elif encoding_type == "gcn":
+    elif encoding_type == EncodingType.GCN:
         return encode_gcn_transbench101(arch)
 
-    elif encoding_type == "seminas":
+    elif encoding_type == EncodingType.SEMINAS:
         return encode_seminas_transbench101(arch)
 
     else:
-        logger.info(
-            "{} is not yet supported as a predictor encoding".format(encoding_type)
-        )
+        logger.info(f"{encoding_type} is not yet supported as a predictor encoding for tnb101")
         raise NotImplementedError()
 
 

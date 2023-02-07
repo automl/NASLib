@@ -61,6 +61,5 @@ def encode_asr(arch, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_seminas_nasbenchasr(compact)
 
     else:
-        print('{} is not yet implemented as an encoding type \
-         for asr'.format(encoding_type))
+        logger.info(f"{encoding_type} is not yet implemented as an encoding type for asr")
         raise NotImplementedError()

@@ -295,8 +295,8 @@ def encode_darts_compact(compact, encoding_type=EncodingType.PATH):
         return encode_gcn(arch=compact)
 
     else:
-        print('{} is not yet implemented as an encoding type \
-         for darts'.format(encoding_type))
+        logger.info(f"{encoding_type} is not yet implemented as an encoding type for darts")
+        raise NotImplementedError()
 
 
 def encode_spec(spec, encoding_type=EncodingType.ADJACENCY_ONE_HOT):

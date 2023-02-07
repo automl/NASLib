@@ -203,9 +203,7 @@ def encode_201(arch, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_seminas_nasbench201(arch)
 
     else:
-        logger.info(
-            "{} is not yet supported as an architecture encoding".format(encoding_type)
-        )
+        logger.info(f"{encoding_type} is not yet supported as an architecture encoding for nb201")
         raise NotImplementedError()
 
 

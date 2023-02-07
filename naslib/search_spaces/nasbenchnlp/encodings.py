@@ -139,6 +139,5 @@ def encode_nlp(arch, encoding_type=EncodingType.PATH, max_nodes=25, accs=None):
         return compact
 
     else:
-        print('{} is not yet implemented as an encoding type \
-         for nlp'.format(encoding_type))
+        logger.info(f"{encoding_type} is not yet implemented as an encoding type for nlp")
         raise NotImplementedError()
