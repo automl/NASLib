@@ -315,11 +315,6 @@ class NasBench101SearchSpace(Graph):
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_101(arch=self, encoding_type=encoding_type)
 
-    def encode_spec(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
-        spec = convert_tuple_to_spec(self.spec)
-        return encode_101_spec(spec, encoding_type=encoding_type)
-
-
 
 def get_utilized(matrix):
     # return the sets of utilized edges and nodes
