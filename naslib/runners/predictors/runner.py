@@ -97,7 +97,7 @@ supported_predictors = {
     "valacc": EarlyStopping(metric=Metric.VAL_ACCURACY),
     "valloss": EarlyStopping(metric=Metric.VAL_LOSS),
     "var_sparse_gp": VarSparseGPPredictor(
-        encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT, optimize_gp_hyper=True,
     ),
     "xgb": XGBoost(encoding_type=EncodingType.ADJACENCY_ONE_HOT, hpo_wrapper=False,
                    hparams_from_file=config.hparams_from_file),

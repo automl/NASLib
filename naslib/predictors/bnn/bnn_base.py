@@ -2,11 +2,12 @@ import numpy as np
 import os
 import json
 
+from naslib.utils.encodings import EncodingType
 from naslib.predictors.predictor import Predictor
 
 
 class BNN(Predictor):
-    def __init__(self, encoding_type="adjacency_one_hot", 
+    def __init__(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT,
                  ss_type="nasbench201", hparams_from_file=None):
         self.encoding_type = encoding_type
         self.ss_type = ss_type

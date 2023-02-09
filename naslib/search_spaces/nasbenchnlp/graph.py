@@ -123,7 +123,7 @@ class NasBenchNLPSearchSpace(Graph):
             if self.accs is not None:
                 NotImplementedError("Training with extra epochs not yet supported")
 
-            arch = encode_nlp(self, encoding_type='adjacency_mix', max_nodes=12, accs=None)
+            arch = encode_nlp(self, encoding_type=EncodingType.ADJACENCY_MIX, max_nodes=12, accs=None)
             if metric == Metric.RAW:
                 # TODO: add raw results
                 return 0

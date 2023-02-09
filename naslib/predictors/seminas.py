@@ -22,6 +22,7 @@ from torch.utils.data import DataLoader
 from naslib.utils.utils import AverageMeterGroup, AverageMeter
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
+from naslib.utils.encodings import EncodingType
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -510,7 +511,7 @@ def train_controller(model, train_input, train_target, epochs):
 class SemiNASPredictor(Predictor):
     def __init__(
         self,
-        encoding_type="seminas",
+        encoding_type=EncodingType.SEMINAS,
         ss_type=None,
         semi=False,
         hpo_wrapper=False,

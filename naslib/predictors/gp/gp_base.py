@@ -3,13 +3,14 @@ import torch
 import pyro
 import pyro.contrib.gp as gp
 
+from naslib.utils.encodings import EncodingType
 from naslib.predictors.predictor import Predictor
 
 
 class BaseGPModel(Predictor):
     def __init__(
         self,
-        encoding_type="adjacency_one_hot",
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT,
         ss_type="nasbench201",
         kernel_type=None,
         optimize_gp_hyper=False,
