@@ -599,9 +599,6 @@ class NasBench301SearchSpace(Graph):
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_darts(self, encoding_type=encoding_type)
 
-    def encode_spec(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
-        return encode_darts_compact(self, encoding_type=encoding_type)
-
 
 def _set_ops(edge, C: int, stride: int) -> None:
     """

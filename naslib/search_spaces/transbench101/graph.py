@@ -799,13 +799,6 @@ class TransBench101SearchSpaceMacro(Graph):
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
         return encode_tb101(self, encoding_type=encoding_type)
 
-    def encode_spec(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
-        if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
-            return encode_adjacency_one_hot_transbench_macro_op_indices(self)
-        else:
-            raise NotImplementedError(
-                f'No implementation found for encoding search space TransBench101SearchSpaceMacro with {encoding_type}')
-
 
 def _set_op(edge, C_in, downsample):
     C_out = C_in
