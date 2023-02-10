@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
-from naslib.utils.utils import count_parameters_in_MB
+from naslib.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
 
 import naslib.search_spaces.core.primitives as ops

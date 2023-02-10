@@ -4,8 +4,8 @@ import json
 from naslib.evaluators.zc_ensemble_evaluator import ZCEnsembleEvaluator
 from naslib.search_spaces import get_search_space
 from naslib.utils.get_dataset_api import get_dataset_api
-from naslib.utils.logging import setup_logger
-from naslib.utils import utils
+from naslib.utils.log import setup_logger
+from naslib import utils
 from naslib.search_spaces.nasbench201.conversions import convert_str_to_op_indices as convert_nb201_str_to_op_indices
 
 n_archs_to_sample = 50

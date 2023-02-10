@@ -7,8 +7,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
+from naslib.utils import AverageMeterGroup
 from naslib.utils.encodings import EncodingType
-from naslib.utils.utils import AverageMeterGroup
 from naslib.predictors import Predictor
 
 # NOTE: faster on CPU

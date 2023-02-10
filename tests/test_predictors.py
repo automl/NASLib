@@ -5,7 +5,8 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.search_spaces import NasBench201SearchSpace
 from naslib.predictors import BayesianLinearRegression, BOHAMIANN, GPPredictor, RandomForestPredictor, LGBoost, \
     XGBoost, NGBoost
-from naslib.utils import get_dataset_api, utils
+from naslib import utils
+from naslib.utils import get_dataset_api
 
 x_data = np.load('assets/nb201_test_set_x.npy', allow_pickle=True)
 y_data = np.load('assets/nb201_test_set_y.npy', allow_pickle=True)

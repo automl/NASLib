@@ -19,8 +19,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from naslib.utils import utils
-from naslib.utils.utils import AverageMeterGroup, AverageMeter
+from naslib import utils
+from naslib.utils import AverageMeterGroup, AverageMeter
 
 from naslib.predictors.utils.bin_thresholds import discretize, get_bins, get_lce_bins
 from naslib.predictors.predictor import Predictor

@@ -7,8 +7,8 @@ import inspect
 
 from networkx.algorithms.dag import lexicographical_topological_sort
 
-from naslib.utils.utils import iter_flatten, AttrDict
-from naslib.utils.logging import log_formats, log_first_n
+from naslib.utils import iter_flatten, AttrDict
+from naslib.utils.log import log_formats, log_first_n
 from .primitives import AbstractCombOp, AbstractPrimitive, Identity
 from .query_metrics import Metric
 

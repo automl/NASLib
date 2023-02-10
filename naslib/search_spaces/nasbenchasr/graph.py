@@ -9,7 +9,7 @@ from naslib.search_spaces.core import primitives as core_ops
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.nasbenchasr.primitives import CellLayerNorm, Head, ops, PadConvReluNorm
-from naslib.utils.utils import get_project_root
+from naslib.utils import get_project_root
 from naslib.search_spaces.nasbenchasr.conversions import flatten, \
     copy_structure, make_compact_mutable, make_compact_immutable
 from naslib.search_spaces.nasbenchasr.encodings import encode_asr

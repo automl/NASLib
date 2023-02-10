@@ -1,9 +1,9 @@
 import os
 import pickle
 import json
+from pathlib import Path
 
-from naslib.utils.utils import get_project_root
-from naslib.utils.utils_asr import from_folder
+from .asr import from_folder
 
 """
 This file loads any dataset files or api's needed by the Trainer or PredictorEvaluator object.
@@ -11,6 +11,11 @@ They must be loaded outside of the search space object, because search spaces ar
 throughout the discrete NAS algos, which would lead to memory errors.
 """
 
+def get_project_root() -> Path:
+    """
+    Returns the root path of the project.
+    """
+    return Path(__file__).parent.parent
 
 def get_zc_benchmark_api(search_space, dataset):
 

@@ -19,7 +19,8 @@ from naslib.search_spaces import (
     TransBench101SearchSpaceMacro,
     NasBenchASRSearchSpace
 )
-from naslib.utils import utils, setup_logger, get_dataset_api, get_zc_benchmark_api
+from naslib import utils
+from naslib.utils import setup_logger, get_dataset_api, get_zc_benchmark_api
 
 from torch.utils.tensorboard import SummaryWriter
 

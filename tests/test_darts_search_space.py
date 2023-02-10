@@ -6,7 +6,8 @@ import os
 from naslib.search_spaces import SimpleCellSearchSpace, NasBench301SearchSpace, HierarchicalSearchSpace, \
     NasBench201SearchSpace
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, RandomNASOptimizer
-from naslib.utils import utils, setup_logger
+from naslib import utils
+from naslib.utils import setup_logger
 from naslib.search_spaces.core.primitives import Identity, SepConv, DilConv, Zero, MaxPool, AvgPool
 from naslib.search_spaces.nasbench301.conversions import Genotype, convert_genotype_to_compact, \
     convert_compact_to_genotype, convert_genotype_to_config, convert_config_to_genotype, \

@@ -3,8 +3,8 @@ from naslib.evaluators.zc_ensemble_evaluator import ZCEnsembleEvaluator
 from naslib.predictors.ensemble import Ensemble
 from naslib.search_spaces import get_search_space
 from naslib.utils.get_dataset_api import get_dataset_api, get_zc_benchmark_api
-from naslib.utils.logging import setup_logger
-from naslib.utils import utils
+from naslib.utils.log import setup_logger
+from naslib import utils
 
 config = utils.get_config_from_args(config_type="zc")
 
