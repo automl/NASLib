@@ -5,6 +5,8 @@ import yaml
 
 import numpy as np
 
+from naslib.utils.encodings import EncodingType
+
 
 def main(args):
 
@@ -327,7 +329,7 @@ def main(args):
                     "num_ensemble": 3,
                     "acq_fn_type": "its",
                     "acq_fn_optimization": "random_sampling",
-                    "encoding_type": "adjacency_one_hot",
+                    "encoding_type": EncodingType.ADJACENCY_ONE_HOT,
                     "num_arches_to_mutate": 5,
                     "max_mutations": 1,
                     "num_candidates": 200,

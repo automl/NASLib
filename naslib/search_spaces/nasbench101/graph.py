@@ -9,6 +9,8 @@ from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench101.conversions import convert_spec_to_model, convert_spec_to_tuple, \
     convert_tuple_to_spec
+from naslib.search_spaces.nasbench101.encodings import encode_101, encode_101_spec
+from naslib.utils.encodings import EncodingType
 from naslib.utils import get_dataset_api
 
 INPUT = "input"
@@ -309,6 +311,9 @@ class NasBench101SearchSpace(Graph):
 
         assert len(outputs) == 1
         return outputs[0]
+
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        return encode_101(arch=self, encoding_type=encoding_type)
 
 
 def get_utilized(matrix):

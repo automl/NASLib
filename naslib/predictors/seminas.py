@@ -20,9 +20,9 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from naslib.utils import AverageMeterGroup, AverageMeter
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
+from naslib.utils.encodings import EncodingType
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -511,7 +511,7 @@ def train_controller(model, train_input, train_target, epochs):
 class SemiNASPredictor(Predictor):
     def __init__(
         self,
-        encoding_type="seminas",
+        encoding_type=EncodingType.SEMINAS,
         ss_type=None,
         semi=False,
         hpo_wrapper=False,
@@ -535,9 +535,7 @@ class SemiNASPredictor(Predictor):
         # convert the architectures in self.unlabeled to the right encoding
         for i in range(num_synthetic):
             arch = self.unlabeled[i]
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )
@@ -635,9 +633,7 @@ class SemiNASPredictor(Predictor):
         train_seq_pool = []
         train_target_pool = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )
@@ -702,9 +698,7 @@ class SemiNASPredictor(Predictor):
 
         test_seq_pool = []
         for i, arch in enumerate(xtest):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )

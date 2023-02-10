@@ -28,6 +28,13 @@ from naslib.search_spaces.transbench101.conversions import (
 
 )
 from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
+from naslib.search_spaces.transbench101.encodings import (
+    encode_tb101,
+    encode_adjacency_one_hot_transbench_micro_op_indices,
+    encode_adjacency_one_hot_transbench_macro_op_indices
+
+)
+from naslib.utils.encodings import EncodingType
 import torch.nn.functional as F
 
 OP_NAMES = ['Identity', 'Zero', 'ReLUConvBN3x3', 'ReLUConvBN1x1']
@@ -467,6 +474,16 @@ class TransBench101SearchSpaceMicro(Graph):
             raise Exception(
                 f"forward_before_global_avg_pool method not implemented for NASLib graph for dataset {self.dataset}")
 
+    def encode(self, encoding_type="adjacency_one_hot"):
+        return encode_tb101(self, encoding_type=encoding_type)
+
+    def encode_spec(self, encoding_type='adjacency_one_hot'):
+        if encoding_type == 'adjacency_one_hot':
+            return encode_adjacency_one_hot_transbench_micro_op_indices(self)
+        else:
+            raise NotImplementedError(
+                f'No implementation found for encoding search space TransBench101SearchSpaceMicro with {encoding_type}')
+
 
 class TransBench101SearchSpaceMacro(Graph):
     """
@@ -778,6 +795,9 @@ class TransBench101SearchSpaceMacro(Graph):
             return self._forward_before_global_avg_pool(x)
         else:
             return self._forward_before_last_conv(x)
+
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        return encode_tb101(self, encoding_type=encoding_type)
 
 
 def _set_op(edge, C_in, downsample):

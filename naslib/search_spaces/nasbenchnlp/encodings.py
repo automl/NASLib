@@ -1,6 +1,8 @@
 import numpy as np
 import logging
 
+from naslib.utils.encodings import EncodingType
+
 """
 These are the encoding methods for nas-bench-nlp.
 The plan is to unify encodings across all search spaces.
@@ -14,16 +16,18 @@ def get_adj_matrix(compact, max_nodes):
     # this method returns the flattened adjacency matrix only
     last_idx = len(compact[1]) - 1
     assert last_idx <= max_nodes
+
     def extend(idx):
         if idx == last_idx:
             return max_nodes
-        return idx 
+        return idx
 
-    adj_matrix = np.zeros((max_nodes+1, max_nodes+1))
+    adj_matrix = np.zeros((max_nodes + 1, max_nodes + 1))
     for edge in compact[0]:
         adj_matrix[extend(edge[0]), extend(edge[1])] = 1
 
     return adj_matrix
+
 
 def get_categorical_ops(compact, max_nodes):
     """
@@ -33,11 +37,13 @@ def get_categorical_ops(compact, max_nodes):
     """
     last_idx = len(compact[1]) - 1
     assert last_idx <= max_nodes
-    return [*compact[1][:-1], *[0]*(max_nodes - last_idx), compact[1][-1]]
+    return [*compact[1][:-1], *[0] * (max_nodes - last_idx), compact[1][-1]]
+
 
 def get_categorical_hidden_states(compact, max_hidden_states=3):
     assert len(compact[2]) <= max_hidden_states
-    return [*compact[2], *[0]*(max_hidden_states - len(compact[2]))]
+    return [*compact[2], *[0] * (max_hidden_states - len(compact[2]))]
+
 
 def encode_adj(compact, max_nodes, one_hot=False, accs=None):
     """
@@ -73,15 +79,16 @@ def encode_adj(compact, max_nodes, one_hot=False, accs=None):
 
     return [*flattened, *ops_onehot]
 
+
 def encode_seminas(compact, max_nodes=25):
     """
     note: this is temporary. This will be removed during the code cleanup
-    note: there's no way to add the hidden node flag    
+    note: there's no way to add the hidden node flag
     """
     matrix = get_adj_matrix(compact, max_nodes=max_nodes)
     ops = get_categorical_ops(compact, max_nodes=max_nodes)
     # offset ops list by one
-    ops = [op+1 for op in ops]
+    ops = [op + 1 for op in ops]
 
     dic = {
         'num_vertices': max_nodes,
@@ -91,6 +98,7 @@ def encode_seminas(compact, max_nodes=25):
         'val_acc': 0.0
     }
     return dic
+
 
 def encode_gcn(compact, max_nodes=25):
     '''
@@ -111,26 +119,25 @@ def encode_gcn(compact, max_nodes=25):
     }
     return dic
 
-def encode_nlp(arch, encoding_type='path', max_nodes=25, accs=None):
 
+def encode_nlp(arch, encoding_type=EncodingType.PATH, max_nodes=25, accs=None):
     compact = arch.get_compact()
 
-    if encoding_type == 'adjacency_one_hot':
+    if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adj(compact=compact, max_nodes=max_nodes, one_hot=True)
-    
-    elif encoding_type == 'adjacency_mix':
+
+    elif encoding_type == EncodingType.ADJACENCY_MIX:
         return encode_adj(compact=compact, max_nodes=max_nodes, one_hot=False, accs=accs)
 
-    elif encoding_type == 'seminas':
+    elif encoding_type == EncodingType.SEMINAS:
         return encode_seminas(compact=compact, max_nodes=max_nodes)
 
-    elif encoding_type == 'gcn':
+    elif encoding_type == EncodingType.GCN:
         return encode_gcn(compact=compact, max_nodes=max_nodes)
 
-    elif encoding_type == 'compact':
+    elif encoding_type == EncodingType.COMPACT:
         return compact
 
     else:
-        print('{} is not yet implemented as an encoding type \
-         for nlp'.format(encoding_type))
+        logger.info(f"{encoding_type} is not yet implemented as an encoding type for nlp")
         raise NotImplementedError()

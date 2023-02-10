@@ -2,6 +2,7 @@ import numpy as np
 import logging
 
 from naslib.search_spaces.nasbenchasr.conversions import flatten
+from naslib.utils.encodings import EncodingType
 
 """
 These are the encoding methods for nas-bench-asr.
@@ -34,7 +35,7 @@ def encode_adjacency_one_hot(compact):
 
 
 def encode_seminas_nasbenchasr(compact):
-    # note: the adjacency matrix is fixed for ASR, 
+    # note: the adjacency matrix is fixed for ASR,
     # so the identity matrix can be passed in
     dic = {
         "num_vertices": 9,
@@ -46,20 +47,19 @@ def encode_seminas_nasbenchasr(compact):
     return dic
 
 
-def encode_asr(arch, encoding_type='adjacency_one_hot', max_nodes=3, accs=None):
+def encode_asr(arch, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
 
     compact = arch.get_compact()
 
-    if encoding_type == 'adjacency_one_hot':
+    if encoding_type == EncodingType.ADJACENCY_ONE_HOT:
         return encode_adjacency_one_hot(compact)
 
-    elif encoding_type == 'compact':
+    elif encoding_type == EncodingType.COMPACT:
         return encode_compact(compact)
 
-    elif encoding_type == 'seminas':
+    elif encoding_type == EncodingType.SEMINAS:
         return encode_seminas_nasbenchasr(compact)
 
     else:
-        print('{} is not yet implemented as an encoding type \
-         for asr'.format(encoding_type))
+        logger.info(f"{encoding_type} is not yet implemented as an encoding type for asr")
         raise NotImplementedError()

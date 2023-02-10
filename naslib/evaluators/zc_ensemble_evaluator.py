@@ -4,13 +4,15 @@ import json
 import torch
 import numpy as np
 import logging
-from naslib.predictors.utils.encodings import encode, encode_spec
+from naslib.predictors.utils.encodings import encode_spec
 from naslib.predictors.zerocost import ZeroCost
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.utils.encodings import EncodingType
 
 from naslib.utils import compute_scores
 
 logger = logging.getLogger(__name__)
+
 
 class ZCEnsembleEvaluator(object):
     def __init__(self, n_train, n_test, zc_names, zc_api=False):
@@ -110,7 +112,8 @@ class ZCEnsembleEvaluator(object):
         xtrain = []
 
         for m in train_models:
-            xtrain.append(encode_spec(m.arch, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type()))
+            xtrain.append(encode_spec(m.arch, encoding_type=EncodingType.ADJACENCY_ONE_HOT,
+                                      ss_type=self.search_space.get_type()))
 
         ytrain = [m.accuracy for m in train_models]
 
@@ -134,7 +137,8 @@ class ZCEnsembleEvaluator(object):
 
         logger.info('Preparing test data')
         for m in test_models:
-            x_test.append(encode_spec(m.arch, encoding_type='adjacency_one_hot', ss_type=self.search_space.get_type()))
+            x_test.append(encode_spec(m.arch, encoding_type=EncodingType.ADJACENCY_ONE_HOT,
+                                      ss_type=self.search_space.get_type()))
 
         test_info = [{'zero_cost_scores': m.zc_scores} for m in test_models]
         preds = np.mean(ensemble.query(x_test, test_info), axis=0)
