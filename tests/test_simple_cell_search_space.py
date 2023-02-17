@@ -32,8 +32,8 @@ class SimpleCellDartsIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = DARTSOptimizer(config)
-        self.optimizer.adapt_search_space(SimpleCellSearchSpace())
+        self.optimizer = DARTSOptimizer(**config.search)
+        self.optimizer.adapt_search_space(SimpleCellSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -53,8 +53,8 @@ class SimpleCellGdasIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = GDASOptimizer(config)
-        self.optimizer.adapt_search_space(SimpleCellSearchSpace())
+        self.optimizer = GDASOptimizer(**config.search)
+        self.optimizer.adapt_search_space(SimpleCellSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -74,8 +74,8 @@ class SimpleCellDrNasIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = DrNASOptimizer(config)
-        self.optimizer.adapt_search_space(SimpleCellSearchSpace())
+        self.optimizer = DrNASOptimizer(**config.search)
+        self.optimizer.adapt_search_space(SimpleCellSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):

@@ -37,8 +37,8 @@ class DartsDartsIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = DARTSOptimizer(config)
-        self.optimizer.adapt_search_space(DartsSearchSpace())
+        self.optimizer = DARTSOptimizer(**config.search)
+        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -58,8 +58,8 @@ class DartsGdasIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = GDASOptimizer(config)
-        self.optimizer.adapt_search_space(DartsSearchSpace())
+        self.optimizer = GDASOptimizer(**config.search)
+        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -83,8 +83,8 @@ class DartsDrNasIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = DrNASOptimizer(config)
-        self.optimizer.adapt_search_space(DartsSearchSpace())
+        self.optimizer = DrNASOptimizer(**config.search)
+        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -108,8 +108,8 @@ class DartsRSWSIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = RandomNASOptimizer(config)
-        self.optimizer.adapt_search_space(DartsSearchSpace())
+        self.optimizer = RandomNASOptimizer(**config.search)
+        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -123,12 +123,12 @@ class DartsSearchSpaceTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer_graph = DARTSOptimizer(config)
-        self.optimizer_subgraph = DARTSOptimizer(config)
+        self.optimizer_graph = DARTSOptimizer(**config.search)
+        self.optimizer_subgraph = DARTSOptimizer(**config.search)
         self.graph = DartsSearchSpace()
         self.subgraph = self.graph.nodes[4]['subgraph']
-        self.optimizer_graph.adapt_search_space(self.graph)
-        self.optimizer_subgraph.adapt_search_space(self.subgraph)
+        self.optimizer_graph.adapt_search_space(self.graph, config.dataset)
+        self.optimizer_subgraph.adapt_search_space(self.subgraph, config.dataset)
         self.optimizer_graph.before_training()
         self.optimizer_subgraph.before_training()
         self.num_ops = 0
@@ -158,7 +158,7 @@ class DartsConversionsTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = DARTSOptimizer(config)
+        self.optimizer = DARTSOptimizer(**config.search)
         self.optimizer.graph = DartsSearchSpace()
         self.genotype = Genotype(
             normal=[
