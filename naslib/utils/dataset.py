@@ -58,7 +58,7 @@ def get_train_val_loaders(config, mode="train"):
 
         train_transform, valid_transform = _data_transforms_ImageNet_16_120(
             config)
-        data_folder = f"{data}/{dataset}"
+        data_folder = os.path.join(data, dataset)
         train_data = ImageNet16(
             root=data_folder,
             train=True,
@@ -71,6 +71,13 @@ def get_train_val_loaders(config, mode="train"):
             transform=valid_transform,
             use_num_of_class_only=120,
         )
+    elif dataset == 'ninapro':
+        from naslib.utils.ninapro_dataset import NinaPro, ninapro_transform
+
+        train_transform, valid_transform = ninapro_transform(config)
+        data_folder = os.path.join(data, dataset)
+        train_data = NinaPro(data_folder, split="train", transform=train_transform)
+        test_data = NinaPro(data_folder, split="test", transform=valid_transform)
     elif dataset == 'jigsaw':
         cfg = get_jigsaw_configs()
 
