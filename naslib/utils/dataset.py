@@ -78,6 +78,13 @@ def get_train_val_loaders(config, mode="train"):
         data_folder = os.path.join(data, dataset)
         train_data = NinaPro(data_folder, split="train", transform=train_transform)
         test_data = NinaPro(data_folder, split="test", transform=valid_transform)
+    elif dataset == "darcyflow":
+        from naslib.utils.darcyflow_dataset import load_darcyflow_data, darcyflow_transform
+
+        train_transform, valid_transform = darcyflow_transform(config)
+
+        data_folder = os.path.join(data, dataset)
+        train_data, test_data = load_darcyflow_data(data_folder)
     elif dataset == 'jigsaw':
         cfg = get_jigsaw_configs()
 
