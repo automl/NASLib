@@ -17,7 +17,7 @@ search:
   batch_size: 128
   perform_fgsm: False
   fgsm_epsilon: 0.2
-  large_nets: False
+  large_nets: True
   large_nets_coefficient: 0.1
   large_nets_stop_before: 25
   

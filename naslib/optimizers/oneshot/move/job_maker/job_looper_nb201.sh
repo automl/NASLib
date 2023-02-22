@@ -1,9 +1,9 @@
 #!/bin/bash
 
-#SBATCH -p alldlc_gpu-rtx2080 #testdlc_gpu-rtx2080 #mlhiwi_gpu-rtx2080
+#SBATCH -p mlhiwidlc_gpu-rtx2080 #testdlc_gpu-rtx2080 #mlhiwi_gpu-rtx2080
 #SBATCH --gres=gpu:1
-#SBATCH --output=slurm/testing_looping/move_5_5_95_%A.out
-#SBATCH --error=slurm/testing_looping/move_5_5_95_%A.err
+#SBATCH --output=slurm/testing/mean_drop_%A.out
+#SBATCH --error=slurm/testing/mean_drop_%A.err
 
 
 
@@ -12,7 +12,7 @@ echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node w
 
 start=`date +%s`
 
-python runner_loop.py --config-file configs/mean_drop_one_config.yaml
+python runner_loop.py --config-file configs/mean_drop_one_config2.yaml
 
 end=`date +%s`
 runtime=$((end-start))

@@ -504,7 +504,8 @@ class MovementOptimizer(MetaOptimizer):
                 val_loss_grad = self.loss(logits_val, target_val)            
                 val_loss_grad.backward()
         
-            self.graph = self.val_graph        
+            self.graph = self.val_graph   
+            self.val_data = []     
 
         with torch.no_grad():
             if self.config.method=='syn':
