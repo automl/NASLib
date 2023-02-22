@@ -60,7 +60,9 @@ class MovementOptimizer(MetaOptimizer):
         """
         super(MovementOptimizer, self).__init__()
 
-        self.config = config        
+        self.config = config       
+        self.val_graph = None
+        self.val_data = []
         self.op_optimizer = op_optimizer
         self.op_optimizer_evaluate = op_optimizer_evaluate
         self.loss = loss_criteria
@@ -87,6 +89,10 @@ class MovementOptimizer(MetaOptimizer):
             self.config.search.large_nets_coefficient = self.config.search.large_nets_coefficient
         else:
             self.config.search.large_nets_coefficient=0.001
+        if hasattr(self.config.search, "large_nets_stop_before"):
+            self.config.search.large_nets_stop_before = self.config.search.large_nets_stop_before
+        else:
+            self.config.search.large_nets_stop_before=4
 
         # MAKE SURE TO GIVE THE CORRENT PATH OF THE SCORES.PTH
         self.path=self.config.out_dir+'/'+self.config.search_space+'/'+self.config.dataset+'/'+self.config.optimizer+'/'+ str(self.config.seed)+'/search/scores.pth'
@@ -298,7 +304,7 @@ class MovementOptimizer(MetaOptimizer):
                 summed_sizes[i] += size
         #summed_sizes += 1.0000e-04
         #import ipdb;ipdb.set_trace()
-        final_loss = train_loss * (1 + self.config.search.large_nets_coefficient*((max(self.config.search.epochs-self.current_epoch-4, 0))*(math.e**(-summed_sizes))))
+        final_loss = train_loss * (1 + self.config.search.large_nets_coefficient*((max(self.config.search.epochs-self.current_epoch-self.config.search.large_nets_stop_before, 0))*(math.e**(-summed_sizes))))
         return final_loss.mean()
         #import ipdb;ipdb.set_trace()
         #return torch.abs(final_loss).mean().backward()#retain_graph=True)
@@ -350,6 +356,7 @@ class MovementOptimizer(MetaOptimizer):
         """
         input_train, target_train = data_train
         input_val, target_val = data_val
+        self.val_data.append(data_val)
         self.perform_fgsm=False
         self.fgsm_epsilon=0.0
         if hasattr(self.config.search, 'perform_fgsm'):
@@ -412,6 +419,7 @@ class MovementOptimizer(MetaOptimizer):
         self.op_optimizer.step()
         self.scheduler.step()
 
+        
         with torch.no_grad():
             self.graph.eval()
             logits_val = self.graph(input_val)
@@ -479,27 +487,45 @@ class MovementOptimizer(MetaOptimizer):
 
     
     def new_epoch(self, epoch):        
+        #import ipdb;ipdb.set_trace()
         self.current_epoch = epoch
         if hasattr(self.config, 'method'):
             self.config.method = self.config.method
         else:
             self.config.method = "vanilla"
 
-        if self.config.method=='syn':
-            from naslib.optimizers.oneshot.move.utilities.syn import Syn
-            object1=Syn(logger, epoch, object_self=self)
-            self=object1.new_epoch(epoch)
-        elif self.config.method=='not_abs':
-            from naslib.optimizers.oneshot.move.utilities.not_abs import Notabs
-            object1=Notabs(logger, epoch, object_self=self)
-            self=object1.new_epoch(epoch)
-        elif self.config.method=='drop_one':
-            from naslib.optimizers.oneshot.move.utilities.drop_one import DropOne
-            object1=DropOne(logger, epoch, object_self=self)
-            self=object1.new_epoch(epoch)
-        else:
-            object1=Vanilla(logger, epoch, object_self=self)
-            self=object1.new_epoch(epoch)
+        if epoch > 0 and not self.config.method == 'syn':
+            self.val_graph = self.graph.clone()    
+            self.val_graph.zero_grad()
+            for (input_val, target_val) in self.val_data:
+                logits_val = self.val_graph(input_val)
+                if self.augmix:
+                    logits_val, _, _ = torch.split(logits_val, len(logits_val) // 3)
+                val_loss_grad = self.loss(logits_val, target_val)            
+                val_loss_grad.backward()
+        
+            self.graph = self.val_graph        
+
+        with torch.no_grad():
+            if self.config.method=='syn':
+                from naslib.optimizers.oneshot.move.utilities.syn import Syn
+                object1=Syn(logger, epoch, object_self=self)
+                self=object1.new_epoch(epoch)
+            elif self.config.method=='not_abs':
+                from naslib.optimizers.oneshot.move.utilities.not_abs import Notabs
+                object1=Notabs(logger, epoch, object_self=self)
+                self=object1.new_epoch(epoch)
+            elif self.config.method=='drop_one':
+                from naslib.optimizers.oneshot.move.utilities.drop_one import DropOne
+                object1=DropOne(logger, epoch, object_self=self)
+                self=object1.new_epoch(epoch)
+            elif self.config.method=='mean_drop_one':
+                from naslib.optimizers.oneshot.move.utilities.mean_drop_one import MeanDropOne
+                object1=MeanDropOne(logger, epoch, object_self=self)
+                self=object1.new_epoch(epoch)
+            else:
+                object1=Vanilla(logger, epoch, object_self=self)
+                self=object1.new_epoch(epoch)
 
     def after_training(self):
         print("save path: ", self.config.save)

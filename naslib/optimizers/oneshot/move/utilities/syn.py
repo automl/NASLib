@@ -3,12 +3,15 @@ import torch
 import numpy as np
 import os
 import copy
+from naslib.optimizers.oneshot.move.utilities.tools import Tools
 
 class Syn(MetaOptimizer):
     def __init__(self, logger, epoch, object_self=None):                
         self.object_self=object_self
+        #self.object_self.graph = object_self.val_graph if hasattr(self.object_self, 'val_graph') else object_self.graph
         self.object_self.logger=logger
         self.epoch=epoch
+        self.tools = Tools(object_self=object_self, instantenous=object_self.instantenous)
         super(Syn, self).__init__()
         
     def new_epoch(self, epoch):
@@ -97,20 +100,7 @@ class Syn(MetaOptimizer):
                                     except AttributeError:
                                         continue                         
                         except AttributeError:                           
-                            edge.data.op.primitives[i].weight=torch.nn.Parameter(torch.abs(edge.data.op.primitives[i].weight).to(device=self.object_self.device))
-        
-        def calculate_scores(edge):
-            if edge.data.has("score"):
-                for i in range(len(edge.data.op.primitives)):
-                    with torch.no_grad():
-                        edge.data.score[i]+=edge.data.weights[i]#/edge.data.dimension[i]
-                        
-        # Currently not being used, just kept in case we plan to normalize scores.
-        def normalize_scores(edge):
-            if edge.data.has("score"):
-                for i in range(len(edge.data.op.primitives)):
-                    with torch.no_grad():
-                        edge.data.score[i] = edge.data.score[i]#/len(count)                        
+                            edge.data.op.primitives[i].weight=torch.nn.Parameter(torch.abs(edge.data.op.primitives[i].weight).to(device=self.object_self.device))                      
 
         k_initialized = self.object_self.k_initialized
         k = self.object_self.k
@@ -140,19 +130,6 @@ class Syn(MetaOptimizer):
                     k += 1                                       
                     k_changed_this_epoch = True                
 
-        def reinitialize_scores(edge):
-            if edge.data.has("score"):                
-                for i in range(len(edge.data.weights)):                            
-                    edge.data.score[i]=0
-
-        def reinitialize_l2_weights(edge):
-            if edge.data.has("score"):                
-                for i in range(len(edge.data.weights)):                    
-                    edge.data.weights[i]=0
-                    edge.data.dimension[i]=0                    
-                    if instantenous:
-                        edge.data.score[i]=0
-
         if epoch >= 0:
             graph_copy = copy.deepcopy(self.object_self.graph)
             graph_copy.zero_grad()
@@ -163,7 +140,7 @@ class Syn(MetaOptimizer):
             logger.info('loss from ones: '+str(torch.sum(loss_copy)))
             torch.sum(loss_copy).backward()                
             graph_copy.update_edges(update_l2_weights, scope=self.object_self.scope, private_edge_data=True)
-            graph_copy.update_edges(calculate_scores, scope=self.object_self.scope, private_edge_data=True)              
+            graph_copy.update_edges(self.tools.calculate_scores, scope=self.object_self.scope, private_edge_data=True)              
             #graph_copy.update_edges(get_copy_scores, scope=self.object_self.scope, private_edge_data=True)             
             weights_iterator=0
             graph_weights=[]
@@ -226,7 +203,7 @@ class Syn(MetaOptimizer):
             The parameter weights is being used to calculate the scores, as a buffer.
             This buffer is reinitialized every epoch so that the scores are calculated correctly
             """
-            self.object_self.graph.update_edges(reinitialize_l2_weights, scope=self.object_self.scope, private_edge_data=True)
+            self.object_self.graph.update_edges(self.tools.reinitialize_l2_weights, scope=self.object_self.scope, private_edge_data=True)
             count = []
 
         if epoch >= self.object_self.warm_start_epochs and self.object_self.instantenous:
@@ -235,14 +212,14 @@ class Syn(MetaOptimizer):
             masking steps are being considered for masking then the scores are reinitialized
             at the end of every epoch i.e. the scores are not accumulated over epochs.
             """
-            self.object_self.graph.update_edges(reinitialize_scores, scope=self.object_self.scope, private_edge_data=True)
+            self.object_self.graph.update_edges(self.tools.reinitialize_scores, scope=self.object_self.scope, private_edge_data=True)
         
         if epoch >= self.object_self.warm_start_epochs and self.object_self.count_masking%self.object_self.masking_interval==0:
             """
             The scores are reinitialized after every masking step
             """
             self.object_self.mask = torch.nn.ParameterList()
-            self.object_self.graph.update_edges(reinitialize_scores, scope=self.object_self.scope, private_edge_data=True)
+            self.object_self.graph.update_edges(self.tools.reinitialize_scores, scope=self.object_self.scope, private_edge_data=True)
                 
             for mask in self.object_self.graph.get_all_edge_data("mask"):
                 self.object_self.mask.append(mask)

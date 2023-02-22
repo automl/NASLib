@@ -3,12 +3,12 @@ seed: 0
 search_space: nasbench201
 out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/testing/again_0.95
 optimizer: movement
-method: vanilla
+method: drop_one
 
 search:
  
   # MOVEMENT
-  instantenous: True
+  instantenous: False
   epochs: 24
   warm_start_epochs: 5
   masking_interval: 1

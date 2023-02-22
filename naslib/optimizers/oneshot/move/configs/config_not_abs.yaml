@@ -1,9 +1,9 @@
 dataset: cifar10
 seed: 10
 search_space: nasbench201
-out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/testing1
+out_dir: /work/dlclarge2/agnihotr-ml/nas301_test_acc/NASLib/naslib/optimizers/oneshot/move/runs/testing1_not_abs
 optimizer: movement
-method: vanilla
+method: not_abs
 
 search:
  

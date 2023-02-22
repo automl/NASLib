@@ -12,7 +12,7 @@ echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node w
 
 start=`date +%s`
 
-python runner_loop.py --config-file configs/mean_drop_one_config.yaml
+python runner_loop.py --config-file configs/mean_drop_one_config2.yaml
 
 end=`date +%s`
 runtime=$((end-start))
