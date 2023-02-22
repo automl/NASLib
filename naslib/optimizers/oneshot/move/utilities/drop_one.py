@@ -66,7 +66,7 @@ class DropOne(MetaOptimizer):
                     edge.data.mask[min_location]=0
 
         if epoch > 0:
-            self.object_self.graph.update_edges(self.tool.update_l2_weights, scope=self.object_self.scope, private_edge_data=True)
+            self.object_self.graph.update_edges(self.tools.update_l2_weights, scope=self.object_self.scope, private_edge_data=True)
             self.object_self.graph.update_edges(self.tools.calculate_scores, scope=self.object_self.scope, private_edge_data=True)              
         if epoch >= self.object_self.warm_start_epochs and self.object_self.count_masking%self.object_self.masking_interval==0:
             if self.num_pruned < total_operations - len(self.object_self.score):

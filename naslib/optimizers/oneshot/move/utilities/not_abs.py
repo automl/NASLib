@@ -38,7 +38,7 @@ class Notabs(MetaOptimizer):
                     k_changed_this_epoch = True                
 
         if epoch > 0:
-            self.object_self.graph.update_edges(self.tool.update_l2_weights, scope=self.object_self.scope, private_edge_data=True)
+            self.object_self.graph.update_edges(self.tools.not_abs_update_l2_weights, scope=self.object_self.scope, private_edge_data=True)
             self.object_self.graph.update_edges(self.tools.calculate_scores, scope=self.object_self.scope, private_edge_data=True)              
         if epoch >= self.object_self.warm_start_epochs and self.object_self.count_masking%self.object_self.masking_interval==0:
             self.object_self.graph.update_edges(masking, scope=self.object_self.scope, private_edge_data=True)

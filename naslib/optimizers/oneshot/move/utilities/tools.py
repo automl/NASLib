@@ -61,6 +61,43 @@ class Tools():
                     for j in range(len(edge.data.op.primitives[i].op)):
                         try:                                
                             group_dim += 1                                
+                            weight+= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
+                        except (AttributeError, TypeError) as e:
+                            try:
+                                for k in range(len(edge.data.op.primitives[i].op[j].op)):                                        
+                                    group_dim += 1                                        
+                                    weight+= torch.sum(edge.data.op.primitives[i].op[j].op[k].weight.grad*edge.data.op.primitives[i].op[j].op[k].weight).to(device=edge.data.weights.device)
+                            except AttributeError:
+                                continue                         
+                    edge.data.weights[i]+=weight
+                    edge.data.dimension[i]+=group_dim.item()                                                                         
+                    weight=0.0                        
+                    group_dim=torch.zeros(1)
+                except AttributeError:                           
+                    size = 1
+                    edge.data.weights[i]+=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
+                    edge.data.dimension[i]+=size 
+
+    @staticmethod
+    def not_abs_update_l2_weights(edge):            
+        """
+            For operations like SepConv etc that contain suboperations like Conv2d() etc. the square of 
+            l2 norm of the weights is stored in the corresponding weights shared attribute.
+            Suboperations like ReLU are ignored as they have no weights of their own.
+            For operations (not suboperations) like Identity() etc. that do not have weights,
+            the weights attached to them are used.
+
+            edge.data.weights is being used to accumulate scores over all groups
+            edge.data.scores is then used to store the scores of a group of operations across cells
+        """            
+        if edge.data.has("score"):                
+            weight=0.0                
+            group_dim=torch.zeros(1)
+            for i in range(len(edge.data.op.primitives)):
+                try:
+                    for j in range(len(edge.data.op.primitives[i].op)):
+                        try:                                
+                            group_dim += 1                                
                             weight-= torch.sum(edge.data.op.primitives[i].op[j].weight.grad*edge.data.op.primitives[i].op[j].weight).to(device=edge.data.weights.device)
                         except (AttributeError, TypeError) as e:
                             try:
@@ -76,4 +113,4 @@ class Tools():
                 except AttributeError:                           
                     size = 1
                     edge.data.weights[i]-=torch.sum(edge.data.op.primitives[i].weight.grad*edge.data.op.primitives[i].weight).to(device=edge.data.weights.device)
-                    edge.data.dimension[i]+=size     
+                    edge.data.dimension[i]+=size      
