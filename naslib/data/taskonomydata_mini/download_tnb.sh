@@ -72,3 +72,22 @@ do
         mv -- "$j" "${j%class_places.npy}class_scene.npy"
     done
 done
+
+# download all normal files
+for dataset in ${datasets[@]}
+do
+    file=$dataset\_normal.tar
+    filepath=http://downloads.cs.stanford.edu/downloads/taskonomy_data/normal/$file
+    echo $filepath
+    cd $dataset
+    if [ -d "normal" ]
+    then
+        echo normal exists
+    else
+        echo normal does not exist
+        wget $filepath
+        tar -xvf $file
+        rm $file
+    fi
+    cd ..
+done
