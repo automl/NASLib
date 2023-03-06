@@ -146,7 +146,7 @@ class Trainer(object):
 
                     self.train_loss.update(float(train_loss.detach().cpu()))
                     self.val_loss.update(float(val_loss.detach().cpu()))
-
+                    break
                 self.scheduler.step()
 
                 end_time = time.time()
@@ -569,6 +569,7 @@ class Trainer(object):
 
         checkpointer = utils.Checkpointer(
             model=checkpointables.pop("model"),
+                arch_weights=checkpointables.pop("arch_weights"),
             save_dir=self.config.save + "/search"
             if search
             else self.config.save + "/eval",

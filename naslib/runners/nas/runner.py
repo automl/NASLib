@@ -2,10 +2,11 @@ import logging
 
 from naslib.defaults.trainer import Trainer
 from naslib.optimizers import (
-    DrNASOptimizer,
+    DARTSOptimizer,
 )
 
 from naslib.search_spaces import (
+    NasBench101SearchSpace,
     NasBench201SearchSpace,
     NasBench301SearchSpace,
 )
@@ -21,12 +22,12 @@ logger.setLevel(logging.INFO)
 utils.log_args(config)
 
 supported_optimizers = {
-    'drnas': DrNASOptimizer(config),
+    'darts': DARTSOptimizer(config),
 }
 
 supported_search_spaces = {
     'nasbench201': NasBench201SearchSpace(n_classes=config.n_classes),
-    'nasbench301': NasBench301SearchSpace(n_classes=config.n_classes, auxiliary=False),
+    # 'nasbench301': NasBench301SearchSpace(n_classes=config.n_classes, auxiliary=False),
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
@@ -39,7 +40,7 @@ optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 
-trainer.search(resume_from="")
+trainer.search(resume_from="/home/moradias/nas-fix/run/nasbench201/cifar10/darts/99/search/model_0000004.pth")
 if config.search_space == 'nasbench301':
     trainer.evaluate(resume_from="", retrain=True, dataset_api=dataset_api)
 else:
