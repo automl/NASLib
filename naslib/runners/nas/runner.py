@@ -39,8 +39,9 @@ optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
+trainer.search(resume_from="")
 
-trainer.search(resume_from="/home/moradias/nas-fix/run/nasbench201/cifar10/darts/99/search/model_0000004.pth")
+# trainer.search(resume_from="/home/moradias/nas-fix/run/nasbench201/cifar10/darts/97/search/model_0000002.pth")
 if config.search_space == 'nasbench301':
     trainer.evaluate(resume_from="", retrain=True, dataset_api=dataset_api)
 else:

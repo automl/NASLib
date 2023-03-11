@@ -202,6 +202,11 @@ class ConfigurableOptimizer(MetaOptimizer):
             "arch_weights": self.architectural_weights,
         }
 
+    def set_checkpointables(self, checkpointables):
+        self.op_optimizer = checkpointables.get("op_optimizer")
+        self.arch_optimizer = checkpointables.get("arch_optimizer")
+        self.architectural_weights = checkpointables.get("arch_weights")
+
     def before_training(self):
         """
         Move the graph into cuda memory if available.

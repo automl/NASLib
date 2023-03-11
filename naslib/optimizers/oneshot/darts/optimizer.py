@@ -133,6 +133,12 @@ class DARTSOptimizer(MetaOptimizer):
         """
         Just log the architecture weights.
         """
+        # print("=====================================")
+        # if self.architectural_weights.is_cuda:
+        #     print("The tensor is on a GPU with index:", self.architectural_weights.get_device())
+        # else:
+        #     print("The tensor is not on a GPU.")
+        # print("=====================================")
         alpha_str = [
             ", ".join(["{:+.06f}".format(x) for x in a])
             + ", {}".format(np.argmax(a.detach().cpu().numpy()))
@@ -199,6 +205,11 @@ class DARTSOptimizer(MetaOptimizer):
 
     def get_model_size(self):
         return count_parameters_in_MB(self.graph)
+
+    def set_checkpointables(self, checkpointables):
+        self.op_optimizer = checkpointables.get("op_optimizer")
+        self.arch_optimizer = checkpointables.get("arch_optimizer")
+        self.architectural_weights = checkpointables.get("arch_weights")
 
     def test_statistics(self):
         # nb301 is not there but we use it anyways to generate the arch strings.

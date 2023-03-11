@@ -1,5 +1,5 @@
 dataset: cifar10
-seed: 99
+seed: 98
 search_space: nasbench201
 out_dir: run
 optimizer: darts

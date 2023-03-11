@@ -121,3 +121,9 @@ class MetaOptimizer(object, metaclass=ABCMeta):
             (dict): with name as key and object as value. e.g. graph, arch weights, optimizers, ...
         """
         pass
+
+    def set_checkpointables(self, architectural_weights):
+        """
+        would set the objects saved in the checkpoint during last phase of training
+        """
+        pass
