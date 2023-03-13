@@ -220,8 +220,8 @@ class Trainer(object):
                 evaluate with the current one-shot weights.
         """
         logger.info("Start one-shot evaluation")
-        self.optimizer.before_training()
         self._setup_checkpointers(resume_from)
+        self.optimizer.before_training()
 
         loss = torch.nn.CrossEntropyLoss()
 
