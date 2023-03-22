@@ -112,7 +112,7 @@ class UtilsTest(unittest.TestCase):
 
     def _get_config_path(self, config_type):
         config_paths = {
-            "nas": "defaults/darts_defaults.yaml",
+            "nas": "naslib/defaults/darts_defaults.yaml",
             "predictor": "runners/predictors/predictor_config.yaml",
             "bbo-bs": "runners/bbo/discrete_config.yaml",
             "nas_predictor": "runners/nas_predictors/discrete_config.yaml",
@@ -122,7 +122,7 @@ class UtilsTest(unittest.TestCase):
 
         config_path_full = os.path.join(
             *(
-                [utils.get_project_root()] + config_paths[config_type].split('/')
+                [utils.get_project_root().parent] + config_paths[config_type].split('/')
             )
         )
 

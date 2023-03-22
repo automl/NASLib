@@ -12,7 +12,7 @@ echo "Workingdir: $PWD";
 echo "Started at $(date)";
 echo "Running job $SLURM_JOB_NAME using $SLURM_JOB_CPUS_PER_NODE cpus per node with given JID $SLURM_JOB_ID on queue $SLURM_JOB_PARTITION";
 
-# python -u runner.py --config-file $1
+# python -u runners.py --config-file $1
 
 for config_file_seed in $1/*
 	do

@@ -36,7 +36,7 @@ There are two types of experiments: stand-alone predictor experiments, and predi
 ## Stand-alone predictor experiments
 To run a single test on a predictor, modify the settings in `naslib/benchmarks/predictors/predictor_config.yaml` as you desire (e.g., change the search space, predictor, train_size (initialization time), and fidelity (query time). Then run
 ```bash
-python naslib/benchmarks/predictors/runner.py --config-file naslib/benchmarks/predictors/predictor_config.yaml
+python naslib/benchmarks/predictors/runners.py --config-file naslib/benchmarks/predictors/predictor_config.yaml
 ```
 To run 100 trials of all performance predictors on some search space (e.g. darts), run
 ```bash
@@ -46,7 +46,7 @@ python naslib/benchmarks/predictors/run_darts.sh
 ## Predictor-based NAS experiments
 To run a single test on a NAS algorithm, modify the settings in `naslib/benchmarks/nas_predictors/discrete_config.yaml` as you desire (e.g., change the search space, predictor, epochs, and set the optimizer to either bananas (Bayesian optimization framework) or npenas (evolution framework)). Then run
 ```bash
-python naslib/benchmarks/nas_predictors/runner.py --config-file naslib/benchmarks/nas_predictors/discrete_config.yaml
+python naslib/benchmarks/nas_predictors/runners.py --config-file naslib/benchmarks/nas_predictors/discrete_config.yaml
 ```
 
 To run 100 trials of all predictor-based NAS algorithms on some search space and framework (e.g. nas-bench-201 cifar10, evolution), run

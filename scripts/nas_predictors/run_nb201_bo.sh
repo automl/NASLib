@@ -40,7 +40,7 @@ done
     #do
         #config_file=$out_dir/$dataset/configs/nas_predictors/config\_$optimizer\_$predictor\_$t.yaml
         #echo ================running $predictor trial: $t =====================
-        #python $base_file/benchmarks/nas_predictors/runner.py --config-file $config_file
+        #python $base_file/benchmarks/nas_predictors/runners.py --config-file $config_file
     #done
     #if [ "save_to_s3" ]
     #then

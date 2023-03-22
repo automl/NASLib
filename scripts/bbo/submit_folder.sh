@@ -18,13 +18,13 @@ runner_dir="/home/$user/NASLib/naslib/runners/bbo"
 # source $CONDA_SOURCE
 # conda activate $CONDA_ENV
 
-# python -u $runner_dir/runner.py --config-file $1
+# python -u $runner_dir/runners.py --config-file $1
 
 for config_file_seed in $1/*
     do
         echo submitted ${config_file_seed}
         python -u $runner_dir/runner.py --config-file $config_file_seed
-        # python -u -m debugpy --listen 0.0.0.0:$PORT --wait-for-client $runner_dir/runner.py --config-file $config_file_seed
+        # python -u -m debugpy --listen 0.0.0.0:$PORT --wait-for-client $runner_dir/runners.py --config-file $config_file_seed
     done
  
 # echo $COMMAND;

@@ -13,7 +13,7 @@ search_space: nasbench201
 # jigsaw, room_layout, segmentsemantic, normal, autoencoder
 dataset: cifar10
 
-# one of the 31 predictors in benchmarks/predictors/runner.py
+# one of the 31 predictors in benchmarks/predictors/runners.py
 predictor: synflow
 
 # 0: mutation-based, or 1: uniformly random, train/test sets
