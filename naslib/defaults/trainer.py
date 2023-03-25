@@ -88,7 +88,6 @@ class Trainer(object):
         np.random.seed(self.config.search.seed)
         torch.manual_seed(self.config.search.seed)
 
-        self.optimizer.before_training()
         checkpoint_freq = self.config.search.checkpoint_freq
         if self.optimizer.using_step_function:
             self.scheduler = self.build_search_scheduler(
@@ -100,6 +99,8 @@ class Trainer(object):
             )
         else:
             start_epoch = self._setup_checkpointers(resume_from, period=checkpoint_freq)
+
+        self.optimizer.before_training()
 
         if self.optimizer.using_step_function:
             self.train_queue, self.valid_queue, _ = self.build_search_dataloaders(
@@ -146,7 +147,7 @@ class Trainer(object):
 
                     self.train_loss.update(float(train_loss.detach().cpu()))
                     self.val_loss.update(float(val_loss.detach().cpu()))
-
+                    
                 self.scheduler.step()
 
                 end_time = time.time()
@@ -179,7 +180,9 @@ class Trainer(object):
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
-            self.periodic_checkpointer.step(e)
+            add_checkpointables = self.optimizer.get_checkpointables()
+            del add_checkpointables["model"]
+            self.periodic_checkpointer.step(e, **add_checkpointables)
 
             anytime_results = self.optimizer.test_statistics()
             # if anytime_results:
@@ -216,8 +219,8 @@ class Trainer(object):
                 evaluate with the current one-shot weights.
         """
         logger.info("Start one-shot evaluation")
-        self.optimizer.before_training()
         self._setup_checkpointers(resume_from)
+        self.optimizer.before_training()
 
         loss = torch.nn.CrossEntropyLoss()
 
@@ -286,7 +289,7 @@ class Trainer(object):
             best_arch = self.optimizer.get_final_architecture()
         logger.info(f"Final architecture hash: {best_arch.get_hash()}")
 
-        if best_arch.QUERYABLE:
+        if best_arch.QUERYABLE and (not retrain):
             if metric is None:
                 metric = Metric.TEST_ACCURACY
             result = best_arch.query(
@@ -408,8 +411,10 @@ class Trainer(object):
                                     logits_valid, target_valid, "val"
                                 )
 
+                    arch_weights = self.optimizer.get_checkpointables()["arch_weights"]
+
                     scheduler.step()
-                    self.periodic_checkpointer.step(e)
+                    self.periodic_checkpointer.step(iteration=e, arch_weights=arch_weights)
                     self._log_and_reset_accuracies(e)
 
             # Disable drop path
@@ -585,8 +590,11 @@ class Trainer(object):
 
         if resume_from:
             logger.info("loading model from file {}".format(resume_from))
-            checkpoint = checkpointer.resume_or_load(resume_from, resume=True)
+            # if resume=True starts from the last_checkpoint
+            # if resume=False starts from the path mentioned as resume_from
+            checkpoint = checkpointer.resume_or_load(resume_from, resume=False)
             if checkpointer.has_checkpoint():
+                self.optimizer.set_checkpointables(checkpoint)
                 return checkpoint.get("iteration", -1) + 1
         return 0
 

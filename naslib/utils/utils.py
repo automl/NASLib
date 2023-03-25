@@ -9,6 +9,7 @@ from sklearn import metrics
 from scipy import stats
 import copy
 import json
+import warnings
 
 from collections import OrderedDict
 
@@ -173,7 +174,6 @@ def get_config_from_args(args=None, config_type="nas"):
     if args is None:
         args = parse_args()
     logger.info("Command line args: {}".format(args))
-
     if args.config_file is None:
         config = load_default_config(config_type=config_type)
     else:
@@ -195,6 +195,16 @@ def get_config_from_args(args=None, config_type="nas"):
         # load config file
         config.set_new_allowed(True)
         config.merge_from_list(args.opts)
+
+        if config.dataset == 'cifar10':
+            config.n_classes = 10
+        elif config.dataset == 'cifar100':
+            config.n_classes = 100
+        elif config.dataset == 'ImageNet16-120':
+            config.n_classes = 120
+        else:
+            warnings.warn("Number of classes was not set. Default 10 is set.")
+            config.n_classes = 10
 
     except AttributeError:
         for arg, value in pairwise(args):

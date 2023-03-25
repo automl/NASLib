@@ -318,3 +318,4 @@ class Bananas(MetaOptimizer):
         else:
             str_arch = str(arch)
         return str_arch
+

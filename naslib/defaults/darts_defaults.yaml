@@ -26,7 +26,7 @@ search:
   arch_learning_rate: 0.0003
   arch_weight_decay: 0.001
   output_weights: True
-  
+
   fidelity: 200
 
   # GDAS
@@ -36,7 +36,7 @@ search:
   # RE
   sample_size: 10
   population_size: 100
-  
+
   #LS
   num_init: 10
 
@@ -56,7 +56,7 @@ search:
   #train_portion: 0.9
   #data_size: 25000
 
-  
+
   # BANANAS
   k: 10
   num_ensemble: 3
@@ -66,7 +66,7 @@ search:
   num_arches_to_mutate: 2
   max_mutations: 1
   num_candidates: 100
-  
+
   # BasePredictor
   predictor_type: var_sparse_gp
   debug_predictor: False

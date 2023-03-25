@@ -45,9 +45,9 @@ supported_optimizers = {
 }
 
 supported_search_spaces = {
-    'nasbench101': NasBench101SearchSpace(),
-    'nasbench201': NasBench201SearchSpace(),
-    'nasbench301': NasBench301SearchSpace(),
+    'nasbench101': NasBench101SearchSpace(n_classes=config.n_classes),
+    'nasbench201': NasBench201SearchSpace(n_classes=config.n_classes),
+    'nasbench301': NasBench301SearchSpace(n_classes=config.n_classes, auxiliary=False),
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
     'transbench101_macro': TransBench101SearchSpaceMacro(),
@@ -61,14 +61,13 @@ search_space = supported_search_spaces[config.search_space]
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
- 
+
 import torch
 
 if config.dataset in ['class_object', 'class_scene']:
     optimizer.loss = SoftmaxCrossEntropyWithLogits()
 elif config.dataset == 'autoencoder':
     optimizer.loss = torch.nn.L1Loss()
-    
 
 trainer = Trainer(optimizer, config, lightweight_output=True)
 

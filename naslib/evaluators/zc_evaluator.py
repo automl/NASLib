@@ -138,6 +138,7 @@ class ZeroCostPredictorEvaluator(object):
         logger.info("Querying the predictor")
         query_time_start = time.time()
 
+        # TODO: shouldn't mode="val" be passed?
         _, _, test_loader, _, _ = utils.get_train_val_loaders(self.config)
 
         # Iterate over the architectures, instantiate a graph with each architecture

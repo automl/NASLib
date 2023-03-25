@@ -200,6 +200,11 @@ class DARTSOptimizer(MetaOptimizer):
     def get_model_size(self):
         return count_parameters_in_MB(self.graph)
 
+    def set_checkpointables(self, checkpointables):
+        self.op_optimizer = checkpointables.get("op_optimizer")
+        self.arch_optimizer = checkpointables.get("arch_optimizer")
+        self.architectural_weights = checkpointables.get("arch_weights")
+
     def test_statistics(self):
         # nb301 is not there but we use it anyways to generate the arch strings.
         # if self.graph.QUERYABLE:

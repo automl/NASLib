@@ -419,6 +419,10 @@ class GSparseOptimizer(MetaOptimizer):
     def get_model_size(self):
         return count_parameters_in_MB(self.graph)
 
+    def set_checkpointables(self, checkpointables):
+        self.op_optimizer = checkpointables.get("op_optimizer")
+        self.op_optimizer_evaluate = checkpointables.get("op_optimizer_evaluate")
+
     def get_checkpointables(self):
         """
         Return all objects that should be saved in a checkpoint during training.
