@@ -147,7 +147,7 @@ class Trainer(object):
 
                     self.train_loss.update(float(train_loss.detach().cpu()))
                     self.val_loss.update(float(val_loss.detach().cpu()))
-                    # break
+                    
                 self.scheduler.step()
 
                 end_time = time.time()
@@ -180,7 +180,6 @@ class Trainer(object):
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
-            # arch_weights = self.optimizer.get_checkpointables()["arch_weights"]
             add_checkpointables = self.optimizer.get_checkpointables()
             del add_checkpointables["model"]
             self.periodic_checkpointer.step(e, **add_checkpointables)

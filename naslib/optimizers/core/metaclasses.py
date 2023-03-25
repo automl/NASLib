@@ -122,8 +122,12 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         """
         pass
 
-    def set_checkpointables(self, architectural_weights):
+    def set_checkpointables(self, checkpointables):
         """
-        would set the objects saved in the checkpoint during last phase of training
+        would set values of the saved objects in the checkpoint during training/evaluation.
+
+        Args:
+            (dict): with name as key and object as value. e.g. op and arch optimizers, arch weights, ...
         """
+
         pass

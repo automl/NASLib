@@ -133,12 +133,6 @@ class DARTSOptimizer(MetaOptimizer):
         """
         Just log the architecture weights.
         """
-        # print("=====================================")
-        # if self.architectural_weights.is_cuda:
-        #     print("The tensor is on a GPU with index:", self.architectural_weights.get_device())
-        # else:
-        #     print("The tensor is not on a GPU.")
-        # print("=====================================")
         alpha_str = [
             ", ".join(["{:+.06f}".format(x) for x in a])
             + ", {}".format(np.argmax(a.detach().cpu().numpy()))

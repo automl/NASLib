@@ -9,6 +9,7 @@ from sklearn import metrics
 from scipy import stats
 import copy
 import json
+import warnings
 
 from collections import OrderedDict
 
@@ -202,6 +203,7 @@ def get_config_from_args(args=None, config_type="nas"):
         elif config.dataset == 'ImageNet16-120':
             config.n_classes = 120
         else:
+            warnings.warn("Number of classes was not set. Default 10 is set.")
             config.n_classes = 10
 
     except AttributeError:
