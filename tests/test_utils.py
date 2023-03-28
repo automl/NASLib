@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from naslib.utils import utils
+from naslib import utils
 from fvcore.common.config import CfgNode
 class UtilsTest(unittest.TestCase):
 

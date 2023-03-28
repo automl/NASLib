@@ -5,7 +5,8 @@ from naslib.defaults.predictor_evaluator import PredictorEvaluator
 from naslib.search_spaces import NasBench201SearchSpace
 from naslib.predictors import BayesianLinearRegression, BOHAMIANN, GPPredictor, RandomForestPredictor, LGBoost, \
     XGBoost, NGBoost
-from naslib.utils import get_dataset_api, utils
+from naslib import utils
+from naslib.utils import get_dataset_api
 
 x_data = np.load('assets/nb201_test_set_x.npy', allow_pickle=True)
 y_data = np.load('assets/nb201_test_set_y.npy', allow_pickle=True)
@@ -26,7 +27,7 @@ class PredictorsTest(unittest.TestCase):
         self.config = utils.get_config_from_args(self.args, config_type='predictor')
         self.search_space = supported_search_spaces[self.config.search_space]
         utils.set_seed(self.config.seed)
-        self.load_labeled = (True if self.config.search_space in ['darts', 'nlp'] else False)
+        self.load_labeled = (True if self.config.search_space in ['nasbench301', 'nlp'] else False)
         self.dataset_api = get_dataset_api(search_space='test')
 
     def test_configFile(self):

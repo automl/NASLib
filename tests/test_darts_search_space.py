@@ -3,12 +3,13 @@ import logging
 import torch
 import os
 
-from naslib.search_spaces import SimpleCellSearchSpace, DartsSearchSpace, HierarchicalSearchSpace, \
+from naslib.search_spaces import SimpleCellSearchSpace, NasBench301SearchSpace, HierarchicalSearchSpace, \
     NasBench201SearchSpace
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer, RandomNASOptimizer
-from naslib.utils import utils, setup_logger
+from naslib import utils
+from naslib.utils import setup_logger
 from naslib.search_spaces.core.primitives import Identity, SepConv, DilConv, Zero, MaxPool, AvgPool
-from naslib.search_spaces.darts.conversions import Genotype, convert_genotype_to_compact, \
+from naslib.search_spaces.nasbench301.conversions import Genotype, convert_genotype_to_compact, \
     convert_compact_to_genotype, convert_genotype_to_config, convert_config_to_genotype, \
     convert_genotype_to_naslib, convert_naslib_to_genotype, get_cell_of_type
 
@@ -38,7 +39,7 @@ class DartsDartsIntegrationTest(unittest.TestCase):
     def setUp(self):
         utils.set_seed(1)
         self.optimizer = DARTSOptimizer(**config.search)
-        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
+        self.optimizer.adapt_search_space(NasBench301SearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -59,7 +60,7 @@ class DartsGdasIntegrationTest(unittest.TestCase):
     def setUp(self):
         utils.set_seed(1)
         self.optimizer = GDASOptimizer(**config.search)
-        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
+        self.optimizer.adapt_search_space(NasBench301SearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -84,7 +85,7 @@ class DartsDrNasIntegrationTest(unittest.TestCase):
     def setUp(self):
         utils.set_seed(1)
         self.optimizer = DrNASOptimizer(**config.search)
-        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
+        self.optimizer.adapt_search_space(NasBench301SearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -109,7 +110,7 @@ class DartsRSWSIntegrationTest(unittest.TestCase):
     def setUp(self):
         utils.set_seed(1)
         self.optimizer = RandomNASOptimizer(**config.search)
-        self.optimizer.adapt_search_space(DartsSearchSpace(), config.dataset)
+        self.optimizer.adapt_search_space(NasBench301SearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -119,13 +120,13 @@ class DartsRSWSIntegrationTest(unittest.TestCase):
         self.assertAlmostEqual(stats[3].detach().cpu().numpy(), 2.3529072, places=3)
 
 
-class DartsSearchSpaceTest(unittest.TestCase):
+class NasBench301SearchSpaceTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
         self.optimizer_graph = DARTSOptimizer(**config.search)
         self.optimizer_subgraph = DARTSOptimizer(**config.search)
-        self.graph = DartsSearchSpace()
+        self.graph = NasBench301SearchSpace()
         self.subgraph = self.graph.nodes[4]['subgraph']
         self.optimizer_graph.adapt_search_space(self.graph, config.dataset)
         self.optimizer_subgraph.adapt_search_space(self.subgraph, config.dataset)
@@ -159,7 +160,7 @@ class DartsConversionsTest(unittest.TestCase):
     def setUp(self):
         utils.set_seed(1)
         self.optimizer = DARTSOptimizer(**config.search)
-        self.optimizer.graph = DartsSearchSpace()
+        self.optimizer.graph = NasBench301SearchSpace()
         self.genotype = Genotype(
             normal=[
                 ('max_pool_3x3', 0),

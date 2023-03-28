@@ -5,18 +5,21 @@ import yaml
 
 import numpy as np
 
+from naslib.utils.encodings import EncodingType
+
 
 def main(args):
 
     if args.config_type == 'bbo-bs':
         args.start_seed = int(args.start_seed)
         args.trials = int(args.trials)
-        num_config = 100 
+        num_config = 10
         
         # first generate the default config at config 0
         config_id = 0
         
         base_folder = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
+
         folder = f"{base_folder}/naslib/configs/bbo/configs_cpu/{args.search_space}/{args.dataset}/{args.optimizer}/config_{config_id}"
         os.makedirs(folder, exist_ok=True)       
             
@@ -56,7 +59,6 @@ def main(args):
                     "debug_predictor": False,
                 },
             }
-
 
             path = folder + f"/seed_{seed}.yaml"
 
@@ -116,7 +118,7 @@ def main(args):
             total_epochs = 108 - 1
         elif args.search_space == "nasbench201":
             total_epochs = 200 - 1
-        elif args.search_space == "darts":
+        elif args.search_space == "nasbench301":
             total_epochs = 96 - 1
         elif args.search_space == "nlp":
             total_epochs = 50 - 1
@@ -230,7 +232,7 @@ def main(args):
         elif args.search_space == "nasbench201":
             total_epochs = 200 - 1
             max_train_size = 1000
-        elif args.search_space == "darts":
+        elif args.search_space == "nasbench301":
             total_epochs = 96 - 1
             max_train_size = 500
         elif args.search_space == "nlp":
@@ -271,12 +273,12 @@ def main(args):
             fidelity_list.pop(0)
             fidelity_list.pop(0)
 
-        elif "omni" in args.predictor and args.search_space != "darts":
+        elif "omni" in args.predictor and args.search_space != "nasbench301":
             train_size_list.pop(0)
             train_size_list.pop(-1)
             fidelity_list.pop(1)
 
-        elif "omni" in args.predictor and args.search_space == "darts":
+        elif "omni" in args.predictor and args.search_space == "nasbench301":
             train_size_list.pop(0)
             train_size_list.pop(-1)
             fidelity_list.pop(1)
@@ -327,7 +329,7 @@ def main(args):
                     "num_ensemble": 3,
                     "acq_fn_type": "its",
                     "acq_fn_optimization": "random_sampling",
-                    "encoding_type": "adjacency_one_hot",
+                    "encoding_type": EncodingType.ADJACENCY_ONE_HOT,
                     "num_arches_to_mutate": 5,
                     "max_mutations": 1,
                     "num_candidates": 200,
@@ -418,7 +420,7 @@ if __name__ == "__main__":
         "--config_type", type=str, default="nas", help="nas or predictor?"
     )
     parser.add_argument(
-        "--search_space", type=str, default="nasbench201", help="nasbench201 or darts?"
+        "--search_space", type=str, default="nasbench201", help="nasbench201 or nasbench301?"
     )
     parser.add_argument(
         "--experiment_type", type=str, default="single", help="type of experiment"
@@ -449,6 +451,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--max_hpo_time", type=int, default=3000, help="HPO time"
+    )
+
+    parser.add_argument(
+        "--zerocost", type=str, default='none', help="ZeroCost proxy source"
     )
     
     args = parser.parse_args()

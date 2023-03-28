@@ -1,10 +1,11 @@
 import torch
+import pyro
 import pyro.contrib.gp as gp
 import pyro.distributions as dist
 import numpy as np
 
-from naslib.predictors.gp_base import BaseGPModel
-from naslib.utils.utils import AverageMeterGroup, TensorDatasetWithTrans
+from naslib.predictors.gp import BaseGPModel
+from naslib.utils import AverageMeterGroup, TensorDatasetWithTrans
 
 device = torch.device('cpu') #NOTE: faster on CPU
 
@@ -73,7 +74,8 @@ class DeepVarSparseGPPredictor(BaseGPModel):
         train_data = TensorDataset(X_tensor, y_tensor)
 
     def get_model(self, train_data, **kwargs):
-        deepgp = DeepVarSparseGP(
+        # deepgp = DeepVarSparseGP)
+        pass
 
     def train(self, train_data, optimize_gp_hyper=False):
         X_train, y_train = train_data

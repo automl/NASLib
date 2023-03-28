@@ -10,7 +10,7 @@ from collections.abc import Iterable
 
 from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.utils.utils import count_parameters_in_MB
+from naslib.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
 
 from naslib.optimizers.oneshot.gsparsity.ProxSGD_for_groups import ProxSGD

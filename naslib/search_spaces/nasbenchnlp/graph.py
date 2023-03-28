@@ -11,8 +11,9 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.nasbenchnlp.conversions import convert_recipe_to_compact, \
 make_compact_mutable, convert_compact_to_recipe
-from naslib.utils.utils import get_project_root
-from naslib.predictors.utils.encodings_nlp import encode_nlp
+from naslib.search_spaces.nasbenchnlp.encodings import encode_nlp
+from naslib.utils.encodings import EncodingType
+from naslib.utils import get_project_root
 
 
 HIDDEN_TUPLE_SIZE = 2
@@ -122,7 +123,7 @@ class NasBenchNLPSearchSpace(Graph):
             if self.accs is not None:
                 NotImplementedError("Training with extra epochs not yet supported")
 
-            arch = encode_nlp(self, encoding_type='adjacency_mix', max_nodes=12, accs=None)
+            arch = encode_nlp(self, encoding_type=EncodingType.ADJACENCY_MIX, max_nodes=12, accs=None)
             if metric == Metric.RAW:
                 # TODO: add raw results
                 return 0
@@ -367,3 +368,6 @@ class NasBenchNLPSearchSpace(Graph):
 
     def get_max_epochs(self):
         return 49
+
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        return encode_nlp(self, encoding_type=encoding_type)

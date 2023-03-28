@@ -1,7 +1,5 @@
-import collections
 import logging
 import torch
-import copy
 import numpy as np
 
 from naslib.optimizers.core.metaclasses import MetaOptimizer
@@ -9,20 +7,20 @@ from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.predictors.ensemble import Ensemble
 
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.search_spaces.core.graph import Graph
 
-from naslib.utils.utils import AttrDict, count_parameters_in_MB
-from naslib.utils.logging import log_every_n_seconds
+from naslib.utils import count_parameters_in_MB
 
+from fvcore.common.config import CfgNode
 
 logger = logging.getLogger(__name__)
 
 
 class BasePredictor(MetaOptimizer):
-
     # training the models is not implemented
     using_step_function = False
 
-    def __init__(self, config):
+    def __init__(self, config: CfgNode):
         super().__init__()
         self.config = config
         self.epochs = config.search.epochs
@@ -44,7 +42,7 @@ class BasePredictor(MetaOptimizer):
         self.choices = []
         self.history = torch.nn.ModuleList()
 
-    def adapt_search_space(self, search_space, scope=None, dataset_api=None):
+    def adapt_search_space(self, search_space: Graph, scope: str = None, dataset_api: dict = None):
         assert (
             search_space.QUERYABLE
         ), "Regularized evolution is currently only implemented for benchmarks."
@@ -53,13 +51,13 @@ class BasePredictor(MetaOptimizer):
         self.scope = scope if scope else search_space.OPTIMIZER_SCOPE
         self.dataset_api = dataset_api
 
-    def new_epoch(self, epoch):
+    def new_epoch(self, epoch: int):
 
         if epoch < self.num_init:
             # randomly sample initial architectures
             model = (
                 torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            )
             model.arch = self.search_space.clone()
             model.arch.sample_random_architecture(dataset_api=self.dataset_api)
             model.accuracy = model.arch.query(
@@ -82,7 +80,8 @@ class BasePredictor(MetaOptimizer):
                     predictor_type=self.predictor_type,
                     ss_type=self.search_space.get_type(),
                 )
-                train_error = ensemble.fit(xtrain, ytrain)
+                # train_error = ensemble.fit(xtrain, ytrain)
+                ensemble.fit(xtrain, ytrain)
 
                 xtest = []
                 for i in range(self.test_size):
@@ -98,21 +97,21 @@ class BasePredictor(MetaOptimizer):
                         xtrain=xtrain, ytrain=ytrain, xtest=xtest, test_pred=test_pred
                     )
 
-                sorted_indices = np.argsort(test_pred)[-self.k :]
+                sorted_indices = np.argsort(test_pred)[-self.k:]
                 for i in sorted_indices:
                     self.choices.append(xtest[i])
 
             # train the next chosen architecture
             choice = (
                 torch.nn.Module()
-            )  # hacky way to get arch and accuracy checkpointable
+            )
             choice.arch = self.choices[epoch - self.num_init]
             choice.accuracy = choice.arch.query(
                 self.performance_metric, self.dataset, dataset_api=self.dataset_api
             )
             self._update_history(choice)
 
-    def evaluate_predictor(self, xtrain, ytrain, xtest, test_pred, slice_size=4):
+    def evaluate_predictor(self, xtrain, ytrain, xtest, test_pred, slice_size: int = 4):
         """
         This method is only used for debugging purposes.
         Query the architectures in the set so that we can evaluate
@@ -150,11 +149,11 @@ class BasePredictor(MetaOptimizer):
                     self.history[i] = child
                     break
 
-    def train_statistics(self, report_incumbent=True):
+    def train_statistics(self, report_incumbent: bool = True):
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:
-            best_arch = self.history[-1].arch #TODO: Fix. Will break for after 100 epochs
+            best_arch = self.history[-1].arch
         return (
             best_arch.query(
                 Metric.TRAIN_ACCURACY, self.dataset, dataset_api=self.dataset_api

@@ -7,7 +7,8 @@ from naslib.search_spaces import HierarchicalSearchSpace
 from naslib.optimizers import DARTSOptimizer, GDASOptimizer, DrNASOptimizer
 from naslib.search_spaces.core.primitives import Zero1x1, Identity, MaxPool1x1, AvgPool1x1, SepConv
 from naslib.search_spaces.hierarchical.primitives import ConvBNReLU, DepthwiseConv
-from naslib.utils import utils, setup_logger
+from naslib import utils
+from naslib.utils import setup_logger
 
 logger = setup_logger(os.path.join(utils.get_project_root().parent, "tmp", "tests.log"))
 logger.handlers[0].setLevel(logging.FATAL)

@@ -7,13 +7,12 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
-from naslib.utils.utils import AverageMeterGroup
-from naslib.predictors.utils.encodings import encode
+from naslib.utils import AverageMeterGroup
+from naslib.utils.encodings import EncodingType
 from naslib.predictors import Predictor
 
 # NOTE: faster on CPU
 device = torch.device("cpu")
-print("device:", device)
 
 
 def accuracy_mse(prediction, target, scale=100.0):
@@ -67,7 +66,7 @@ class FeedforwardNet(nn.Module):
 class MLPPredictor(Predictor):
     def __init__(
         self,
-        encoding_type="adjacency_one_hot",
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT,
         ss_type="nasbench201",
         hpo_wrapper=False,
         hparams_from_file=False
@@ -109,7 +108,7 @@ class MLPPredictor(Predictor):
         if self.encoding_type is not None:
             _xtrain = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtrain
                 ]
             )
@@ -180,7 +179,7 @@ class MLPPredictor(Predictor):
         if self.encoding_type is not None:
             xtest = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtest
                 ]
             )

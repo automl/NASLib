@@ -379,10 +379,10 @@ class Stem(AbstractPrimitive):
     image input.
     """
 
-    def __init__(self, C_out, **kwargs):
+    def __init__(self, C_in=3, C_out=64, **kwargs):
         super().__init__(locals())
         self.seq = nn.Sequential(
-            nn.Conv2d(3, C_out, 3, padding=1, bias=False), nn.BatchNorm2d(C_out)
+            nn.Conv2d(C_in, C_out, 3, padding=1, bias=False), nn.BatchNorm2d(C_out)
         )
     def forward(self, x, edge_data=None):
         return self.seq(x)
@@ -646,10 +646,10 @@ class StemJigsaw(AbstractPrimitive):
     image input.
     """
 
-    def __init__(self, C_out, **kwargs):
+    def __init__(self, C_in=3, C_out=64, **kwargs):
         super().__init__(locals())
         self.seq = nn.Sequential(
-            nn.Conv2d(3, C_out, 3, padding=1, bias=False), nn.BatchNorm2d(C_out)
+            nn.Conv2d(C_in, C_out, 3, padding=1, bias=False), nn.BatchNorm2d(C_out)
         )
 #         self.seq = nn.Sequential(*list(models.resnet50().children())[:-2])
 

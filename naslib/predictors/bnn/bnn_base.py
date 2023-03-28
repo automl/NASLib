@@ -2,12 +2,12 @@ import numpy as np
 import os
 import json
 
-from naslib.predictors.utils.encodings import encode
+from naslib.utils.encodings import EncodingType
 from naslib.predictors.predictor import Predictor
 
 
 class BNN(Predictor):
-    def __init__(self, encoding_type="adjacency_one_hot", 
+    def __init__(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT,
                  ss_type="nasbench201", hparams_from_file=None):
         self.encoding_type = encoding_type
         self.ss_type = ss_type
@@ -23,7 +23,7 @@ class BNN(Predictor):
         if self.encoding_type is not None:
             _xtrain = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtrain
                 ]
             )
@@ -48,7 +48,7 @@ class BNN(Predictor):
         if self.encoding_type is not None:
             test_data = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtest
                 ]
             )

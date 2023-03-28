@@ -10,10 +10,11 @@ from naslib.predictors import OneShotPredictor
 from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
-    DartsSearchSpace,
+    NasBench301SearchSpace,
 )
-from naslib.utils import utils, setup_logger, get_dataset_api
-from naslib.utils.utils import get_project_root
+from naslib import utils
+from naslib.utils import setup_logger, get_dataset_api
+from naslib.utils import get_project_root
 
 
 config = utils.get_config_from_args(config_type="oneshot")
@@ -32,11 +33,11 @@ supported_optimizers = {
 supported_search_spaces = {
     "nasbench101": NasBench101SearchSpace(),
     "nasbench201": NasBench201SearchSpace(),
-    "darts": DartsSearchSpace(),
+    "nasbench301": NasBench301SearchSpace(),
 }
 
 
-# load_labeled = (True if config.search_space == 'darts' else False)
+# load_labeled = (True if config.search_space == 'nasbench301' else False)
 load_labeled = False
 dataset_api = get_dataset_api(config.search_space, config.dataset)
 utils.set_seed(config.seed)

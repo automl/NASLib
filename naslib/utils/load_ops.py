@@ -11,6 +11,9 @@ from skimage import io
 from torchvision.transforms import functional as F
 from pathlib import Path
 
+import transforms3d
+import itertools
+
 if sys.version_info < (3, 3):
     sequence = collections.Sequence
     Iterable = collections.Iterable
@@ -180,7 +183,7 @@ class ToTensor(T.ToTensor):
         if self.new_scale:
             min_val, max_val = self.new_scale
             image *= (max_val - min_val)
-            image += min_valkm
+            image += min_val
         return {'image': image, 'label': label}
     
     
@@ -410,3 +413,139 @@ def get_permutation_set(mode, classes=1000):
     assert mode in ['max', 'avg']
     permutation_path = os.path.join(Path(__file__).parent.parent, "data", f'permutations_hamming_{mode}_{classes}.npy')
     return np.load(permutation_path)
+
+def semantic_segment_label(label_path):
+
+    try:
+        label = io.imread(label_path)
+    except:
+        raise Exception(f'corrupted {label_path}!')
+    label[label == 0] = 1
+    label = label - 1
+
+    return label
+
+
+def get_camera_rot_matrix(view_dict, flip_xy=False):
+    return get_camera_matrix(view_dict, flip_xy=flip_xy)[:3, :3]
+
+
+def rotate_world_to_cam(points, view_dict):
+    cam_mat = get_camera_rot_matrix(view_dict, flip_xy=True)
+    new_points = cam_mat.T.dot(points).T[:, :3]
+    return new_points
+
+
+def get_camera_matrix(view_dict, flip_xy=False):
+    position = view_dict['camera_location']
+    rotation_euler = view_dict['camera_rotation_final']
+    R = transforms3d.euler.euler2mat(*rotation_euler, axes='sxyz')
+    camera_matrix = transforms3d.affines.compose(position, R, np.ones(3))
+
+    if flip_xy:
+        # For some reason the x and y are flipped in room layout
+        temp = np.copy(camera_matrix[0, :])
+        camera_matrix[0, :] = camera_matrix[1, :]
+        camera_matrix[1, :] = -temp
+    return camera_matrix
+
+
+def get_room_layout_cam_mat_and_ranges(view_dict, make_x_major=False):
+    # Get BB information
+    bbox_ranges = view_dict['bounding_box_ranges']
+    # BB seem to be off w.r.t. the camera matrix
+    ranges = [bbox_ranges['x'], -np.array(bbox_ranges['y'])[::-1], bbox_ranges['z']]
+
+    camera_matrix = get_camera_matrix(view_dict, flip_xy=True)
+    if not make_x_major:
+        return camera_matrix, ranges
+    # print(world_points[:,-1])
+    # print(view_dict['camera_location'])
+    axes_xyz = np.eye(3)
+    apply_90_deg_rot_k_times = [
+        transforms3d.axangles.axangle2mat(axes_xyz[-1], k * math.pi / 2)
+        for k in range(4)]
+
+    def make_world_x_major(view_dictx):
+        """ Rotates the world coords so that the -z direction of the camera
+            is within 45-degrees of the global +x axis """
+        global_x = np.array([axes_xyz[0]]).T
+        best = (180., "Nothing")
+        for world_rotx in apply_90_deg_rot_k_times:
+            global_x_in_cam = rotate_world_to_cam(
+                world_rotx.dot(global_x), view_dictx)
+            # Project onto camera's horizontal (xz) plane
+            degrees_away = math.degrees(
+                math.acos(np.dot(global_x_in_cam, -axes_xyz[2]))
+            )
+            best = min(best, (degrees_away, np.linalg.inv(world_rotx)))  # python is neat
+            # if abs(degrees_away) < 45.:
+            #     return np.linalg.inv(world_rot)
+        return best[-1]
+
+    def update_ranges(world_rotx, rangesx):
+        new_ranges = np.dot(world_rotx, rangesx)
+        for i, rng in enumerate(new_ranges):  # make sure rng[0] < rng[1]
+            if rng[0] > rng[1]:
+                new_ranges[i] = [rng[1], rng[0]]
+        return new_ranges
+
+    world_rot = np.zeros((4, 4))
+    world_rot[3, 3] = 1.
+    world_rot[:3, :3] = make_world_x_major(view_dict)
+    ranges = update_ranges(world_rot[:3, :3], ranges)
+    camera_matrix = np.dot(world_rot, camera_matrix)
+    return camera_matrix, ranges
+
+
+def point_info2room_layout(label_path):
+    """
+    Room Bounding Box.
+    Returns:
+    --------
+        bb: length 6 vector
+    """
+    try:
+        with open(label_path) as fp:
+            data = json.load(fp)
+    except:
+        print(f'corrupted: {label_path}!')
+        raise
+
+    def homogenize(M):
+        return np.concatenate([M, np.ones((M.shape[0], 1))], axis=1)
+
+    def convert_world_to_cam(points, cam_mat=None):
+        new_points = points.T
+        homogenized_points = homogenize(new_points)
+        new_points = np.dot(homogenized_points, np.linalg.inv(cam_mat).T)[:, :3]
+        return new_points
+
+    mean = np.array([-1.64378987e-02, 7.03680296e-02, -2.72496318e+00,
+                     1.56155458e+00, -2.83141191e-04, -1.57136446e+00,
+                     4.81219593e+00, 3.69077521e+00, 2.61998101e+00])
+    std = np.array([0.73644884, 0.53726124, 1.45194796,
+                    0.19338562, 0.01549811, 0.42258508,
+                    2.80763433, 1.92678054, 0.89655357])
+
+    camera_matrix, bb = get_room_layout_cam_mat_and_ranges(data, make_x_major=True)
+    camera_matrix_euler = transforms3d.euler.mat2euler(camera_matrix[:3, :3], axes='sxyz')
+    vertices = np.array(list(itertools.product(*bb)))
+    vertices_cam = convert_world_to_cam(vertices.T, camera_matrix)
+    cube_center = np.mean(vertices_cam, axis=0)
+
+    x_scale, y_scale, z_scale = bb[:, 1] - bb[:, 0]  # maxes - mins
+    bbox_cam = np.hstack(
+        (cube_center,
+         camera_matrix_euler,
+         x_scale, y_scale, z_scale))
+    bbox_cam = (bbox_cam - mean) / std
+    return bbox_cam
+
+
+def room_layout(label_path):
+    try:
+        bbox_cam = np.load(label_path)
+    except:
+        raise Exception(f'corrupted: {label_path}!')
+    return bbox_cam
