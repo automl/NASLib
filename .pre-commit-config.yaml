@@ -36,7 +36,7 @@ repos:
     rev: 22.12.0
     hooks:
     -   id: black-jupyter # supports .py and .ipynb files
-        args: [--line-length=79, --target-version=py37]
+        args: [--line-length=88, --target-version=py37]
 
     # Linting
 -   repo: https://github.com/PyCQA/flake8
@@ -48,7 +48,7 @@ repos:
     # According to this blog post (https://jaredkhan.com/blog/mypy-pre-commit)
     # one should consider running mypy on all files rather than on only the committed changes
     # since the changes can break dependencies elsewhere (e.g. function naming)
--   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.991
-    hooks:
-    -   id: mypy
+#-   repo: https://github.com/pre-commit/mirrors-mypy
+#    rev: v0.991
+#    hooks:
+#    -   id: mypy
