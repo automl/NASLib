@@ -13,8 +13,8 @@ logger.setLevel(logging.INFO)  # default DEBUG is very verbose
 
 search_space = NasBench301SearchSpace()  # use SimpleCellSearchSpace() for less heavy search
 
-optimizer = DARTSOptimizer(config)
-optimizer.adapt_search_space(search_space)
+optimizer = DARTSOptimizer(**config.search)
+optimizer.adapt_search_space(search_space, config.dataset)
 
 trainer = Trainer(optimizer, config)
 trainer.search()  # Search for an architecture

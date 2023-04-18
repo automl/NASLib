@@ -94,8 +94,8 @@ To get started, check out [`demo.py`](examples/demo.py).
 ```python
 search_space = SimpleCellSearchSpace()
 
-optimizer = DARTSOptimizer(config)
-optimizer.adapt_search_space(search_space)
+optimizer = DARTSOptimizer(**config.search)
+optimizer.adapt_search_space(search_space, config.dataset)
 
 trainer = Trainer(optimizer, config)
 trainer.search()        # Search for an architecture

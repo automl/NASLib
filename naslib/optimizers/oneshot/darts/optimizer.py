@@ -7,6 +7,7 @@ from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
 from naslib.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.utils.pytorch_helper import create_optimizer, create_criterion
 
 import naslib.search_spaces.core.primitives as ops
 
@@ -41,10 +42,17 @@ class DARTSOptimizer(MetaOptimizer):
 
     def __init__(
         self,
-        config,
-        op_optimizer=torch.optim.SGD,
-        arch_optimizer=torch.optim.Adam,
-        loss_criteria=torch.nn.CrossEntropyLoss(),
+        learning_rate: float = 0.025,
+        momentum: float = 0.9,
+        weight_decay: float = 0.0003,
+        grad_clip: int = 5,
+        unrolled: bool = False,
+        arch_learning_rate: float = 0.0003,
+        arch_weight_decay: float = 0.001,
+        op_optimizer: str = 'SGD',
+        arch_optimizer: str = 'Adam',
+        loss_criteria: str = 'CrossEntropyLoss',
+        **kwargs,
     ):
         """
         Initialize a new instance.
@@ -53,12 +61,17 @@ class DARTSOptimizer(MetaOptimizer):
 
         """
         super(DARTSOptimizer, self).__init__()
+        self.learning_rate = learning_rate
+        self.momentum = momentum
+        self.weight_decay = weight_decay
+        self.grad_clip = grad_clip
+        self.unrolled = unrolled
+        self.arch_learning_rate = arch_learning_rate
+        self.arch_weight_decay = arch_weight_decay
 
-        self.config = config
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
         self.loss = loss_criteria
-        self.grad_clip = self.config.search.grad_clip
 
         self.architectural_weights = torch.nn.ParameterList()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -66,9 +79,7 @@ class DARTSOptimizer(MetaOptimizer):
         self.perturb_alphas = None
         self.epsilon = 0
 
-        self.dataset = config.dataset
-
-    def adapt_search_space(self, search_space, scope=None, **kwargs):
+    def adapt_search_space(self, search_space, dataset, scope=None, **kwargs):
         # We are going to modify the search space
         self.search_space = search_space
         graph = search_space.clone()
@@ -94,25 +105,31 @@ class DARTSOptimizer(MetaOptimizer):
         #logger.info("Parsed graph:\n" + graph.modules_str())
 
         # Init optimizers
-        if self.arch_optimizer is not None:
-            self.arch_optimizer = self.arch_optimizer(
-                self.architectural_weights.parameters(),
-                lr=self.config.search.arch_learning_rate,
-                betas=(0.5, 0.999),
-                weight_decay=self.config.search.arch_weight_decay,
-            )
+        self.arch_optimizer = create_optimizer(
+            opt=self.arch_optimizer,
+            params=self.architectural_weights.parameters(),
+            lr=self.arch_learning_rate,
+            weight_decay=self.arch_weight_decay,
+            betas=(0.5, 0.999)
+        )
 
-        self.op_optimizer = self.op_optimizer(
-            graph.parameters(),
-            lr=self.config.search.learning_rate,
-            momentum=self.config.search.momentum,
-            weight_decay=self.config.search.weight_decay,
+        self.op_optimizer = create_optimizer(
+            opt=self.op_optimizer,
+            params=graph.parameters(),
+            lr=self.learning_rate,
+            momentum=self.momentum,
+            weight_decay=self.weight_decay,
+        )
+
+        self.loss = create_criterion(
+            crit=self.loss,
         )
 
         graph.train()
 
         self.graph = graph
         self.scope = scope
+        self.dataset = dataset
 
     def get_checkpointables(self):
         return {

@@ -1,7 +1,8 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from abc import abstractmethod
 
 
-class MetaOptimizer(object, metaclass=ABCMeta):
+class MetaOptimizer(metaclass=ABCMeta):
     """
     Abstract class for all NAS optimizers.
     """
@@ -40,7 +41,7 @@ class MetaOptimizer(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, dataset, scope=None):
         """
         Modify the search space to fit the optimizer's needs,
         e.g. discretize, add architectural parameters, ...
@@ -53,6 +54,7 @@ class MetaOptimizer(object, metaclass=ABCMeta):
 
         Args:
             search_space (Graph): The search space we are doing NAS in.
+            dataset (str): String representation of the used dataset
             scope (str or list(str)): The scope of the search space which
                 should be optimized by the optimizer.
         """
