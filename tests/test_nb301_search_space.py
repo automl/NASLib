@@ -117,7 +117,7 @@ class NasBench301SearchSpaceTest(unittest.TestCase):
 
         graph(torch.randn(3, 3, 32, 32))
         aux_out = graph.auxiliary_logits()
-        self.assertEqual(aux_out.shape, (3, 512, 8, 8))
+        self.assertEqual(aux_out.shape, (3, 256, 8, 8))
 
     def test_forward_pass_aux_head_eval(self):
         graph = create_model()
