@@ -74,7 +74,7 @@ class HierarchicalSearchSpace(Graph):
         self.add_nodes_from([i for i in range(1, 9)])
         self.add_edges_from([(i, i + 1) for i in range(1, 8)])
 
-        self.edges[1, 2].set("op", ops.Stem(16))
+        self.edges[1, 2].set("op", ops.Stem(C_out=16))
         self.edges[2, 3].set("op", cells[0])
         self.edges[3, 4].set(
             "op", ops.SepConv(16, 32, kernel_size=3, stride=2, padding=1)
@@ -117,7 +117,7 @@ class HierarchicalSearchSpace(Graph):
                     single_instances=False,
                 )
 
-        self.edges[1, 2].set("op", ops.Stem(channels[0]))
+        self.edges[1, 2].set("op", ops.Stem(C_out=channels[0]))
         self.edges[2, 3].set("op", cells[0].copy())
         self.edges[3, 4].set(
             "op",
@@ -191,7 +191,7 @@ class HierarchicalSearchSpace(Graph):
     #                 single_instances=False
     #             )
 
-    #     self.edges[1, 2].set('op', ops.Stem(channels[0]))
+    #     self.edges[1, 2].set('op', ops.Stem(C_out=channels[0]))
     #     self.edges[2, 3].set('op', cells[0].copy())
     #     self.edges[3, 4].set('op', ops.SepConv(channels[0], channels[1], kernel_size=3, stride=2, padding=1))
     #     self.edges[4, 5].set('op', cells[1].copy())
@@ -400,7 +400,7 @@ class LiuFinalArch(HierarchicalSearchSpace):
         self.add_nodes_from([i for i in range(1, 15)])
         self.add_edges_from([(i, i + 1) for i in range(1, 14)])
 
-        self.edges[1, 2].set("op", ops.Stem(channels[0]))
+        self.edges[1, 2].set("op", ops.Stem(C_out=channels[0]))
         self.edges[2, 3].set("op", cells[0].copy())
         self.edges[3, 4].set(
             "op",

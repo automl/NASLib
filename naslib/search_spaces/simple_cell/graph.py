@@ -139,7 +139,7 @@ class SimpleCellSearchSpace(Graph):
 
         # Compile the ops
         self.edges[1, 2].set(
-            "op", ops.Stem(channels[0])
+            "op", ops.Stem(C_out=channels[0])
         )  # we can also set a compiled op. Will be ignored by compile()
 
         def set_channels(edge, C):
