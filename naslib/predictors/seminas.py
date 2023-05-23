@@ -19,17 +19,16 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from naslib.utils.utils import AverageMeterGroup, AverageMeter
-from naslib.predictors.utils.encodings import encode
+from naslib.utils import AverageMeterGroup, AverageMeter
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
+from naslib.utils.encodings import EncodingType
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("device:", device)
 
 # default parameters from the paper
 n = 1100
-# m = 10000
+m = 10000
 nodes = 8
 new_arch = 300
 k = 100
@@ -512,7 +511,7 @@ def train_controller(model, train_input, train_target, epochs):
 class SemiNASPredictor(Predictor):
     def __init__(
         self,
-        encoding_type="seminas",
+        encoding_type=EncodingType.SEMINAS,
         ss_type=None,
         semi=False,
         hpo_wrapper=False,
@@ -536,9 +535,7 @@ class SemiNASPredictor(Predictor):
         # convert the architectures in self.unlabeled to the right encoding
         for i in range(num_synthetic):
             arch = self.unlabeled[i]
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )
@@ -604,7 +601,7 @@ class SemiNASPredictor(Predictor):
             decoder_length = 35
             vocab_size = 9
 
-        elif self.ss_type == "darts":
+        elif self.ss_type == "nasbench301":
             self.max_n = 35
             encoder_length = 629
             decoder_length = 629
@@ -636,9 +633,7 @@ class SemiNASPredictor(Predictor):
         train_seq_pool = []
         train_target_pool = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )
@@ -703,9 +698,7 @@ class SemiNASPredictor(Predictor):
 
         test_seq_pool = []
         for i, arch in enumerate(xtest):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             seq = convert_arch_to_seq(
                 encoded["adjacency"], encoded["operations"], max_n=self.max_n
             )

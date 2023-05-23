@@ -24,6 +24,30 @@ requirements = []
 with open("requirements.txt", "r") as f:
     for line in f:
         requirements.append(line.strip())
+git_nasbench301 = "git+https://github.com/automl/nasbench301@no_gin"
+
+try:
+    import nasbench301
+except ImportError:
+    print('Installing nasbench_pytorch')
+    if '--user' in sys.argv:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            '--user', git_nasbench301], check=False)
+    else:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            git_nasbench301], check=False)
+
+git_nasbench_pytorch = "git+https://github.com/romulus0914/NASBench-PyTorch@master"
+try:
+    import nasbench_pytorch
+except ImportError:
+    print('Installing nasbench_pytorch')
+    if '--user' in sys.argv:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            '--user', git_nasbench_pytorch], check=False)
+    else:
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--upgrade',
+            git_nasbench_pytorch], check=False)
 
 #git_nasbench = "git+https://github.com/yashsmehta/nasbench.git@master"
 #
@@ -53,6 +77,7 @@ setup(
     license='Apache License 2.0',
     classifiers=['Development Status :: 1 - Beta'],
     packages=find_packages(),
+    include_package_data=True,
     python_requires='>=3.7',
     platforms=['Linux'],
     install_requires=requirements,

@@ -7,13 +7,14 @@ import numpy as np
 import os
 import json
 
+from naslib.utils.encodings import EncodingType
 from naslib.predictors.gp import BaseGPModel
 
 
 class GPPredictor(BaseGPModel):
     def __init__(
         self,
-        encoding_type="adjacency_one_hot",
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT,
         ss_type="nasbench201",
         kernel_type="RBF",
         optimize_gp_hyper=True,

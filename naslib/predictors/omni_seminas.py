@@ -19,17 +19,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from naslib.utils import utils
-from naslib.utils.utils import AverageMeterGroup, AverageMeter
+from naslib import utils
+from naslib.utils import AverageMeterGroup, AverageMeter
 
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.utils.bin_thresholds import discretize, get_bins, get_lce_bins
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
-from naslib.predictors.zerocost_v1 import ZeroCostV1
-from naslib.predictors.zerocost_v2 import ZeroCostV2
+from naslib.predictors.zerocost import ZeroCost
 
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.nasbench201.conversions import convert_op_indices_to_naslib
@@ -37,11 +35,10 @@ from naslib.search_spaces import NasBench201SearchSpace
 
 logger = logging.getLogger(__name__)
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("device:", device)
 
 # default parameters from the paper
 n = 1100
-# m = 10000
+m = 10000
 nodes = 8
 new_arch = 300
 k = 100
@@ -561,9 +558,7 @@ class OmniSemiNASPredictor(Predictor):
         if self.encoding_type is not None:
             # convert the architecture to a categorical encoding
             for i, arch in enumerate(xdata):
-                encoded = encode(
-                    arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-                )
+                encoded = arch.encode(encoding_type=self.encoding_type)
                 seq = convert_arch_to_seq(
                     encoded["adjacency"], encoded["operations"], max_n=self.max_n
                 )
@@ -660,7 +655,7 @@ class OmniSemiNASPredictor(Predictor):
             self.encoder_length = 35
             self.decoder_length = 35
             self.vocab_size = 9
-        elif self.ss_type == "darts":
+        elif self.ss_type == "nasbench301":
             self.max_n = 35
             self.encoder_length = 629
             self.decoder_length = 629
@@ -818,14 +813,7 @@ class OmniSemiNASPredictor(Predictor):
             )
 
             for method_name in self.zero_cost:
-                if self.ss_type in ["nasbench101", "darts"]:
-                    zc_method = ZeroCostV2(
-                        self.config, batch_size=64, method_type=method_name
-                    )
-                else:
-                    zc_method = ZeroCostV1(
-                        self.config, batch_size=64, method_type=method_name
-                    )
+                zc_method = ZeroCost(method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
 
                 # save the raw scores, since bucketing depends on the train set size

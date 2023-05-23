@@ -1,5 +1,8 @@
 seed: 12
 out_dir: "tmp/test/hallo"
+search_space: darts
+optimizer: darts
+dataset: cifar10
 
 search:
   batch_size: 300

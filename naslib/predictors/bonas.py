@@ -16,13 +16,11 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from naslib.utils.utils import AverageMeterGroup
-from naslib.predictors.utils.encodings import encode
+from naslib.utils import AverageMeterGroup
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print("device:", device)
 
 
 def normalize(mx):
@@ -206,9 +204,7 @@ class BonasPredictor(Predictor):
         # encode data in gcn format
         train_data = []
         for i, arch in enumerate(xtrain):
-            encoded = encode(
-                arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-            )
+            encoded = arch.encode(encoding_type=self.encoding_type)
             encoded["val_acc"] = float(ytrain_normed[i])
             train_data.append(encoded)
         train_data = np.array(train_data)
@@ -253,7 +249,7 @@ class BonasPredictor(Predictor):
     def query(self, xtest, info=None, eval_batch_size=100):
         test_data = np.array(
             [
-                encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                arch.encode(encoding_type=self.encoding_type)
                 for arch in xtest
             ]
         )

@@ -6,8 +6,8 @@ from copy import deepcopy
 from naslib.search_spaces.core.graph import Graph, EdgeData
 from naslib.search_spaces.core import primitives as ops
 
-from ..darts.graph import _truncate_input_edges
-from ..darts.primitives import FactorizedReduce
+from ..nasbench301.graph import _truncate_input_edges
+from ..nasbench301.primitives import FactorizedReduce
 
 
 edge_attributes = {

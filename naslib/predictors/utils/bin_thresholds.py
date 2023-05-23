@@ -146,7 +146,7 @@ def get_bins(zero_cost, train_size, ss_type, dataset):
                 272.824,
             ]
 
-    elif ss_type == "darts" and zero_cost == "jacov":
+    elif ss_type == "nasbench301" and zero_cost == "jacov":
         # precomputation based on 100 jacov values (3414 sec on a CPU)
         if train_size <= 10:
             bins = [-273.487]

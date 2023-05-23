@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 from naslib.search_spaces.core.primitives import AbstractPrimitive, MixedOp
 from naslib.optimizers.oneshot.darts.optimizer import DARTSOptimizer
-from naslib.utils.utils import count_parameters_in_MB
+from naslib.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
 
 import naslib.search_spaces.core.primitives as ops
@@ -46,10 +46,18 @@ class DrNASOptimizer(DARTSOptimizer):
 
     def __init__(
         self,
-        config,
-        op_optimizer=torch.optim.SGD,
-        arch_optimizer=torch.optim.Adam,
-        loss_criteria=torch.nn.CrossEntropyLoss(),
+        learning_rate: float = 0.025,
+        momentum: float = 0.9,
+        weight_decay: float = 0.0003,
+        grad_clip: int = 5,
+        unrolled: bool = False,
+        arch_learning_rate: float = 0.0003,
+        arch_weight_decay: float = 0.001,
+        epochs: int = 50,
+        op_optimizer: str = 'SGD',
+        arch_optimizer: str = 'Adam',
+        loss_criteria: str = 'CrossEntropyLoss',
+        **kwargs
     ):
         """
         Initialize a new instance.
@@ -57,22 +65,22 @@ class DrNASOptimizer(DARTSOptimizer):
         Args:
 
         """
-        super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
+        super().__init__(learning_rate, momentum, weight_decay, grad_clip, unrolled, arch_learning_rate, arch_weight_decay, op_optimizer, arch_optimizer, loss_criteria)
         self.reg_type = "kl"
         self.reg_scale = 1e-3
         # self.reg_scale = config.reg_scale
-        self.epochs = config.search.epochs
+        self.epochs = epochs
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def new_epoch(self, epoch):
         super().new_epoch(epoch)
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, dataset, scope=None):
         """
         Same as in darts with a different mixop.
         If you want to checkpoint the dirichlet 'concentration' parameter (beta) add it to the buffer here.
         """
-        super().adapt_search_space(search_space, scope)
+        super().adapt_search_space(search_space, dataset, scope)
         self.anchor = Dirichlet(
             torch.ones_like(
                 torch.nn.utils.parameters_to_vector(self.architectural_weights)

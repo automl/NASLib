@@ -1,5 +1,7 @@
 <div align="center">
-  <img src="images/naslib-logo.png" width="650" height="400">
+  ** For the <a href='https://codalab.lisn.upsaclay.fr/competitions/3932'>Zero-Cost NAS Competition</a>, please switch to the <a href='https://github.com/automl/NASLib/tree/automl-conf-competition'><code>automl-conf-competition</code></a> branch ** <br><br>
+
+  <img src="images/naslib-logo.png" width="400" height="250">
 </div>
 
 <p align="center">
@@ -17,7 +19,13 @@
   </a>
 </p>
 
+<p align="center">
+  <img src="https://repobeats.axiom.co/api/embed/44112451b6b665f03b7c7dc35dbeff8050df036f.svg" width="750" />
+</p>
 
+
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 **NASLib** is a modular and flexible framework created with the aim of providing a common codebase to the community to facilitate research on **Neural Architecture Search** (NAS). It offers high-level abstractions for designing and reusing search spaces, interfaces to benchmarks and evaluation pipelines, enabling the implementation and extension of state-of-the-art NAS methods with a few lines of code. The modularized nature of NASLib
 allows researchers to easily innovate on individual components (e.g., define a new
 search space while reusing an optimizer and evaluation pipeline, or propose a new
@@ -86,8 +94,8 @@ To get started, check out [`demo.py`](examples/demo.py).
 ```python
 search_space = SimpleCellSearchSpace()
 
-optimizer = DARTSOptimizer(config)
-optimizer.adapt_search_space(search_space)
+optimizer = DARTSOptimizer(**config.search)
+optimizer.adapt_search_space(search_space, config.dataset)
 
 trainer = Trainer(optimizer, config)
 trainer.search()        # Search for an architecture
@@ -140,8 +148,9 @@ and our paper: <a href="https://arxiv.org/abs/2104.01177">How Powerful are Perfo
 ```bibtex
 @article{white2021powerful,
   title={How Powerful are Performance Predictors in Neural Architecture Search?},
-  author={White, Colin and Zela, Arber and Ru, Binxin and Liu, Yang and Hutter, Frank},
-  journal={arXiv preprint arXiv:2104.01177},
+  author={White, Colin and Zela, Arber and Ru, Robin and Liu, Yang and Hutter, Frank},
+  journal={Advances in Neural Information Processing Systems},
+  volume={34},
   year={2021}
 }
 ```

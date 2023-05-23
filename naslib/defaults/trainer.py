@@ -1,5 +1,6 @@
 import codecs
 from naslib.search_spaces.core.graph import Graph
+from naslib.utils.vis import plot_architectural_weights
 import time
 import json
 import logging
@@ -12,8 +13,8 @@ from fvcore.common.checkpoint import PeriodicCheckpointer
 
 from naslib.search_spaces.core.query_metrics import Metric
 
-from naslib.utils import utils
-from naslib.utils.logging import log_every_n_seconds, log_first_n
+from naslib import utils
+from naslib.utils.log import log_every_n_seconds, log_first_n
 
 from typing import Callable
 from .additional_primitives import DropPathWrapper
@@ -57,8 +58,8 @@ class Trainer(object):
         self.val_loss = utils.AverageMeter()
 
         n_parameters = optimizer.get_model_size()
-        logger.info("param size = %fMB", n_parameters)
-        self.errors_dict = utils.AttrDict(
+        # logger.info("param size = %fMB", n_parameters)
+        self.search_trajectory = utils.AttrDict(
             {
                 "train_acc": [],
                 "train_loss": [],
@@ -83,7 +84,7 @@ class Trainer(object):
             resume_from (str): Checkpoint file to resume from. If not given then
                 train from scratch.
         """
-        logger.info("Start training")
+        logger.info("Beginning search")
 
         np.random.seed(self.config.search.seed)
         torch.manual_seed(self.config.search.seed)
@@ -106,6 +107,7 @@ class Trainer(object):
                 self.config
             )
 
+        arch_weights = []
         for e in range(start_epoch, self.epochs):
 
             start_time = time.time()
@@ -113,13 +115,20 @@ class Trainer(object):
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
-                                                    
+                    
+                    if self.config.save_arch_weights is True:
+                        if len(arch_weights) == 0:
+                            for edge_weights in self.optimizer.architectural_weights:
+                                arch_weights.append(torch.unsqueeze(edge_weights.detach(), dim=0))
+                        else:
+                            for i, edge_weights in enumerate(self.optimizer.architectural_weights):
+                                arch_weights[i] = torch.cat((arch_weights[i], torch.unsqueeze(edge_weights.detach(), dim=0)), dim=0)
+                    
                     data_train = (
                         data_train[0].to(self.device),
                         data_train[1].to(self.device, non_blocking=True),
                     )
                     data_val = next(iter(self.valid_queue))
-                    
                     data_val = (
                         data_val[0].to(self.device),
                         data_val[1].to(self.device, non_blocking=True),
@@ -153,11 +162,11 @@ class Trainer(object):
 
                 end_time = time.time()
 
-                self.errors_dict.train_acc.append(self.train_top1.avg)
-                self.errors_dict.train_loss.append(self.train_loss.avg)
-                self.errors_dict.valid_acc.append(self.val_top1.avg)
-                self.errors_dict.valid_loss.append(self.val_loss.avg)
-                self.errors_dict.runtime.append(end_time - start_time)
+                self.search_trajectory.train_acc.append(self.train_top1.avg)
+                self.search_trajectory.train_loss.append(self.train_loss.avg)
+                self.search_trajectory.valid_acc.append(self.val_top1.avg)
+                self.search_trajectory.valid_loss.append(self.val_loss.avg)
+                self.search_trajectory.runtime.append(end_time - start_time)
             else:
                 end_time = time.time()
                 # TODO: nasbench101 does not have train_loss, valid_loss, test_loss implemented, so this is a quick fix for now
@@ -170,28 +179,28 @@ class Trainer(object):
                 ) = self.optimizer.train_statistics(report_incumbent)
                 train_loss, valid_loss, test_loss = -1, -1, -1
 
-                self.errors_dict.train_acc.append(train_acc)
-                self.errors_dict.train_loss.append(train_loss)
-                self.errors_dict.valid_acc.append(valid_acc)
-                self.errors_dict.valid_loss.append(valid_loss)
-                self.errors_dict.test_acc.append(test_acc)
-                self.errors_dict.test_loss.append(test_loss)
-                self.errors_dict.runtime.append(end_time - start_time)
-                self.errors_dict.train_time.append(train_time)
+                self.search_trajectory.train_acc.append(train_acc)
+                self.search_trajectory.train_loss.append(train_loss)
+                self.search_trajectory.valid_acc.append(valid_acc)
+                self.search_trajectory.valid_loss.append(valid_loss)
+                self.search_trajectory.test_acc.append(test_acc)
+                self.search_trajectory.test_loss.append(test_loss)
+                self.search_trajectory.runtime.append(end_time - start_time)
+                self.search_trajectory.train_time.append(train_time)
                 self.train_top1.avg = train_acc
                 self.val_top1.avg = valid_acc
 
             self.periodic_checkpointer.step(e)
 
             anytime_results = self.optimizer.test_statistics()
-            if anytime_results:
+            # if anytime_results:
                 # record anytime performance
-                self.errors_dict.arch_eval.append(anytime_results)
-                log_every_n_seconds(
-                    logging.INFO,
-                    "Epoch {}, Anytime results: {}".format(e, anytime_results),
-                    n=5,
-                )
+                # self.search_trajectory.arch_eval.append(anytime_results)
+                # log_every_n_seconds(
+                #     logging.INFO,
+                #     "Epoch {}, Anytime results: {}".format(e, anytime_results),
+                #     n=5,
+                # )
 
             self._log_to_json()
 
@@ -199,6 +208,12 @@ class Trainer(object):
 
             if after_epoch is not None:
                 after_epoch(e)
+
+        logger.info(f"Saving architectural weight tensors: {self.config.save}/arch_weights.pt")
+        if hasattr(self.config, "save_arch_weights") and self.config.save_arch_weights:
+            torch.save(arch_weights, f'{self.config.save}/arch_weights.pt')
+            if hasattr(self.config, "plot_arch_weights") and self.config.plot_arch_weights:
+                plot_architectural_weights(self.config, self.optimizer)
 
         self.optimizer.after_training()
 
@@ -242,9 +257,9 @@ class Trainer(object):
 
             end_time = time.time()
 
-            self.errors_dict.valid_acc.append(self.val_top1.avg)
-            self.errors_dict.valid_loss.append(self.val_loss.avg)
-            self.errors_dict.runtime.append(end_time - start_time)
+            self.search_trajectory.valid_acc.append(self.val_top1.avg)
+            self.search_trajectory.valid_loss.append(self.val_loss.avg)
+            self.search_trajectory.runtime.append(end_time - start_time)
 
             self._log_to_json()
 
@@ -286,7 +301,7 @@ class Trainer(object):
             self._setup_checkpointers(search_model)  # required to load the architecture
 
             best_arch = self.optimizer.get_final_architecture()
-        logger.info("Final architecture:\n" + best_arch.modules_str())
+        logger.info(f"Final architecture hash: {best_arch.get_hash()}")
 
         if best_arch.QUERYABLE:
             if metric is None:
@@ -295,6 +310,7 @@ class Trainer(object):
                 metric=metric, dataset=self.config.dataset, dataset_api=dataset_api
             )
             logger.info("Queried results ({}): {}".format(metric, result))
+            return result
         else:
             best_arch.to(self.device)
             if retrain:
@@ -454,6 +470,8 @@ class Trainer(object):
                 )
             )
 
+            return top1.avg
+
     @staticmethod
     def build_search_dataloaders(config):
         train_queue, valid_queue, test_queue, _, _ = utils.get_train_val_loaders(
@@ -495,12 +513,10 @@ class Trainer(object):
 
     def _log_and_reset_accuracies(self, epoch, writer=None):
         logger.info(
-            "Epoch {} done. Train accuracy (top1, top5): {:.5f}, {:.5f}, Validation accuracy: {:.5f}, {:.5f}".format(
+            "Epoch {} done. Train accuracy: {:.5f}, Validation accuracy: {:.5f}".format(
                 epoch,
                 self.train_top1.avg,
-                self.train_top5.avg,
                 self.val_top1.avg,
-                self.val_top5.avg,
             )
         )
 
@@ -523,16 +539,7 @@ class Trainer(object):
         """Update the accuracy counters"""
         logits = logits.clone().detach().cpu()
         target = target.clone().detach().cpu()
-        
-        if self.config.dataset == 'class_object':
-            prec1, prec5 = utils.accuracy_class_object(logits, target, topk=(1, 5))
-        elif self.config.dataset == 'class_scene':
-            prec1, prec5 = utils.accuracy_class_scene(logits, target, topk=(1, 5))
-        elif self.config.dataset == 'autoencoder':
-            prec1, prec5 = utils.accuracy_autoencoder(logits, target, topk=(1, 5))
-        else:
-            prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
-    
+        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
         n = logits.size(0)
 
         if split == "train":
@@ -608,12 +615,12 @@ class Trainer(object):
             with codecs.open(
                 os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                json.dump(self.errors_dict, file, separators=(",", ":"))
+                json.dump(self.search_trajectory, file, separators=(",", ":"))
         else:
             with codecs.open(
                 os.path.join(self.config.save, "errors.json"), "w", encoding="utf-8"
             ) as file:
-                lightweight_dict = copy.deepcopy(self.errors_dict)
+                lightweight_dict = copy.deepcopy(self.search_trajectory)
                 for key in ["arch_eval", "train_loss", "valid_loss", "test_loss"]:
                     lightweight_dict.pop(key)
                 json.dump([self.config, lightweight_dict], file, separators=(",", ":"))

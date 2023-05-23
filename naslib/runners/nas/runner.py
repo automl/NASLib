@@ -15,14 +15,14 @@ from naslib.optimizers import (
 from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
-    DartsSearchSpace,
+    NasBench301SearchSpace,
     NasBenchNLPSearchSpace,
     TransBench101SearchSpaceMicro,
     TransBench101SearchSpaceMacro,
     NasBenchASRSearchSpace
 )
-
-from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib import utils
+from naslib.utils import setup_logger, get_dataset_api
 
 from naslib.search_spaces.transbench101.loss import SoftmaxCrossEntropyWithLogits
 
@@ -47,7 +47,7 @@ supported_optimizers = {
 supported_search_spaces = {
     'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
-    'darts': DartsSearchSpace(),
+    'nasbench301': NasBench301SearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
     'transbench101_macro': TransBench101SearchSpaceMacro(),

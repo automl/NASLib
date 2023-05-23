@@ -9,10 +9,11 @@ from naslib.search_spaces.core import primitives as core_ops
 from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces.core.graph import Graph
 from naslib.search_spaces.nasbenchasr.primitives import CellLayerNorm, Head, ops, PadConvReluNorm
-from naslib.utils.utils import get_project_root
+from naslib.utils import get_project_root
 from naslib.search_spaces.nasbenchasr.conversions import flatten, \
-copy_structure, make_compact_mutable, make_compact_immutable
-
+    copy_structure, make_compact_mutable, make_compact_immutable
+from naslib.search_spaces.nasbenchasr.encodings import encode_asr
+from naslib.utils.encodings import EncodingType
 
 OP_NAMES = ['linear', 'conv5', 'conv5d2', 'conv7', 'conv7d2', 'zero']
 
@@ -31,7 +32,6 @@ class NasBenchASRSearchSpace(Graph):
         'cells_stage_3',
         'cells_stage_4'
     ]
-
 
     def __init__(self):
         super().__init__()
@@ -54,22 +54,21 @@ class NasBenchASRSearchSpace(Graph):
 
         self._create_macro_graph()
 
-
     def _create_macro_graph(self):
         cell = self._create_cell()
 
         # Macrograph defintion
         n_nodes = self.n_blocks + 2
-        self.add_nodes_from(range(1, n_nodes+1))
+        self.add_nodes_from(range(1, n_nodes + 1))
 
         for node in range(1, n_nodes):
-            self.add_edge(node, node+1)
+            self.add_edge(node, node + 1)
 
         # Create the cell blocks and add them as subgraphs of nodes 2 ... 5
-        for idx, node in enumerate(range(2, 2+self.n_blocks)):
-            scope = f'cells_stage_{idx+1}'
+        for idx, node in enumerate(range(2, 2 + self.n_blocks)):
+            scope = f'cells_stage_{idx + 1}'
             cells_block = self._create_cells_block(cell, n=self.n_cells_per_block[idx], scope=scope)
-            self.nodes[node]['subgraph'] = cells_block.set_input([node-1])
+            self.nodes[node]['subgraph'] = cells_block.set_input([node - 1])
 
             # Assign the list of operations to the cell edges
             cells_block.update_edges(
@@ -80,9 +79,9 @@ class NasBenchASRSearchSpace(Graph):
 
         # Assign the PadConvReluNorm operation to the edges of the macro graph
         start_node = 1
-        for idx, node in enumerate(range(start_node, start_node+self.n_blocks)):
+        for idx, node in enumerate(range(start_node, start_node + self.n_blocks)):
             op = PadConvReluNorm(
-                in_channels= self.features if node==start_node else self.filters[idx-1],
+                in_channels=self.features if node == start_node else self.filters[idx - 1],
                 out_channels=self.filters[idx],
                 kernel_size=self.cnn_time_reduction_kernels[idx],
                 dilation=1,
@@ -91,24 +90,23 @@ class NasBenchASRSearchSpace(Graph):
                 name=f'conv_{idx}'
             )
 
-            self.edges[node, node+1].set('op', op)
+            self.edges[node, node + 1].set('op', op)
 
         # Assign the LSTM + Linear layer to the last edge in the macro graph
         head = Head(self.dropout_rate, self.filters[-1], self.num_classes)
         self.edges[self.n_blocks + 1, self.n_blocks + 2].set('op', head)
 
-
     def _create_cells_block(self, cell, n, scope):
         block = Graph()
         block.name = f'{n}_cells_block'
 
-        block.add_nodes_from(range(1, n+2))
+        block.add_nodes_from(range(1, n + 2))
 
-        for node in range(2, n+2):
-            block.add_node(node, subgraph=cell.copy().set_scope(scope).set_input([node-1]))
+        for node in range(2, n + 2):
+            block.add_node(node, subgraph=cell.copy().set_scope(scope).set_input([node - 1]))
 
-        for node in range(1, n+2):
-            block.add_edge(node, node+1)
+        for node in range(1, n + 2):
+            block.add_edge(node, node + 1)
 
         return block
 
@@ -129,15 +127,14 @@ class NasBenchASRSearchSpace(Graph):
 
         # Create edges
         for i in range(1, 7):
-            cell.add_edge(i, i+1)
+            cell.add_edge(i, i + 1)
 
         for i in range(1, 6, 2):
             for j in range(i + 2, 8, 2):
                 cell.add_edge(i, j)
 
-
         cell.add_node(8)
-        cell.add_edge(7, 8) # For optional layer normalization
+        cell.add_edge(7, 8)  # For optional layer normalization
 
         return cell
 
@@ -165,7 +162,6 @@ class NasBenchASRSearchSpace(Graph):
             Metric.RAW,
         ]
         query_results = dataset_api["asr_data"].full_info(self.compact)
-
 
         if metric != Metric.VAL_ACCURACY:
             if metric == Metric.TEST_ACCURACY:
@@ -199,7 +195,7 @@ class NasBenchASRSearchSpace(Graph):
         self.compact = make_compact_immutable(compact)
 
     def sample_random_architecture(self, dataset_api):
-        search_space = [[len(OP_NAMES)] + [2]*(idx+1) for idx in
+        search_space = [[len(OP_NAMES)] + [2] * (idx + 1) for idx in
                         range(self.max_nodes)]
         flat = flatten(search_space)
         m = [random.randrange(opts) for opts in flat]
@@ -248,13 +244,12 @@ class NasBenchASRSearchSpace(Graph):
 
         self.set_compact(compact)
 
-
     def get_nbhd(self, dataset_api=None):
         """
         Return all neighbors of the architecture
         """
         compact = self.get_compact()
-        #edges, ops, hiddens = compact
+        # edges, ops, hiddens = compact
         nbhd = []
 
         def add_to_nbhd(new_compact, nbhd):
@@ -295,13 +290,15 @@ class NasBenchASRSearchSpace(Graph):
     def get_max_epochs(self):
         return 39
 
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        return encode_asr(self, encoding_type=encoding_type)
+
 
 def _set_cell_edge_ops(edge, filters, use_norm):
-
     if use_norm and edge.head == 7:
         edge.data.set('op', CellLayerNorm(filters))
         edge.data.finalize()
-    elif edge.head % 2 == 0: # Edge from intermediate node
+    elif edge.head % 2 == 0:  # Edge from intermediate node
         edge.data.set(
             'op', [
                 ops['linear'](filters, filters),
@@ -312,7 +309,7 @@ def _set_cell_edge_ops(edge, filters, use_norm):
                 ops['zero'](filters, filters)
             ]
         )
-    elif edge.tail % 2 == 0: # Edge to intermediate node. Should always be Identity.
+    elif edge.tail % 2 == 0:  # Edge to intermediate node. Should always be Identity.
         edge.data.finalize()
     else:
         edge.data.set(

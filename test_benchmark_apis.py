@@ -6,7 +6,7 @@ import contextlib
 from naslib.search_spaces import (
         NasBench101SearchSpace,
         NasBench201SearchSpace,
-        DartsSearchSpace,
+        NasBench301SearchSpace,
         NasBenchNLPSearchSpace,
         NasBenchASRSearchSpace,
         TransBench101SearchSpaceMacro,
@@ -18,7 +18,7 @@ from naslib.utils import get_dataset_api
 search_spaces = {
     'nasbench101': NasBench101SearchSpace,
     'nasbench201': NasBench201SearchSpace,
-    'darts': DartsSearchSpace,
+    'nasbench301': NasBench301SearchSpace,
     'nlp': NasBenchNLPSearchSpace,
     'asr': NasBenchASRSearchSpace,
     'transbench101_micro': TransBench101SearchSpaceMicro,
@@ -28,7 +28,7 @@ search_spaces = {
 tasks = {
     'nasbench101': ['cifar10'],
     'nasbench201': ['cifar10', 'cifar100', 'ImageNet16-120'],
-    'darts': ['cifar10'],
+    'nasbench301': ['cifar10'],
     'nlp': ['treebank'],
     'asr': ['timit'],
     'transbench101_micro': [

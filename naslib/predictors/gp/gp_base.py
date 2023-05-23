@@ -3,14 +3,14 @@ import torch
 import pyro
 import pyro.contrib.gp as gp
 
-from naslib.predictors.utils.encodings import encode
+from naslib.utils.encodings import EncodingType
 from naslib.predictors.predictor import Predictor
 
 
 class BaseGPModel(Predictor):
     def __init__(
         self,
-        encoding_type="adjacency_one_hot",
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT,
         ss_type="nasbench201",
         kernel_type=None,
         optimize_gp_hyper=False,
@@ -59,7 +59,7 @@ class BaseGPModel(Predictor):
         if self.encoding_type is not None:
             xtrain = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtrain
                 ]
             )
@@ -91,7 +91,7 @@ class BaseGPModel(Predictor):
         if self.encoding_type is not None:
             xtest = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xtest
                 ]
             )

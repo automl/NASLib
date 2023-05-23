@@ -1,0 +1,28 @@
+batch_size: 32
+config_type: zc_example
+cutout: false
+cutout_length: 16
+cutout_prob: 1.0
+dataset: cifar10
+out_dir: run
+predictor: fisher
+search_space: nasbench101 #nasbench201 #nasbench301
+seed: 0
+test_size: 200
+train_size: 400
+zc_ensemble: true
+zc_only: true
+zc_names:
+  - params
+  - flops
+  - jacov
+  - plain
+  - grasp
+  - snip
+  - fisher
+  - grad_norm
+  - epe_nas
+  - synflow
+  - l2_norm
+optimizer: npenas
+train_portion: 0.7

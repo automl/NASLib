@@ -10,9 +10,8 @@ from ngboost.scores import LogScore
 
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
-from naslib.predictors.zerocost_v1 import ZeroCostV1
-from naslib.predictors.utils.encodings import encode
-from naslib.utils import utils
+from naslib.predictors.zerocost import ZeroCost
+from naslib import utils
 from naslib.search_spaces.core.query_metrics import Metric
 
 logger = logging.getLogger(__name__)
@@ -67,9 +66,7 @@ class OmniNGBPredictor(Predictor):
             )
 
             for method_name in self.zero_cost:
-                zc_method = ZeroCostV1(
-                    self.config, batch_size=64, method_type=method_name
-                )
+                zc_method = ZeroCost(method_type=method_name)
                 zc_method.train_loader = copy.deepcopy(self.train_loader)
                 xtrain_zc_scores = zc_method.query(xtrain)
                 xtest_zc_scores = zc_method.query(xtest)
@@ -167,7 +164,7 @@ class OmniNGBPredictor(Predictor):
         if self.encoding_type is not None:
             xdata_encoded = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xdata
                 ]
             )

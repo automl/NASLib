@@ -5,8 +5,9 @@ from torch.autograd import Variable
 
 from naslib.search_spaces.core.primitives import MixedOp
 from naslib.optimizers.core.metaclasses import MetaOptimizer
-from naslib.utils.utils import count_parameters_in_MB
+from naslib.utils import count_parameters_in_MB
 from naslib.search_spaces.core.query_metrics import Metric
+from naslib.utils.pytorch_helper import create_optimizer, create_criterion
 
 import naslib.search_spaces.core.primitives as ops
 
@@ -41,10 +42,17 @@ class DARTSOptimizer(MetaOptimizer):
 
     def __init__(
         self,
-        config,
-        op_optimizer=torch.optim.SGD,
-        arch_optimizer=torch.optim.Adam,
-        loss_criteria=torch.nn.CrossEntropyLoss(),
+        learning_rate: float = 0.025,
+        momentum: float = 0.9,
+        weight_decay: float = 0.0003,
+        grad_clip: int = 5,
+        unrolled: bool = False,
+        arch_learning_rate: float = 0.0003,
+        arch_weight_decay: float = 0.001,
+        op_optimizer: str = 'SGD',
+        arch_optimizer: str = 'Adam',
+        loss_criteria: str = 'CrossEntropyLoss',
+        **kwargs,
     ):
         """
         Initialize a new instance.
@@ -53,12 +61,17 @@ class DARTSOptimizer(MetaOptimizer):
 
         """
         super(DARTSOptimizer, self).__init__()
+        self.learning_rate = learning_rate
+        self.momentum = momentum
+        self.weight_decay = weight_decay
+        self.grad_clip = grad_clip
+        self.unrolled = unrolled
+        self.arch_learning_rate = arch_learning_rate
+        self.arch_weight_decay = arch_weight_decay
 
-        self.config = config
         self.op_optimizer = op_optimizer
         self.arch_optimizer = arch_optimizer
         self.loss = loss_criteria
-        self.grad_clip = self.config.search.grad_clip
 
         self.architectural_weights = torch.nn.ParameterList()
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -66,9 +79,7 @@ class DARTSOptimizer(MetaOptimizer):
         self.perturb_alphas = None
         self.epsilon = 0
 
-        self.dataset = config.dataset
-
-    def adapt_search_space(self, search_space, scope=None, **kwargs):
+    def adapt_search_space(self, search_space, dataset, scope=None, **kwargs):
         # We are going to modify the search space
         self.search_space = search_space
         graph = search_space.clone()
@@ -94,25 +105,31 @@ class DARTSOptimizer(MetaOptimizer):
         #logger.info("Parsed graph:\n" + graph.modules_str())
 
         # Init optimizers
-        if self.arch_optimizer is not None:
-            self.arch_optimizer = self.arch_optimizer(
-                self.architectural_weights.parameters(),
-                lr=self.config.search.arch_learning_rate,
-                betas=(0.5, 0.999),
-                weight_decay=self.config.search.arch_weight_decay,
-            )
+        self.arch_optimizer = create_optimizer(
+            opt=self.arch_optimizer,
+            params=self.architectural_weights.parameters(),
+            lr=self.arch_learning_rate,
+            weight_decay=self.arch_weight_decay,
+            betas=(0.5, 0.999)
+        )
 
-        self.op_optimizer = self.op_optimizer(
-            graph.parameters(),
-            lr=self.config.search.learning_rate,
-            momentum=self.config.search.momentum,
-            weight_decay=self.config.search.weight_decay,
+        self.op_optimizer = create_optimizer(
+            opt=self.op_optimizer,
+            params=graph.parameters(),
+            lr=self.learning_rate,
+            momentum=self.momentum,
+            weight_decay=self.weight_decay,
+        )
+
+        self.loss = create_criterion(
+            crit=self.loss,
         )
 
         graph.train()
 
         self.graph = graph
         self.scope = scope
+        self.dataset = dataset
 
     def get_checkpointables(self):
         return {
@@ -259,94 +276,7 @@ class DARTSOptimizer(MetaOptimizer):
         eta,
         network_optimizer,
     ):
-        unrolled_model = self._compute_unrolled_model(
-            model, criterion, input_train, target_train, eta, network_optimizer
-        )
-        unrolled_loss = self._loss(
-            model=unrolled_model,
-            criterion=criterion,
-            input=input_valid,
-            target=target_valid,
-        )
-
-        # Compute backwards pass with respect to the unrolled model parameters
-        unrolled_loss.backward()
-        dalpha = [v.grad for v in unrolled_model.arch_parameters()]
-        vector = [
-            v.grad.data if v.grad is not None else torch.zeros_like(v)
-            for v in unrolled_model.parameters()
-        ]
-
-        # Compute expression (8) from paper
-        implicit_grads = self._hessian_vector_product(
-            model, criterion, vector, input_train, target_train
-        )
-
-        # Compute expression (7) from paper
-        for g, ig in zip(dalpha, implicit_grads):
-            g.data.sub_(eta, ig.data)
-
-        for v, g in zip(model.arch_parameters(), dalpha):
-            if v.grad is None:
-                v.grad = Variable(g.data)
-            else:
-                v.grad.data.copy_(g.data)
-
-    def _compute_unrolled_model(
-        self, model, criterion, input, target, eta, network_optimizer
-    ):
-        loss = self._loss(model=model, criterion=criterion, input=input, target=target)
-        theta = _concat(model.parameters()).data
-        try:
-            moment = _concat(
-                network_optimizer.state[v]["momentum_buffer"]
-                for v in model.parameters()
-            ).mul_(self.network_momentum)
-        except:
-            moment = torch.zeros_like(theta)
-        dtheta = (
-            _concat(torch.autograd.grad(loss, model.parameters())).data
-            + self.network_weight_decay * theta
-        )
-
-        unrolled_model = self._construct_model_from_theta(
-            model, theta.sub(eta, moment + dtheta)
-        )
-        return unrolled_model
-
-    def _construct_model_from_theta(self, model, theta):
-        model_new = model.new()
-        model_dict = model.state_dict()
-
-        params, offset = {}, 0
-        for k, v in model.named_parameters():
-            v_length = np.prod(v.size())
-            params[k] = theta[offset : offset + v_length].view(v.size())
-            offset += v_length
-
-        assert offset == len(theta)
-        model_dict.update(params)
-        model_new.load_state_dict(model_dict)
-        model_new = model_new.to(self.device)
-
-        return model_new
-
-    def _hessian_vector_product(self, model, criterion, vector, input, target, r=1e-2):
-        R = r / _concat(vector).norm()
-        for p, v in zip(model.parameters(), vector):
-            p.data.add_(R, v)
-        train_loss = self._loss(model, criterion, input=input, target=target)
-        grads_p = torch.autograd.grad(train_loss, model.arch_parameters())
-
-        for p, v in zip(model.parameters(), vector):
-            p.data.sub_(2 * R, v)
-        train_loss = self._loss(model, criterion, input=input, target=target)
-        grads_n = torch.autograd.grad(train_loss, model.arch_parameters())
-
-        for p, v in zip(model.parameters(), vector):
-            p.data.add_(R, v)
-
-        return [(x - y).div_(2 * R) for x, y in zip(grads_p, grads_n)]
+        raise NotImplementedError
 
     def _loss(self, model, criterion, input, target):
         pred = model(input)
@@ -360,12 +290,13 @@ class DARTSMixedOp(MixedOp):
 
     def __init__(self, primitives):
         super().__init__(primitives)
-
+    
     def get_weights(self, edge_data):
         return edge_data.alpha
-
+    
     def process_weights(self, weights):
         return torch.softmax(weights, dim=-1)
 
-    def apply_weights(self, x, weights):
+    def apply_weights(self, x, weights):        
         return sum(w * op(x, None) for w, op in zip(weights, self.primitives))
+

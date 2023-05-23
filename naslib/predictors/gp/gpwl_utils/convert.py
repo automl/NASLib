@@ -8,7 +8,7 @@ import copy
 
 
 def convert_n101_arch_to_graph(arch, prune_arch=True):
-    from naslib.predictors.utils.encodings_nb101 import OPS_INCLUSIVE
+    from naslib.search_spaces.nasbench101.encodings import OPS_INCLUSIVE
 
     arch = arch.get_spec()
     matrix, ops = arch["matrix"], arch["ops"]
@@ -163,7 +163,7 @@ def convert_darts_arch_to_graph(
     genotype,
     return_reduction=True,
 ):
-    from naslib.search_spaces.darts.conversions import (
+    from naslib.search_spaces.nasbench301.conversions import (
         convert_naslib_to_genotype,
         Genotype,
     )

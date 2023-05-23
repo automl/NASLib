@@ -13,7 +13,6 @@ from .oneshot import OneShotPredictor
 from .seminas import SemiNASPredictor
 from .soloss import SoLosspredictor
 from .trees import LGBoost, NGBoost, RandomForestPredictor, XGBoost
-from .zerocost_v1 import ZeroCostV1
-from .zerocost_v2 import ZeroCostV2
+from .zerocost import ZeroCost
 from .omni_ngb import OmniNGBPredictor
 from .omni_seminas import OmniSemiNASPredictor

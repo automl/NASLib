@@ -13,13 +13,14 @@ from naslib.search_spaces.core.query_metrics import Metric
 from naslib.search_spaces import (
     NasBench101SearchSpace,
     NasBench201SearchSpace,
-    DartsSearchSpace,
+    NasBench301SearchSpace,
     NasBenchNLPSearchSpace,
     TransBench101SearchSpaceMicro,
     TransBench101SearchSpaceMacro,
     NasBenchASRSearchSpace
 )
-from naslib.utils import utils, setup_logger, get_dataset_api
+from naslib import utils
+from naslib.utils import setup_logger, get_dataset_api, get_zc_benchmark_api
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -32,18 +33,22 @@ utils.log_args(config)
 
 writer = SummaryWriter(config.save)
 
+zc_api = None
+if hasattr(config.search, 'use_zc_api'):
+    zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
+
 supported_optimizers = {
     'rs': RandomSearch(config),
     're': RegularizedEvolution(config),
-    'bananas': Bananas(config),
-    'npenas': Npenas(config),
+    'bananas': Bananas(config, zc_api=zc_api),
+    'npenas': Npenas(config, zc_api=zc_api),
     'ls': LocalSearch(config),
 }
 
 supported_search_spaces = {
     'nasbench101': NasBench101SearchSpace(),
     'nasbench201': NasBench201SearchSpace(),
-    'darts': DartsSearchSpace(),
+    'nasbench301': NasBench301SearchSpace(),
     'nlp': NasBenchNLPSearchSpace(),
     'transbench101_micro': TransBench101SearchSpaceMicro(config.dataset),
     'transbench101_macro': TransBench101SearchSpaceMacro(),
@@ -51,11 +56,21 @@ supported_search_spaces = {
 }
 
 dataset_api = get_dataset_api(config.search_space, config.dataset)
+
 utils.set_seed(config.seed)
 
 search_space = supported_search_spaces[config.search_space]
 
-metric = Metric.VAL_ACCURACY if config.search_space == 'darts' else None
+if hasattr(config.search, 'zc'):
+    search_space.labeled_archs = [eval(arch) for arch in zc_api.keys()]
+
+if config.search.acq_fn_optimization == 'random_sampling' and config.search.use_zc_api == True:
+    search_space.instantiate_model = False
+
+if config.search.acq_fn_optimization != 'random_sampling' and config.search.use_zc_api == True:
+    logging.warning("Using ZC API with a acquisition optimization strategy that is not Random Sampling")
+
+metric = Metric.VAL_ACCURACY if config.search_space == 'nasbench301' else None
 
 optimizer = supported_optimizers[config.optimizer]
 optimizer.adapt_search_space(search_space, dataset_api=dataset_api)

@@ -45,7 +45,6 @@ seed: 1000
 
 # these are used by the zero-cost methods
 search:
-  seed: 1000
   batch_size: 256
   data_size: 25000
   cutout: False

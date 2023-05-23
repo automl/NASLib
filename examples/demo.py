@@ -14,15 +14,15 @@ from naslib.optimizers import (
 )
 
 from naslib.search_spaces import (
-    DartsSearchSpace,
+    NasBench301SearchSpace,
     SimpleCellSearchSpace,
     NasBench201SearchSpace,
     HierarchicalSearchSpace,
 )
 
 # from naslib.search_spaces.nasbench101 import graph
-
-from naslib.utils import utils, setup_logger
+from naslib import utils
+from naslib.utils import setup_logger
 
 # Read args and config, setup logger
 config = utils.get_config_from_args()
@@ -48,7 +48,7 @@ supported_optimizers = {
 search_space = SimpleCellSearchSpace()
 # search_space = graph.NasBench101SearchSpace()
 # search_space = HierarchicalSearchSpace()
-# search_space = DartsSearchSpace()
+# search_space = NasBench301SearchSpace()
 # search_space = NasBench201SearchSpace()
 
 # Changing the optimizer is one line of code
