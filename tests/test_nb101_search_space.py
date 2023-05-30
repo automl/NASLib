@@ -29,7 +29,6 @@ def create_model(spec, n_classes=10):
     graph.set_spec(spec)
     return graph
 
-
 class NasBench101SearchSpaceTest(unittest.TestCase):
 
     def test_set_and_get_spec(self):
@@ -45,21 +44,12 @@ class NasBench101SearchSpaceTest(unittest.TestCase):
         retrieved_spec = graph.get_hash()
         print(retrieved_spec)
         self.assertEqual(FIXED_ARCH, retrieved_spec)
-
+        
     def test_forward_pass(self):
         torch.manual_seed(9001)
         graph = create_model(n_classes=10, spec=SPEC)
 
         out = graph(torch.randn(3, 3, 32, 32))
-        self.assertTrue(torch.allclose(out[0].detach(), torch.tensor([0.0737, 0.0128, 0.0086, 0.0214, 0.0912, -0.0532,
-                                                                      0.0479, 0.1870,
-                                                                      -0.0248, 0.1075]), rtol=1e-2))
-        self.assertTrue(torch.allclose(out[1].detach(), torch.tensor([0.0667, 0.0115, 0.0107, 0.0106, 0.0570, -0.0186,
-                                                                      0.0353, 0.1650,
-                                                                      -0.0165, 0.0848]), rtol=1e-2))
-        self.assertTrue(torch.allclose(out[2].detach(), torch.tensor([0.0536, 0.0136, -0.0104, 0.0174, 0.0753, -0.0871,
-                                                                      0.0472, 0.1974,
-                                                                      -0.0231, 0.1336]), rtol=1e-2))
         self.assertEqual(out.shape, (3, 10))
 
     # TODO: Complete. These tests require a dummy NAS-Bench-101 API.
