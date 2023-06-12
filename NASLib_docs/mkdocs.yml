@@ -1,0 +1,25 @@
+site_name: NASLib Documentation
+nav:
+    - Home: index.md
+    - Installation: installation.md
+    - Quick Start: quick_start.md
+    - NAS Benchmarks:
+        - Overview: benchmarks/overview.md
+        - NAS-Bench-101: benchmarks/nasbench_101.md
+        - NAS-Bench-201: benchmarks/nasbench_201.md
+        - NAS-Bench-301: benchmarks/nasbench_301.md
+    - Optimizers:
+        - Overview: optimizers/overview.md
+        - Regularized Evolution: optimizers/re.md
+        - DARTS: optimizers/darts.md
+        - BOHB: optimizers/bohb.md
+    - Search Spaces:
+        - Overview: search_spaces/overview.md
+        - DARTS Search Space: search_spaces/darts.md
+    - Utils:
+        - Overview: utils/overview.md
+        - Plotting: utils/plotting.md
+        - Training Utilities: utils/training.md
+    - Examples: examples.md
+    - API Reference: api.md
+    - Contributing: contributing.md
