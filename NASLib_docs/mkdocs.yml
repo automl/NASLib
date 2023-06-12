@@ -1,4 +1,5 @@
 site_name: NASLib Documentation
+site_url: https://github.com/automl/NASLib
 nav:
     - Home: index.md
     - Installation: installation.md
@@ -27,6 +28,12 @@ nav:
     - Contributing: contributing.md
 plugins:
   - mkdocstrings:
-      default_handler: python
+        enabled: !ENV [ ENABLE_MKDOCSTRINGS, true ]
+        custom_templates: templates
+        default_handler: python
+        handlers:
+            python:
+                options:
+                    show_source: false
 
 

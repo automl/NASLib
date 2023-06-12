@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://github.com/automl/NASLib/search_spaces/nasbench_201/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>NAS-Bench-201 - NASLib Documentation</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css">
+        <link href="../../assets/_mkdocstrings.css" rel="stylesheet">
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">NASLib Documentation</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href="../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../../installation/" class="nav-link">Installation</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../../quick_start/" class="nav-link">Quick Start</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">NAS Benchmarks <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../benchmarks/overview/" class="dropdown-item">Overview</a>
+</li>
+                                    
+<li>
+    <a href="../../benchmarks/nasbench_101/" class="dropdown-item">NAS-Bench-101</a>
+</li>
+                                    
+<li>
+    <a href="../../benchmarks/nasbench_201/" class="dropdown-item">NAS-Bench-201</a>
+</li>
+                                    
+<li>
+    <a href="../../benchmarks/nasbench_301/" class="dropdown-item">NAS-Bench-301</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Optimizers <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../optimizers/overview/" class="dropdown-item">Overview</a>
+</li>
+                                    
+<li>
+    <a href="../../optimizers/re.md" class="dropdown-item">Regularized Evolution</a>
+</li>
+                                    
+<li>
+    <a href="../../optimizers/darts.md" class="dropdown-item">DARTS</a>
+</li>
+                                    
+<li>
+    <a href="../../optimizers/bohb.md" class="dropdown-item">BOHB</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Search Spaces <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../overview/" class="dropdown-item">Overview</a>
+</li>
+                                    
+<li>
+    <a href="../nasbench_101/" class="dropdown-item">NAS-Bench-101</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active">NAS-Bench-201</a>
+</li>
+                                    
+<li>
+    <a href="../darts.md" class="dropdown-item">DARTS Search Space</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Utils <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../utils/overview.md" class="dropdown-item">Overview</a>
+</li>
+                                    
+<li>
+    <a href="../../utils/plotting.md" class="dropdown-item">Plotting</a>
+</li>
+                                    
+<li>
+    <a href="../../utils/training.md" class="dropdown-item">Training Utilities</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="navitem">
+                                <a href="../../examples/" class="nav-link">Examples</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../../api.md" class="nav-link">API Reference</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../../contributing.md" class="nav-link">Contributing</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                            <li class="nav-item">
+                                <a rel="prev" href="../nasbench_101/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../../examples/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace" class="nav-link">naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.__init__" class="nav-link">__init__()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.encode" class="nav-link">encode()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.forward_before_global_avg_pool" class="nav-link">forward_before_global_avg_pool()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_arch_iterator" class="nav-link">get_arch_iterator()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_hash" class="nav-link">get_hash()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_loss_fn" class="nav-link">get_loss_fn()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_nbhd" class="nav-link">get_nbhd()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_op_indices" class="nav-link">get_op_indices()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_type" class="nav-link">get_type()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.mutate" class="nav-link">mutate()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.query" class="nav-link">query()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.sample_random_architecture" class="nav-link">sample_random_architecture()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.sample_random_labeled_architecture" class="nav-link">sample_random_labeled_architecture()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.set_op_indices" class="nav-link">set_op_indices()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            
+            <li class="nav-item" data-level="2"><a href="#naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.set_spec" class="nav-link">set_spec()</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<div class="doc doc-object doc-class">
+
+
+<a id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace"></a>
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="naslib.search_spaces.core.graph.Graph">Graph</span></code></p>
+
+  
+      <p>Represents the NASBench201 search space.</p>
+<p>This class provides methods for querying and manipulating architectures
+within the search space, including methods for mutation and random sampling.</p>
+
+  <p><strong>Attributes:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>num_classes</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Number of classes for classification tasks.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>in_channels</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Number of input channels.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>max_epoch</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Maximum number of epochs for training.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>instantiate_model</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Boolean indicating whether to instantiate the model during initialization.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>sample_without_replacement</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Boolean indicating whether to sample architectures without replacement.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>channels</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Number of channels at different stages of the architecture.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.__init__">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">n_classes</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">in_channels</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Constructor method.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.encode">
+<code class="highlight language-python"><span class="n">encode</span><span class="p">(</span><span class="n">encoding_type</span><span class="o">=</span><span class="n">EncodingType</span><span class="o">.</span><span class="n">ADJACENCY_ONE_HOT</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Encodes the current architecture based on a given encoding type.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>encoding_type</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Encoding type for the architecture.</p>
+            </div>
+          </td>
+          <td>
+                <code>EncodingType.ADJACENCY_ONE_HOT</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Encoded architecture.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.forward_before_global_avg_pool">
+<code class="highlight language-python"><span class="n">forward_before_global_avg_pool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Performs a forward pass until the global average pooling layer and returns the outputs.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>x</code></td>
+          <td>
+                <code>torch.<span title="torch.Tensor">Tensor</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Input tensor.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>List of outputs from the forward pass.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_arch_iterator">
+<code class="highlight language-python"><span class="n">get_arch_iterator</span><span class="p">(</span><span class="n">dataset_api</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns an iterator for all possible architectures in the search space.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_hash">
+<code class="highlight language-python"><span class="n">get_hash</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Gets a hash representation of the architecture.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_loss_fn">
+<code class="highlight language-python"><span class="n">get_loss_fn</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns the loss function to be used for this architecture.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>Callable</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>A Callable object that can be used as a loss function.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_nbhd">
+<code class="highlight language-python"><span class="n">get_nbhd</span><span class="p">(</span><span class="n">dataset_api</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns all neighbors of the architecture.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>dataset_api</code></td>
+          <td>
+                <code>dict</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>An optional API for the dataset.</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>List of neighbors.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_op_indices">
+<code class="highlight language-python"><span class="n">get_op_indices</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Gets operation indices of the architecture.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.get_type">
+<code class="highlight language-python"><span class="n">get_type</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Returns the type of the search space.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>A string representing the type of the search space.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.mutate">
+<code class="highlight language-python"><span class="n">mutate</span><span class="p">(</span><span class="n">parent</span><span class="p">,</span> <span class="n">dataset_api</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Mutates one operation from the parent operation indices, then updates the naslib object and operation indices.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>parent</code></td>
+          <td>
+                <code><span title="naslib.search_spaces.core.graph.Graph">Graph</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Parent Graph object from which to mutate.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>dataset_api</code></td>
+          <td>
+                <code>dict</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>An optional API for the dataset.</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.query">
+<code class="highlight language-python"><span class="n">query</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">epoch</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">full_lc</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dataset_api</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Query results from nasbench 201</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.sample_random_architecture">
+<code class="highlight language-python"><span class="n">sample_random_architecture</span><span class="p">(</span><span class="n">dataset_api</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_labeled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Samples a random architecture and updates the edges in the naslib object accordingly.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>dataset_api</code></td>
+          <td>
+                <code>dict</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>An optional API for the dataset.</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>load_labeled</code></td>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Boolean indicating whether to load a labeled architecture.</p>
+            </div>
+          </td>
+          <td>
+                <code>False</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.sample_random_labeled_architecture">
+<code class="highlight language-python"><span class="n">sample_random_labeled_architecture</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Samples a random labeled architecture and sets it as the current architecture.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.set_op_indices">
+<code class="highlight language-python"><span class="n">set_op_indices</span><span class="p">(</span><span class="n">op_indices</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Sets the operation indices for the current architecture.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>op_indices</code></td>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>List of operation indices to set.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.search_spaces.nasbench201.graph.NasBench201SearchSpace.set_spec">
+<code class="highlight language-python"><span class="n">set_spec</span><span class="p">(</span><span class="n">op_indices</span><span class="p">,</span> <span class="n">dataset_api</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Sets the specifications of the architecture.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>op_indices</code></td>
+          <td>
+                <code>list</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>List of operation indices to set.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>dataset_api</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>An optional API for the dataset.</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+
+        <div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
