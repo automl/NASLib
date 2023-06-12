@@ -15,6 +15,8 @@ nav:
         - BOHB: optimizers/bohb.md
     - Search Spaces:
         - Overview: search_spaces/overview.md
+        - NAS-Bench-101: search_spaces/nasbench_101.md
+        - NAS-Bench-201: search_spaces/nasbench_201.md
         - DARTS Search Space: search_spaces/darts.md
     - Utils:
         - Overview: utils/overview.md
@@ -23,3 +25,8 @@ nav:
     - Examples: examples.md
     - API Reference: api.md
     - Contributing: contributing.md
+plugins:
+  - mkdocstrings:
+      default_handler: python
+
+

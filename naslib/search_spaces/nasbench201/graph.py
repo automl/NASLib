@@ -28,8 +28,18 @@ OP_NAMES = ["Identity", "Zero", "ReLUConvBN3x3", "ReLUConvBN1x1", "AvgPool1x1"]
 
 class NasBench201SearchSpace(Graph):
     """
-    Implementation of the nasbench 201 search space.
-    It also has an interface to the tabular benchmark of nasbench 201.
+    Represents the NASBench201 search space.
+
+    This class provides methods for querying and manipulating architectures
+    within the search space, including methods for mutation and random sampling.
+
+    Attributes:
+        num_classes: Number of classes for classification tasks.
+        in_channels: Number of input channels.
+        max_epoch: Maximum number of epochs for training.
+        instantiate_model: Boolean indicating whether to instantiate the model during initialization.
+        sample_without_replacement: Boolean indicating whether to sample architectures without replacement.
+        channels: Number of channels at different stages of the architecture.
     """
 
     OPTIMIZER_SCOPE = [
@@ -41,6 +51,9 @@ class NasBench201SearchSpace(Graph):
     QUERYABLE = True
 
     def __init__(self, n_classes=10, in_channels=3):
+        """
+        Constructor method.
+        """
         super().__init__()
         self.num_classes = n_classes
         self.op_indices = None
@@ -132,7 +145,9 @@ class NasBench201SearchSpace(Graph):
         self._set_cell_ops()
 
     def _set_cell_ops(self) -> None:
-        # set the ops at the cells (channel dependent)
+        """
+        Sets the operations at the cells (channel dependent).
+        """
         for scope, c in zip(self.OPTIMIZER_SCOPE, self.channels):
             self.update_edges(
                 update_func=lambda edge: _set_ops(edge, C=c),
@@ -214,17 +229,32 @@ class NasBench201SearchSpace(Graph):
             return query_results[dataset][metric_to_nb201[metric]][epoch]
 
     def get_op_indices(self) -> list:
+        """
+        Gets operation indices of the architecture.
+        """
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
         return self.op_indices
 
     def get_hash(self) -> tuple:
+        """
+        Gets a hash representation of the architecture.
+        """
         return tuple(self.get_op_indices())
 
     def get_arch_iterator(self, dataset_api=None) -> Iterator:
+        """
+        Returns an iterator for all possible architectures in the search space.
+        """
         return itertools.product(range(NUM_OPS), repeat=NUM_EDGES)
 
     def set_op_indices(self, op_indices: list) -> None:
+        """
+        Sets the operation indices for the current architecture.
+
+        Args:
+            op_indices: List of operation indices to set.
+        """
         if self.instantiate_model == True:
             assert self.op_indices is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
             convert_op_indices_to_naslib(op_indices, self)
@@ -232,9 +262,19 @@ class NasBench201SearchSpace(Graph):
         self.op_indices = op_indices
 
     def set_spec(self, op_indices: list, dataset_api=None) -> None:
+        """
+        Sets the specifications of the architecture.
+
+        Args:
+            op_indices: List of operation indices to set.
+            dataset_api: An optional API for the dataset.
+        """
         self.set_op_indices(op_indices)
 
     def sample_random_labeled_architecture(self) -> None:
+        """
+        Samples a random labeled architecture and sets it as the current architecture.
+        """
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
@@ -246,8 +286,11 @@ class NasBench201SearchSpace(Graph):
 
     def sample_random_architecture(self, dataset_api: dict = None, load_labeled: bool = False) -> None:
         """
-        This will sample a random architecture and update the edges in the
-        naslib object accordingly.
+        Samples a random architecture and updates the edges in the naslib object accordingly.
+
+        Args:
+            dataset_api: An optional API for the dataset.
+            load_labeled: Boolean indicating whether to load a labeled architecture.
         """
 
         if load_labeled == True:
@@ -269,8 +312,11 @@ class NasBench201SearchSpace(Graph):
 
     def mutate(self, parent: Graph, dataset_api: dict = None) -> None:
         """
-        This will mutate one op from the parent op indices, and then
-        update the naslib object and op_indices
+        Mutates one operation from the parent operation indices, then updates the naslib object and operation indices.
+
+        Args:
+            parent: Parent Graph object from which to mutate.
+            dataset_api: An optional API for the dataset.
         """
         parent_op_indices = parent.get_op_indices()
         op_indices = list(parent_op_indices)
@@ -282,7 +328,15 @@ class NasBench201SearchSpace(Graph):
         self.set_op_indices(op_indices)
 
     def get_nbhd(self, dataset_api: dict = None) -> list:
-        # return all neighbors of the architecture
+        """
+        Returns all neighbors of the architecture.
+
+        Args:
+            dataset_api: An optional API for the dataset.
+
+        Returns:
+            List of neighbors.
+        """
         self.get_op_indices()
         nbrs = []
         for edge in range(len(self.op_indices)):
@@ -301,12 +355,33 @@ class NasBench201SearchSpace(Graph):
         return nbrs
 
     def get_type(self) -> str:
+        """
+        Returns the type of the search space.
+
+        Returns:
+            A string representing the type of the search space.
+        """
         return "nasbench201"
 
     def get_loss_fn(self) -> Callable:
+        """
+        Returns the loss function to be used for this architecture.
+
+        Returns:
+            A Callable object that can be used as a loss function.
+        """
         return F.cross_entropy
 
     def forward_before_global_avg_pool(self, x: torch.Tensor) -> list:
+        """
+        Performs a forward pass until the global average pooling layer and returns the outputs.
+
+        Args:
+            x: Input tensor.
+
+        Returns:
+            List of outputs from the forward pass.
+        """
         outputs = []
 
         def hook_fn(module, inputs, output_t):
@@ -324,6 +399,15 @@ class NasBench201SearchSpace(Graph):
         return outputs[0]
 
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        """
+        Encodes the current architecture based on a given encoding type.
+
+        Args:
+            encoding_type: Encoding type for the architecture.
+
+        Returns:
+            Encoded architecture.
+        """
         return encode_201(self, encoding_type=encoding_type)
 
 
