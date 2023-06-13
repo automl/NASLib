@@ -27,7 +27,29 @@ MAX_EDGES = 9
 
 class NasBench101SearchSpace(Graph):
     """
-    Contains the interface to the tabular benchmark of nasbench 101.
+    This class is a search space for NAS-Bench-101, a tabular benchmark for neural
+    architecture search.
+
+    Args:
+        n_classes : int, default=10
+            Number of classes for the classification task.
+
+    Attributes:
+        QUERYABLE : bool
+            Whether this search space is queryable, always True for NAS-Bench-101.
+        num_classes : int
+            Number of classes for the classification task.
+        space_name : str
+            Name of the search space.
+        spec : dict or None
+            The spec is a dict with the adjacency matrix and operations. None by default.
+        labeled_archs : list of str or None
+            List of labeled architectures to sample from.
+        instantiate_model : bool
+            If true, a model will be instantiated when a new spec is set.
+        sample_without_replacement : bool
+            If true, a sampled architecture will be removed from the list of available
+            architectures.
     """
 
     QUERYABLE = True
@@ -44,7 +66,19 @@ class NasBench101SearchSpace(Graph):
         self.add_edge(1, 2)
 
     def convert_to_cell(self, matrix: np.ndarray, ops: list) -> dict:
+        """
+        Converts matrix and operations into a dictionary of NAS-Bench-101 cell.
 
+        Args:
+            matrix : np.ndarray
+                Adjacency matrix of the cell.
+            ops : list
+                List of operations in the cell.
+
+        Returns:
+            dict
+                Dictionary representation of the NAS-Bench-101 cell.
+        """
         if len(matrix) < 7:
             # the nasbench spec can have an adjacency matrix of n x n for n<7, 
             # but in the nasbench api, it is always 7x7 (possibly containing blank rows)
@@ -86,7 +120,25 @@ class NasBench101SearchSpace(Graph):
               full_lc: bool = False,
               dataset_api: dict = None) -> Union[list, float]:
         """
-        Query results from nasbench 101
+        Query the performance metrics of the architecture from NAS-Bench-101.
+
+        Args:
+            metric : Metric
+                Performance metric to query.
+            dataset : str, default="cifar10"
+                Dataset for which to query the metric. Only "cifar10" is currently supported.
+            path : str or None, optional
+                Path to the NAS-Bench-101 dataset.
+            epoch : int, default=-1
+                Epoch for which to query the metric. If -1, return metric for all available epochs.
+            full_lc : bool, default=False
+                Whether to return the full learning curve.
+            dataset_api : dict or None, optional
+                API of the NAS-Bench-101 dataset.
+
+        Returns:
+            list or float
+                Query result from NAS-Bench-101.
         """
         assert isinstance(metric, Metric)
         assert dataset in ["cifar10", None], "Unknown dataset: {}".format(dataset)
@@ -145,12 +197,34 @@ class NasBench101SearchSpace(Graph):
             return query_results[metric_to_nb101[metric]] * 100
 
     def get_spec(self) -> dict:
+        """
+        Get the spec of the architecture.
+
+        Returns:
+            dict
+                The spec of the architecture.
+        """
         return self.spec
 
     def get_hash(self) -> tuple:
+        """
+        Get the hash of the architecture.
+
+        Returns:
+            The hash of the architecture.
+        """
         return convert_spec_to_tuple(self.get_spec())
 
     def set_spec(self, spec: Union[str, dict, tuple], dataset_api: dict = None) -> None:
+        """
+        Set the spec of the architecture.
+
+        Args:
+            spec : str, dict, or tuple
+                The spec to set for the architecture.
+            dataset_api : dict or None, optional
+                API of the NAS-Bench-101 dataset.
+        """
         # TODO: convert the naslib object to this spec
         # convert_spec_to_naslib(spec, self)
         # assert self.spec is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
@@ -180,9 +254,29 @@ class NasBench101SearchSpace(Graph):
         self.spec = spec
 
     def get_arch_iterator(self, dataset_api: dict) -> Iterator:
+        """
+        Get an iterator over all architectures in NAS-Bench-101.
+
+        Args:
+            dataset_api : dict
+                API of the NAS-Bench-101 dataset.
+
+        Returns:
+            Iterator over all architectures in NAS-Bench- and used 4 entries.
+        """
         return dataset_api["nb101_data"].hash_iterator()
 
     def sample_random_labeled_architecture(self) -> None:
+        """
+        Sample a random labeled architecture from the NAS-Bench-101 dataset.
+        After the architecture is chosen, it is removed from the pool if sampling
+        is without replacement.
+        The architecture indices are then set as the current specification.
+
+        Raises:
+            AssertionError
+                If the labeled architectures are not provided.
+        """
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         while True:
@@ -222,9 +316,20 @@ class NasBench101SearchSpace(Graph):
 
     def mutate(self, parent: Graph, dataset_api: dict, edits: int = 1) -> None:
         """
-        This will mutate the parent architecture spec.
+        Mutate the given parent architecture specification. The mutation process
+        includes flipping of edges and changing of operations with a defined
+        probability. The new architecture is then set as the current specification.
+
+        Args:
+            parent : Graph
+                The parent graph from which to derive the mutated architecture.
+            dataset_api : dict
+                API of the NAS-Bench-101 dataset.
+            edits : int, optional
+                The number of mutations to apply. Default is 1.
         Code inspird by https://github.com/google-research/nasbench
         """
+
         parent_spec = parent.get_spec()
         spec = copy.deepcopy(parent_spec)
         matrix, ops = spec['matrix'], spec['ops']
@@ -247,7 +352,17 @@ class NasBench101SearchSpace(Graph):
         self.set_spec({'matrix': new_matrix, 'ops': new_ops})
 
     def get_nbhd(self, dataset_api: dict) -> list:
-        # return all neighbors of the architecture
+        """
+        Retrieve all the valid neighbors of the current architecture. Both operation
+        and edge neighbors are considered.
+
+        Args:
+            dataset_api : dict
+                API of the NAS-Bench-101 dataset.
+
+        Returns:
+            List of all valid neighboring architectures.
+        """
         spec = self.get_spec()
         matrix, ops = spec["matrix"], spec["ops"]
         nbhd = []
@@ -291,12 +406,35 @@ class NasBench101SearchSpace(Graph):
         return nbhd
 
     def get_loss_fn(self) -> Callable:
+        """
+        Get the loss function to use during optimization.
+
+        Returns:
+            Callable cross entropy loss function.
+        """
         return F.cross_entropy
 
     def get_type(self) -> str:
+        """
+        Retrieve the type of the search space.
+
+        Returns:
+            A string representing the type of the search space ('nasbench101' in this case).
+        """
         return "nasbench101"
 
     def forward_before_global_avg_pool(self, x: torch.Tensor) -> list:
+        """
+        Apply the forward pass of the architecture up until the global average pooling
+        layer. The intermediate output is saved and returned.
+
+        Args:
+            x : torch.Tensor
+                The input tensor.
+
+        Returns:
+            The intermediate output of the forward pass.
+        """
         outputs = []
 
         def hook_fn(module, input_t, output_t):
@@ -313,6 +451,16 @@ class NasBench101SearchSpace(Graph):
         return outputs[0]
 
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        """
+        Encode the architecture using the specified encoding type.
+
+        Args:
+            encoding_type : EncodingType, optional
+                The type of encoding to use. Default is adjacency one-hot.
+
+        Returns:
+            The encoded architecture.
+        """
         return encode_101(arch=self, encoding_type=encoding_type)
 
 
