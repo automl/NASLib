@@ -35,5 +35,7 @@ plugins:
             python:
                 options:
                     show_source: false
+theme:
+  name: "material"
 
 

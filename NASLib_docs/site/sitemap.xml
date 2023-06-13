@@ -2,62 +2,62 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/automl/NASLib/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/examples/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/installation/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/quick_start/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/benchmarks/nasbench_101/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/benchmarks/nasbench_201/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/benchmarks/nasbench_301/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/benchmarks/overview/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/optimizers/overview/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/search_spaces/nasbench_101/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/search_spaces/nasbench_201/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/automl/NASLib/search_spaces/overview/</loc>
-         <lastmod>2023-06-12</lastmod>
+         <lastmod>2023-06-13</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
