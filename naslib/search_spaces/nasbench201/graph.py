@@ -34,12 +34,17 @@ class NasBench201SearchSpace(Graph):
     within the search space, including methods for mutation and random sampling.
 
     Attributes:
-        num_classes: Number of classes for classification tasks.
-        in_channels: Number of input channels.
-        max_epoch: Maximum number of epochs for training.
-        instantiate_model: Boolean indicating whether to instantiate the model during initialization.
-        sample_without_replacement: Boolean indicating whether to sample architectures without replacement.
-        channels: Number of channels at different stages of the architecture.
+        num_classes (int): Number of classes for classification tasks.
+        in_channels (int): Number of input channels.
+        max_epoch (int): Maximum number of epochs for training.
+        space_name (str): The name of the search space.
+        labeled_archs (list): A list of labeled architectures.
+        instantiate_model (bool): Boolean indicating whether to instantiate the model during initialization.
+        sample_without_replacement (bool): Boolean indicating whether to sample architectures without replacement.
+        channels (list): Number of channels at different stages of the architecture.
+        op_indices (list): Indices of the operations.
+        OPTIMIZER_SCOPE (list): A list of the stages in the architecture, useful for scoping during optimization.
+        QUERYABLE (bool): A boolean indicating whether the search space is queryable or not.
     """
 
     OPTIMIZER_SCOPE = [
@@ -53,6 +58,12 @@ class NasBench201SearchSpace(Graph):
     def __init__(self, n_classes=10, in_channels=3):
         """
         Constructor method.
+
+        This initializes the NasBench201SearchSpace object with provided number of classes and input channels.
+
+        Args:
+            n_classes (int, optional): The number of classes for the classification task. Defaults to 10.
+            in_channels (int, optional): The number of input channels. Defaults to 3.
         """
         super().__init__()
         self.num_classes = n_classes
@@ -147,6 +158,7 @@ class NasBench201SearchSpace(Graph):
     def _set_cell_ops(self) -> None:
         """
         Sets the operations at the cells (channel dependent).
+        The operations are set by calling the `update_edges` method with the provided update function for each optimizer scope.
         """
         for scope, c in zip(self.OPTIMIZER_SCOPE, self.channels):
             self.update_edges(
@@ -164,7 +176,21 @@ class NasBench201SearchSpace(Graph):
             full_lc: bool = False,
             dataset_api: dict = None) -> float:
         """
-        Query results from nasbench 201
+        Query results from the nasbench201 database based on the specified metric and dataset.
+
+        Args:
+            metric (Metric): The performance metric to query for.
+            dataset (str): The dataset to query for.
+            path (str, optional): The path to the nasbench201 database. Defaults to None.
+            epoch (int, optional): The training epoch to query for. Defaults to -1, which means the last epoch.
+            full_lc (bool, optional): If True, returns the full learning curve. Defaults to False.
+            dataset_api (dict, optional): The api containing nasbench201 data. Defaults to None.
+
+        Raises:
+            NotImplementedError: If the `metric` is Metric.ALL or the `dataset_api` is not provided.
+
+        Returns:
+            float: The queried result.
         """
         assert isinstance(metric, Metric)
         if metric == Metric.ALL:
@@ -230,7 +256,11 @@ class NasBench201SearchSpace(Graph):
 
     def get_op_indices(self) -> list:
         """
-        Gets operation indices of the architecture.
+        Gets the operation indices of the architecture.
+        If they are not defined yet, it will convert the naslib object to operation indices and save them.
+
+        Returns:
+            list: The operation indices of the architecture.
         """
         if self.op_indices is None:
             self.op_indices = convert_naslib_to_op_indices(self)
@@ -239,21 +269,33 @@ class NasBench201SearchSpace(Graph):
     def get_hash(self) -> tuple:
         """
         Gets a hash representation of the architecture.
+        The hash is a tuple of the operation indices.
+
+        Returns:
+            tuple: The hash of the architecture.
         """
         return tuple(self.get_op_indices())
 
     def get_arch_iterator(self, dataset_api=None) -> Iterator:
         """
         Returns an iterator for all possible architectures in the search space.
+        The iterator is a product of the number of operations for each edge in the graph.
+
+        Args:
+            dataset_api (optional): The dataset api. Defaults to None.
+
+        Returns:
+            Iterator: An iterator over all possible architectures.
         """
         return itertools.product(range(NUM_OPS), repeat=NUM_EDGES)
 
     def set_op_indices(self, op_indices: list) -> None:
         """
         Sets the operation indices for the current architecture.
+        If the model should be instantiated, it will convert the operation indices to a naslib object.
 
         Args:
-            op_indices: List of operation indices to set.
+            op_indices (list): List of operation indices to set.
         """
         if self.instantiate_model == True:
             assert self.op_indices is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
@@ -266,8 +308,8 @@ class NasBench201SearchSpace(Graph):
         Sets the specifications of the architecture.
 
         Args:
-            op_indices: List of operation indices to set.
-            dataset_api: An optional API for the dataset.
+            op_indices (list): List of operation indices to set.
+            dataset_api (optional): The dataset api. Defaults to None.
         """
         self.set_op_indices(op_indices)
 
@@ -286,11 +328,11 @@ class NasBench201SearchSpace(Graph):
 
     def sample_random_architecture(self, dataset_api: dict = None, load_labeled: bool = False) -> None:
         """
-        Samples a random architecture and updates the edges in the naslib object accordingly.
+        Samples a random architecture and sets it as the current architecture.
 
         Args:
-            dataset_api: An optional API for the dataset.
-            load_labeled: Boolean indicating whether to load a labeled architecture.
+            dataset_api (dict, optional): The api containing nasbench201 data. Defaults to None.
+            load_labeled (bool, optional): If True, a random labeled architecture is sampled instead. Defaults to False.
         """
 
         if load_labeled == True:
@@ -312,11 +354,11 @@ class NasBench201SearchSpace(Graph):
 
     def mutate(self, parent: Graph, dataset_api: dict = None) -> None:
         """
-        Mutates one operation from the parent operation indices, then updates the naslib object and operation indices.
+        Mutates one operation from the parent operation indices and sets them as the operation indices of the current object.
 
         Args:
-            parent: Parent Graph object from which to mutate.
-            dataset_api: An optional API for the dataset.
+            parent (Graph): The parent Graph object from which to mutate.
+            dataset_api (dict, optional): The api containing nasbench201 data. Defaults to None.
         """
         parent_op_indices = parent.get_op_indices()
         op_indices = list(parent_op_indices)
@@ -332,10 +374,10 @@ class NasBench201SearchSpace(Graph):
         Returns all neighbors of the architecture.
 
         Args:
-            dataset_api: An optional API for the dataset.
+            dataset_api (dict, optional): The api containing nasbench201 data. Defaults to None.
 
         Returns:
-            List of neighbors.
+            list: List of neighbor models.
         """
         self.get_op_indices()
         nbrs = []
@@ -359,7 +401,7 @@ class NasBench201SearchSpace(Graph):
         Returns the type of the search space.
 
         Returns:
-            A string representing the type of the search space.
+            str: The type of the search space, "nasbench201" in this case.
         """
         return "nasbench201"
 
@@ -368,7 +410,7 @@ class NasBench201SearchSpace(Graph):
         Returns the loss function to be used for this architecture.
 
         Returns:
-            A Callable object that can be used as a loss function.
+            Callable: A callable object (cross entropy loss function) that can be used as a loss function.
         """
         return F.cross_entropy
 
@@ -377,10 +419,10 @@ class NasBench201SearchSpace(Graph):
         Performs a forward pass until the global average pooling layer and returns the outputs.
 
         Args:
-            x: Input tensor.
+            x (torch.Tensor): The input tensor.
 
         Returns:
-            List of outputs from the forward pass.
+            list: List of outputs from the forward pass.
         """
         outputs = []
 
@@ -403,10 +445,13 @@ class NasBench201SearchSpace(Graph):
         Encodes the current architecture based on a given encoding type.
 
         Args:
-            encoding_type: Encoding type for the architecture.
+            encoding_type (EncodingType): The encoding type for the architecture.
 
         Returns:
-            Encoded architecture.
+            Any: The encoded architecture. The return type depends on the chosen encoding type.
+
+        Raises:
+            NotImplementedError: If the given encoding type is not yet supported as an architecture encoding for nb201.
         """
         return encode_201(self, encoding_type=encoding_type)
 
