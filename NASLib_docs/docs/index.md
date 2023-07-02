@@ -57,9 +57,6 @@ bash bbo/make_configs_asr.sh
 
 It also contains `scheduler.sh` files to automatically read these generated config files and submits a corresponding job to the cluster using SLURM.
 
-## Contributing
-We welcome contributions to the library along with any potential issues or suggestions. Please create a pull request to the Develop branch.
-
 
 ## Cite
 
