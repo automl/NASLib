@@ -26,6 +26,10 @@ nav:
         - NAS-Bench-101: search_spaces/nasbench_101.md
         - NAS-Bench-201: search_spaces/nasbench_201.md
         - DARTS Search Space: search_spaces/darts.md
+        - NAS-Bench-ASR: search_spaces/nasbench_asr.md
+        - NAS-Bench-NLP: search_spaces/nasbench_nlp.md
+        - Simple Cell: search_spaces/simple_cell.md
+        - Transbench101: search_spaces/transbench101.md
     - Utils:
         - Overview: utils/overview.md
         - Plotting: utils/plotting.md
