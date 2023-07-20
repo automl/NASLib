@@ -435,7 +435,7 @@ class NasBench101SearchSpace(Graph):
         assert len(outputs) == 1
         return outputs[0]
 
-    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT) -> Union[List, np.ndarray, dict]:
         """
         Encodes the current architecture using a given encoding type.
 

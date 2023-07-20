@@ -11,9 +11,16 @@ nav:
         - NAS-Bench-301: benchmarks/nasbench_301.md
     - Optimizers:
         - Overview: optimizers/overview.md
-        - Regularized Evolution: optimizers/re.md
-        - DARTS: optimizers/darts.md
-        - BOHB: optimizers/bohb.md
+        - Discrete:
+              - Random Search: optimizers/discrete/rs.md
+              - Regularized Evolution: optimizers/discrete/re.md
+              - Bananas: optimizers/discrete/bananas.md
+        - One-Shot:
+              - DARTS: optimizers/oneshot/darts.md
+              - GDAS: optimizers/oneshot/gdas.md
+              - DrNAS: optimizers/oneshot/drnas.md
+              - RSWS: optimizers/oneshot/rsws.md
+
     - Search Spaces:
         - Overview: search_spaces/overview.md
         - NAS-Bench-101: search_spaces/nasbench_101.md
