@@ -7,7 +7,7 @@ conda create -n mvenv python=3.7
 conda install pytorch torchvision torchaudio cudatoolkit=11.1 -c pytorch -c nvidia
 ```
 
-Run setup.py file with the following command, which will install all the packages listed in [`requirements.txt`](requirements.txt)
+Run setup.py file with the following command, which will install all the packages listed in `requirements.txt`.
 ```bash
 pip install --upgrade pip setuptools wheel
 pip install -e .
