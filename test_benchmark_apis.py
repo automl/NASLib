@@ -1,4 +1,7 @@
 import sys
+
+sys.path.append("../")
+
 import os
 import argparse
 import contextlib
@@ -27,7 +30,7 @@ search_spaces = {
 
 tasks = {
     'nasbench101': ['cifar10'],
-    'nasbench201': ['cifar10', 'cifar100', 'ImageNet16-120'],
+    'nasbench201': ['cifar10', 'cifar100', 'ImageNet16-120', 'ninapro'],
     'nasbench301': ['cifar10'],
     'nlp': ['treebank'],
     'asr': ['timit'],
@@ -103,9 +106,9 @@ if __name__ == '__main__':
         for task in search_space_tasks:
             try:
                 print(f'Testing (search_space, task) api for ({args.search_space}, {task})...', end=" ", flush=True)
-                with nullify_all_output():
-                    graph = search_spaces[args.search_space]()
-                    result = test_api(graph, args.search_space, task, Metric.VAL_ACCURACY)
+                # with nullify_all_output():
+                graph = search_spaces[args.search_space]()
+                result = test_api(graph, args.search_space, task, Metric.VAL_ACCURACY)
                 print('Success')
             except Exception as e:
                 print('Fail')

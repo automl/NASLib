@@ -64,7 +64,8 @@ def get_nasbench201_api(dataset=None):
     datafiles = {
         'cifar10': 'nb201_cifar10_full_training.pickle',
         'cifar100': 'nb201_cifar100_full_training.pickle',
-        'ImageNet16-120': 'nb201_ImageNet16_full_training.pickle'
+        'ImageNet16-120': 'nb201_ImageNet16_full_training.pickle',
+        'ninapro': 'nb201_ninapro_full_training.pickle'
     }
 
     datafile_path = os.path.join(

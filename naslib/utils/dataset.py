@@ -58,7 +58,7 @@ def get_train_val_loaders(config, mode="train"):
 
         train_transform, valid_transform = _data_transforms_ImageNet_16_120(
             config)
-        data_folder = f"{data}/{dataset}"
+        data_folder = os.path.join(data, dataset)
         train_data = ImageNet16(
             root=data_folder,
             train=True,
@@ -71,6 +71,20 @@ def get_train_val_loaders(config, mode="train"):
             transform=valid_transform,
             use_num_of_class_only=120,
         )
+    elif dataset == 'ninapro':
+        from naslib.utils.ninapro_dataset import NinaPro, ninapro_transform
+
+        train_transform, valid_transform = ninapro_transform(config)
+        data_folder = os.path.join(data, dataset)
+        train_data = NinaPro(data_folder, split="train", transform=train_transform)
+        test_data = NinaPro(data_folder, split="test", transform=valid_transform)
+    elif dataset == "darcyflow":
+        from naslib.utils.darcyflow_dataset import load_darcyflow_data, darcyflow_transform
+
+        train_transform, valid_transform = darcyflow_transform(config)
+
+        data_folder = os.path.join(data, dataset)
+        train_data, test_data = load_darcyflow_data(data_folder)
     elif dataset == 'jigsaw':
         cfg = get_jigsaw_configs()
 
@@ -294,12 +308,11 @@ def get_jigsaw_configs():
 
     cfg['dataset_dir'] = os.path.join(
         get_project_root(), "data", "taskonomydata_mini")
-    cfg['data_split_dir'] = os.path.join(
-        get_project_root(), "data", "final5K_splits")
+    cfg['data_split_dir'] = cfg['dataset_dir']
 
-    cfg['train_filenames'] = 'train_filenames_final5k.json'
-    cfg['val_filenames'] = 'val_filenames_final5k.json'
-    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    cfg['train_filenames'] = 'train_split.json'
+    cfg['val_filenames'] = 'val_split.json'
+    cfg['test_filenames'] = 'test_split.json'
 
     cfg['target_dim'] = 1000
     cfg['target_load_fn'] = load_ops.random_jigsaw_permutation
@@ -350,12 +363,11 @@ def get_class_object_configs():
 
     cfg['dataset_dir'] = os.path.join(
         get_project_root(), "data", "taskonomydata_mini")
-    cfg['data_split_dir'] = os.path.join(
-        get_project_root(), "data", "final5K_splits")
+    cfg['data_split_dir'] = cfg['dataset_dir']
 
-    cfg['train_filenames'] = 'train_filenames_final5k.json'
-    cfg['val_filenames'] = 'val_filenames_final5k.json'
-    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    cfg['train_filenames'] = 'train_split.json'
+    cfg['val_filenames'] = 'val_split.json'
+    cfg['test_filenames'] = 'test_split.json'
 
     cfg['target_dim'] = 75
 
@@ -406,12 +418,11 @@ def get_class_scene_configs():
 
     cfg['dataset_dir'] = os.path.join(
         get_project_root(), "data", "taskonomydata_mini")
-    cfg['data_split_dir'] = os.path.join(
-        get_project_root(), "data", "final5K_splits")
+    cfg['data_split_dir'] = cfg['dataset_dir']
 
-    cfg['train_filenames'] = 'train_filenames_final5k.json'
-    cfg['val_filenames'] = 'val_filenames_final5k.json'
-    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    cfg['train_filenames'] = 'train_split.json'
+    cfg['val_filenames'] = 'val_split.json'
+    cfg['test_filenames'] = 'test_split.json'
 
     cfg['target_dim'] = 47
 
@@ -465,12 +476,11 @@ def get_autoencoder_configs():
 
     cfg['dataset_dir'] = os.path.join(
         get_project_root(), "data", "taskonomydata_mini")
-    cfg['data_split_dir'] = os.path.join(
-        get_project_root(), "data", "final5K_splits")
+    cfg['data_split_dir'] = cfg['dataset_dir']
 
-    cfg['train_filenames'] = 'train_filenames_final5k.json'
-    cfg['val_filenames'] = 'val_filenames_final5k.json'
-    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    cfg['train_filenames'] = 'train_split.json'
+    cfg['val_filenames'] = 'val_split.json'
+    cfg['test_filenames'] = 'test_split.json'
 
     cfg['target_load_fn'] = load_ops.load_raw_img_label
     cfg['target_load_kwargs'] = {}
@@ -516,12 +526,11 @@ def get_segmentsemantic_configs():
 
     cfg['dataset_dir'] = os.path.join(
         get_project_root(), "data", "taskonomydata_mini")
-    cfg['data_split_dir'] = os.path.join(
-        get_project_root(), "data", "final5K_splits")
+    cfg['data_split_dir'] = cfg['dataset_dir']
 
-    cfg['train_filenames'] = 'train_filenames_final5k.json'
-    cfg['val_filenames'] = 'val_filenames_final5k.json'
-    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    cfg['train_filenames'] = 'train_split.json'
+    cfg['val_filenames'] = 'val_split.json'
+    cfg['test_filenames'] = 'test_split.json'
 
     cfg['target_load_fn'] = load_ops.semantic_segment_label
     cfg['target_load_kwargs'] = {}
@@ -567,12 +576,11 @@ def get_normal_configs():
 
     cfg['dataset_dir'] = os.path.join(
         get_project_root(), "data", "taskonomydata_mini")
-    cfg['data_split_dir'] = os.path.join(
-        get_project_root(), "data", "final5K_splits")
+    cfg['data_split_dir'] = cfg['dataset_dir']
 
-    cfg['train_filenames'] = 'train_filenames_final5k.json'
-    cfg['val_filenames'] = 'val_filenames_final5k.json'
-    cfg['test_filenames'] = 'test_filenames_final5k.json'
+    cfg['train_filenames'] = 'train_split.json'
+    cfg['val_filenames'] = 'val_split.json'
+    cfg['test_filenames'] = 'test_split.json'
 
     cfg['target_load_fn'] = load_ops.load_raw_img_label
     cfg['target_load_kwargs'] = {}
