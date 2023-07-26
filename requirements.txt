@@ -14,6 +14,7 @@ emcee==3.1.0
 pybnn==0.0.5
 grakel==0.1.8
 pyro-ppl==1.6.0
+scipy==1.4.1
 
 # additional from setup.py prev
 tqdm==4.61.1
