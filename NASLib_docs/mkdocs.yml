@@ -25,7 +25,7 @@ nav:
         - Overview: search_spaces/overview.md
         - NAS-Bench-101: search_spaces/nasbench_101.md
         - NAS-Bench-201: search_spaces/nasbench_201.md
-        - DARTS Search Space: search_spaces/darts.md
+        - NAS-Bench-301: search_spaces/nasbench_301.md
         - NAS-Bench-ASR: search_spaces/nasbench_asr.md
         - NAS-Bench-NLP: search_spaces/nasbench_nlp.md
         - Simple Cell: search_spaces/simple_cell.md
