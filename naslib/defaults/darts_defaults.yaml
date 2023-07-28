@@ -1,4 +1,5 @@
 dataset: cifar10
+save_arch_weights: False
 seed: 99
 search_space: nasbench201
 out_dir: run
