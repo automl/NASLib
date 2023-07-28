@@ -45,7 +45,7 @@ trainer = Trainer(optimizer, config, lightweight_output=True)
 trainer.search(resume_from="")
 trainer.evaluate(resume_from="", dataset_api=dataset_api)
 ```
-The Trainer object is created with the configured optimizer and starts the architecture search process. After searching, the trainer evaluates the best-found architecture. Both searching and evaluating can be resumed from previous checkpoints (specified as arguments to the respective functions). The 'lightweight_output' parameter, if set to True, will reduce the amount of output for each training epoch.
+The Trainer object is created with the configured optimizer and starts the architecture search process. After searching, the trainer evaluates the best-found architecture. Both searching and evaluating can be resumed from previous checkpoints (specified as arguments to the respective functions). The ``lightweight_output`` parameter, if set to True, will reduce the amount of output for each training epoch.
 
 For the full code, see [getting_started](https://github.com/automl/NASLib/blob/Develop/examples/getting_started.py).
 
