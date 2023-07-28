@@ -35,20 +35,18 @@ NUM_OPS = 7
 
 class NasBench301SearchSpace(Graph):
     """
-    The search space for CIFAR-10 as defined in
+    This class represents a CIFAR-10 search space as outlined in:
 
-        Liu et al. 2019: DARTS: Differentiable Architecture Search
+    Liu et al., 2019. "DARTS: Differentiable Architecture Search"
 
-    It consists of a makrograph which is predefined and not optimized
-    and two kinds of learnable cells: normal and reduction cells. At
-    each edge are 8 primitive operations.
-    """
+    The search space includes a predefined macrograph that is not optimized, and two types of learnable cells: normal
+    and reduction cells. Each edge comprises 8 primitive operations.
 
-    """
-    Scope is used to target different instances of the same cell.
-    Here we divide the cells in normal/reduction cell and stage.
-    This is necessary to set the correct channels at each stage.
-    The architecture optimizer should consider all of them equally.
+    Attributes:
+        OPTIMIZER_SCOPE (List[str]): Targets for different instances of the same cell during the optimization
+            process. The cells are divided into normal/reduction cell types and stages. This division is crucial to set
+            the correct channels at each stage. The architecture optimizer should consider all instances equally.
+        QUERYABLE (bool): Flag to indicate if the search space can be queried.
     """
     OPTIMIZER_SCOPE = [
         "n_stage_1",
@@ -62,11 +60,16 @@ class NasBench301SearchSpace(Graph):
 
     def __init__(self, n_classes=10, in_channels=3, auxiliary=True):
         """
-        Initialize a new instance of the DARTS search space.
-        Note:
-            __init__ cannot take any parameters due to the way networkx is implemented.
-            If we want to change the number of classes set a static attribute `NUM_CLASSES`
-            before initializing the class. Default is 10 as for cifar-10.
+        Constructs a new instance of the DARTS search space.
+
+        Args:
+            n_classes (int, optional): The number of classes under consideration. Defaults to 10.
+            in_channels (int, optional): The number of input channels. Defaults to 3.
+            auxiliary (bool, optional): Flag to enable or disable auxiliary output. Defaults to True.
+
+        Please be aware that the __init__ method does not take parameters due to networkx's implementation.
+        To alter the number of classes, a static attribute `NUM_CLASSES` should be set prior to class initialization.
+        The default is 10 for CIFAR-10.
         """
         super().__init__()
 
@@ -218,8 +221,20 @@ class NasBench301SearchSpace(Graph):
             max_index: int,
             affine: bool = True,
     ) -> None:
-        # pre-processing
-        # In darts there is a hardcoded multiplier of 3 for the output of the stem
+        """
+        Establishes the operations at the edges of the macrograph.
+
+        These operations are determined by channel compatibility between nodes.
+        This method sets the pre-processing operation, the operations connecting cells,
+        and the post-processing operation.
+
+        Args:
+            channel_map_from (dict): A mapping assigning originating channel indices to each node.
+            channel_map_to (dict): A mapping assigning destination channel indices to each node.
+            reduction_cell_indices (list): A list of node indices referring to reduction cells.
+            max_index (int): The maximum node index in the graph.
+            affine (bool, optional): Flag to determine if operations use affine transformations. Defaults to True.
+        """
         stem_multiplier = 3
         self.edges[1, 2].set("op", ops.Stem(C_in=self.in_channels,
                                             # TODO_ARJUN: Make Stem use C_in. Currently, it is hardcoded to 3.
@@ -261,6 +276,15 @@ class NasBench301SearchSpace(Graph):
         )
 
     def _set_cell_ops(self, reduction_cell_indices: list) -> None:
+        """
+        Determines the operations at the edges within the cells.
+
+        This method establishes operations for both normal and reduction cells.
+        The stride is set to 2 for some edges within the reduction cells.
+
+        Args:
+            reduction_cell_indices (list): A list of node indices referring to reduction cells.
+        """
         # normal cells
         stages = ["n_stage_1", "n_stage_2", "n_stage_3"]
 
@@ -290,8 +314,10 @@ class NasBench301SearchSpace(Graph):
 
     def prepare_discretization(self) -> None:
         """
-        In DARTS a node can have a maximum of two incoming edges.
-        This is handled here.
+        Prepares the graph for discretization.
+
+        In this search space, a node can have a maximum of two incoming edges. This method ensures that this condition
+        is met, preparing the graph for further discretization.
         """
 
         self.update_nodes(
@@ -301,8 +327,8 @@ class NasBench301SearchSpace(Graph):
 
     def prepare_evaluation(self) -> None:
         """
-        In DARTS the evaluation model has 32 channels after the Stem
-        and 3 normal cells at each stage.
+        This method prepares the model for evaluation. In DARTS, the evaluation model has 32 channels
+        after the stem and contains 3 normal cells at each stage.
         """
 
         # Taken from DARTS implementation
@@ -327,14 +353,22 @@ class NasBench301SearchSpace(Graph):
             )
 
     def auxiliary_logits(self) -> torch.Tensor:
+        """
+        Fetches the auxiliary logits from the model graph.
+
+        Returns:
+            torch.Tensor: The auxiliary logits from the model graph.
+        """
         return self.graph["out_from_12"]
 
     def load_labeled_architecture(self, dataset_api: dict = None) -> None:
         """
-        This is meant to be called by a new NasBench301SearchSpace() object
-        (one that has not already been discretized).
-        It samples a random architecture from the nasbench301 training data,
-        and updates the graph object to match the architecture.
+        Loads a random architecture from the NasBench301 training data and updates the graph object
+        to match the architecture. This method is meant to be called by a fresh NasBench301SearchSpace()
+        object, one that has not already been discretized.
+
+        Args:
+            dataset_api (dict, optional): The dataset API containing architecture information.
         """
         index = np.random.choice(len(dataset_api["nb301_arches"]))
         compact = dataset_api["nb301_arches"][index]
@@ -350,7 +384,25 @@ class NasBench301SearchSpace(Graph):
             full_lc: bool = False,
             dataset_api: dict = None) -> Union[float, dict]:
         """
-        Query results from nasbench 301
+        Queries results from NasBench301. If the architecture was loaded from the NasBench301 training data,
+        it can query the train loss or validation accuracy at a specific epoch.
+        Otherwise, it can only query the validation accuracy at epoch 100 using NasBench301.
+
+        Args:
+            metric (Metric, optional): The desired metric to be queried.
+            dataset (str, optional): The dataset to be used. Currently, only the 'cifar10' dataset is supported.
+            path (str, optional): The path to the saved model.
+            epoch (int, optional): The specific epoch to be queried. Defaults to -1.
+            full_lc (bool, optional): A flag to indicate if the full learning curve should be returned.
+                                       Defaults to False.
+            dataset_api (dict, optional): The dataset API for querying the model.
+
+        Returns:
+            Union[float, dict]: The queried results.
+
+        Raises:
+            NotImplementedError: If dataset_api is None.
+            AssertionError: If the dataset is not 'cifar10' or None.
         """
         if dataset_api is None:
             raise NotImplementedError('Must pass in dataset_api to query NAS-Bench-301')
@@ -418,20 +470,49 @@ class NasBench301SearchSpace(Graph):
                 return -1
 
     def get_compact(self) -> tuple:
+        """
+       Get the compact representation of the architecture. If the model is instantiated and the compact
+       representation doesn't exist, it converts the model to compact form.
+
+       Returns:
+           tuple: The compact form of the architecture.
+       """
         if self.compact is None and self.instantiate_model == True:
             self.compact = convert_naslib_to_compact(self)
         return self.compact
 
     def get_hash(self) -> tuple:
+        """
+        Get the compact hash of the architecture.
+
+        Returns:
+            tuple: The hash of the architecture.
+        """
         return self.get_compact()
 
     def get_arch_iterator(self, dataset_api: dict) -> Iterator:
+        """
+        Get an iterator for the architectures in the nasbench301 data.
+
+        Args:
+            dataset_api (dict): The dataset API.
+
+        Returns:
+            Iterator: An iterator over the architectures.
+        """
         # currently set up for nasbench301 data, not surrogate
         arch_list = np.array(dataset_api["nb301_arches"])
         random.shuffle(arch_list)
         return arch_list
 
     def set_compact(self, compact: tuple) -> None:
+        """
+        Set the compact representation of the architecture. If the model is instantiated and a compact
+        form doesn't exist, it converts the compact representation to the model.
+
+        Args:
+            compact (tuple): The compact form of the architecture.
+        """
         if self.instantiate_model == True:
             assert self.compact is None, f"An architecture has already been assigned to this instance of {self.__class__.__name__}. Instantiate a new instance to be able to sample a new model or set a new architecture."
             convert_compact_to_naslib(compact, self)
@@ -439,9 +520,19 @@ class NasBench301SearchSpace(Graph):
         self.compact = compact
 
     def set_spec(self, compact: tuple, dataset_api: dict = None):
+        """
+        Set the architecture specification, making it immutable.
+
+        Args:
+            compact (tuple): The compact form of the architecture.
+            dataset_api (dict, optional): The dataset API.
+        """
         self.set_compact(make_compact_immutable(compact))
 
     def sample_random_labeled_architecture(self) -> None:
+        """
+        Samples a random architecture from the labeled architectures.
+        """
         assert self.labeled_archs is not None, "Labeled archs not provided to sample from"
 
         op_indices = random.choice(self.labeled_archs)
@@ -453,8 +544,11 @@ class NasBench301SearchSpace(Graph):
 
     def sample_random_architecture(self, dataset_api: dict = None, load_labeled: bool = False) -> None:
         """
-        This will sample a random architecture and update the edges in the
-        naslib object accordingly.
+        Sample a random architecture and update the edges in the naslib object accordingly.
+
+        Args:
+            dataset_api (dict, optional): The dataset API. Required if load_labeled is True.
+            load_labeled (bool, optional): Whether to load the architecture from the training data.
         """
         if load_labeled == True:
             assert dataset_api is not None, "NAS-Bench-301 API must be passed as argument to sample a trained model"
@@ -484,8 +578,13 @@ class NasBench301SearchSpace(Graph):
 
     def mutate(self, parent: Graph, mutation_rate: int = 1, dataset_api: dict = None):
         """
-        This will mutate one op from the parent op indices, and then
-        update the naslib object and op_indices
+        Mutates the architecture by changing one operation from the parent architecture, and then
+        updates the naslib object and op_indices.
+
+        Args:
+            parent (Graph): The parent architecture graph.
+            mutation_rate (int, optional): The mutation rate. Defaults to 1.
+            dataset_api (dict, optional): The dataset API.
         """
         parent_compact = parent.get_compact()
         parent_compact = make_compact_mutable(parent_compact)
@@ -515,7 +614,15 @@ class NasBench301SearchSpace(Graph):
         self.set_spec(compact)
 
     def get_nbhd(self, dataset_api: dict = None) -> list:
-        # return all neighbors of the architecture
+        """
+        Get all neighbors of the current architecture.
+
+        Args:
+            dataset_api (dict, optional): The dataset API.
+
+        Returns:
+            list: A list of all neighbors of the current architecture.
+        """
         self.get_compact()
         nbrs = []
 
@@ -560,13 +667,13 @@ class NasBench301SearchSpace(Graph):
             )
     ):
         """
-        Returns the ConfigSpace object for the search space
+        Returns the configuration space object for the search space.
 
         Args:
-            path_to_configspace_obj: path to ConfigSpace json encoding
+            path_to_configspace_obj (str): The path to the ConfigSpace JSON encoding.
 
         Returns:
-            ConfigSpace.ConfigutationSpace: a ConfigSpace object
+            ConfigSpace.ConfigutationSpace: A ConfigSpace object.
         """
         with open(path_to_configspace_obj, "r") as fh:
             json_string = fh.read()
@@ -574,12 +681,33 @@ class NasBench301SearchSpace(Graph):
         return config_space
 
     def get_type(self) -> str:
+        """
+        Get the type of the architecture.
+
+        Returns:
+            str: The type of the architecture.
+        """
         return "nasbench301"
 
     def get_loss_fn(self) -> Callable:
+        """
+        Get the loss function for training the architecture.
+
+        Returns:
+            Callable: The loss function.
+        """
         return F.cross_entropy
 
     def forward_before_global_avg_pool(self, x: torch.Tensor) -> list:
+        """
+        Run the model forward until the global average pooling layer.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            list: List of output tensors from each layer.
+        """
         outputs = []
 
         def hook_fn(module, inputs, output_t):
@@ -597,22 +725,26 @@ class NasBench301SearchSpace(Graph):
         return outputs[0]
 
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        """
+        Encodes the architecture graph into the specified encoding type.
+
+        Args:
+            encoding_type (EncodingType, optional): The type of encoding to use. Defaults to EncodingType.ADJACENCY_ONE_HOT.
+
+        Returns:
+            Any: The encoded representation of the architecture.
+        """
         return encode_darts(self, encoding_type=encoding_type)
 
 
 def _set_ops(edge, C: int, stride: int) -> None:
     """
-    Replace the 'op' at the edges with the ones defined here.
-    This function is called by the framework for every edge in
-    the defined scope.
-    Args:
-        current_egde_data (EdgeData): The data that currently sits
-            at the edge.
-        C (int): convolutional channels
-        stride (int): stride for the operation
+    Replace the 'op' at the edges with the ones defined here. This function is called by the framework for every edge in the defined scope.
 
-    Returns:
-        EdgeData: the updated EdgeData object.
+    Args:
+        edge: Edge for which the operations are to be set.
+        C (int): Number of convolutional channels.
+        stride (int): Stride for the operation.
     """
     edge.data.set(
         "op",
@@ -638,6 +770,11 @@ def _set_ops(edge, C: int, stride: int) -> None:
 def _truncate_input_edges(node: tuple, in_edges: list, out_edges: list) -> None:
     """
     Removes input edges if there are more than k.
+
+    Args:
+        node (tuple): Node for which the edges are to be truncated.
+        in_edges (list): List of incoming edges.
+        out_edges (list): List of outgoing edges.
     """
 
     def _largest_post_softmax_weight(edge) -> int:
@@ -678,11 +815,29 @@ def _truncate_input_edges(node: tuple, in_edges: list, out_edges: list) -> None:
 
 
 def channel_concat(tensors):
+    """
+    Concatenate tensors along the channel dimension.
+
+    Args:
+        tensors (list): List of tensors to concatenate.
+
+    Returns:
+        torch.Tensor: The concatenated tensor.
+    """
     return torch.cat(tensors, dim=1)
 
 
 def channel_maps(reduction_cell_indices: list, max_index: int) -> List[dict]:
-    # calculate the mapping from edge indices to the respective channel
+    """
+    Calculate the mapping from edge indices to the respective channel.
+
+    Args:
+        reduction_cell_indices (list): List of indices of reduction cells.
+        max_index (int): The maximum index.
+
+    Returns:
+        List[dict]: List of dictionaries representing the channel mappings.
+    """
 
     assert len(reduction_cell_indices) == 2
     r_1, r_2 = reduction_cell_indices
