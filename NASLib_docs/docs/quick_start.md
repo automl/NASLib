@@ -2,7 +2,8 @@
 
 In this guide, we demonstrate how to get started with the Neural Architecture Search Library (NASLib). NASLib provides a wide range of tools to facilitate neural architecture search and optimization. We will show you how to utilize various optimizers and search spaces, namely, DARTS optimizer with the NasBench301 search space, Regularized Evolution with NasBench201, and exploring zero-cost proxies with NasBench201. Let's dive into the specifics.
 
-## Loading Configuration and Logging
+## DARTS and Regularized Evolution 
+### Loading Configuration and Logging
 
 ```python
 config = utils.get_config_from_args(config_type='nas')
@@ -12,7 +13,7 @@ utils.log_args(config)
 ```
 The configuration parameters are loaded with ``utils.get_config_from_args(config_type='nas')``. If no other file is provided, it defaults to load from ``darts_defaults.yaml``. This configuration may include settings related to your dataset, architecture, optimization process, and so on. This flexibility allows easy switching between different optimizers and search spaces, as per the requirements of your experiments. The logger records this process for debugging or auditing.
 
-## Defining a Subset of Available Optimizers and Search Spaces
+### Defining a Subset of Available Optimizers and Search Spaces
 
 ```python
 supported_optimizers = {
@@ -26,7 +27,7 @@ supported_search_spaces = {
 ```
 While NASLib supports a wide range of optimizers and search spaces, here we instantiate two specific optimizers (Regularized Evolution and DARTS) and two search spaces (NasBench201 and NasBench301). This demonstration shows how you can choose specific tools from the library based on your needs.
 
-## Preparing the Search Space and Optimizer
+### Preparing the Search Space and Optimizer
 
 ```python
 dataset_api = get_dataset_api(config.search_space, config.dataset)
@@ -37,7 +38,7 @@ optimizer.adapt_search_space(search_space, dataset=config.dataset, dataset_api=d
 ```
 This section sets the random seed for reproducibility, chooses the optimizer and search space as per the configuration, and adapts the optimizer to the chosen search space. It uses the dataset API to load the dataset corresponding to your selected search space.
 
-## Running the Optimization Process
+### Running the Optimization Process
 
 ```python
 trainer = Trainer(optimizer, config, lightweight_output=True)
