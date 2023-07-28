@@ -4,11 +4,6 @@ nav:
     - Home: index.md
     - Installation: installation.md
     - Quick Start: quick_start.md
-    - NAS Benchmarks:
-        - Overview: benchmarks/overview.md
-        - NAS-Bench-101: benchmarks/nasbench_101.md
-        - NAS-Bench-201: benchmarks/nasbench_201.md
-        - NAS-Bench-301: benchmarks/nasbench_301.md
     - Optimizers:
         - Overview: optimizers/overview.md
         - Discrete:
@@ -30,6 +25,11 @@ nav:
         - NAS-Bench-NLP: search_spaces/nasbench_nlp.md
         - Simple Cell: search_spaces/simple_cell.md
         - Transbench101: search_spaces/transbench101.md
+    - NAS Benchmarks:
+        - Overview: benchmarks/overview.md
+        - NAS-Bench-101: benchmarks/nasbench_101.md
+        - NAS-Bench-201: benchmarks/nasbench_201.md
+        - NAS-Bench-301: benchmarks/nasbench_301.md
     - Utils:
         - Overview: utils/overview.md
         - Plotting: utils/plotting.md
