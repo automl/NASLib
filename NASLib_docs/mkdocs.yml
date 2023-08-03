@@ -10,6 +10,9 @@ nav:
               - Random Search: optimizers/discrete/rs.md
               - Regularized Evolution: optimizers/discrete/re.md
               - Bananas: optimizers/discrete/bananas.md
+              - Base Predictor: optimizers/discrete/bp.md
+              - Local Search: optimizers/discrete/ls.md
+              - NPenas: optimizers/discrete/npenas.md
         - One-Shot:
               - DARTS: optimizers/oneshot/darts.md
               - GDAS: optimizers/oneshot/gdas.md
