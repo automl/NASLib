@@ -1,0 +1,1 @@
+::: naslib.optimizers.discrete.re.optimizer.RegularizedEvolution
