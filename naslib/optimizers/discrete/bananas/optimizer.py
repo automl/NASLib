@@ -23,6 +23,37 @@ logger = logging.getLogger(__name__)
 
 
 class Bananas(MetaOptimizer):
+    """
+    Bayesian Optimization NAS (BANANAS) implementation as a meta optimizer.
+    It combines elements of Bayesian optimization and neural architecture search.
+
+    Attributes:
+        using_step_function (bool): Whether the optimizer uses a step function. Default is False.
+        config (object): Configuration object containing various settings.
+        epochs (int): Number of epochs for training.
+        performance_metric (str): Performance metric for evaluation.
+        dataset (str): Dataset used for training.
+        k (int): Hyperparameter for tuning.
+        num_init (int): Number of initializations.
+        num_ensemble (int): Number of ensembles.
+        predictor_type (str): Type of predictor to use.
+        acq_fn_type (str): Type of acquisition function to use.
+        acq_fn_optimization (str): Type of acquisition function optimization to use.
+        encoding_type (str): Type of encoding used.
+        num_arches_to_mutate (int): Number of architectures to mutate.
+        max_mutations (int): Maximum number of mutations.
+        num_candidates (int): Number of candidate architectures.
+        max_zerocost (int): Maximum zero cost.
+        train_data (list): List of data for training.
+        next_batch (list): List of data for the next batch.
+        history (torch.nn.ModuleList): Model history.
+        zc (bool): Zero cost option.
+        semi (bool): Semi-supervised learning option.
+        zc_api (API): API for zero cost predictors.
+        use_zc_api (bool): Whether to use the zero cost API.
+        zc_names (list): Names of zero cost predictors.
+        zc_only (bool): Whether to use only zero cost predictors.
+    """
 
     # training the models is not implemented
     using_step_function = False
@@ -62,6 +93,17 @@ class Bananas(MetaOptimizer):
             config.search, 'zc_only') else False
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
+        """
+        Adapts the provided search space for the meta optimizer.
+
+        Args:
+            search_space (SearchSpace): The search space to be used.
+            scope (str, optional): The optimizer scope to use. Defaults to the one provided by the search space.
+            dataset_api (API, optional): The API of the dataset to be used.
+
+        Raises:
+            AssertionError: If the search space is not queryable.
+        """
         assert (
             search_space.QUERYABLE
         ), "Bananas is currently only implemented for benchmarks."
@@ -77,9 +119,24 @@ class Bananas(MetaOptimizer):
             self.unlabeled = []
 
     def get_zero_cost_predictors(self):
+        """
+        Generates zero-cost predictors for each method in self.zc_names.
+
+        Returns:
+            dict: A dictionary of zero-cost predictors.
+        """
         return {zc_name: ZeroCost(method_type=zc_name) for zc_name in self.zc_names}
 
     def query_zc_scores(self, arch):
+        """
+        Computes zero-cost scores for a given architecture.
+
+        Args:
+            arch (dict): The architecture to compute zero-cost scores for.
+
+        Returns:
+            dict: A dictionary of zero-cost scores for the provided architecture.
+        """
         zc_scores = {}
         zc_methods = self.get_zero_cost_predictors()
         arch_hash = arch.get_hash()
@@ -101,6 +158,12 @@ class Bananas(MetaOptimizer):
         return zc_scores
 
     def _set_scores(self, model):
+        """
+        Sets scores for a given model.
+
+        Args:
+            model (torch.nn.Module): The model to set scores for.
+        """
 
         if self.use_zc_api and str(model.arch_hash) in self.zc_api:
             model.accuracy = self.zc_api[str(model.arch_hash)]['val_accuracy']
@@ -116,6 +179,12 @@ class Bananas(MetaOptimizer):
         self._update_history(model)
 
     def _sample_new_model(self):
+        """
+        Samples a new model.
+
+        Returns:
+            torch.nn.Module: A new model.
+        """
         model = torch.nn.Module()
         model.arch = self.search_space.clone()
         model.arch.sample_random_architecture(
@@ -128,11 +197,23 @@ class Bananas(MetaOptimizer):
         return model
 
     def _get_train(self):
+        """
+        Retrieves training data.
+
+        Returns:
+            tuple: A tuple containing the architectures and their accuracies for training.
+        """
         xtrain = [m.arch for m in self.train_data]
         ytrain = [m.accuracy for m in self.train_data]
         return xtrain, ytrain
 
     def _get_ensemble(self):
+        """
+        Generates an ensemble.
+
+        Returns:
+            Ensemble: An ensemble.
+        """
         ensemble = Ensemble(num_ensemble=self.num_ensemble,
                             ss_type=self.ss_type,
                             predictor_type=self.predictor_type,
@@ -143,6 +224,15 @@ class Bananas(MetaOptimizer):
         return ensemble
 
     def _get_new_candidates(self, ytrain):
+        """
+        Obtains new candidate architectures.
+
+        Args:
+            ytrain (list): A list of performance scores for the training architectures.
+
+        Returns:
+            list: A list of new candidate architectures.
+        """
         # optimize the acquisition function to output k new architectures
         candidates = []
         if self.acq_fn_optimization == 'random_sampling':
@@ -183,6 +273,12 @@ class Bananas(MetaOptimizer):
         return candidates
 
     def new_epoch(self, epoch):
+        """
+        Performs operations for a new epoch.
+
+        Args:
+            epoch (int): The epoch number.
+        """
 
         if epoch < self.num_init:
             model = self._sample_new_model()
@@ -236,6 +332,16 @@ class Bananas(MetaOptimizer):
             self._set_scores(model)
 
     def _get_best_candidates(self, candidates, acq_fn):
+        """
+        Retrieves the best candidate architectures based on the acquisition function.
+
+        Args:
+            candidates (list): A list of candidate architectures.
+            acq_fn (function): The acquisition function to use for ranking candidates.
+
+        Returns:
+            list: A list of the best candidate architectures.
+        """
         if self.zc and len(self.train_data) <= self.max_zerocost:
             for model in candidates:
                 model.zc_scores = self.query_zc_scores(model.arch)
@@ -250,6 +356,12 @@ class Bananas(MetaOptimizer):
         return choices
 
     def _update_history(self, child):
+        """
+        Updates the history with a new child.
+
+        Args:
+            child (torch.nn.Module): The new child to add to the history.
+        """
         if len(self.history) < 100:
             self.history.append(child)
         else:
@@ -259,6 +371,15 @@ class Bananas(MetaOptimizer):
                     break
 
     def train_statistics(self, report_incumbent=True):
+        """
+        Computes training statistics.
+
+        Args:
+            report_incumbent (bool): Whether to report the incumbent architecture. Default is True.
+
+        Returns:
+            tuple: A tuple containing various training statistics.
+        """
         if report_incumbent:
             best_arch = self.get_final_architecture()
         else:
@@ -294,6 +415,12 @@ class Bananas(MetaOptimizer):
             ) 
 
     def test_statistics(self):
+        """
+        Computes test statistics.
+
+        Returns:
+            float: The test statistics.
+        """
         best_arch = self.get_final_architecture()
         if self.search_space.space_name != "nasbench301":
             return best_arch.query(Metric.RAW, self.dataset, dataset_api=self.dataset_api)
@@ -301,18 +428,51 @@ class Bananas(MetaOptimizer):
             return -1
 
     def get_final_architecture(self):
+        """
+        Retrieves the final (best) architecture.
+
+        Returns:
+            dict: The final architecture.
+        """
         return max(self.history, key=lambda x: x.accuracy).arch
 
     def get_op_optimizer(self):
+        """
+        Retrieves the operation optimizer.
+
+        Raises:
+            NotImplementedError: This method should be implemented in a child class.
+        """
         raise NotImplementedError()
 
     def get_checkpointables(self):
+        """
+        Retrieves the checkpointables for the model.
+
+        Returns:
+            dict: The checkpointables for the model.
+        """
         return {"model": self.history}
 
     def get_model_size(self):
+        """
+        Retrieves the model size in MB.
+
+        Returns:
+            float: The size of the model in MB.
+        """
         return count_parameters_in_MB(self.history)
 
     def get_arch_as_string(self, arch):
+        """
+        Converts an architecture into a string.
+
+        Args:
+            arch (dict): The architecture to convert.
+
+        Returns:
+            str: The architecture as a string.
+        """
         if self.search_space.get_type() == 'nasbench301':
             str_arch = str(list((list(arch[0]), list(arch[1]))))
         else:
