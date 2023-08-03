@@ -1,0 +1,1 @@
+::: naslib.optimizers.discrete.ls.optimizer.LocalSearch
