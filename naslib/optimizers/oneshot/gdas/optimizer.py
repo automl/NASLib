@@ -10,10 +10,9 @@ logger = logging.getLogger(__name__)
 
 class GDASOptimizer(DARTSOptimizer):
     """
-    Implements GDAS as defined in
-
-        Dong and Yang (2019): Searching for a Robust Neural Architecture in Four GPU Hours
-
+    Implementation of the GDAS optimizer introduced in "Searching for a Robust Neural Architecture in Four GPU Hours"
+    by Dong and Yang (2019). Inherits functionalities from DARTSOptimizer and includes additional functionalities
+    specific to GDAS.
     """
 
     def __init__(
@@ -34,16 +33,17 @@ class GDASOptimizer(DARTSOptimizer):
         **kwargs,
     ):
         """
-        Instantiate the optimizer
+        Initialize a new instance of the GDASOptimizer class.
 
         Args:
-            epochs (int): Number of epochs. Required for tau
-            tau_max (float): Initial tau
-            tau_min (float): The minimum tau where it is decayed to
-            op_optimizer (torch.optim.Optimizer): optimizer for the op weights
-            arch_optimizer (torch.optim.Optimizer): optimizer for the architecture weights
-            loss_criteria: The loss.
+            epochs (int): Total number of training epochs.
+            tau_max (float): Initial value of tau.
+            tau_min (float): The minimum value to which tau is decayed.
+            op_optimizer (str): The optimizer type for operation weights. E.g., 'SGD'
+            arch_optimizer (str): The optimizer type for architecture weights. E.g., 'Adam'
+            loss_criteria (str): Loss criteria. E.g., 'CrossEntropyLoss'
             grad_clip (float): Clipping of the gradients. Default None.
+            **kwargs: Additional keyword arguments.
         """
         super().__init__(learning_rate, momentum, weight_decay, grad_clip, unrolled, arch_learning_rate, arch_weight_decay, op_optimizer, arch_optimizer, loss_criteria)
 
@@ -58,25 +58,32 @@ class GDASOptimizer(DARTSOptimizer):
     @staticmethod
     def update_ops(edge):
         """
-        Function to replace the primitive ops at the edges
-        with the GDAS specific GDASMixedOp.
+        Replace the primitive operations at the edge with the GDAS-specific GDASMixedOp.
+
+        Args:
+            edge: The edge in the computation graph where the operations are to be replaced.
         """
         primitives = edge.data.op
         edge.data.set("op", GDASMixedOp(primitives))
 
     def adapt_search_space(self, search_space, dataset, scope=None):
         """
-        Same as in darts with a different mixop.
-        Just add tau as buffer so it is checkpointed.
+        Adapt the search space for GDAS architecture search.
+
+        Args:
+            search_space: The initial search space.
+            dataset: The dataset for training/validation.
+            scope: Scope to update in the search space. Default is None.
         """
         super().adapt_search_space(search_space, dataset, scope)
         self.graph.register_buffer("tau", self.tau_curr)
 
     def new_epoch(self, epoch):
         """
-        Update the tau softmax parameter at the edges.
+        Update the tau parameter at the edges at the beginning of each new epoch.
 
-        This is also initially called before epoch 1.
+        Args:
+            epoch (int): Current epoch number.
         """
         super().new_epoch(epoch)
 
@@ -85,6 +92,13 @@ class GDASOptimizer(DARTSOptimizer):
 
     @staticmethod
     def sample_alphas(edge, tau):
+        """
+        Sample architecture weights (alphas) using the Gumbel-Softmax distribution parameterized by tau.
+
+        Args:
+            edge: The edge in the computation graph where the sampled architecture weights are set.
+            tau (torch.Tensor): The tau parameter controlling the temperature of the Gumbel-Softmax distribution.
+        """
         # sampled_arch_weight = torch.nn.functional.gumbel_softmax(
         #     edge.data.alpha, tau=float(tau), hard=True
         # )
@@ -123,10 +137,26 @@ class GDASOptimizer(DARTSOptimizer):
 
     @staticmethod
     def remove_sampled_alphas(edge):
+        """
+        Remove sampled architecture weights (alphas) from the edge's data.
+
+        Args:
+            edge: The edge in the computation graph where the sampled architecture weights are to be removed.
+        """
         if edge.data.has("sampled_arch_weight"):
             edge.data.remove("sampled_arch_weight")
 
     def step(self, data_train, data_val):
+        """
+        Perform a single optimization step for both architecture and operation weights.
+
+        Args:
+            data_train (tuple): Training data as a tuple of inputs and labels.
+            data_val (tuple): Validation data as a tuple of inputs and labels.
+
+        Returns:
+            tuple: Logits for training data, logits for validation data, loss for training data, loss for validation data.
+        """
         input_train, target_train = data_train
         input_val, target_val = data_val
 
@@ -177,26 +207,55 @@ class GDASOptimizer(DARTSOptimizer):
 
 
 class GDASMixedOp(MixedOp):
+    """
+    Specialized MixedOp for GDAS. Handles the sampled architecture weights (alphas).
+
+    """
     def __init__(self, primitives, min_cuda_memory=False):
         """
-        Initialize the mixed op for GDAS.
+        Initialize a new instance of the GDASMixedOp class.
 
         Args:
-            primitives (list): The primitive operations to sample from.
+            primitives (list): List of primitive operations to sample from.
+            min_cuda_memory (bool): Whether to minimize CUDA memory usage. Default is False.
         """
         super().__init__(primitives)
         self.min_cuda_memory = min_cuda_memory
 
     def get_weights(self, edge_data):
+        """
+        Retrieve the sampled architecture weights from the edge data.
+
+        Args:
+            edge_data: The data associated with an edge in the computational graph.
+
+        Returns:
+            torch.Tensor: The sampled architecture weights.
+        """
         return edge_data.sampled_arch_weight
 
     def process_weights(self, weights):
+        """
+        Process the architecture weights if any additional operations are needed.
+
+        Args:
+            weights (torch.Tensor): The architecture weights.
+
+        Returns:
+            torch.Tensor: The processed architecture weights.
+        """
         return weights
 
     def apply_weights(self, x, weights):
         """
-        Applies the gumbel softmax to the architecture weights
-        before forwarding `x` through the graph as in DARTS
+        Apply the architecture weights to the primitive operations.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+            weights (torch.Tensor): The architecture weights.
+
+        Returns:
+            torch.Tensor: The output tensor after applying the architecture weights.
         """
 
         argmax = torch.argmax(weights)
