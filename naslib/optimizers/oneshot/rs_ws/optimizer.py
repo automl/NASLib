@@ -9,14 +9,26 @@ logger = logging.getLogger(__name__)
 
 class RandomNASOptimizer(OneShotNASOptimizer):
     """
-    Implementation of the Random NAS with weight sharing as in
-        Li et al. 2019: Random Search and Reproducibility for Neural Architecture Search.
+    Implementation of the Random NAS optimization algorithm with weight sharing.
+
+    Random NAS (Neural Architecture Search) is a stochastic technique for optimizing
+    the architecture of a neural network. This class inherits from the `OneShotNASOptimizer`
+    and modifies the architecture and operation (op) weights based on random sampling.
+
+    Based on the paper:
+    Random Search and Reproducibility for Neural Architecture Search by Li et al. 2019.
     """
 
     @staticmethod
     def add_alphas(edge):
         """
-        Function to add the architectural weights to the edges.
+        Adds architectural weights to edges in the neural network.
+
+        Args:
+            edge (object): The edge in the neural network to which the architectural weights are to be added.
+
+        Note:
+            The architectural weights are added as a PyTorch Parameter and set to the edge data.
         """
         len_primitives = len(edge.data.op)
         alpha = torch.nn.Parameter(
@@ -25,6 +37,17 @@ class RandomNASOptimizer(OneShotNASOptimizer):
         edge.data.set("alpha", alpha, shared=True)
 
     def step(self, data_train, data_val):
+        """
+        Performs one optimization step to update both architecture and operation weights.
+
+        Args:
+            data_train (tuple): Tuple containing training data and labels.
+            data_val (tuple): Tuple containing validation data and labels.
+
+        Returns:
+            tuple: A tuple containing logits for the training data, logits for the validation data,
+                   loss for the training data, and loss for the validation data.
+        """
         input_train, target_train = data_train
         input_val, target_val = data_val
 
@@ -48,6 +71,13 @@ class RandomNASOptimizer(OneShotNASOptimizer):
         return logits_train, logits_val, train_loss, val_loss
 
     def sample_random_and_update_alphas(self):
+        """
+        Samples a random architecture and updates the alpha values accordingly.
+
+        Note:
+            This method utilizes a temporary graph clone for sampling and sets the alpha values
+            based on the sampled architecture.
+        """
         tmp_graph = self.search_space.clone()
         tmp_graph.sample_random_architecture()
 
