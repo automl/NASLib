@@ -2,7 +2,7 @@ site_name: NASLib Documentation
 site_url: https://github.com/automl/NASLib
 nav:
     - Home: index.md
-    - Installation: installation.md
+    - Setup: setup.md
     - Quick Start: quick_start.md
     - Optimizers:
         - Overview: optimizers/overview.md
