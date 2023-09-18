@@ -31,14 +31,21 @@ ACTIVATION_PROBABILITIES = np.array(ACTIVATION_WEIGHTS) / np.sum(ACTIVATION_WEIG
 
 class NasBenchNLPSearchSpace(Graph):
     """
-    Contains the interface to the tabular benchmark of nas-bench-nlp.
-    Note: currently we do not support building a naslib object for
-    nas-bench-nlp architectures.
+    Represents the search space for NAS (Neural Architecture Search) in the context of NLP (Natural Language Processing).
+
+    Note:
+        Currently, building a NASLib object for nas-bench-nlp architectures is not supported.
+
+    Attributes:
+        QUERYABLE (bool): Specifies whether this class supports querying architectures.
     """
 
     QUERYABLE = True
 
     def __init__(self):
+        """
+        Initialize a new instance of the search space.
+        """
         super().__init__()
         self.load_labeled = False
         self.max_epoch = 50
@@ -47,8 +54,14 @@ class NasBenchNLPSearchSpace(Graph):
 
     def load_labeled_architecture(self, dataset_api=None, max_nodes=12):
         """
-        This is meant to be called by a new NasBenchNLPSearchSpace() object.
-        It samples a random architecture from the nas-bench-nlp data.
+        Load a labeled architecture into the search space.
+
+        Args:
+            dataset_api : Dataset API containing information about available architectures.
+            max_nodes (int): Maximum number of nodes for the architecture.
+
+        Returns:
+            None: The architecture is loaded into the instance.
         """
         while True:
             index = np.random.choice(len(dataset_api['nlp_arches']))
@@ -67,10 +80,25 @@ class NasBenchNLPSearchSpace(Graph):
         full_lc=False,
         dataset_api=None,
     ):
+        """
+        Query the architecture's performance metrics.
+
+        Args:
+            metric (Metric): Metric to query.
+            dataset (str, optional): The dataset to query against.
+            path (str, optional): File path for the saved architecture.
+            epoch (int): The epoch at which to query the metric.
+            full_lc (bool): Whether to query the full learning curve.
+            dataset_api : The dataset API to be used for the query.
+
+        Returns:
+            Union[int, float, dict, list]: Query results.
+
+        Raises:
+            NotImplementedError: If querying metrics for extra training epochs is attempted.
+        """
         if self.load_labeled:
-            """
-            Query results from nas-bench-nlp
-            """
+
             metric_to_nlp = {
                 Metric.TRAIN_ACCURACY: "train_losses",
                 Metric.VAL_ACCURACY: "val_losses",
@@ -147,29 +175,83 @@ class NasBenchNLPSearchSpace(Graph):
                 return lc[epoch]
 
     def get_compact(self):
+        """
+        Get the compact representation of the architecture.
+
+        Returns:
+            Compact representation of the architecture.
+
+        Raises:
+            AssertionError: If the compact representation is not set.
+        """
         assert self.compact is not None
         return self.compact
     
     def get_hash(self):
+        """
+        Get the hash based on the architecture's compact representation.
+
+        Returns:
+            Hash representation of the architecture.
+        """
         return self.get_compact()
 
     def set_compact(self, compact):
+        """
+        Set the compact representation of the architecture.
+
+        Args:
+            compact : The compact representation of the architecture.
+
+        Returns:
+            None: The architecture is updated in-place.
+        """
         self.compact = tuple(compact)
 
     def get_arch_iterator(self, dataset_api=None):
+        """
+        Get an iterator for iterating over the architectures in the dataset API.
+
+        Args:
+            dataset_api (dict): The dataset API containing information about architectures.
+
+        Returns:
+            np.array: An array of architecture representations to be iterated over.
+        """
         # currently set up for nasbenchnlp data, not surrogate
         arch_list = np.array(dataset_api["nlp_arches"])
         random.shuffle(arch_list)
         return arch_list
 
     def set_spec(self, compact, dataset_api=None):
+        """
+        Set the architecture specification. This function exists to unify the interface across search spaces.
+
+        Args:
+            compact : The compact representation of the architecture.
+            dataset_api : The dataset API.
+
+        Returns:
+            None: The architecture specification is set.
+        """
         # this is just to unify the setters across search spaces
         # TODO: change it to set_spec on all search spaces
         self.set_compact(compact)
 
     def _generate_redundant_graph(self, recipe, base_nodes):
         """
-        This code is from NAS-Bench-NLP https://arxiv.org/abs/2006.07116
+        Generates a redundant graph based on the given recipe and base nodes.
+
+        This function is adapted from NAS-Bench-NLP (https://arxiv.org/abs/2006.07116)
+        and is responsible for generating a redundant graph according to specified
+        probabilities and connections.
+
+        Args:
+            recipe : The architecture recipe.
+            base_nodes : List of base nodes to consider.
+
+        Returns:
+            None: Modifies `recipe` in place.
         """
         i = 0
         activation_nodes = []
@@ -206,7 +288,16 @@ class NasBenchNLPSearchSpace(Graph):
 
     def _create_hidden_nodes(self, recipe):
         """
-        This code is from NAS-Bench-NLP https://arxiv.org/abs/2006.07116
+        Creates hidden nodes based on the existing recipe.
+
+        This function is adapted from NAS-Bench-NLP (https://arxiv.org/abs/2006.07116)
+        and is responsible for creating hidden nodes in the architecture.
+
+        Args:
+            recipe (dict): The architecture recipe.
+
+        Returns:
+            None: Modifies `recipe` in place.
         """
         new_hiddens_map = {}
         for k in np.random.choice(list(recipe.keys()), HIDDEN_TUPLE_SIZE, replace=False):
@@ -221,7 +312,16 @@ class NasBenchNLPSearchSpace(Graph):
 
     def _remove_redundant_nodes(self, recipe):
         """
-        This code is from NAS-Bench-NLP https://arxiv.org/abs/2006.07116
+        Removes redundant nodes from the recipe.
+
+        This function is adapted from NAS-Bench-NLP (https://arxiv.org/abs/2006.07116)
+        and is responsible for removing any redundant nodes from the architecture.
+
+        Args:
+            recipe (dict): The architecture recipe.
+
+        Returns:
+            set: A set of visited nodes.
         """
         q = [f'h_new_{i}' for i in range(HIDDEN_TUPLE_SIZE)]
         visited = set(q)
@@ -240,7 +340,15 @@ class NasBenchNLPSearchSpace(Graph):
         return visited
 
     def sample_random_architecture(self, dataset_api):
+        """
+        Samples a random architecture that satisfies the constraints.
 
+        Args:
+            dataset_api : The dataset API for querying architectures.
+
+        Returns:
+             The compact representation of the sampled architecture.
+        """
         while True:
             prev_hidden_nodes = [f'h_prev_{i}' for i in range(HIDDEN_TUPLE_SIZE)]
             base_nodes = ['x'] + prev_hidden_nodes
@@ -272,12 +380,21 @@ class NasBenchNLPSearchSpace(Graph):
             
     def mutate(self, parent, mutation_rate=1, dataset_api=None):
         """
-        This will mutate the cell in one of two ways:
-        change an edge; change an op.
+        Mutates the architecture by altering edges or operations.
+
+        Args:
+            parent (object): Parent architecture.
+            mutation_rate (int, optional): Number of mutations to perform. Defaults to 1.
+            dataset_api (object, optional): The dataset API for querying architectures. Defaults to None.
+
+        Returns:
+            None: Modifies the architecture in place.
+
         Todo: mutate by adding/removing nodes.
         Todo: mutate the list of hidden nodes.
         Todo: edges between initial hidden nodes are not mutated.
         """
+
         parent_compact = parent.get_compact()
         parent_compact = make_compact_mutable(parent_compact)
         compact = copy.deepcopy(parent_compact)
@@ -323,9 +440,17 @@ class NasBenchNLPSearchSpace(Graph):
 
     def get_nbhd(self, dataset_api=None):
         """
-        Return all neighbors of the architecture
+        Gets the neighborhood architectures based on the current architecture.
+
+        Args:
+            dataset_api (object, optional): The dataset API for querying architectures. Defaults to None.
+
+        Returns:
+            list: List of neighborhood architectures.
+
         Currently has the same todo's as in mutate()
         """
+
         compact = self.get_compact()
         compact = make_compact_mutable(compact)
         edges, ops, hiddens = compact
@@ -364,10 +489,31 @@ class NasBenchNLPSearchSpace(Graph):
         return nbhd
 
     def get_type(self):
+        """
+        Gets the type of the search space.
+
+        Returns:
+            str: The type of the search space ("nlp").
+        """
         return 'nlp'
 
     def get_max_epochs(self):
+        """
+        Gets the maximum number of epochs for training.
+
+        Returns:
+            int: The maximum number of epochs (49).
+        """
         return 49
 
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        """
+        Encodes the architecture into a specific format.
+
+        Args:
+            encoding_type (EncodingType, optional): The type of encoding to use. Defaults to `EncodingType.ADJACENCY_ONE_HOT`.
+
+        Returns:
+            The encoded representation of the architecture.
+        """
         return encode_nlp(self, encoding_type=encoding_type)
