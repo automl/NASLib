@@ -20,9 +20,18 @@ OP_NAMES = ['linear', 'conv5', 'conv5d2', 'conv7', 'conv7d2', 'zero']
 
 class NasBenchASRSearchSpace(Graph):
     """
-    Contains the interface to the tabular benchmark of nas-bench-asr.
-    Note: currently we do not support building a naslib object for
-    nas-bench-asr architectures.
+    Interface to the tabular benchmark for nas-bench-asr architectures.
+
+    This class extends the Graph class to provide a structure for ASR neural network architectures.
+    It includes methods to create macro graphs, cells blocks, cells, and query methods for searching
+    optimal architectures.
+
+    Attributes:
+        QUERYABLE (bool): Whether the architecture can be queried.
+        OPTIMIZER_SCOPE (list of str): List of the names of cell stages.
+
+    Note:
+        Currently, building a NASLib object for nas-bench-asr architectures is not supported.
     """
 
     QUERYABLE = True
@@ -34,6 +43,11 @@ class NasBenchASRSearchSpace(Graph):
     ]
 
     def __init__(self):
+        """
+        Initialize the NasBenchASRSearchSpace object.
+
+        Set the properties to default values, which will be used to create the neural network architecture.
+        """
         super().__init__()
         self.load_labeled = False
         self.max_epoch = 40
@@ -55,6 +69,11 @@ class NasBenchASRSearchSpace(Graph):
         self._create_macro_graph()
 
     def _create_macro_graph(self):
+        """
+        Create the macro graph for the architecture.
+
+        The macro graph connects cell blocks with special layers and operations.
+        """
         cell = self._create_cell()
 
         # Macrograph defintion
@@ -97,6 +116,17 @@ class NasBenchASRSearchSpace(Graph):
         self.edges[self.n_blocks + 1, self.n_blocks + 2].set('op', head)
 
     def _create_cells_block(self, cell, n, scope):
+        """
+        Create a block of cells for the ASR architecture.
+
+        Args:
+            cell (Graph): The cell graph object to include in the block.
+            n (int): The number of cells to include in the block.
+            scope (str): The name of the block.
+
+        Returns:
+            Graph: A graph object representing the block of cells.
+        """
         block = Graph()
         block.name = f'{n}_cells_block'
 
@@ -111,6 +141,12 @@ class NasBenchASRSearchSpace(Graph):
         return block
 
     def _create_cell(self):
+        """
+        Create a single cell for the ASR architecture.
+
+        Returns:
+            Graph: A graph object representing the cell.
+        """
         cell = Graph()
         cell.name = 'cell'
         # ASR Cell requires two edges between two consecutive nodes, which isn't supported by the NASLib Graph.
@@ -141,7 +177,18 @@ class NasBenchASRSearchSpace(Graph):
     def query(self, metric=None, dataset=None, path=None, epoch=-1,
               full_lc=False, dataset_api=None):
         """
-        Query results from nas-bench-asr
+        Query results from the nas-bench-asr benchmark.
+
+        Args:
+            metric (Metric): The performance metric to query for.
+            dataset (str, optional): The dataset to query on.
+            path (str, optional): The file path to save the results.
+            epoch (int, optional): The epoch number at which to query the performance metric.
+            full_lc (bool, optional): Whether to return the full learning curve.
+            dataset_api (dict, optional): The dataset API to use for querying.
+
+        Returns:
+            float or list: The value(s) of the queried metric.
         """
         metric_to_asr = {
             Metric.VAL_ACCURACY: "val_per",
@@ -185,16 +232,46 @@ class NasBenchASRSearchSpace(Graph):
                 return float(query_results[metric_to_asr[metric]][epoch])
 
     def get_compact(self):
+        """
+        Get the compact representation of the architecture.
+
+        Returns:
+            The compact representation of the architecture.
+
+        Raises:
+            AssertionError: If the compact representation is not set.
+        """
         assert self.compact is not None
         return self.compact
 
     def get_hash(self):
+        """
+        Get the hash of the architecture based on its compact representation.
+
+        Returns:
+            The hash of the architectures.
+        """
         return self.get_compact()
 
     def set_compact(self, compact):
+        """
+        Set the compact representation of the architecture.
+
+        Args:
+            compact: The new compact representation of the architecture.
+        """
         self.compact = make_compact_immutable(compact)
 
     def sample_random_architecture(self, dataset_api):
+        """
+        Sample a random architecture based on the dataset API.
+
+        Args:
+            dataset_api: The dataset API instance for the architecture sampling.
+
+        Returns:
+            The compact representation of the sampled architecture.
+        """
         search_space = [[len(OP_NAMES)] + [2] * (idx + 1) for idx in
                         range(self.max_nodes)]
         flat = flatten(search_space)
@@ -207,8 +284,20 @@ class NasBenchASRSearchSpace(Graph):
 
     def mutate(self, parent, mutation_rate=1, dataset_api=None):
         """
-        This will mutate the cell in one of two ways:
-        change an edge; change an op.
+        Mutate the architecture.
+
+        Args:
+            parent (NasBenchASRSearchSpace): The parent architecture.
+            mutation_rate (int, optional): The rate of mutation. Defaults to 1.
+            dataset_api (DatasetAPI, optional): The dataset API instance for the mutation. Defaults to None.
+
+        Returns:
+            None: The architecture is mutated in-place.
+
+        Note:
+            This will mutate the cell in one of two ways:
+            change an edge; change an op.
+
         Todo: mutate by adding/removing nodes.
         Todo: mutate the list of hidden nodes.
         Todo: edges between initial hidden nodes are not mutated.
@@ -246,7 +335,13 @@ class NasBenchASRSearchSpace(Graph):
 
     def get_nbhd(self, dataset_api=None):
         """
-        Return all neighbors of the architecture
+        Get all neighbors of the current architecture.
+
+        Args:
+            dataset_api (optional): The dataset API instance for neighbor fetching. Defaults to None.
+
+        Returns:
+            list: List of all neighbor architectures.
         """
         compact = self.get_compact()
         # edges, ops, hiddens = compact
@@ -285,16 +380,48 @@ class NasBenchASRSearchSpace(Graph):
         return nbhd
 
     def get_type(self):
+        """
+        Get the type of the search space.
+
+        Returns:
+            str: The type of the search space, in this case, 'asr'.
+        """
         return 'asr'
 
     def get_max_epochs(self):
+        """
+        Get the maximum number of epochs for training.
+
+        Returns:
+            int: The maximum number of epochs.
+        """
         return 39
 
     def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        """
+        Encode the architecture based on the specified encoding type.
+
+        Args:
+            encoding_type (EncodingType, optional): The type of encoding to use. Defaults to EncodingType.ADJACENCY_ONE_HOT.
+
+        Returns:
+            object: The encoded architecture.
+        """
         return encode_asr(self, encoding_type=encoding_type)
 
 
 def _set_cell_edge_ops(edge, filters, use_norm):
+    """
+    Set the operations for the cell edge.
+
+    Args:
+        edge (Edge): The edge of the cell to be configured.
+        filters (int): The number of filters for the operation.
+        use_norm (bool): Whether to use layer normalization.
+
+    Returns:
+        None: The edge is configured in-place.
+    """
     if use_norm and edge.head == 7:
         edge.data.set('op', CellLayerNorm(filters))
         edge.data.finalize()
