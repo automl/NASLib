@@ -127,7 +127,7 @@ mkdocstrings==0.20.0
 mkdocstrings-python==1.1.2
 ```
 
-Then, you need to ``cd`` into ``NASLib_docs`` and run the following command to build the documentation pages:
+Then, ``cd`` into ``NASLib_docs`` and run the following command to build the documentation pages:
 ```
 mkdocs build
 ```
