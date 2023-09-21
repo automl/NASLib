@@ -114,6 +114,29 @@ bash bbo/make_configs_asr.sh
 
 It also contains `scheduler.sh` files to automatically read these generated config files and submits a corresponding job to the cluster using SLURM.
 
+
+## Setup Documentation Pages
+
+To setup the documentation page, you need to install the following packages:
+```
+mkdocs==1.4.3
+mkdocs-autorefs==0.4.1
+mkdocs-material==9.1.15
+mkdocs-material-extensions==1.1.1
+mkdocstrings==0.20.0
+mkdocstrings-python==1.1.2
+```
+
+Then, you can run the following command to build the documentation pages:
+```
+mkdocs build
+```
+Followed by:
+```
+mkdocs serve
+```
+
+
 ## Contributing
 We welcome contributions to the library along with any potential issues or suggestions. Please create a pull request to the Develop branch.
 
@@ -132,6 +155,7 @@ If you use this code in your own work, please use the following bibtex entries:
 @inproceedings{mehta2022bench,
   title={NAS-Bench-Suite: NAS Evaluation is (Now) Surprisingly Easy},
   author={Mehta, Yash and White, Colin and Zela, Arber and Krishnakumar, Arjun and Zabergja, Guri and Moradian, Shakiba and Safari, Mahmoud and Yu, Kaicheng and Hutter, Frank},
+  
   booktitle={International Conference on Learning Representations},
   year={2022}
 }
