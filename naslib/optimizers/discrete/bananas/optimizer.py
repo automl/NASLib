@@ -91,6 +91,9 @@ class Bananas(MetaOptimizer):
             config.search, 'zc_names') else None
         self.zc_only = config.search.zc_only if hasattr(
             config.search, 'zc_only') else False
+        
+        self.load_labeled = config.search.load_labeled if hasattr(
+            config.search, 'load_labeled') else False
 
     def adapt_search_space(self, search_space, scope=None, dataset_api=None):
         """
@@ -188,7 +191,7 @@ class Bananas(MetaOptimizer):
         model = torch.nn.Module()
         model.arch = self.search_space.clone()
         model.arch.sample_random_architecture(
-            dataset_api=self.dataset_api, load_labeled=self.use_zc_api)
+            dataset_api=self.dataset_api, load_labeled=self.load_labeled)
         model.arch_hash = model.arch.get_hash()
         
         if self.search_space.instantiate_model == True:
