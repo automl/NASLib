@@ -127,7 +127,7 @@ mkdocstrings==0.20.0
 mkdocstrings-python==1.1.2
 ```
 
-Then, you can run the following command to build the documentation pages:
+Then, you need to ``cd`` into ``NASLib_docs`` and run the following command to build the documentation pages:
 ```
 mkdocs build
 ```
@@ -135,7 +135,7 @@ Followed by:
 ```
 mkdocs serve
 ```
-
+After running the above command, you can access the documentation pages at the link provided in the terminal.
 
 ## Contributing
 We welcome contributions to the library along with any potential issues or suggestions. Please create a pull request to the Develop branch.
