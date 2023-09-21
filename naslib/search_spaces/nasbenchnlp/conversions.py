@@ -8,6 +8,7 @@ import copy
              Currently this is used by the surrogate model (fixed length)
 """
 
+
 def convert_recipe_to_compact(recipe):
     nodes = ['x', 'h_prev_0', 'h_prev_1', 'h_prev_2']
     op_dict = ['in', 'activation_sigm', 'activation_tanh', 'activation_leaky_relu', \
@@ -41,16 +42,17 @@ def convert_recipe_to_compact(recipe):
                 parent_idx = nodes.index(parent)
                 edges.append((parent_idx, idx))
 
-    return (tuple(edges), tuple(ops), tuple(hiddens))
+    return tuple(edges), tuple(ops), tuple(hiddens)
+
 
 def convert_compact_to_recipe(compact):
     nodes = ['x', 'h_prev_0', 'h_prev_1', 'h_prev_2']
-    op_dict = ['in', 'activation_sigm', 'activation_tanh', 'activation_leaky_relu', \
+    op_dict = ['in', 'activation_sigm', 'activation_tanh', 'activation_leaky_relu',
                'elementwise_sum', 'elementwise_prod', 'linear', 'blend']
-    
+
     edges, ops, hiddens = compact
     max_node_idx = max([max(edge) for edge in edges])
-    
+
     # create the set of node names
     reg_node_idx = 0
     hidden_node_idx = 0
@@ -74,6 +76,7 @@ def convert_compact_to_recipe(compact):
         recipe[nodes[i]] = node_dict
 
     return recipe
+
 
 def make_compact_mutable(compact):
     # convert tuple to list so that it is mutable

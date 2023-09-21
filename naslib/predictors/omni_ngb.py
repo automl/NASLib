@@ -11,7 +11,6 @@ from ngboost.scores import LogScore
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.lcsvr import loguniform
 from naslib.predictors.zerocost import ZeroCost
-from naslib.predictors.utils.encodings import encode
 from naslib import utils
 from naslib.search_spaces.core.query_metrics import Metric
 
@@ -165,7 +164,7 @@ class OmniNGBPredictor(Predictor):
         if self.encoding_type is not None:
             xdata_encoded = np.array(
                 [
-                    encode(arch, encoding_type=self.encoding_type, ss_type=self.ss_type)
+                    arch.encode(encoding_type=self.encoding_type)
                     for arch in xdata
                 ]
             )

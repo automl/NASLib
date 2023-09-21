@@ -38,15 +38,21 @@ class OneShotNASOptimizer(DARTSOptimizer):
 
     def __init__(
         self,
-        config,
-        op_optimizer=torch.optim.SGD,
-        arch_optimizer=None,
-        loss_criteria=torch.nn.CrossEntropyLoss(),
+        learning_rate: float = 0.025,
+        momentum: float = 0.9,
+        weight_decay: float = 0.0003,
+        grad_clip: int = 5,
+        unrolled: bool = False,
+        arch_learning_rate: float = 0.0003,
+        arch_weight_decay: float = 0.001,
+        epochs: int = 50,
+        op_optimizer: str = 'SGD',
+        arch_optimizer: str = 'Adam',
+        loss_criteria: str = 'CrossEntropyLoss',
+        **kwargs
     ):
 
-        super(OneShotNASOptimizer, self).__init__(
-            config, op_optimizer, arch_optimizer, loss_criteria
-        )
+        super().__init__(learning_rate, momentum, weight_decay, grad_clip, unrolled, arch_learning_rate, arch_weight_decay, op_optimizer, arch_optimizer, loss_criteria)
 
     def step(self, data_train, data_val):
         input_train, target_train = data_train

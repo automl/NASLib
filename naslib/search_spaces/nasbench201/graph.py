@@ -15,6 +15,8 @@ from naslib.search_spaces.nasbench201.conversions import (
     convert_naslib_to_str,
     convert_op_indices_to_str,
 )
+from naslib.search_spaces.nasbench201.encodings import encode_201, encode_adjacency_one_hot_op_indices
+from naslib.utils.encodings import EncodingType
 
 from .primitives import ResNetBasicblock
 
@@ -157,6 +159,7 @@ class NasBench201SearchSpace(Graph):
                 "cifar10",
                 "cifar100",
                 "ImageNet16-120",
+                "ninapro"
             ], "Unknown dataset: {}".format(dataset)
         if dataset_api is None:
             raise NotImplementedError("Must pass in dataset_api to query NAS-Bench-201")
@@ -186,16 +189,14 @@ class NasBench201SearchSpace(Graph):
             # return all data
             return dataset_api["nb201_data"][arch_str]
 
+        if dataset not in ["cifar10", "cifar10-valid", "cifar100", "ImageNet16-120", "ninapro"]:
+            raise NotImplementedError("Invalid dataset")
+
         if dataset in ["cifar10", "cifar10-valid"]:
-            query_results = dataset_api["nb201_data"][arch_str]
             # set correct cifar10 dataset
             dataset = "cifar10-valid"
-        elif dataset == "cifar100":
-            query_results = dataset_api["nb201_data"][arch_str]
-        elif dataset == "ImageNet16-120":
-            query_results = dataset_api["nb201_data"][arch_str]
-        else:
-            raise NotImplementedError("Invalid dataset")
+
+        query_results = dataset_api["nb201_data"][arch_str]
 
         if metric == Metric.HP:
             # return hyperparameter info
@@ -320,6 +321,9 @@ class NasBench201SearchSpace(Graph):
 
         assert len(outputs) == 1
         return outputs[0]
+
+    def encode(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT):
+        return encode_201(self, encoding_type=encoding_type)
 
 
 def _set_ops(edge, C: int) -> None:

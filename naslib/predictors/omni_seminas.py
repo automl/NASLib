@@ -22,7 +22,6 @@ from torch.utils.data import DataLoader
 from naslib import utils
 from naslib.utils import AverageMeterGroup, AverageMeter
 
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.utils.bin_thresholds import discretize, get_bins, get_lce_bins
 from naslib.predictors.predictor import Predictor
 from naslib.predictors.trees.ngb import loguniform
@@ -559,9 +558,7 @@ class OmniSemiNASPredictor(Predictor):
         if self.encoding_type is not None:
             # convert the architecture to a categorical encoding
             for i, arch in enumerate(xdata):
-                encoded = encode(
-                    arch, encoding_type=self.encoding_type, ss_type=self.ss_type
-                )
+                encoded = arch.encode(encoding_type=self.encoding_type)
                 seq = convert_arch_to_seq(
                     encoded["adjacency"], encoded["operations"], max_n=self.max_n
                 )

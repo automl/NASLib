@@ -1,5 +1,6 @@
 import codecs
 from naslib.search_spaces.core.graph import Graph
+from naslib.utils.vis import plot_architectural_weights
 import time
 import json
 import logging
@@ -106,6 +107,7 @@ class Trainer(object):
                 self.config
             )
 
+        arch_weights = []
         for e in range(start_epoch, self.epochs):
 
             start_time = time.time()
@@ -113,6 +115,15 @@ class Trainer(object):
 
             if self.optimizer.using_step_function:
                 for step, data_train in enumerate(self.train_queue):
+                    
+                    if self.config.save_arch_weights is True:
+                        if len(arch_weights) == 0:
+                            for edge_weights in self.optimizer.architectural_weights:
+                                arch_weights.append(torch.unsqueeze(edge_weights.detach(), dim=0))
+                        else:
+                            for i, edge_weights in enumerate(self.optimizer.architectural_weights):
+                                arch_weights[i] = torch.cat((arch_weights[i], torch.unsqueeze(edge_weights.detach(), dim=0)), dim=0)
+                    
                     data_train = (
                         data_train[0].to(self.device),
                         data_train[1].to(self.device, non_blocking=True),
@@ -197,6 +208,12 @@ class Trainer(object):
 
             if after_epoch is not None:
                 after_epoch(e)
+
+        logger.info(f"Saving architectural weight tensors: {self.config.save}/arch_weights.pt")
+        if hasattr(self.config, "save_arch_weights") and self.config.save_arch_weights:
+            torch.save(arch_weights, f'{self.config.save}/arch_weights.pt')
+            if hasattr(self.config, "plot_arch_weights") and self.config.plot_arch_weights:
+                plot_architectural_weights(self.config, self.optimizer)
 
         self.optimizer.after_training()
 

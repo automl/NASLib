@@ -2,13 +2,14 @@ from typing import Dict, List, Union
 import numpy as np
 
 import torch.nn as nn
-from naslib.predictors.utils.encodings import encode
 from naslib.predictors.predictor import Predictor
+from naslib.utils.encodings import EncodingType
 
 
 class BaseTree(Predictor):
 
-    def __init__(self, encoding_type='adjacency_one_hot', ss_type='nasbench201', zc=False, zc_only=False, hpo_wrapper=False, hparams_from_file=None):
+    def __init__(self, encoding_type=EncodingType.ADJACENCY_ONE_HOT, ss_type='nasbench201', zc=False, zc_only=False,
+                 hpo_wrapper=False, hparams_from_file=None):
         super(Predictor, self).__init__()
         self.encoding_type = encoding_type
         self.ss_type = ss_type
@@ -43,8 +44,7 @@ class BaseTree(Predictor):
 
             # TODO: Fix. Hacky way to make XGBoost accept both encodings as well as NASLib Graphs as xtrain
             if isinstance(xtrain[0], nn.Module):
-                xtrain = np.array([encode(arch, encoding_type=self.encoding_type,
-                                    ss_type=self.ss_type) for arch in xtrain])
+                xtrain = np.array([arch.encode(encoding_type=self.encoding_type) for arch in xtrain])
 
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
@@ -82,8 +82,7 @@ class BaseTree(Predictor):
 
             # TODO: Fix. Hacky way to make XGBoost accept both encodings as well as NASLib Graphs as xtrain
             if isinstance(xtest[0], nn.Module):
-                xtest = np.array([encode(arch, encoding_type=self.encoding_type,
-                                    ss_type=self.ss_type) for arch in xtest])
+                xtest = np.array([arch.encode(encoding_type=self.encoding_type) for arch in xtest])
             if self.zc:
                 # mean, std = -10000000.0, 150000000.0
                 zc_scores = [self.create_zc_feature_vector(data['zero_cost_scores']) for data in info]

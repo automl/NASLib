@@ -1,6 +1,7 @@
 import logging
 
 from naslib.defaults.predictor_evaluator import PredictorEvaluator
+from naslib.utils.encodings import EncodingType
 
 from naslib.predictors import (
     BayesianLinearRegression,
@@ -50,15 +51,15 @@ utils.log_args(config)
 
 supported_predictors = {
     "bananas": Ensemble(predictor_type="bananas", num_ensemble=3, hpo_wrapper=True),
-    "bayes_lin_reg": BayesianLinearRegression(encoding_type="adjacency_one_hot"),
-    "bohamiann": BOHAMIANN(encoding_type="adjacency_one_hot", 
+    "bayes_lin_reg": BayesianLinearRegression(encoding_type=EncodingType.ADJACENCY_ONE_HOT),
+    "bohamiann": BOHAMIANN(encoding_type=EncodingType.ADJACENCY_ONE_HOT,
                            hparams_from_file=config.hparams_from_file),
-    "bonas": BonasPredictor(encoding_type="bonas", hpo_wrapper=True),
-    "dngo": DNGOPredictor(encoding_type="adjacency_one_hot"),
+    "bonas": BonasPredictor(encoding_type=EncodingType.BONAS, hpo_wrapper=True),
+    "dngo": DNGOPredictor(encoding_type=EncodingType.ADJACENCY_ONE_HOT),
     "fisher": ZeroCost(method_type="fisher"),
     "flops": ZeroCost(method_type="flops"),
-    "gcn": GCNPredictor(encoding_type="gcn", hpo_wrapper=True),
-    "gp": GPPredictor(encoding_type="adjacency_one_hot", 
+    "gcn": GCNPredictor(encoding_type=EncodingType.GCN, hpo_wrapper=True),
+    "gp": GPPredictor(encoding_type=EncodingType.ADJACENCY_ONE_HOT,
                       hparams_from_file=config.hparams_from_file),
     "gpwl": GPWLPredictor(
         ss_type=config.search_space,
@@ -74,14 +75,14 @@ supported_predictors = {
     "lcsvr": SVR_Estimator(
         metric=Metric.VAL_ACCURACY, all_curve=False, require_hyper=False
     ),
-    "lgb": LGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
-    "mlp": MLPPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
+    "lgb": LGBoost(encoding_type=EncodingType.ADJACENCY_ONE_HOT, hpo_wrapper=False),
+    "mlp": MLPPredictor(encoding_type=EncodingType.ADJACENCY_ONE_HOT, hpo_wrapper=False,
                         hparams_from_file=config.hparams_from_file),
-    "nao": SemiNASPredictor(encoding_type="seminas", semi=False, hpo_wrapper=False, 
+    "nao": SemiNASPredictor(encoding_type=EncodingType.SEMINAS, semi=False, hpo_wrapper=False,
                             hparams_from_file=config.hparams_from_file),
-    "ngb": NGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False),
+    "ngb": NGBoost(encoding_type=EncodingType.ADJACENCY_ONE_HOT, hpo_wrapper=False),
     "params": ZeroCost(method_type="params"),
-    "rf": RandomForestPredictor(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
+    "rf": RandomForestPredictor(encoding_type=EncodingType.ADJACENCY_ONE_HOT, hpo_wrapper=False,
                                 hparams_from_file=config.hparams_from_file),
     "seminas": SemiNASPredictor(encoding_type="seminas", semi=True, hpo_wrapper=False, 
                                 hparams_from_file=config.hparams_from_file),
@@ -90,32 +91,32 @@ supported_predictors = {
     "sotle": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLE"),
     "sotlema": SoLosspredictor(metric=Metric.TRAIN_LOSS, sum_option="SoTLEMA"),
     "sparse_gp": SparseGPPredictor(
-        encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT, optimize_gp_hyper=True,
     ),
     "synflow": ZeroCost(method_type="synflow"),
     "valacc": EarlyStopping(metric=Metric.VAL_ACCURACY),
     "valloss": EarlyStopping(metric=Metric.VAL_LOSS),
     "var_sparse_gp": VarSparseGPPredictor(
-        encoding_type="adjacency_one_hot", optimize_gp_hyper=True,
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT, optimize_gp_hyper=True,
     ),
-    "xgb": XGBoost(encoding_type="adjacency_one_hot", hpo_wrapper=False, 
+    "xgb": XGBoost(encoding_type=EncodingType.ADJACENCY_ONE_HOT, hpo_wrapper=False,
                    hparams_from_file=config.hparams_from_file),
     # path encoding experiments:
-    "bayes_lin_reg_path": BayesianLinearRegression(encoding_type="path"),
-    "bohamiann_path": BOHAMIANN(encoding_type="path"),
-    "dngo_path": DNGOPredictor(encoding_type="path"),
-    "gp_path": GPPredictor(encoding_type="path"),
-    "lgb_path": LGBoost(encoding_type="path", hpo_wrapper=False),
-    "ngb_path": NGBoost(encoding_type="path", hpo_wrapper=False),
+    "bayes_lin_reg_path": BayesianLinearRegression(encoding_type=EncodingType.PATH),
+    "bohamiann_path": BOHAMIANN(encoding_type=EncodingType.PATH),
+    "dngo_path": DNGOPredictor(encoding_type=EncodingType.PATH),
+    "gp_path": GPPredictor(encoding_type=EncodingType.PATH),
+    "lgb_path": LGBoost(encoding_type=EncodingType.PATH, hpo_wrapper=False),
+    "ngb_path": NGBoost(encoding_type=EncodingType.PATH, hpo_wrapper=False),
     # omni:
     "omni_ngb": OmniNGBPredictor(
-        encoding_type="adjacency_one_hot",
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT,
         config=config,
         zero_cost=["jacov"],
         lce=["sotle"],
     ),
     "omni_seminas": OmniSemiNASPredictor(
-        encoding_type="seminas",
+        encoding_type=EncodingType.SEMINAS,
         config=config,
         semi=True,
         hpo_wrapper=False,
@@ -125,10 +126,10 @@ supported_predictors = {
     ),
     # omni ablation studies:
     "omni_ngb_no_lce": OmniNGBPredictor(
-        encoding_type="adjacency_one_hot", config=config, zero_cost=["jacov"], lce=[]
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT, config=config, zero_cost=["jacov"], lce=[]
     ),
     "omni_seminas_no_lce": OmniSemiNASPredictor(
-        encoding_type="seminas",
+        encoding_type=EncodingType.SEMINAS,
         config=config,
         semi=True,
         hpo_wrapper=False,
@@ -137,7 +138,7 @@ supported_predictors = {
         jacov_onehot=True,
     ),
     "omni_ngb_no_zerocost": OmniNGBPredictor(
-        encoding_type="adjacency_one_hot", config=config, zero_cost=[], lce=["sotle"]
+        encoding_type=EncodingType.ADJACENCY_ONE_HOT, config=config, zero_cost=[], lce=["sotle"]
     ),
     "omni_ngb_no_encoding": OmniNGBPredictor(
         encoding_type=None, config=config, zero_cost=["jacov"], lce=["sotle"]

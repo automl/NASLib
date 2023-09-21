@@ -35,8 +35,8 @@ class HierarchicalDartsIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = DARTSOptimizer(config)
-        self.optimizer.adapt_search_space(HierarchicalSearchSpace())
+        self.optimizer = DARTSOptimizer(**config.search)
+        self.optimizer.adapt_search_space(HierarchicalSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -56,8 +56,8 @@ class HierarchicalGdasIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = GDASOptimizer(config)
-        self.optimizer.adapt_search_space(HierarchicalSearchSpace())
+        self.optimizer = GDASOptimizer(**config.search)
+        self.optimizer.adapt_search_space(HierarchicalSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -77,8 +77,8 @@ class HierarchicalDrNasIntegrationTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer = DrNASOptimizer(config)
-        self.optimizer.adapt_search_space(HierarchicalSearchSpace())
+        self.optimizer = DrNASOptimizer(**config.search)
+        self.optimizer.adapt_search_space(HierarchicalSearchSpace(), config.dataset)
         self.optimizer.before_training()
 
     def test_update(self):
@@ -98,12 +98,12 @@ class HierarchicalSearchSpaceTest(unittest.TestCase):
 
     def setUp(self):
         utils.set_seed(1)
-        self.optimizer_graph = DARTSOptimizer(config)
-        self.optimizer_subgraph = DARTSOptimizer(config)
+        self.optimizer_graph = DARTSOptimizer(**config.search)
+        self.optimizer_subgraph = DARTSOptimizer(**config.search)
         self.graph = HierarchicalSearchSpace()
         self.subgraph = self.graph.edges[4, 5]['op']
-        self.optimizer_graph.adapt_search_space(self.graph)
-        self.optimizer_subgraph.adapt_search_space(self.subgraph)
+        self.optimizer_graph.adapt_search_space(self.graph, config.dataset)
+        self.optimizer_subgraph.adapt_search_space(self.subgraph, config.dataset)
         self.num_ops = 0
 
     def test_update(self):

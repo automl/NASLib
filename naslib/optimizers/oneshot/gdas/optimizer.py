@@ -18,10 +18,20 @@ class GDASOptimizer(DARTSOptimizer):
 
     def __init__(
         self,
-        config,
-        op_optimizer: torch.optim.Optimizer = torch.optim.SGD,
-        arch_optimizer: torch.optim.Optimizer = torch.optim.Adam,
-        loss_criteria=torch.nn.CrossEntropyLoss(),
+        learning_rate: float = 0.025,
+        momentum: float = 0.9,
+        weight_decay: float = 0.0003,
+        grad_clip: int = 5,
+        unrolled: bool = False,
+        arch_learning_rate: float = 0.0003,
+        arch_weight_decay: float = 0.001,
+        op_optimizer: str = 'SGD',
+        arch_optimizer: str = 'Adam',
+        loss_criteria: str = 'CrossEntropyLoss',
+        epochs: int = 50,
+        tau_min: float = 0.1,
+        tau_max: float = 10.0,
+        **kwargs,
     ):
         """
         Instantiate the optimizer
@@ -35,11 +45,11 @@ class GDASOptimizer(DARTSOptimizer):
             loss_criteria: The loss.
             grad_clip (float): Clipping of the gradients. Default None.
         """
-        super().__init__(config, op_optimizer, arch_optimizer, loss_criteria)
+        super().__init__(learning_rate, momentum, weight_decay, grad_clip, unrolled, arch_learning_rate, arch_weight_decay, op_optimizer, arch_optimizer, loss_criteria)
 
-        self.epochs = config.search.epochs
-        self.tau_max = config.search.tau_max
-        self.tau_min = config.search.tau_min
+        self.epochs = epochs
+        self.tau_max = tau_max
+        self.tau_min = tau_min
 
         # Linear tau schedule
         self.tau_step = (self.tau_min - self.tau_max) / self.epochs
@@ -54,12 +64,12 @@ class GDASOptimizer(DARTSOptimizer):
         primitives = edge.data.op
         edge.data.set("op", GDASMixedOp(primitives))
 
-    def adapt_search_space(self, search_space, scope=None):
+    def adapt_search_space(self, search_space, dataset, scope=None):
         """
         Same as in darts with a different mixop.
         Just add tau as buffer so it is checkpointed.
         """
-        super().adapt_search_space(search_space, scope)
+        super().adapt_search_space(search_space, dataset, scope)
         self.graph.register_buffer("tau", self.tau_curr)
 
     def new_epoch(self, epoch):
