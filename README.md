@@ -47,7 +47,8 @@ While installing the repository, creating a new conda environment is recomended.
 
 ```bash
 conda create -n mvenv python=3.7
-conda install pytorch torchvision torchaudio cudatoolkit=11.8 -c pytorch -c nvidia```
+conda install pytorch torchvision torchaudio cudatoolkit=11.8 -c pytorch -c nvidia
+```
 
 Run setup.py file with the following command, which will install all the packages listed in [`requirements.txt`](requirements.txt)
 ```bash
