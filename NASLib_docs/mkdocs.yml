@@ -28,8 +28,7 @@ nav:
         - NAS-Bench-NLP: search_spaces/nasbench_nlp.md
         - Simple Cell: search_spaces/simple_cell.md
         - Transbench101: search_spaces/transbench101.md
-    - Utils:
-        - Overview: utils/overview.md
+    # TODO Utils
     - Contributing: contributing.md
 plugins:
   - mkdocstrings:
