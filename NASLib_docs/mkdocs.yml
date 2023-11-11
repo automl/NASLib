@@ -30,6 +30,14 @@ nav:
         - Transbench101: search_spaces/transbench101.md
     # TODO Utils
     - Contributing: contributing.md
+
+copyright: Copyright &copy 2023; NASLib contributors
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/automl
+      name: AutoML Github
+
 plugins:
   - mkdocstrings:
         enabled: !ENV [ ENABLE_MKDOCSTRINGS, true ]
