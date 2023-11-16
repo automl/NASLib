@@ -25,4 +25,6 @@ jobs:
           restore-keys: |
             mkdocs-material-
       - run: pip install mkdocs-material 
-      - run: mkdocs gh-deploy --force
+      - run: |
+          cd NASLib/NASLib_docs
+          mkdocs gh-deploy --force
