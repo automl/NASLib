@@ -1,0 +1,1045 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://github.com/automl/NASLib/quick_start/">
+      
+      
+        <link rel="prev" href="../setup/">
+      
+      
+        <link rel="next" href="../optimizers/overview/">
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
+    
+    
+      
+        <title>Quick Start - NASLib Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#getting-started-with-naslib" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="NASLib Documentation" class="md-header__button md-logo" aria-label="NASLib Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NASLib Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Quick Start
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="NASLib Documentation" class="md-nav__button md-logo" aria-label="NASLib Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    NASLib Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup/" class="md-nav__link">
+        Setup
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Quick Start
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Quick Start
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#darts-and-regularized-evolution" class="md-nav__link">
+    DARTS and Regularized Evolution
+  </a>
+  
+    <nav class="md-nav" aria-label="DARTS and Regularized Evolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loading-configuration-and-logging" class="md-nav__link">
+    Loading Configuration and Logging
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-a-subset-of-available-optimizers-and-search-spaces" class="md-nav__link">
+    Defining a Subset of Available Optimizers and Search Spaces
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preparing-the-search-space-and-optimizer" class="md-nav__link">
+    Preparing the Search Space and Optimizer
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-optimization-process" class="md-nav__link">
+    Running the Optimization Process
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zero-cost" class="md-nav__link">
+    Zero-cost
+  </a>
+  
+    <nav class="md-nav" aria-label="Zero-cost">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-experiment" class="md-nav__link">
+    Setting up the experiment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preparing-the-loaders-and-zero-cost-api" class="md-nav__link">
+    Preparing the loaders and zero-cost api
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#querying-using-zero-cost-predictor" class="md-nav__link">
+    Querying using zero-cost predictor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correlation-between-zero-cost-scores-and-validation-accuracies" class="md-nav__link">
+    Correlation between zero-cost scores and validation accuracies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-zero-cost-api" class="md-nav__link">
+    Using zero-cost API
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training-with-zero-cost" class="md-nav__link">
+    Training with zero-cost
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          Optimizers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Optimizers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          Discrete
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Discrete
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/discrete/rs/" class="md-nav__link">
+        Random Search
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/discrete/re/" class="md-nav__link">
+        Regularized Evolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/discrete/bananas/" class="md-nav__link">
+        Bananas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/discrete/bp/" class="md-nav__link">
+        Base Predictor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/discrete/ls/" class="md-nav__link">
+        Local Search
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/discrete/npenas/" class="md-nav__link">
+        NPenas
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+          One-Shot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          One-Shot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/oneshot/darts/" class="md-nav__link">
+        DARTS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/oneshot/gdas/" class="md-nav__link">
+        GDAS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/oneshot/drnas/" class="md-nav__link">
+        DrNAS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../optimizers/oneshot/rsws/" class="md-nav__link">
+        RSWS
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          Search Spaces
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Search Spaces
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/nasbench_101/" class="md-nav__link">
+        NAS-Bench-101
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/nasbench_201/" class="md-nav__link">
+        NAS-Bench-201
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/nasbench_301/" class="md-nav__link">
+        NAS-Bench-301
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/nasbench_asr/" class="md-nav__link">
+        NAS-Bench-ASR
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/nasbench_nlp/" class="md-nav__link">
+        NAS-Bench-NLP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/simple_cell/" class="md-nav__link">
+        Simple Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../search_spaces/transbench101/" class="md-nav__link">
+        Transbench101
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#darts-and-regularized-evolution" class="md-nav__link">
+    DARTS and Regularized Evolution
+  </a>
+  
+    <nav class="md-nav" aria-label="DARTS and Regularized Evolution">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loading-configuration-and-logging" class="md-nav__link">
+    Loading Configuration and Logging
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#defining-a-subset-of-available-optimizers-and-search-spaces" class="md-nav__link">
+    Defining a Subset of Available Optimizers and Search Spaces
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preparing-the-search-space-and-optimizer" class="md-nav__link">
+    Preparing the Search Space and Optimizer
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-the-optimization-process" class="md-nav__link">
+    Running the Optimization Process
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#zero-cost" class="md-nav__link">
+    Zero-cost
+  </a>
+  
+    <nav class="md-nav" aria-label="Zero-cost">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-experiment" class="md-nav__link">
+    Setting up the experiment
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preparing-the-loaders-and-zero-cost-api" class="md-nav__link">
+    Preparing the loaders and zero-cost api
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#querying-using-zero-cost-predictor" class="md-nav__link">
+    Querying using zero-cost predictor
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correlation-between-zero-cost-scores-and-validation-accuracies" class="md-nav__link">
+    Correlation between zero-cost scores and validation accuracies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-zero-cost-api" class="md-nav__link">
+    Using zero-cost API
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#training-with-zero-cost" class="md-nav__link">
+    Training with zero-cost
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<h1 id="getting-started-with-naslib">Getting Started with NASLib</h1>
+<p>In this guide, we demonstrate how to get started with the Neural Architecture Search Library (NASLib). NASLib provides a wide range of tools to facilitate neural architecture search and optimization. We will show you how to utilize various optimizers and search spaces, namely, DARTS optimizer with the NasBench301 search space, Regularized Evolution with NasBench201, and exploring zero-cost proxies with NasBench201. Let's dive into the specifics.</p>
+<h2 id="darts-and-regularized-evolution">DARTS and Regularized Evolution</h2>
+<h3 id="loading-configuration-and-logging">Loading Configuration and Logging</h3>
+<pre><code class="language-python">config = utils.get_config_from_args(config_type='nas')
+logger = setup_logger(config.save + &quot;/log.log&quot;)
+logger.setLevel(logging.INFO)
+utils.log_args(config)
+</code></pre>
+<p>The configuration parameters are loaded with <code>utils.get_config_from_args(config_type='nas')</code>. If no other file is provided, it defaults to load from <code>darts_defaults.yaml</code>. This configuration may include settings related to your dataset, architecture, optimization process, and so on. This flexibility allows easy switching between different optimizers and search spaces, as per the requirements of your experiments. The logger records this process for debugging or auditing.</p>
+<h3 id="defining-a-subset-of-available-optimizers-and-search-spaces">Defining a Subset of Available Optimizers and Search Spaces</h3>
+<pre><code class="language-python">supported_optimizers = {
+    're': RegularizedEvolution(config),
+    'darts': DARTSOptimizer(**config),
+}
+supported_search_spaces = {
+    'nasbench201': NasBench201SearchSpace(),
+    'nasbench301': NasBench301SearchSpace(),
+}
+</code></pre>
+<p>While NASLib supports a wide range of optimizers and search spaces, here we instantiate two specific optimizers (Regularized Evolution and DARTS) and two search spaces (NasBench201 and NasBench301). This demonstration shows how you can choose specific tools from the library based on your needs.</p>
+<h3 id="preparing-the-search-space-and-optimizer">Preparing the Search Space and Optimizer</h3>
+<pre><code class="language-python">dataset_api = get_dataset_api(config.search_space, config.dataset)
+utils.set_seed(config.seed)
+search_space = supported_search_spaces[config.search_space]
+optimizer = supported_optimizers[config.optimizer]
+optimizer.adapt_search_space(search_space, dataset=config.dataset, dataset_api=dataset_api)
+</code></pre>
+<p>This section sets the random seed for reproducibility, chooses the optimizer and search space as per the configuration, and adapts the optimizer to the chosen search space. It uses the dataset API to load the dataset corresponding to your selected search space.</p>
+<h3 id="running-the-optimization-process">Running the Optimization Process</h3>
+<pre><code class="language-python">trainer = Trainer(optimizer, config, lightweight_output=True)
+trainer.search(resume_from=&quot;&quot;)
+trainer.evaluate(resume_from=&quot;&quot;, dataset_api=dataset_api)
+</code></pre>
+<p>The Trainer object is created with the configured optimizer and starts the architecture search process. After searching, the trainer evaluates the best-found architecture. Both searching and evaluating can be resumed from previous checkpoints (specified as arguments to the respective functions). The <code>lightweight_output</code> parameter, if set to True, will reduce the amount of output for each training epoch.</p>
+<p>For the full code, see <a href="https://github.com/automl/NASLib/blob/Develop/examples/getting_started.py">getting_started</a>.</p>
+<h2 id="zero-cost">Zero-cost</h2>
+<p>NAS is typically compute-intensive because multiple models need to be evaluated before choosing the best one. To
+reduce the computational power and time needed, a proxy task is often used for evaluating each model instead of full training. We can leverage Zero cost proxies as well as zero cost bechmarks to query the scores for NAS experiments. </p>
+<p>We have already downloaded the Zero Cost Benchmark API for NAS-Bench-201, which has the scores for all 15625 models evaluated for all three datasets (CIFAR-10, CIFAR-100 and ImageNet16-120) using all 13 Zero Cost proxies. </p>
+<h3 id="setting-up-the-experiment">Setting up the experiment</h3>
+<pre><code class="language-python">config = utils.get_config_from_args(config_type='zc')
+logger = setup_logger(config.save + &quot;/log.log&quot;)
+logger.setLevel(logging.INFO)
+utils.log_args(config)
+utils.set_seed(config.seed)
+
+supported_optimizers = {
+    'bananas': Bananas,
+    'npenas': Npenas,
+}
+supported_search_spaces = {
+    'nasbench201': NasBench201SearchSpace,
+    'nasbench301': NasBench301SearchSpace,
+}
+</code></pre>
+<p>The experiment is setup the same way as before. But we will now choose <code>config_type = 'zc'</code> for loading config relevant to zero-cost experiment. Custom configs can be made the same way as the <code>zc_config.yaml</code> is written. We choose <code>Bananas</code>  and <code>Npenas</code> as supported optimizers as these are only 2 optimizers which supports zero-cost API. It is also possible to integrate zero-cost API in custom optimizers' query function by replacing querying from NAS benchmarks with zero-cost API. </p>
+<h3 id="preparing-the-loaders-and-zero-cost-api">Preparing the loaders and zero-cost api</h3>
+<pre><code class="language-python">graph = supported_search_spaces[config.search_space]()
+train_loader, val_loader, test_loader, train_transform, valid_transform = get_train_val_loaders(config)
+zc_api = get_zc_benchmark_api(config.search_space, config.dataset)
+</code></pre>
+<h3 id="querying-using-zero-cost-predictor">Querying using zero-cost predictor</h3>
+<pre><code class="language-python">zc_pred = config.predictor 
+graph.sample_random_architecture(dataset_api=dataset_api)
+graph.parse()
+zc_predictor = ZeroCost(method_type=zc_pred)
+zc_score = zc_predictor.query(graph=graph, dataloader=train_loader)
+</code></pre>
+<p>You can query the zero-cost score by using a zero-cost predictor of your choice. </p>
+<h3 id="correlation-between-zero-cost-scores-and-validation-accuracies">Correlation between zero-cost scores and validation accuracies</h3>
+<pre><code class="language-python">val_accs = []
+zc_scores = []
+for _ in range(10):
+    graph = supported_search_spaces[config.search_space]()
+    graph.sample_random_architecture()
+    graph.parse()
+    acc = graph.query(metric=Metric.VAL_ACCURACY, dataset='cifar10',
+                      dataset_api=dataset_api)
+    val_accs.append(acc)
+    zc_score = zc_predictor.query(graph=graph, dataloader=train_loader)
+    zc_scores.append(zc_score)
+
+corr_score = compute_scores(ytest=val_accs, test_pred=zc_scores)
+
+print(&quot;The kendall-tau score is: &quot;, corr_score[&quot;kendalltau&quot;])
+</code></pre>
+<p>A handy feature to add in a custom optimizer is to compare the zero-cost scores against the validation accuracy by checking the correlation between them. We provide a handy utility function <code>utils.compute_scores</code> that gives 9 type of correlation scores. </p>
+<h3 id="using-zero-cost-api">Using zero-cost API</h3>
+<pre><code class="language-python">zc_predictor = 'jacov'
+spec = graph.get_hash()
+zc_score = zc_api[str(spec)][zc_predictor]['score']
+time_to_compute = zc_api[str(spec)][zc_predictor]['time'] 
+</code></pre>
+<p>We can save even further computation time by directly querying the zero-cost API instead of querying score by zero-cost predictors. </p>
+<h3 id="training-with-zero-cost">Training with zero-cost</h3>
+<pre><code class="language-python">graph = supported_search_spaces[config.search_space]()
+optimizer = supported_optimizers[config.optimizer](config, zc_api=zc_api) 
+optimizer.adapt_search_space(search_space, dataset_api=dataset_api)
+
+trainer = Trainer(optimizer, config, lightweight_output=True)
+trainer.search(resume_from=&quot;&quot;)
+trainer.evaluate(resume_from=&quot;&quot;, dataset_api=dataset_api)
+</code></pre>
+<p>The 2 supported optimizers- <code>Bananas</code> and <code>Npenas</code> takes in <code>zc_api</code> parameter that uses zero-cost API while querying the scores for an architecture. Please look at <code>zc_config.yaml</code> for other relevant parameters required for using zero-cost scores.  </p>
+<p>For more examples see <a href="https://github.com/automl/NASLib/blob/Develop/examples/naslib_tutorial.ipynb">naslib tutorial</a>, <a href="https://github.com/automl/NASLib/blob/Develop/examples/search_spaces.ipynb">intro to search spaces</a> and <a href="https://github.com/automl/NASLib/blob/Develop/examples/predictors.md">intro to predictors</a>.</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy 2023; NASLib contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/automl" target="_blank" rel="noopener" title="AutoML Github" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.b4d07000.min.js"></script>
+      
+    
+  </body>
+</html>

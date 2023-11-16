@@ -1,0 +1,1934 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://github.com/automl/NASLib/optimizers/oneshot/darts/">
+      
+      
+        <link rel="prev" href="../../discrete/npenas/">
+      
+      
+        <link rel="next" href="../gdas/">
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
+    
+    
+      
+        <title>DARTS - NASLib Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="NASLib Documentation" class="md-header__button md-logo" aria-label="NASLib Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NASLib Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              DARTS
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="NASLib Documentation" class="md-nav__button md-logo" aria-label="NASLib Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    NASLib Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../setup/" class="md-nav__link">
+        Setup
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../quick_start/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          Optimizers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Optimizers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          Discrete
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_2">
+          <span class="md-nav__icon md-icon"></span>
+          Discrete
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../discrete/rs/" class="md-nav__link">
+        Random Search
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../discrete/re/" class="md-nav__link">
+        Regularized Evolution
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../discrete/bananas/" class="md-nav__link">
+        Bananas
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../discrete/bp/" class="md-nav__link">
+        Base Predictor
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../discrete/ls/" class="md-nav__link">
+        Local Search
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../discrete/npenas/" class="md-nav__link">
+        NPenas
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+          One-Shot
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_4_3">
+          <span class="md-nav__icon md-icon"></span>
+          One-Shot
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          DARTS
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        DARTS
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer" class="md-nav__link">
+    naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.adapt_search_space" class="md-nav__link">
+    adapt_search_space()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.add_alphas" class="md-nav__link">
+    add_alphas()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.before_training" class="md-nav__link">
+    before_training()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_checkpointables" class="md-nav__link">
+    get_checkpointables()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_final_architecture" class="md-nav__link">
+    get_final_architecture()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_model_size" class="md-nav__link">
+    get_model_size()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_op_optimizer" class="md-nav__link">
+    get_op_optimizer()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.new_epoch" class="md-nav__link">
+    new_epoch()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.step" class="md-nav__link">
+    step()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.test_statistics" class="md-nav__link">
+    test_statistics()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.update_ops" class="md-nav__link">
+    update_ops()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gdas/" class="md-nav__link">
+        GDAS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../drnas/" class="md-nav__link">
+        DrNAS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rsws/" class="md-nav__link">
+        RSWS
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          Search Spaces
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Search Spaces
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/nasbench_101/" class="md-nav__link">
+        NAS-Bench-101
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/nasbench_201/" class="md-nav__link">
+        NAS-Bench-201
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/nasbench_301/" class="md-nav__link">
+        NAS-Bench-301
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/nasbench_asr/" class="md-nav__link">
+        NAS-Bench-ASR
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/nasbench_nlp/" class="md-nav__link">
+        NAS-Bench-NLP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/simple_cell/" class="md-nav__link">
+        Simple Cell
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../search_spaces/transbench101/" class="md-nav__link">
+        Transbench101
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../contributing/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer" class="md-nav__link">
+    naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.__init__" class="md-nav__link">
+    __init__()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.adapt_search_space" class="md-nav__link">
+    adapt_search_space()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.add_alphas" class="md-nav__link">
+    add_alphas()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.before_training" class="md-nav__link">
+    before_training()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_checkpointables" class="md-nav__link">
+    get_checkpointables()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_final_architecture" class="md-nav__link">
+    get_final_architecture()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_model_size" class="md-nav__link">
+    get_model_size()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_op_optimizer" class="md-nav__link">
+    get_op_optimizer()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.new_epoch" class="md-nav__link">
+    new_epoch()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.step" class="md-nav__link">
+    step()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.test_statistics" class="md-nav__link">
+    test_statistics()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.update_ops" class="md-nav__link">
+    update_ops()
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  <h1>DARTS</h1>
+
+<div class="doc doc-object doc-class">
+
+
+<a id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer"></a>
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="naslib.optimizers.core.metaclasses.MetaOptimizer">MetaOptimizer</span></code></p>
+
+  
+      <p>Implementation of the DARTS paper as in
+    Liu et al. 2019: DARTS: Differentiable Architecture Search.</p>
+
+  <p><strong>Attributes:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>learning_rate</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The learning rate for optimizing operations.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>momentum</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The momentum factor.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>weight_decay</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Weight decay (L2 regularization).</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>grad_clip</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Gradient clipping value.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>unrolled</code></td>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether to use unrolled backpropagation or not.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>arch_learning_rate</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The learning rate for architecture.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>arch_weight_decay</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Weight decay for architecture.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>op_optimizer</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Optimizer for operation weights ('SGD', 'Adam', etc.)</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>arch_optimizer</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Optimizer for architecture weights ('SGD', 'Adam', etc.)</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>loss</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Loss criterion ('CrossEntropyLoss', etc.)</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>architectural_weights</code></td>
+          <td>
+                <code>torch.<span title="torch.nn">nn</span>.<span title="torch.nn.ParameterList">ParameterList</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>List of architectural weights.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>device</code></td>
+          <td>
+                <code>torch.<span title="torch.device">device</span></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Device to run the model.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>search_space</code></td>
+          <td>
+                <code>obj</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Search space for architecture.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>graph</code></td>
+          <td>
+                <code>obj</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Computation graph.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>scope</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Scope of operation.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>dataset</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Dataset being used for search.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>arch_optimizer</code></td>
+          <td>
+                <code>obj</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Torch optimizer for architecture.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>op_optimizer</code></td>
+          <td>
+                <code>obj</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Torch optimizer for operations.</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td><code>loss</code></td>
+          <td>
+                <code>obj</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Torch loss function.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.__init__">
+<code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.025</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.9</span><span class="p">,</span> <span class="n">weight_decay</span><span class="o">=</span><span class="mf">0.0003</span><span class="p">,</span> <span class="n">grad_clip</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">unrolled</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">arch_learning_rate</span><span class="o">=</span><span class="mf">0.0003</span><span class="p">,</span> <span class="n">arch_weight_decay</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span> <span class="n">op_optimizer</span><span class="o">=</span><span class="s1">&#39;SGD&#39;</span><span class="p">,</span> <span class="n">arch_optimizer</span><span class="o">=</span><span class="s1">&#39;Adam&#39;</span><span class="p">,</span> <span class="n">loss_criteria</span><span class="o">=</span><span class="s1">&#39;CrossEntropyLoss&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Initialize a new instance of DARTSOptimizer.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>learning_rate</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The learning rate for optimizing operations. Defaults to 0.025.</p>
+            </div>
+          </td>
+          <td>
+                <code>0.025</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>momentum</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The momentum factor. Defaults to 0.9.</p>
+            </div>
+          </td>
+          <td>
+                <code>0.9</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>weight_decay</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Weight decay (L2 regularization). Defaults to 0.0003.</p>
+            </div>
+          </td>
+          <td>
+                <code>0.0003</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>grad_clip</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Gradient clipping value. Defaults to 5.</p>
+            </div>
+          </td>
+          <td>
+                <code>5</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>unrolled</code></td>
+          <td>
+                <code>bool</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Whether to use unrolled backpropagation or not. Defaults to False.</p>
+            </div>
+          </td>
+          <td>
+                <code>False</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>arch_learning_rate</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The learning rate for architecture. Defaults to 0.0003.</p>
+            </div>
+          </td>
+          <td>
+                <code>0.0003</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>arch_weight_decay</code></td>
+          <td>
+                <code>float</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Weight decay for architecture. Defaults to 0.001.</p>
+            </div>
+          </td>
+          <td>
+                <code>0.001</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>op_optimizer</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Optimizer for operation weights ('SGD', 'Adam', etc.). Defaults to 'SGD'.</p>
+            </div>
+          </td>
+          <td>
+                <code>&#39;SGD&#39;</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>arch_optimizer</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Optimizer for architecture weights ('SGD', 'Adam', etc.). Defaults to 'Adam'.</p>
+            </div>
+          </td>
+          <td>
+                <code>&#39;Adam&#39;</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>loss_criteria</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Loss criterion ('CrossEntropyLoss', etc.). Defaults to 'CrossEntropyLoss'.</p>
+            </div>
+          </td>
+          <td>
+                <code>&#39;CrossEntropyLoss&#39;</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.adapt_search_space">
+<code class="highlight language-python"><span class="n">adapt_search_space</span><span class="p">(</span><span class="n">search_space</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Adapt the search space for architecture optimization.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>search_space</code></td>
+          <td>
+                <code>Graph</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The initial search space object.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>dataset</code></td>
+          <td>
+                <code>Dataset</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Dataset to be used for training/validation.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>scope</code></td>
+          <td>
+                <code>str</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The scope in which the graph modifications are applied. Defaults to <code>None</code>.</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
+          </td>
+        </tr>
+        <tr>
+          <td><code>**kwargs</code></td>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>Additional keyword arguments.</p>
+            </div>
+          </td>
+          <td>
+                <code>{}</code>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.add_alphas">
+<code class="highlight language-python"><span class="n">add_alphas</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Adds architectural weights (alphas) to the edges in the computation graph.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>edge</code></td>
+          <td>
+                <code>obj</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The edge in the computation graph where alpha is to be added.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>None</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.before_training">
+<code class="highlight language-python"><span class="n">before_training</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Prepare the model for training. This moves the graph and architectural weights to the device memory.</p>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_checkpointables">
+<code class="highlight language-python"><span class="n">get_checkpointables</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get checkpointable elements of the model for saving or loading.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+<th>Name</th>        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+<td><code>dict</code></td>          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>A dictionary containing all elements to be checkpointed.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_final_architecture">
+<code class="highlight language-python"><span class="n">get_final_architecture</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the final, discretized architecture based on the current architectural weights.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+<th>Name</th>        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+<td><code>Graph</code></td>          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The final architecture as a graph object.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_model_size">
+<code class="highlight language-python"><span class="n">get_model_size</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the size of the model in terms of parameters.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+<th>Name</th>        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+<td><code>float</code></td>          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The size of the model in MB.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.get_op_optimizer">
+<code class="highlight language-python"><span class="n">get_op_optimizer</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Get the class of the operation optimizer.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+<th>Name</th>        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+<td><code>type</code></td>          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The class type of the operation optimizer.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.new_epoch">
+<code class="highlight language-python"><span class="n">new_epoch</span><span class="p">(</span><span class="n">epoch</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Log the architecture weights at the beginning of each new epoch.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>epoch</code></td>
+          <td>
+                <code>int</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The current epoch number.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.step">
+<code class="highlight language-python"><span class="n">step</span><span class="p">(</span><span class="n">data_train</span><span class="p">,</span> <span class="n">data_val</span><span class="p">)</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Perform a single optimization step.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>data_train</code></td>
+          <td>
+                <code>tuple</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>A tuple containing training input and labels.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>data_val</code></td>
+          <td>
+                <code>tuple</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>A tuple containing validation input and labels.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+<th>Name</th>        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+<td><code>tuple</code></td>          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>A tuple containing logits for the training set, logits for the validation set,</p>
+            </div>
+          </td>
+        </tr>
+        <tr>
+<td></td>          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>loss for the training set, and loss for the validation set.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.test_statistics">
+<code class="highlight language-python"><span class="n">test_statistics</span><span class="p">()</span></code>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Retrieve test statistics based on the current architecture and dataset.</p>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+<th>Name</th>        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+<td><code>float</code></td>          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The test accuracy, if the graph is queryable. Otherwise, returns None.</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 class="doc doc-heading" id="naslib.optimizers.oneshot.darts.optimizer.DARTSOptimizer.update_ops">
+<code class="highlight language-python"><span class="n">update_ops</span><span class="p">(</span><span class="n">edge</span><span class="p">)</span></code>
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+</h2>
+
+
+  <div class="doc doc-contents ">
+  
+      <p>Updates the operations at each edge with MixedOp.</p>
+
+  <p><strong>Parameters:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Description</th>
+        <th>Default</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td><code>edge</code></td>
+          <td>
+                <code>obj</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>The edge in the computation graph where operations are to be updated.</p>
+            </div>
+          </td>
+          <td>
+              <em>required</em>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Returns:</strong></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+        <tr>
+          <td>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>None</p>
+            </div>
+          </td>
+        </tr>
+    </tbody>
+  </table>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy 2023; NASLib contributors
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/automl" target="_blank" rel="noopener" title="AutoML Github" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.b4d07000.min.js"></script>
+      
+    
+  </body>
+</html>
