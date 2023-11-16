@@ -26,12 +26,12 @@ jobs:
             mkdocs-material-
       - name: Install dependencies
         run: |
-            mkdocs==1.4.3
-            mkdocs-autorefs==0.4.1
-            mkdocs-material==9.1.15
-            mkdocs-material-extensions==1.1.1
-            mkdocstrings==0.20.0
-            mkdocstrings-python==1.1.2
+            pip install mkdocs==1.4.3
+            pip install mkdocs-autorefs==0.4.1
+            pip install mkdocs-material==9.1.15
+            pip install mkdocs-material-extensions==1.1.1
+            pip install mkdocstrings==0.20.0
+            pip install mkdocstrings-python==1.1.2
       - run: |
           cd NASLib_docs
           mkdocs gh-deploy --force
