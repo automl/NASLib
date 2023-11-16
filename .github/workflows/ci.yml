@@ -24,7 +24,14 @@ jobs:
           path: .cache
           restore-keys: |
             mkdocs-material-
-      - run: pip install mkdocs-material 
+      - name: Install dependencies
+        run: |
+            mkdocs==1.4.3
+            mkdocs-autorefs==0.4.1
+            mkdocs-material==9.1.15
+            mkdocs-material-extensions==1.1.1
+            mkdocstrings==0.20.0
+            mkdocstrings-python==1.1.2
       - run: |
           cd NASLib_docs
           mkdocs gh-deploy --force
