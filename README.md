@@ -37,7 +37,7 @@ NASLib was developed by the [**AutoML Freiburg group**](https://www.automl.org/t
 
 [**Setup**](#setup)
 | [**Usage**](#usage)
-| [**Docs**](examples/)
+| [**Docs**](https://automl.github.io/NASLib/)
 | [**Contributing**](#contributing)
 | [**Cite**](#cite)
 
