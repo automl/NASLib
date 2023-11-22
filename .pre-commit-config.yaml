@@ -1,34 +1,54 @@
+exclude: ^docs/
 repos:
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.761
+    # Check and update general problems
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
     hooks:
-      - id: mypy
-        args: [--show-error-codes,
-               --warn-redundant-casts,
-               --warn-return-any,
-               --warn-unreachable,
+    - id: check-yaml # Attempts to load all yaml files to verify syntax.
+    - id: debug-statements # Check for debugger imports and breakpoint() calls in python source.
+    - id: end-of-file-fixer # Makes sure files end in a newline and only a newline.
+    - id: trailing-whitespace # Trims trailing whitespace.
+      args: [ --markdown-linebreak-ext=md ] # preserve Markdown hard linebreaks
+      exclude: ^tests/
+
+    # Reordering Imports (similar to isort)
+    # This style is mainly focussed on merge conflicts, see:
+    # https://github.com/asottile/reorder_python_imports#why-this-style
+-   repo: https://github.com/asottile/reorder_python_imports
+    rev: v3.9.0
+    hooks:
+    -   id: reorder-python-imports
+        args: [
+            # --application-directories, '.:src', # assumes project rooted at .
+            --py37-plus,
+            # --add-import, 'from __future__ import annotations', # unsure if required
         ]
-        files: naslib/.*
-        exclude: 
-          - naslib/examples/.*
-          - naslib/docs/.*
-          
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.3
+
+    # Automatically converts syntax to specified version
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.3.1
     hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-print==3.1.4
-          - flake8-import-order
-        name: flake8 naslib
-        files: naslib/.*
-        exclude: 
-          - naslib/examples/.*
-          - naslib/docs/.*
-          - naslib/predictors/.*
-      - id: flake8
-        additional_dependencies:
-          - flake8-print==3.1.4
-          - flake8-import-order
-        name: flake8 test
-        files: tests/.*
+    -   id: pyupgrade
+        args: [--py37-plus]
+
+    # Code formatter
+-   repo: https://github.com/psf/black
+    rev: 22.12.0
+    hooks:
+    -   id: black-jupyter # supports .py and .ipynb files
+        args: [--line-length=88, --target-version=py37]
+
+    # Linting
+-   repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+    -   id: flake8
+
+    # Type Checking
+    # According to this blog post (https://jaredkhan.com/blog/mypy-pre-commit)
+    # one should consider running mypy on all files rather than on only the committed changes
+    # since the changes can break dependencies elsewhere (e.g. function naming)
+#-   repo: https://github.com/pre-commit/mirrors-mypy
+#    rev: v0.991
+#    hooks:
+#    -   id: mypy

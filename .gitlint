@@ -1,0 +1,13 @@
+[general]
+contrib = contrib-title-conventional-commits
+ignore = body-is-missing
+
+[title-max-length]
+line-length=72
+
+[body-max-line-length]
+line-length=100
+
+[contrib-title-conventional-commits]
+# Specify allowed commit types. For details see: ./CONTRIBUTING.md
+types = feat,fix,docs,refactor,perf,style,build,test,chore,revert
