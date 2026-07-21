@@ -255,7 +255,7 @@ class Trainer(object):
         Otherwise train as defined in the config.
 
         Args:
-            retrain (bool): Reset the weights from the architecure search
+            retrain (bool): Reset the weights from the architecture search
             search_model (str): Path to checkpoint file that was created during
                 search. If not provided, then try to load 'model_final.pth' from search
             resume_from (str): Resume retraining from the given checkpoint file.
